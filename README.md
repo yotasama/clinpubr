@@ -1,1 +1,1 @@
-# easy-clinical-research
+# easypubr
