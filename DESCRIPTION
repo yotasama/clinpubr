@@ -4,7 +4,7 @@ Version: 0.0.0.9000
 Authors@R: 
     person("Yue", "Niu", , "niuyuesam@163.com", role = c("aut", "cre"))
 Description: Useful tools that generate various types of figures commonly used in publication, 
-    along with some convonient data cleaning tools.
+    along with some convenient data cleaning tools.
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
