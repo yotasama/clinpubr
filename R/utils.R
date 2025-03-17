@@ -1,3 +1,8 @@
+#' @import ggplot2
+#' @import dplyr
+#' @importFrom magrittr %>%
+#' @importFrom tibble as_tibble
+
 # load or install and load packages
 load_packages <- function(pkgs) {
   for (pkg in pkgs) {

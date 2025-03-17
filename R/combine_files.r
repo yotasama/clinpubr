@@ -8,6 +8,7 @@
 #' @param ... Other parameters passed to the reader_fun.
 #'
 #' @returns A data.frame. If no data files found, return NULL.
+#' @export
 
 combine_files <- function(path = ".", pattern = NULL, unique_only = T, reader_fun = read.csv, ...) {
   files <- list.files(path = path, pattern = pattern, full.names = T)

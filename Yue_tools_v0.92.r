@@ -32,18 +32,18 @@ combine_files <- function(path = ".", pattern = NULL, unique_only = T, reader_fu
 
 # 输出代码形式的vector
 vec2code <- function(x) {
-  print(paste0("c('", paste0(x, collapse = "','"), "')"))
+  paste0("c('", paste0(x, collapse = "','"), "')")
 }
 
 # 通用p.val format
-my_format_pval <- function(p) {
-  return(base::format.pval(p, digits = 1, nsmall = 2, eps = 1e-3))
+format_pval <- function(p) {
+  base::format.pval(p, digits = 1, nsmall = 2, eps = 1e-3)
 }
 
 # 数据清洗工具箱----
 load_packages(c("stringr", "DescTools"))
 # 计算众数
-my_mode <- function(x) {
+first_mode <- function(x) {
   x <- na.omit(x)
   l <- length(unique(x))
   if (l == 0) {
@@ -303,7 +303,7 @@ replace_elements <- function(x, ori, new) {
 unit_standardize_ <- function(dat, target_unit = NULL, units2change = NULL, coeffs = NULL) {
   if (is.null(target_unit)) {
     if (length(unique(dat[, 2])) > 1) {
-      target_unit <- my_mode(dat[, 2])
+      target_unit <- first_mode(dat[, 2])
     } else {
       return(dat)
     }
@@ -418,7 +418,7 @@ completion_with_mode <- function(dat, cols_to_complete, group_vars = NULL) {
       group_by(pick(group_vars))
   }
   tmp <- tmp %>%
-    mutate(across(cols_to_complete, my_mode))
+    mutate(across(cols_to_complete, first_mode))
   tmp
 }
 
