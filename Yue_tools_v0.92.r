@@ -59,8 +59,6 @@ first_mode <- function(x) {
 merge_ordered_vectors <- function(vectors) {
   # 提取所有元素
   all_elements <- unique(unlist(vectors))
-  # 初始化结果向量
-  result <- character(0)
 
   # 定义一个函数来计算元素对的顺序
   calculate_order <- function(elem1, elem2, vectors) {
@@ -99,24 +97,7 @@ merge_ordered_vectors <- function(vectors) {
     }
   }
 
-  # 插入独特元素，保持每个向量的顺序
-  for (vec in vectors) {
-    for (elem in vec) {
-      if (!(elem %in% result)) {
-        insert_idx <- which(all_elements == elem)
-        insert_pos <- 1
-        for (k in seq_along(result)) {
-          if (which(all_elements == result[k]) > insert_idx) {
-            break
-          }
-          insert_pos <- insert_pos + 1
-        }
-        result <- append(result, elem, after = insert_pos - 1)
-      }
-    }
-  }
-
-  return(result)
+  return(all_elements)
 }
 
 # 多选题拆分结果

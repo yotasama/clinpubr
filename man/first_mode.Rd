@@ -2,9 +2,7 @@
 % Please edit documentation in R/misc.r
 \name{first_mode}
 \alias{first_mode}
-\title{Calculate the first mode
-Calculate the first mode of a vector. Ignore NA values.
-Can be used if any mode is acceptable.}
+\title{Calculate the first mode}
 \usage{
 first_mode(x)
 }
@@ -15,7 +13,6 @@ first_mode(x)
 The first mode of the vector.
 }
 \description{
-Calculate the first mode
 Calculate the first mode of a vector. Ignore NA values.
 Can be used if any mode is acceptable.
 }
