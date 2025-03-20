@@ -151,6 +151,38 @@ df.match <- function(dat, seq, numeric = TRUE) {
   res
 }
 
+calculate_index <- function(df, ..., weight = 1, na_replace = 0) {
+
+  conditions <- rlang::enquos(...)
+  n_conds <- length(conditions)
+
+  if (n_conds == 0) stop("Expressions must be provided")
+  if (!length(weight) %in% c(1, n_conds))
+    stop("weight must be of length 1 or equal to the number of conditions")
+  if (!length(na_replace) %in% c(1, n_conds))
+    stop("na_replace must be of length 1 or equal to the number of conditions")
+
+  weight <- rep(weight, length.out = n_conds)
+  na_replace <- rep(na_replace, length.out = n_conds)
+
+  total_score <- numeric(nrow(df))
+
+  for (i in seq_len(n_conds)) {
+    cond_result <- rlang::eval_tidy(conditions[[i]], data = df)
+    num_vec <- as.integer(cond_result)
+    current_score <- num_vec * weight[i]
+
+    current_score <- ifelse(
+      is.na(current_score),
+      na_replace[i],
+      current_score
+    )
+
+    total_score <- total_score + current_score
+  }
+  total_score
+}
+
 # 预清洗
 num_simple_cleaning <- function(x) {
   x <- chartr(
