@@ -1,0 +1,7 @@
+linters: linters_with_defaults(
+    line_length_linter = line_length_linter(120L),
+    assignment_linter = NULL,
+    object_usage_linter = NULL,
+    commented_code_linter = NULL,
+    T_and_F_symbol_linter = NULL
+  )

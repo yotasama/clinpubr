@@ -20,5 +20,5 @@ This function is useful when merging slightly different vectors,
 such as questionares of different version.
 }
 \examples{
-merge_ordered_vectors(list(c(1,3,4,5,7,10),c(2,5,6,7,8),c(1,7,5,10)))
+merge_ordered_vectors(list(c(1, 3, 4, 5, 7, 10), c(2, 5, 6, 7, 8), c(1, 7, 5, 10)))
 }

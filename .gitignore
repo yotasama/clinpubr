@@ -6,9 +6,6 @@ __pycache__/
 # C extensions
 *.so
 
-# r style
-.lintr
-
 # Distribution / packaging
 .Python
 build/

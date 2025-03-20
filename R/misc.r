@@ -1,5 +1,20 @@
 #' @include utils.R
 NULL
+#' Replace NA values with FALSE
+#' @description  Replace NA values with FALSE in logical vectors.
+#'   For other vectors, the behavior relys on R's automatic conversion rules.
+#' @param x A vector.
+#'
+#' @returns A vector with NA values replaced by FALSE.
+#' @export
+#' @examples
+#' na2false(c(TRUE, FALSE, NA, TRUE, NA))
+#' na2false(c(1, 2, NA))
+na2false <- function(x) {
+  x[is.na(x)] <- FALSE
+  x
+}
+
 #' Generate code from string vector
 #' Genearte the code that can be used to generate the string vector.
 #' @param x A string vector.
@@ -40,7 +55,7 @@ first_mode <- function(x) {
   l <- length(unique(x))
   if (l == 0) {
     NA
-  } else if (l == 1 | l == length(x)) {
+  } else if (l == 1 || l == length(x)) {
     x[1]
   } else {
     Mode(x)[1]
@@ -58,7 +73,7 @@ first_mode <- function(x) {
 #' @returns A vector that tried to keep the order.
 #' @export
 #' @examples
-#' merge_ordered_vectors(list(c(1,3,4,5,7,10),c(2,5,6,7,8),c(1,7,5,10)))
+#' merge_ordered_vectors(list(c(1, 3, 4, 5, 7, 10), c(2, 5, 6, 7, 8), c(1, 7, 5, 10)))
 merge_ordered_vectors <- function(vectors) {
   all_elements <- unique(unlist(vectors))
 
@@ -93,9 +108,8 @@ merge_ordered_vectors <- function(vectors) {
 #' @examples
 #' df <- data.frame(q1 = c("a b", "c d a", "b a"), q2 = c("a b", "a c", "d"))
 #' split_multichoice(df, quest_cols = c("q1", "q2"))
-split_multichoice <- function(df, quest_cols, split = "", remove_space = T, 
+split_multichoice <- function(df, quest_cols, split = "", remove_space = T,
                               link = "_", remove_cols = T) {
-
   for (col in quest_cols) {
     if (remove_space) {
       df[, col] <- str_remove_all(df[, col], " ")

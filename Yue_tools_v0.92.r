@@ -9,6 +9,12 @@ load_packages <- function(pkgs) {
   }
 }
 
+# 将向量中的NA替换为FALSE
+na2false <- function(x) {
+  x[is.na(x)] <- FALSE
+  x
+}
+
 # 合并表格文件
 combine_files <- function(path = ".", pattern = NULL, unique_only = T, reader_fun = openxlsx::read.xlsx, ...) {
   files <- list.files(path = path, pattern = pattern, full.names = T)
