@@ -133,22 +133,34 @@ split_multichoice <- function(df, quest_cols, split = "",
 }
 
 # 按行分组匹配数据，可用于选择题打分
-df.match <- function(dat, seq, numeric = TRUE) {
-  if (ncol(dat) != sum(sapply(seq, str_length))) {
+answer_check <- function(dat, seq, multi_column = FALSE) {
+  if ((multi_column && ncol(dat) != sum(sapply(seq, str_length)) ||
+    !multi_column && ncol(dat) != length(seq))) {
     stop("width not equal!")
   }
   icol <- 0
   res <- data.frame(matrix(NA, nrow = nrow(dat), ncol = length(seq)))
   for (i in 1:length(seq)) {
     string <- seq[i]
-    l <- str_length(string)
-    tmp <- apply(data.frame(dat[, 1:l + icol]), 1, paste0, collapse = "")
-    icol <- icol + l
-    if (numeric) {
-      res[, i] <- as.numeric(tmp == string)
+    if (multi_column) {
+      l <- str_length(string)
+      tmp = data.frame(dat[, 1:l + icol])
+      if(class(tmp[,1])=="logical"){
+        for(j in 1:l){
+          x=tmp[,j]
+          tmp[which(x),j] <- "T"
+          tmp[which(!x),j] <- "F"
+        }
+      }
+      tmp <- apply(tmp, 1, paste0, collapse = "")
+      icol <- icol + l
+    } else {
+      tmp <- dat[, i]
     }
+    res[, i] <- tmp == string
   }
-  res
+  res[is.na(res)] <- FALSE
+  return(res)
 }
 
 calculate_index <- function(df, ..., weight = 1, na_replace = 0) {
