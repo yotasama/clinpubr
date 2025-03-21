@@ -9,7 +9,7 @@ answer_check(dat, seq, multi_column = FALSE)
 \arguments{
 \item{dat}{A data frame of answers.}
 
-\item{seq}{A vector of correct answers, one element for each question. See `details`.}
+\item{seq}{A vector of correct answers, one element for each question.}
 
 \item{multi_column}{Logical, whether the multi-answers are in multiple columns.}
 }

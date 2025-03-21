@@ -12,7 +12,9 @@ RoxygenNote: 7.3.2
 Collate: 
     'answer_check.r'
     'calculate_index.r'
+    'check_nonnum.r'
     'combine_files.r'
     'utils.R'
     'misc.r'
+    'num_simple_cleaning.r'
     'split_multichoice.r'

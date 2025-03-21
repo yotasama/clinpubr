@@ -140,16 +140,16 @@ answer_check <- function(dat, seq, multi_column = FALSE) {
   }
   icol <- 0
   res <- data.frame(matrix(NA, nrow = nrow(dat), ncol = length(seq)))
-  for (i in 1:length(seq)) {
+  for (i in seq_along(seq)) {
     string <- seq[i]
     if (multi_column) {
       l <- str_length(string)
-      tmp = data.frame(dat[, 1:l + icol])
-      if(class(tmp[,1])=="logical"){
-        for(j in 1:l){
-          x=tmp[,j]
-          tmp[which(x),j] <- "T"
-          tmp[which(!x),j] <- "F"
+      tmp <- data.frame(dat[, 1:l + icol])
+      if (class(tmp[, 1]) == "logical") {
+        for (j in 1:l) {
+          x <- tmp[, j]
+          tmp[which(x), j] <- "T"
+          tmp[which(!x), j] <- "F"
         }
       }
       tmp <- apply(tmp, 1, paste0, collapse = "")
@@ -164,15 +164,16 @@ answer_check <- function(dat, seq, multi_column = FALSE) {
 }
 
 calculate_index <- function(df, ..., weight = 1, na_replace = 0) {
-
   conditions <- rlang::enquos(...)
   n_conds <- length(conditions)
 
   if (n_conds == 0) stop("Expressions must be provided")
-  if (!length(weight) %in% c(1, n_conds))
+  if (!length(weight) %in% c(1, n_conds)) {
     stop("weight must be of length 1 or equal to the number of conditions")
-  if (!length(na_replace) %in% c(1, n_conds))
+  }
+  if (!length(na_replace) %in% c(1, n_conds)) {
     stop("na_replace must be of length 1 or equal to the number of conditions")
+  }
 
   weight <- rep(weight, length.out = n_conds)
   na_replace <- rep(na_replace, length.out = n_conds)
@@ -198,8 +199,8 @@ calculate_index <- function(df, ..., weight = 1, na_replace = 0) {
 # 预清洗
 num_simple_cleaning <- function(x) {
   x <- chartr(
-    "０-９Ａ-Ｚａ-ｚ．！＠＃＄％＾＆＊（）＿＋",
-    "0-9A-Za-z.!@#$%^&*()_+", x
+    "０-９Ａ-Ｚａ-ｚ．！＠＃＄％＾＆＊：＝（）＿＋",
+    "0-9A-Za-z.!@#$%^&*:=()_+", x
   )
   x <- str_replace_all(x, c(" " = "", "\\.+" = "\\."))
   x[which(x == "")] <- NA

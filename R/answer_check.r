@@ -17,22 +17,22 @@
 #' seq <- c("A", "TFT")
 #' answer_check(dat, seq, multi_column = TRUE)
 answer_check <- function(dat, seq, multi_column = FALSE) {
-  if ((multi_column && ncol(dat) != sum(sapply(seq, str_length)) ||
-    !multi_column && ncol(dat) != length(seq))) {
+  if ((multi_column && ncol(dat) != sum(sapply(seq, str_length))) ||
+    (!multi_column && ncol(dat) != length(seq))) {
     stop("width not equal!")
   }
   icol <- 0
   res <- data.frame(matrix(NA, nrow = nrow(dat), ncol = length(seq)))
-  for (i in 1:length(seq)) {
+  for (i in seq_along(seq)) {
     string <- seq[i]
     if (multi_column) {
       l <- str_length(string)
-      tmp = data.frame(dat[, 1:l + icol])
-      if(class(tmp[,1])=="logical"){
-        for(j in 1:l){
-          x=tmp[,j]
-          tmp[which(x),j] <- "T"
-          tmp[which(!x),j] <- "F"
+      tmp <- data.frame(dat[, 1:l + icol])
+      if (class(tmp[, 1]) == "logical") {
+        for (j in 1:l) {
+          x <- tmp[, j]
+          tmp[which(x), j] <- "T"
+          tmp[which(!x), j] <- "F"
         }
       }
       tmp <- apply(tmp, 1, paste0, collapse = "")

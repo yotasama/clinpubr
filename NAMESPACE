@@ -2,11 +2,13 @@
 
 export(answer_check)
 export(calculate_index)
+export(check_nonnum)
 export(combine_files)
 export(first_mode)
 export(format_pval)
 export(merge_ordered_vectors)
 export(na2false)
+export(num_simple_cleaning)
 export(split_multichoice)
 export(vec2code)
 import(dplyr)
