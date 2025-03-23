@@ -4,9 +4,11 @@
 \alias{unit_standardize}
 \title{Standardize units of numeric data.}
 \usage{
-unit_standardize(dat, subject_col, value_col, unit_col, change_list)
+unit_standardize(df, subject_col, value_col, unit_col, change_list)
 }
 \arguments{
+\item{df}{A data frame of medical records that contains test subject, value, and unit cols.}
+
 \item{subject_col}{The name of the subject column.}
 
 \item{value_col}{The name of the value column.}
@@ -23,8 +25,6 @@ all units except the target unit. Must be specified to apply different \code{coe
 \item \code{coeffs}: The coefficients to be used for the conversion. If not specified, the
 function will use 1 for all units to be changed.
 }}
-
-\item{x}{A data frame of medical records that contains test subject, value, and unit cols.}
 }
 \value{
 A data frame with subject units standardized.

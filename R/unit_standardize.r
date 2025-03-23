@@ -1,6 +1,6 @@
 #' Standardize units of numeric data.
 #' @description Standardize units of numeric data, especially for data with medical records with different units.
-#' @param x A data frame of medical records that contains test subject, value, and unit cols.
+#' @param df A data frame of medical records that contains test subject, value, and unit cols.
 #' @param subject_col The name of the subject column.
 #' @param value_col The name of the value column.
 #' @param unit_col The name of the unit column.
@@ -23,31 +23,31 @@
 #'                  list(subject='b'),
 #'                  list(subject='c',target_unit='b'))
 #' unit_standardize(df,subject_col='subject',value_col='value',unit_col='unit',change_list=change_list)
-unit_standardize <- function(dat, subject_col, value_col, unit_col, change_list) {
+unit_standardize <- function(df, subject_col, value_col, unit_col, change_list) {
   for (i in seq_along(change_list)) {
-    flag <- dat[, subject_col] %in% change_list[[i]]$subject
-    dat[flag, c(value_col, unit_col)] <- unit_standardize_(dat[flag, c(value_col, unit_col)],
+    flag <- df[, subject_col] %in% change_list[[i]]$subject
+    df[flag, c(value_col, unit_col)] <- unit_standardize_(df[flag, c(value_col, unit_col)],
       target_unit = change_list[[i]]$target_unit,
       units2change = change_list[[i]]$units2change,
       coeffs = change_list[[i]]$coeffs
     )
   }
-  return(dat)
+  return(df)
 }
 
-unit_standardize_ <- function(dat, target_unit = NULL, units2change = NULL, coeffs = NULL) {
+unit_standardize_ <- function(df, target_unit = NULL, units2change = NULL, coeffs = NULL) {
   if (is.null(target_unit)) {
-    if (length(unique(dat[, 2])) > 1) {
-      target_unit <- first_mode(dat[, 2])
+    if (length(unique(df[, 2])) > 1) {
+      target_unit <- first_mode(df[, 2])
     } else {
-      return(dat)
+      return(df)
     }
   }
   if (length(target_unit) > 1) {
     stop("too many targets!")
   }
   if (is.null(units2change)) {
-    units2change <- setdiff(unique(dat[, 2]), target_unit)
+    units2change <- setdiff(unique(df[, 2]), target_unit)
   }
   if (!is.null(coeffs) && length(units2change) != length(coeffs)) {
     stop("coeffs should have the same length as units2change!")
@@ -55,9 +55,9 @@ unit_standardize_ <- function(dat, target_unit = NULL, units2change = NULL, coef
     coeffs <- rep(1, length(units2change))
   }
   for (i in seq_along(units2change)) {
-    flag <- dat[, 2] %in% units2change[i]
-    dat[flag, 1] <- as.numeric(dat[flag, 1]) * coeffs[i]
+    flag <- df[, 2] %in% units2change[i]
+    df[flag, 1] <- as.numeric(df[flag, 1]) * coeffs[i]
   }
-  dat[, 2] <- target_unit
-  return(dat)
+  df[, 2] <- target_unit
+  return(df)
 }
