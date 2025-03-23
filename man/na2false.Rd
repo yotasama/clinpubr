@@ -10,10 +10,10 @@ na2false(x)
 \item{x}{A vector.}
 }
 \value{
-A vector with NA values replaced by FALSE.
+A vector with \code{NA} values replaced by \code{FALSE}.
 }
 \description{
-Replace NA values with FALSE in logical vectors.
+Replace \code{NA} values with \code{FALSE} in logical vectors.
 For other vectors, the behavior relys on R's automatic conversion rules.
 }
 \examples{

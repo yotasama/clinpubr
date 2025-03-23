@@ -14,6 +14,8 @@ Collate:
     'calculate_index.r'
     'check_nonnum.r'
     'combine_files.r'
+    'cut_by.r'
+    'extract_num.r'
     'utils.R'
     'misc.r'
     'num_simple_cleaning.r'

@@ -222,43 +222,42 @@ check_nonnum <- function(x, return_idx = F, show_unique = T) {
 }
 
 # 提取数字
-extract_num <- function(x, res_type = c("first", "single or mean of range", "first and not range", "first leq 1"),
-                        allow_neg = FALSE, zero_str = c("阴性"), max_str = c("满")) {
+extract_num <- function(x, res_type = c("first", "range"), multimatch2na = FALSE, leq_1 = FALSE,
+                        allow_neg = TRUE, zero_regexp = "阴性|未见", max_regexp = "满", max_quantile = 0.95) {
   res_type <- match.arg(res_type)
-  if (!is.null(zero_str)) {
-    flag_zero <- grepl(paste0(zero_str, collapse = "|"), x)
+  if (!is.null(zero_regexp)) {
+    flag_zero <- grepl(zero_regexp, x)
   }
-  if (!is.null(max_str)) {
-    flag_max <- grepl(paste0(max_str, collapse = "|"), x)
+  if (!is.null(max_regexp)) {
+    flag_max <- grepl(max_regexp, x)
   }
   if (allow_neg) {
     my_expr <- "-?[0-9]+\\.?[0-9]*|-?\\.[0-9]+"
   } else {
     my_expr <- "[0-9]+\\.?[0-9]*|\\.[0-9]+"
   }
-  match.res <- regmatches(x, gregexpr(my_expr, x))
+  match_res <- regmatches(x, gregexpr(my_expr, x))
   if (res_type == "first") {
-    res <- as.numeric(sapply(match.res, `[`, 1))
-  } else if (res_type == "single or mean of range") {
+    res <- as.numeric(sapply(match_res, `[`, 1))
+    if (multimatch2na)
+      res[sapply(match_res, length) != 1] = NA
+    if (leq_1)
+      res[res > 1] <- NA
+  } else if (res_type == "range") {
     res <- ifelse(
-      sapply(match.res, length) == 1,
-      as.numeric(sapply(match.res, `[`, 1)),
+      sapply(match_res, length) == 1,
+      as.numeric(sapply(match_res, `[`, 1)),
       ifelse(
-        sapply(match.res, length) == 2,
-        (as.numeric(sapply(match.res, `[`, 1)) + as.numeric(sapply(match.res, `[`, 2))) / 2,
+        sapply(match_res, length) == 2,
+        (as.numeric(sapply(match_res, `[`, 1)) + as.numeric(sapply(match_res, `[`, 2))) / 2,
         NA
       )
     )
-  } else if (res_type == "first and not range") {
-    res <- ifelse(sapply(match.res, length) == 1, as.numeric(sapply(match.res, `[`, 1)), NA)
-  } else if (res_type == "first leq 1") {
-    res <- as.numeric(sapply(match.res, `[`, 1))
-    res[res > 1] <- NA
   }
-  if (!is.null(max_str)) {
-    res[flag_max] <- quantile(res, 0.95, na.rm = TRUE, names = FALSE)
+  if (!is.null(max_regexp)) {
+    res[flag_max] <- quantile(res, max_quantile, na.rm = TRUE, names = FALSE)
   }
-  if (!is.null(zero_str)) {
+  if (!is.null(zero_regexp)) {
     res[flag_zero] <- 0
   }
   res

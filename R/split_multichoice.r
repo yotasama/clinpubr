@@ -5,10 +5,10 @@ NULL
 #'   booleans whether a choice is presented.
 #' @param df A data frame.
 #' @param quest_cols A vector of column names that contain multichoice data.
-#' @param split A string to split the data. Default is "".
-#' @param remove_space A boolean to remove space in the data. Default is TRUE.
-#' @param link A string to link the column name and the option. Default is "_".
-#' @param remove_cols A boolean to remove the original columns. Default is TRUE.
+#' @param split A string to split the data. Default is `""`.
+#' @param remove_space If `TRUE`, remove space in the data.
+#' @param link A string to link the column name and the option. Default is `"_"`.
+#' @param remove_cols If `TRUE`, remove the original columns.
 #'
 #' @returns A data frame with additional columns.
 #' @export

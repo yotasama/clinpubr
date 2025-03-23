@@ -18,13 +18,13 @@ split_multichoice(
 
 \item{quest_cols}{A vector of column names that contain multichoice data.}
 
-\item{split}{A string to split the data. Default is "".}
+\item{split}{A string to split the data. Default is \code{""}.}
 
-\item{remove_space}{A boolean to remove space in the data. Default is TRUE.}
+\item{remove_space}{If \code{TRUE}, remove space in the data.}
 
-\item{link}{A string to link the column name and the option. Default is "_".}
+\item{link}{A string to link the column name and the option. Default is \code{"_"}.}
 
-\item{remove_cols}{A boolean to remove the original columns. Default is TRUE.}
+\item{remove_cols}{If \code{TRUE}, remove the original columns.}
 }
 \value{
 A data frame with additional columns.

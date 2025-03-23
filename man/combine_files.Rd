@@ -17,15 +17,14 @@ combine_files(
 
 \item{pattern}{A file pattern to filter the required data files.}
 
-\item{unique_only}{A logical value to indicate whether to remove the
-duplicated rows.}
+\item{unique_only}{A logical value to indicate whether to remove the duplicated rows.}
 
-\item{reader_fun}{A function to read the data files.}
+\item{reader_fun}{A function to read the data files. Can be \code{read.csv}, \code{openxlsx::read.xlsx}, etc.}
 
-\item{...}{Other parameters passed to the reader_fun.}
+\item{...}{Other parameters passed to the \code{reader_fun}.}
 }
 \value{
-A data.frame. If no data files found, return NULL.
+A data frame. If no data files found, return \code{NULL}.
 }
 \description{
 combine multiple data files into a single dataframe

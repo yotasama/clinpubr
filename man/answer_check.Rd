@@ -22,7 +22,7 @@ Check answers of multiple choice questions by matching the answers with the corr
 \details{
 If \code{multi_column} is TRUE, the answers for Multiple-Answer Questions should be in multiple columns
 of logicals, with each column representing a choice. The \code{seq} should be a string of \code{"T"} and \code{"F"}.
-If \code{multi_column} is FALSE, the answers for Multiple-Answer Questions should be in one column, and the function
+If \code{multi_column} is \code{FALSE}, the answers for Multiple-Answer Questions should be in one column, and the function
 would expect an exact match of \code{seq}.
 }
 \examples{

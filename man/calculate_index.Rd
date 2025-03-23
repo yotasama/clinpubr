@@ -4,16 +4,16 @@
 \alias{calculate_index}
 \title{Calculate index based on conditions}
 \usage{
-calculate_index(df, ..., weight = 1, na_replace = 0)
+calculate_index(.df, ..., .weight = 1, .na_replace = 0)
 }
 \arguments{
-\item{df}{A data frame}
+\item{.df}{A data frame}
 
 \item{...}{Conditions to evaluate}
 
-\item{weight}{Weight for each condition, should be of length 1 or equal to the number of conditions.}
+\item{.weight}{Weight for each condition, should be of length 1 or equal to the number of conditions.}
 
-\item{na_replace}{Value to replace NA, should be of length 1 or equal to the number of conditions.}
+\item{.na_replace}{Value to replace \code{NA}, should be of length 1 or equal to the number of conditions.}
 }
 \value{
 A numeric vector of index scores
@@ -22,9 +22,6 @@ A numeric vector of index scores
 Calculate index based on conditions
 }
 \examples{
-df <- data.frame(
-  x = c(1, 2, 3, 4, 5),
-  y = c(1, 2, NA, 4, NA)
-)
-calculate_index(df, x > 3, y < 3, weight = c(1, 2), na_replace = 0)
+df <- data.frame(x = c(1, 2, 3, 4, 5), y = c(1, 2, NA, 4, NA))
+calculate_index(df, x > 3, y < 3, .weight = c(1, 2), .na_replace = 0)
 }

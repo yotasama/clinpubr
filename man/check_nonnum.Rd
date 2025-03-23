@@ -9,13 +9,13 @@ check_nonnum(x, return_idx = F, show_unique = T)
 \arguments{
 \item{x}{A string vector that stores numerical values.}
 
-\item{return_idx}{A logical value. If TRUE, return the index of the elements that are not numeric.}
+\item{return_idx}{A logical value. If \code{TRUE}, return the index of the elements that are not numeric.}
 
-\item{show_unique}{A logical value. If TRUE, return the unique elements that are not numeric.
-Omitted if \code{return_idx} is TRUE.}
+\item{show_unique}{A logical value. If \code{TRUE}, return the unique elements that are not numeric.
+Omitted if \code{return_idx} is \code{TRUE}.}
 }
 \value{
-The (unique) elements that cannot be converted to numeric, and their indexes if \code{return_idx} is TRUE.
+The (unique) elements that cannot be converted to numeric, and their indexes if \code{return_idx} is \code{TRUE}.
 }
 \description{
 Finds the elements that cannot be converted to numeric in a character vector.

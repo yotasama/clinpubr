@@ -2,12 +2,11 @@
 #'
 #' @param path A string as the path to find the data files.
 #' @param pattern A file pattern to filter the required data files.
-#' @param unique_only A logical value to indicate whether to remove the 
-#'   duplicated rows.
-#' @param reader_fun A function to read the data files.
-#' @param ... Other parameters passed to the reader_fun.
+#' @param unique_only A logical value to indicate whether to remove the duplicated rows.
+#' @param reader_fun A function to read the data files. Can be `read.csv`, `openxlsx::read.xlsx`, etc.
+#' @param ... Other parameters passed to the `reader_fun`.
 #'
-#' @returns A data.frame. If no data files found, return NULL.
+#' @returns A data frame. If no data files found, return `NULL`.
 #' @export
 
 combine_files <- function(path = ".", pattern = NULL, unique_only = T, reader_fun = read.csv, ...) {

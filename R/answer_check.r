@@ -2,7 +2,7 @@
 #' @description Check answers of multiple choice questions by matching the answers with the correct sequence.
 #' @details If `multi_column` is TRUE, the answers for Multiple-Answer Questions should be in multiple columns
 #'   of logicals, with each column representing a choice. The `seq` should be a string of `"T"` and `"F"`.
-#'   If `multi_column` is FALSE, the answers for Multiple-Answer Questions should be in one column, and the function
+#'   If `multi_column` is `FALSE`, the answers for Multiple-Answer Questions should be in one column, and the function
 #'   would expect an exact match of `seq`.
 #' @param dat A data frame of answers.
 #' @param seq A vector of correct answers, one element for each question.

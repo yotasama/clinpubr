@@ -1,11 +1,11 @@
 #' @include utils.R
 NULL
 #' Replace NA values with FALSE
-#' @description  Replace NA values with FALSE in logical vectors.
+#' @description  Replace `NA` values with `FALSE` in logical vectors.
 #'   For other vectors, the behavior relys on R's automatic conversion rules.
 #' @param x A vector.
 #'
-#' @returns A vector with NA values replaced by FALSE.
+#' @returns A vector with `NA` values replaced by `FALSE`.
 #' @export
 #' @examples
 #' na2false(c(TRUE, FALSE, NA, TRUE, NA))
