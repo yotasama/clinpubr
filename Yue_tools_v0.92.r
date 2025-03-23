@@ -239,10 +239,12 @@ extract_num <- function(x, res_type = c("first", "range"), multimatch2na = FALSE
   match_res <- regmatches(x, gregexpr(my_expr, x))
   if (res_type == "first") {
     res <- as.numeric(sapply(match_res, `[`, 1))
-    if (multimatch2na)
-      res[sapply(match_res, length) != 1] = NA
-    if (leq_1)
+    if (multimatch2na) {
+      res[sapply(match_res, length) != 1] <- NA
+    }
+    if (leq_1) {
       res[res > 1] <- NA
+    }
   } else if (res_type == "range") {
     res <- ifelse(
       sapply(match_res, length) == 1,
@@ -319,16 +321,17 @@ add_lists <- function(l1, l2) {
 }
 
 # 用新元素替换原有元素，可用于列名
-replace_elements <- function(x, ori, new) {
+replace_elements <- function(x, from, to) {
   y <- x
-  idx <- match(ori, x)
-  matched <- !is.na(idx)
-  if (sum(!matched) > 0) {
-    warning("Unmatched original elements!")
+  if (length(from) != length(to)) {
+    stop("from and to should have the same length!")
   }
-  y[idx[matched]] <- new[matched]
+  for (i in seq_along(from)) {
+    y[y %in% from[i]] <- to[i]
+  }
   y
 }
+
 
 # 统一数据单位,core function,dat:value,unit
 unit_standardize_ <- function(dat, target_unit = NULL, units2change = NULL, coeffs = NULL) {
@@ -345,10 +348,12 @@ unit_standardize_ <- function(dat, target_unit = NULL, units2change = NULL, coef
   if (is.null(units2change)) {
     units2change <- setdiff(unique(dat[, 2]), target_unit)
   }
-  if (is.null(coeffs)) {
+  if (!is.null(coeffs) && length(units2change) != length(coeffs)) {
+    stop("coeffs should have the same length as units2change!")
+  }else if (is.null(coeffs)) {
     coeffs <- rep(1, length(units2change))
   }
-  for (i in 1:length(units2change)) {
+  for (i in seq_along(units2change)) {
     flag <- dat[, 2] %in% units2change[i]
     dat[flag, 1] <- as.numeric(dat[flag, 1]) * coeffs[i]
   }
@@ -359,7 +364,7 @@ unit_standardize_ <- function(dat, target_unit = NULL, units2change = NULL, coef
 # 统一数据单位
 # change_list=list(list(subject='x',target_unit='a',units2change=c('b','c'),coeffs=c(2,0.5)))
 unit_standardize <- function(dat, subject_col, value_col, unit_col, change_list) {
-  for (i in 1:length(change_list)) {
+  for (i in seq_along(change_list)) {
     flag <- dat[, subject_col] %in% change_list[[i]]$subject
     dat[flag, c(value_col, unit_col)] <- unit_standardize_(dat[flag, c(value_col, unit_col)],
       target_unit = change_list[[i]]$target_unit,

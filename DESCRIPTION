@@ -20,3 +20,4 @@ Collate:
     'misc.r'
     'num_simple_cleaning.r'
     'split_multichoice.r'
+    'unit_standardize.r'

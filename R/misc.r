@@ -91,3 +91,54 @@ merge_ordered_vectors <- function(vectors) {
   }
   return(all_elements)
 }
+
+#' Adding lists elementwise
+#' @description Combine lists by adding elements elementwise.
+#' @param l1,l2 A pair of lists.
+#'
+#' @returns A list.
+#' @export
+#' @examples
+#' l1 <- list(a = 1, b = 2)
+#' l2 <- list(a = 3, b = 4, c = 5)
+#' add_lists(l1, l2)
+add_lists <- function(l1, l2) {
+  names1 <- names(l1)
+  names2 <- names(l2)
+
+  all_names <- unique(c(names1, names2))
+
+  result <- setNames(vector("list", length(all_names)), all_names)
+  for (name in all_names) {
+    if (name %in% names1 && name %in% names2) {
+      result[[name]] <- l1[[name]] + l2[[name]]
+    } else if (name %in% names1) {
+      result[[name]] <- l1[[name]]
+    } else if (name %in% names2) {
+      result[[name]] <- l2[[name]]
+    }
+  }
+
+  return(result)
+}
+
+
+#' Replacing elements in a vector
+#' @param x A vector.
+#' @param from A vector of elements to be replaced.
+#' @param to A vector of elements to replace the original ones.
+#'
+#' @returns A vector.
+#' @export
+#' @examples
+#' replace_elements(c("a","x","1",NA,"a"),c("a","b",NA),c("A","B","XX"))
+replace_elements <- function(x, from, to) {
+  y <- x
+  if (length(from) != length(to)) {
+    stop("from and to should have the same length!")
+  }
+  for (i in seq_along(from)) {
+    y[y %in% from[i]] <- to[i]
+  }
+  y
+}
