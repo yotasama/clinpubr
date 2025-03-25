@@ -30,7 +30,7 @@ function will use 1 for all units to be changed.
 A data frame with subject units standardized.
 }
 \description{
-Standardize units of numeric data, especially for data with medical records with different units.
+Standardize units of numeric data, especially for data of medical records with different units.
 }
 \examples{
 df=data.frame(subject=c('a','a','b','b','b','c','c'), value=c(1,2,3,4,5,6,7),unit=c(NA,'x','x','x','y','a','b'))

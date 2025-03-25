@@ -16,6 +16,8 @@ Collate:
     'combine_files.r'
     'cut_by.r'
     'extract_num.r'
+    'get_valid copy.r'
+    'get_valid.r'
     'utils.R'
     'misc.r'
     'num_simple_cleaning.r'

@@ -1,5 +1,5 @@
 #' Standardize units of numeric data.
-#' @description Standardize units of numeric data, especially for data with medical records with different units.
+#' @description Standardize units of numeric data, especially for data of medical records with different units.
 #' @param df A data frame of medical records that contains test subject, value, and unit cols.
 #' @param subject_col The name of the subject column.
 #' @param value_col The name of the value column.

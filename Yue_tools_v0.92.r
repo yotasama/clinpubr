@@ -350,7 +350,7 @@ unit_standardize_ <- function(dat, target_unit = NULL, units2change = NULL, coef
   }
   if (!is.null(coeffs) && length(units2change) != length(coeffs)) {
     stop("coeffs should have the same length as units2change!")
-  }else if (is.null(coeffs)) {
+  } else if (is.null(coeffs)) {
     coeffs <- rep(1, length(units2change))
   }
   for (i in seq_along(units2change)) {
@@ -384,9 +384,9 @@ get_valid <- function(l, mode = c("first", "mid", "last"), disjoint = F) {
     if (disjoint) {
       if (mode == "first") {
         tmp[1]
-      } else if ((mode == "last") & (length(tmp) > 1)) {
+      } else if ((mode == "last") && (length(tmp) > 1)) {
         tmp[length(tmp)]
-      } else if ((mode == "mid") & (length(tmp) > 2)) {
+      } else if ((mode == "mid") && (length(tmp) > 2)) {
         tmp[round((length(tmp) + 0.5) / 2)]
       } else {
         NA
@@ -408,7 +408,7 @@ get_valid <- function(l, mode = c("first", "mid", "last"), disjoint = F) {
 }
 
 # 常见中国日期格式识别
-to_date_ <- function(x, from_excel = T, print_failure = T,
+.to_date <- function(x, from_excel = T, print_failure = T,
                      try_formats = c("%Y-%m-%d", "%Y/%m/%d", "%Y%m%d", "%Y.%m.%d")) {
   if (suppressWarnings((!is.na(as.numeric(x))) && (as.numeric(x) < 100000) && from_excel)) {
     as.Date(as.numeric(x), origin = "1899-12-30")
@@ -428,10 +428,18 @@ to_date_ <- function(x, from_excel = T, print_failure = T,
 }
 to_date <- function(x, from_excel = T, print_failure = T,
                     try_formats = c("%Y-%m-%d", "%Y/%m/%d", "%Y%m%d", "%Y.%m.%d")) {
-  y <- as.Date(sapply(x, to_date_,
-    from_excel = from_excel, print_failure = print_failure,
-    try_formats = try_formats, USE.NAMES = FALSE
-  ))
+  if (is.numeric(x)) {
+    if (from_excel) {
+      y <- as.Date(x, origin = "1899-12-30")
+    } else {
+      y <- as.Date(x)
+    }
+  } else {
+    y <- as.Date(sapply(x, .to_date,
+      from_excel = from_excel, print_failure = print_failure,
+      try_formats = try_formats, USE.NAMES = FALSE
+    ))
+  }
   y
 }
 
