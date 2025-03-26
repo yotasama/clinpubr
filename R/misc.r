@@ -131,7 +131,7 @@ add_lists <- function(l1, l2) {
 #' @returns A vector.
 #' @export
 #' @examples
-#' replace_elements(c("a","x","1",NA,"a"),c("a","b",NA),c("A","B","XX"))
+#' replace_elements(c("a", "x", "1", NA, "a"), c("a", "b", NA), c("A", "B", "XX"))
 replace_elements <- function(x, from, to) {
   y <- x
   if (length(from) != length(to)) {
@@ -141,4 +141,44 @@ replace_elements <- function(x, from, to) {
     y[y %in% from[i]] <- to[i]
   }
   y
+}
+
+#' Fill NA values with the last valid value
+#' @description Fill NA values with the last valid value. Can be used to fill excel combined cells.
+#' @param x A vector.
+#'
+#' @returns A vector.
+#' @export
+#' @examples
+#' fill_with_last(c(1, 2, NA, 4, NA, 6))
+fill_with_last <- function(x) {
+  for (i in 2:length(x)) {
+    if (is.na(x[i])) {
+      x[i] <- x[i - 1]
+    }
+  }
+  x
+}
+
+#' Unmake names
+#' @description Inverse function of `make.names`. You can use `make.names` to make colnames legal for
+#'   subsequent processing and analysis in R. Then use this function to switch back for publication.
+#' @param x A vector of "maked" names.
+#' @param ori_names A vector of original names.
+#' @param wrap_backtick If TRUE, wrap the names with backticks.
+#'
+#' @details The function will try to match the names in `x` with the names in `ori_names`.
+#'   If the names in `x` are not in `ori_names`, the function will return `NA`.
+#' @returns A vector of original names.
+#' @export
+#' @examples
+#' ori_names <- c("xx (mg/dl)", "b*x", "Covid-19")
+#' x <- c(make.names(ori_names), "aa")
+#' unmake_names(x, ori_names)
+unmake_names <- function(x, ori_names, wrap_backtick = F) {
+  out <- ori_names[match(x, make.names(ori_names))]
+  if (wrap_backtick) {
+    out[!is.na(out)] <- paste0("`", out[!is.na(out)], "`")
+  }
+  out
 }

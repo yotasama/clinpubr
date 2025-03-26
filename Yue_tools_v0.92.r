@@ -444,7 +444,7 @@ to_date <- function(x, from_excel = T, print_failure = T,
 }
 
 # excel里合并的行ID，全部填充
-format_combined_ids <- function(x) {
+fill_with_last <- function(x) {
   for (i in 2:length(x)) {
     if (is.na(x[i])) {
       x[i] <- x[i - 1]
@@ -467,7 +467,7 @@ completion_with_mode <- function(dat, cols_to_complete, group_vars = NULL) {
 }
 
 # 将make.names之后的名字匹配到原名
-unmake.names <- function(x, ori_names, wrap_backtick = T) {
+unmake_names <- function(x, ori_names, wrap_backtick = T) {
   out <- ori_names[match(x, make.names(ori_names))]
   if (wrap_backtick) {
     paste0("`", out, "`")
