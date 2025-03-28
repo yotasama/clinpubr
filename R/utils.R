@@ -1,7 +1,10 @@
+#' @import survival
+#' @import broom
 #' @import ggplot2
 #' @import dplyr
 #' @import stringr
 #' @import rlang
+#' @import forestploter
 #' @importFrom magrittr %>%
 #' @importFrom tibble as_tibble
 

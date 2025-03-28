@@ -20,5 +20,5 @@ A vector.
 Replacing elements in a vector
 }
 \examples{
-replace_elements(c("a","x","1",NA,"a"),c("a","b",NA),c("A","B","XX"))
+replace_elements(c("a", "x", "1", NA, "a"), c("a", "b", NA), c("A", "B", "XX"))
 }

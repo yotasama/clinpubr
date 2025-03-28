@@ -26,6 +26,6 @@ If the names in \code{x} are not in \code{ori_names}, the function will return \
 }
 \examples{
 ori_names <- c("xx (mg/dl)", "b*x", "Covid-19")
-x <- make.names(ori_names)
+x <- c(make.names(ori_names), "aa")
 unmake_names(x, ori_names)
 }
