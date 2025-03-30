@@ -14,7 +14,7 @@ subgroup_forest(
   decimal_est = 2,
   p_nsmall = 3,
   group_cut_quantiles = 0.5,
-  filename = "Subgroup.png",
+  filename = NULL,
   ...
 )
 }
@@ -24,14 +24,15 @@ subgroup_forest(
 \item{var_subgroups}{A character vector of variable names to be used as subgroups. It's recommended that
 the variables are categorical. If the variables are continuous, they will be cut into groups.}
 
-\item{x}{A character string of the predictor variable.}
+\item{x}{A character string of the predictor variable. Must be numerical or a factor with 2 levels.}
 
 \item{y}{A character string of the outcome variable.}
 
 \item{time}{A character string of the time variable. If \code{NULL}, logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}
 
-\item{covs}{A character vector of covariate names.}
+\item{covs}{A character vector of covariate names. If duplicated with \code{var_subgroups}, the duplicated
+covariates will be temporarily removed during the corresponding subgroup analysis.}
 
 \item{decimal_est}{An integer specifying the number of decimal places for the estimates in the plot.}
 
@@ -49,10 +50,17 @@ A \code{gtable} object.
 }
 \description{
 Create subgroup forest plot with \code{glm} or \code{coxph} models. The interaction p-values
-are calculated using likelihood ratio tests.
+are calculated using likelihood ratio tests. The forest plot would be saved if \code{filename} is provided.
 }
 \examples{
-data("heart_disease")
-res <- subgroup_forest(heart_disease, var_subgroups = c("age", "sex", "cp", "thalach", "exang"),
-                       x = "chol", y = "hd", time = "time", status = "status")
+data(cancer, package = "survival")
+subgroup_forest(cancer,
+  var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "status",
+  time = "time", covs = "ph.karno", ticks_at = c(1, 2)
+)
+cancer$dead <- cancer$status == 2
+subgroup_forest(cancer,
+  var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "dead",
+  covs = "ph.karno", ticks_at = c(1, 2)
+)
 }

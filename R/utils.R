@@ -1,4 +1,6 @@
 #' @import survival
+#' @import survminer
+#' @import rms
 #' @import broom
 #' @import ggplot2
 #' @import dplyr

@@ -182,3 +182,26 @@ unmake_names <- function(x, ori_names, wrap_backtick = F) {
   }
   out
 }
+
+#' Add covariates to a formula
+#' @description Add covariates to a formula. Support both formula and character string.
+#' @param formula A formula. Should be a formula or a character string of formula.
+#' @param covs A vector of covariates.
+#'
+#' @returns A formula.
+#' @export
+#' @examples
+#' formula_add_covs(y ~ a + b, c("c", "d"))
+formula_add_covs <- function(formula, covs) {
+  if (!class(formula) %in% c("formula", "character")) stop("formula should be a formula or a character string")
+  if (length(covs) == 0) {
+    res <- formula
+  }else {
+    if (class(formula) == "formula") {
+      res <- paste0(c(deparse(formula), covs), collapse = "+")
+    } else {
+      res <- paste0(c(formula, covs), collapse = "+")
+    }
+  }
+  as.formula(res)
+}

@@ -20,16 +20,15 @@
 #' @returns A `gtable` object.
 #' @export
 #' @examples
+#' # coxph model with time assigned
 #' data(cancer, package = "survival")
-#' subgroup_forest(cancer,
-#'   var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "status",
-#'   time = "time", covs = "ph.karno", ticks_at = c(1, 2)
-#' )
+#' subgroup_forest(cancer,var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "status",
+#'   time = "time", covs = "ph.karno", ticks_at = c(1, 2))
+#'
+#' # logistic model with time not assigned
 #' cancer$dead <- cancer$status == 2
-#' subgroup_forest(cancer,
-#'   var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "dead",
-#'   covs = "ph.karno", ticks_at = c(1, 2)
-#' )
+#' subgroup_forest(cancer, var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "dead",
+#'   covs = "ph.karno", ticks_at = c(1, 2))
 subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL, decimal_est = 2, p_nsmall = 3,
                             group_cut_quantiles = 0.5, filename = NULL, ...) {
   if (!is.numeric(data[[x]]) && (!is.factor(data[[x]]) || length(levels(data[[x]])) != 2)) {
@@ -43,10 +42,10 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
 
   if (analysis_type == "cox") {
     indf <- dplyr::select(data, all_of(c(y, x, time, covs)))
-    colnames(indf)[1:3] <- c("status", "x", "time")
+    colnames(indf)[1:3] <- c("y", "x", "time")
   } else {
     indf <- dplyr::select(data, all_of(c(y, x, covs)))
-    colnames(indf)[1:2] <- c("status", "x")
+    colnames(indf)[1:2] <- c("y", "x")
   }
 
   if (length(covs) > 0) {
@@ -76,17 +75,17 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
   sapply(var_subgroups, process_variable)
 
   formula_base <- if (analysis_type == "cox") {
-    "Surv(time, status) ~ x"
+    "Surv(time, y) ~ x"
   } else {
-    "status ~ x"
+    "y ~ x"
   }
-  formula0 <- paste(c(formula_base, covs), collapse = " + ")
+  formula0 <- formula_add_covs(formula_base, covs)
 
   if (analysis_type == "cox") {
-    model <- coxph(as.formula(formula0), data = indf)
+    model <- coxph(formula0, data = indf)
     overall_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)[1, ]
   } else {
-    model <- glm(as.formula(formula0), data = indf, family = binomial())
+    model <- glm(formula0, data = indf, family = binomial())
     overall_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)[2, ]
   }
 
@@ -106,15 +105,15 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
     tmp_covs <- covs[ori_covs != var]
 
     if (analysis_type == "cox") {
-      formula1 <- paste(c(paste0("Surv(time, status) ~ x + ", var), tmp_covs), collapse = " + ")
-      formula2 <- paste(c(paste0("Surv(time, status) ~ x * ", var), tmp_covs), collapse = " + ")
-      model1 <- coxph(as.formula(formula1), data = indf)
-      model2 <- coxph(as.formula(formula2), data = indf)
+      formula1 <- formula_add_covs(paste0("Surv(time, y) ~ x + ", var), tmp_covs)
+      formula2 <- formula_add_covs(paste0("Surv(time, y) ~ x * ", var), tmp_covs)
+      model1 <- coxph(formula1, data = indf)
+      model2 <- coxph(formula2, data = indf)
     } else {
-      formula1 <- paste(c(paste0("status ~ x + ", var), tmp_covs), collapse = " + ")
-      formula2 <- paste(c(paste0("status ~ x * ", var), tmp_covs), collapse = " + ")
-      model1 <- glm(as.formula(formula1), data = indf, family = binomial())
-      model2 <- glm(as.formula(formula2), data = indf, family = binomial())
+      formula1 <- formula_add_covs(paste0("y ~ x + ", var), tmp_covs)
+      formula2 <- formula_add_covs(paste0("y ~ x * ", var), tmp_covs)
+      model1 <- glm(formula1, data = indf, family = binomial())
+      model2 <- glm(formula2, data = indf, family = binomial())
     }
 
     tmp1 <- anova(model1, model2, test = "LRT")
@@ -136,12 +135,12 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
     for (lvl in lvls) {
       subset_data <- indf[indf[[var]] == lvl, ]
       if (analysis_type == "cox") {
-        formula_str <- paste(c("Surv(time, status) ~ x", tmp_covs), collapse = " + ")
-        model <- coxph(as.formula(formula_str), data = subset_data)
+        formula <- formula_add_covs("Surv(time, y) ~ x", tmp_covs)
+        model <- coxph(formula, data = subset_data)
         lvl_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)[1, ]
       } else {
-        formula_str <- paste(c("status ~ x", tmp_covs), collapse = " + ")
-        model <- glm(as.formula(formula_str), data = subset_data, family = binomial())
+        formula <- formula_add_covs("y ~ x", tmp_covs)
+        model <- glm(formula, data = subset_data, family = binomial())
         lvl_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)[2, ]
       }
 
