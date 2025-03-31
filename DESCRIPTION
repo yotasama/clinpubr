@@ -20,6 +20,7 @@ Collate:
     'utils.R'
     'misc.r'
     'num_simple_cleaning.r'
+    'rcs_plot.r'
     'split_multichoice.r'
     'subgroup_forest.r'
     'to_date.r'

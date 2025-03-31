@@ -14,6 +14,7 @@ subgroup_forest(
   decimal_est = 2,
   p_nsmall = 3,
   group_cut_quantiles = 0.5,
+  save_plot = TRUE,
   filename = NULL,
   ...
 )
@@ -41,7 +42,9 @@ covariates will be temporarily removed during the corresponding subgroup analysi
 \item{group_cut_quantiles}{A vector of numerical values between 0 and 1, specifying the quantile to use
 for cutting continuous subgroup variables.}
 
-\item{filename}{A character string specifying the filename for the plot. If \code{NULL}, no plot will be saved.}
+\item{save_plot}{A logical value indicating whether to save the plot.}
+
+\item{filename}{A character string specifying the filename for the plot. If \code{NULL}, a default filename is used.}
 
 \item{...}{Additional arguments passed to the \code{forestploter::forest} function.}
 }
@@ -50,17 +53,16 @@ A \code{gtable} object.
 }
 \description{
 Create subgroup forest plot with \code{glm} or \code{coxph} models. The interaction p-values
-are calculated using likelihood ratio tests. The forest plot would be saved if \code{filename} is provided.
+are calculated using likelihood ratio tests.
 }
 \examples{
+# coxph model with time assigned
 data(cancer, package = "survival")
-subgroup_forest(cancer,
-  var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "status",
-  time = "time", covs = "ph.karno", ticks_at = c(1, 2)
-)
+subgroup_forest(cancer,var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "status",
+  time = "time", covs = "ph.karno", ticks_at = c(1, 2))
+
+# logistic model with time not assigned
 cancer$dead <- cancer$status == 2
-subgroup_forest(cancer,
-  var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "dead",
-  covs = "ph.karno", ticks_at = c(1, 2)
-)
+subgroup_forest(cancer, var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "dead",
+  covs = "ph.karno", ticks_at = c(1, 2))
 }

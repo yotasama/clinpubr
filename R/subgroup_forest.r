@@ -1,6 +1,6 @@
 #' Create subgroup forest plot.
 #' @description Create subgroup forest plot with `glm` or `coxph` models. The interaction p-values
-#'   are calculated using likelihood ratio tests. The forest plot would be saved if `filename` is provided.
+#'   are calculated using likelihood ratio tests.
 #' @param data A data frame.
 #' @param var_subgroups A character vector of variable names to be used as subgroups. It's recommended that
 #'   the variables are categorical. If the variables are continuous, they will be cut into groups.
@@ -14,7 +14,8 @@
 #' @param p_nsmall An integer specifying the number of decimal places for the p-values.
 #' @param group_cut_quantiles A vector of numerical values between 0 and 1, specifying the quantile to use
 #'   for cutting continuous subgroup variables.
-#' @param filename A character string specifying the filename for the plot. If `NULL`, no plot will be saved.
+#' @param save_plot A logical value indicating whether to save the plot.
+#' @param filename A character string specifying the filename for the plot. If `NULL`, a default filename is used.
 #' @param ... Additional arguments passed to the `forestploter::forest` function.
 #'
 #' @returns A `gtable` object.
@@ -30,7 +31,7 @@
 #' subgroup_forest(cancer, var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "dead",
 #'   covs = "ph.karno", ticks_at = c(1, 2))
 subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL, decimal_est = 2, p_nsmall = 3,
-                            group_cut_quantiles = 0.5, filename = NULL, ...) {
+                            group_cut_quantiles = 0.5, save_plot = TRUE, filename = NULL, ...) {
   if (!is.numeric(data[[x]]) && (!is.factor(data[[x]]) || length(levels(data[[x]])) != 2)) {
     stop("x must be numeric or a factor with 2 levels")
   }
@@ -193,8 +194,12 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
     x_trans = "log10",
     ...
   )
-
-  if (!is.null(filename)) {
+  if (save_plot) {
+    if (is.null(filename)) {
+      filename = paste0(paste0(c("subgroup_forest_", x, paste0("with_", length(var_subgroups),
+                                                               "subgroups_and_", length(covs), "covs")),
+                               collapse = "_"), ".png")
+    }
     ggplot2::ggsave(filename, p, width = 10, height = plot_nrow / 4)
   }
   p
