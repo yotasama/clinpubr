@@ -17,6 +17,7 @@ Collate:
     'cut_by.r'
     'extract_num.r'
     'get_valid.r'
+    'int_scan.r'
     'utils.R'
     'misc.r'
     'num_simple_cleaning.r'

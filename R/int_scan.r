@@ -1,17 +1,34 @@
-#' Scan interactions between variables
+#' Scan for interactions between variables
+#' @description Scan for interactions between variables and output results as tables. Both logistic and Cox
+#'   proportional hazards regression models are supported. The predictor variables in the model are can be
+#'   used both in linear form or in ristricted cubic spline form.
+#' @param data A data frame.
+#' @param y A character string of the outcome variable.
+#' @param time A character string of the time variable. If `NULL`, logistic regression is used.
+#'   Otherwise, Cox proportional hazards regression is used.
+#' @param predictors The predictor variables to be scanned for interactions. If `NULL`, all variables
+#'   except `y` and `time` are taken as predictors.
+#' @param group_vars The group variables to be scanned for interactions. If `NULL`, all variables
+#'   except `y` and `time` are taken as group variables. The group variables should be categorical. If a
+#'   numeric variable is included, it will be splited by the median value.
+#' @param try_rcs A logical value indicating whether to perform ristricted cubic spline interaction analysis.
+#' @param save_table A logical value indicating whether to save the results as a table.
+#' @param filename The name of the file to save the results. Support both `.xlsx` and `.csv` formats.
+#' @return A data frame containing the results of the interaction analysis.
+#' @export
+#' @examples
+#' data(cancer, package = "survival")
+#' int_scan(cancer, y = "status", time = "time")
 int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL,
-                     try_rcs = TRUE, filename = NULL) {
+                     try_rcs = TRUE, save_table = TRUE, filename = NULL) {
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
   if (is.null(predictors)) {
     predictors <- setdiff(colnames(data), c(y, time))
-    print("taking all variables as interaction predictors")
+    message("Taking all variables as interaction predictors")
   }
   if (is.null(group_vars)) {
     group_vars <- setdiff(colnames(data), c(y, time))
-    print("taking all variables as group variables")
-  }
-  if (is.null(filename)) {
-    filename <- "交互作用亚组分析.xlsx"
+    message("Taking all variables as group variables")
   }
 
   tmp <- data[, group_vars]
@@ -63,9 +80,9 @@ int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL,
         }
         tmp1 <- anova(model1, model2, test = "LRT")
         p1 <- broom::tidy(tmp1)$p.value[2]
-        if (try_rcs && length(unique(data[, predictor])) > 5) {
-          formula3 <- paste0(outcome, "~rcs(", predictor, ",4) + ", var)
-          formula4 <- paste0(outcome, "~rcs(", predictor, ",4) * ", var)
+        if (try_rcs && length(unique(data[, predictor_name])) > 10) {
+          formula3 <- paste0(outcome, "~rcs(", predictor_name, ",4) + ", var)
+          formula4 <- paste0(outcome, "~rcs(", predictor_name, ",4) * ", var)
           p2 <- tryCatch(
             {
               if (analysis_type == "cox") {
@@ -99,6 +116,15 @@ int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL,
   res_df <- res_df[order(res_df$lin.pval, decreasing = F), ]
   res_df$lin.p.adj = p.adjust(res_df$lin.pval)
   res_df$rcs.p.adj = p.adjust(res_df$rcs.pval)
-  write.xlsx(res_df, filename)
-  res_df
+  if (save_table) {
+    if (is.null(filename)) {
+      filename = "interaction_scan.xlsx"
+    }
+    if (grepl(".csv", filename)) {
+      write.csv(res_df, filename, row.names = F)
+    }else if (grepl(".xlsx", filename)) {
+      openxlsx::write.xlsx(res_df, filename)
+    }
+  }
+  res_df[!is.na(res_df$predictor),]
 }

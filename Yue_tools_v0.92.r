@@ -477,157 +477,117 @@ unmake_names <- function(x, ori_names, wrap_backtick = T) {
 }
 
 # 限制性立方COX图----
-rcs_cox <- function(data, knot = 4, y, time, x, covs = NULL, ref = "median", ref.digits = 3, breaks = 20, print_pPH = T,
-                    fill.name = "Grouped by Clinical Value", fill.labels = NULL, trans = "identity",
-                    col = NULL, filename = NULL, hr.max = NULL, hist.max = NULL, xlim = NULL, ...) {
-  load_packages(c(
-    "rms", "ggplot2", "survminer", "survival", "dplyr",
-    "patchwork", "Cairo", "RColorBrewer", "grid"
-  ))
-  # if (!is.null(knot)) {warning("please be sure of knot by AIC min(default) or preliminary investigation suggested")}
-  if (missing(data)) {
-    stop("data required.")
-  }
-  if (missing(x)) {
-    stop("x required.")
-  }
-  if (missing(time)) {
-    stop("time required.")
-  }
-  if (is.null(col)) {
-    col <- brewer.pal(8, "Set2")
+rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = TRUE, ref = "median", ref_digits = 3,
+                     group_by_ref = TRUE, group_title = NULL, group_labels = NULL, group_colors = NULL, breaks = 20,
+                     rcs_color = "#e23e57", print_p_ph = T, trans = "identity", save_plot = TRUE, filename = NULL,
+                     ratio_max = NULL, hist_max = NULL, xlim = NULL, return_details = FALSE) {
+  if (!is.null(xlim) && length(xlim) != 2) stop("xlim must be a vector of length 2")
+  if (is.null(group_colors)) {
+    group_colors <- c("#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854", "#FFD92F", "#E5C494", "#B3B3B3")
   }
 
-  call <- match.call()
-  # print(call)
-  data <- as.data.frame(data)
-  y <- y
-  x <- x
-  time <- time
-  if (is.null(covs)) {
-    indf <- dplyr::select(data, y, x, time)
+  analysis_type <- ifelse(is.null(time), "logistic", "cox")
+  covs <- setdiff(covs, c(y, x, time))
+  if (analysis_type == "cox") {
+    indf <- dplyr::select(data, all_of(c(y, x, time, covs)))
+    colnames(indf)[1:3] <- c("y", "x", "time")
   } else {
-    assign("covs", covs)
-    indf <- dplyr::select(data, y, x, time, covs)
+    indf <- dplyr::select(data, all_of(c(y, x, covs)))
+    colnames(indf)[1:2] <- c("y", "x")
   }
 
-  colnames(indf)[1:3] <- c("y", "x", "time")
   nmissing <- sum(!complete.cases(indf))
   if (nmissing > 0) {
     warning(paste0(nmissing, " incomplete cases excluded."))
   }
   indf <- indf[complete.cases(indf), ]
   dd <- NULL
-  dd <= rms::datadist(indf)
+  dd <<- rms::datadist(indf)
   old <- options()
   on.exit(options(old))
   options(datadist = "dd")
 
   aics <- NULL
-  S <- Surv(indf$time, indf$y == 1)
-
+  formula_base <- if (analysis_type == "cox") {
+    "Surv(time, y) ~ "
+  } else {
+    "y ~ "
+  }
   if (is.null(knot)) {
     for (i in 3:7) {
-      if (is.null(covs)) {
-        formula <- paste0("S~ rcs(x, ", i, ")")
+      formula <- formula_add_covs(paste0(formula_base, "rcs(x, ", i, ")"), covs)
+      if (analysis_type == "cox") {
+        fit <- rms::cph(formula, data = indf, x = TRUE, y = TRUE, se.fit = TRUE,
+                        tol = 1e-25, surv = TRUE)
       } else {
-        formula <- paste0("S~ rcs(x, ", i, ")", " + ", paste0(covs, collapse = " + "))
+        fit <- rms::Glm(formula, data = indf, x = TRUE, y = TRUE, family = binomial(link = "logit"))
       }
-      fit <-
-        rms::cph(
-          as.formula(formula),
-          data = indf,
-          x = TRUE,
-          y = TRUE,
-          se.fit = TRUE,
-          tol = 1e-25,
-          surv = TRUE
-        )
-      summary(fit)
       aics <- c(aics, AIC(fit))
       kn <- seq(3, 7)[which.min(aics)]
     }
     knot <- kn
   }
-  if (is.null(covs)) {
-    formula <- paste0("S~ rcs(x, ", knot, ")")
-  } else {
-    formula <- paste0("S~ rcs(x, ", knot, ")", " + ", paste0(covs, collapse = " + "))
-  }
-  model.cox <- rms::cph(as.formula(formula), data = indf, x = TRUE, y = TRUE, se.fit = TRUE, tol = 1e-25, surv = TRUE)
-  phassump <- survival::cox.zph(model.cox, transform = "km")
-  phresidual <- survminer::ggcoxzph(phassump)
-  anova.cox <- anova(model.cox)
-  pvalue_all <- anova.cox[1, 3]
-  pvalue_nonlin <- round(anova.cox[2, 3], 3)
-  pvalue_PH <- phassump$table[1, 3]
-  pre.model <- rms::Predict(model.cox, "x", fun = exp, type = "predictions", ref.zero = T, conf.int = 0.95, digits = 2)
 
-  Q20 <- quantile(indf$x, probs = seq(0, 1, 0.05))
-  ushap <- data.frame(pre.model)
+  formula <- formula_add_covs(paste0(formula_base, "rcs(x, ", knot, ")"), covs)
+  phassump <- NULL
+  phresidual <- NULL
+  if (analysis_type == "cox") {
+    fit <- rms::cph(formula, data = indf, x = TRUE, y = TRUE, se.fit = TRUE,
+                    tol = 1e-25, surv = TRUE)
+    phassump <- survival::cox.zph(fit, transform = "km")
+    phresidual <- survminer::ggcoxzph(phassump)
+    pvalue_ph <- phassump$table[1, 3]
+  } else {
+    fit <- rms::Glm(formula, data = indf, x = TRUE, y = TRUE, family = binomial(link = "logit"))
+  }
+
+  anova_fit <- anova(fit)
+  pvalue_all <- anova_fit[1, 3]
+  pvalue_nonlin <- round(anova_fit[2, 3], 3)
+  df_pred <- rms::Predict(fit, x, fun = exp, type = "predictions", ref.zero = T, conf.int = 0.95, digits = 2)
+
+  df_pred <- data.frame(df_pred)
   if (ref == "min") {
-    ushap.cutoff <- ushap$x[which.min(ushap$yhat)]
+    ref_val <- ushap$x[which.min(ushap$yhat)]
   } else if (ref == "median") {
-    ushap.cutoff <- median(indf$x)
+    ref_val <- median(indf$x)
   } else {
-    ushap.cutoff <- ref
+    ref_val <- ref
   }
 
-  dd <= rms::datadist(indf)
-  dd[["limits"]]["Adjust to", "x"] <= ushap.cutoff
-  old <- options()
-  on.exit(options(old))
-  options(datadist = "dd")
+  dd[["limits"]]["Adjust to", "x"] <<- ref_val
 
-  model.cox <- update(model.cox)
-  pre.model <- rms::Predict(model.cox, x,
-    fun = exp, type = "predictions", ref.zero = T, conf.int = 0.95, digits = 2
-  )
-
-  newdf1 <- as.data.frame(dplyr::select(pre.model, x, yhat, lower, upper))
+  fit <- update(fit)
+  df_pred <- rms::Predict(fit, x, fun = exp, type = "predictions", ref.zero = T, conf.int = 0.95, digits = 2)
+  df_rcs <- as.data.frame(dplyr::select(df_pred, all_of(c("x", "yhat", "lower", "upper"))))
   if (!is.null(xlim)) {
-    newdf1 <- filter(newdf1, (x >= xlim[1]) & (x <= xlim[2]))
+    df_rcs <- filter(df_rcs, (x >= xlim[1]) & (x <= xlim[2]))
+  }else {
+    xlim = c(min(df_rcs$x), max(df_rcs$x))
   }
-  colnames(newdf1) <- c("x", "y", "lower", "upper")
-  xmin <- min(newdf1[, "x"])
-  xmax <- max(newdf1[, "x"])
-  if (is.null(hr.max)) {
-    ymax1 <- ceiling(max(newdf1[, "upper"]))
+  colnames(df_rcs) <- c("x", "y", "lower", "upper")
+  if (is.null(ratio_max)) {
+    ymax1 <- ceiling(min(max(df_rcs[, "upper"], na.rm = T), max(df_rcs[, "y"], na.rm = T) * 1.5))
   } else {
-    ymax1 <- hr.max
+    ymax1 <- ratio_max
   }
-  newdf2 <- indf[indf[, "x"] >= xmin & indf[, "x"] <= xmax, ]
-  if (length(breaks) == 1) {
-    bks <- seq(min(newdf2$x), max(newdf2$x), length.out = breaks + 1)
-    if (!ushap.cutoff %in% bks) {
-      bks <- seq(min(newdf2$x), max(newdf2$x), length.out = breaks)
-      h <- (max(newdf2$x) - min(newdf2$x)) / (breaks - 1)
-      bks <- c(bks[1] - h, bks)
-      tmp <- ushap.cutoff - bks
-      tmp <- tmp[tmp > 0]
-      bks <- bks + tmp[length(tmp)]
-    }
-    breaks <- bks
-  }
-  h <- hist(newdf2$x, breaks = breaks, right = FALSE, plot = F)
+  df_rcs$upper[df_rcs$upper > ymax1] <- ymax1
 
-  newdf3 <- data.frame(x = h[["mids"]], freq = h[["counts"]], pct = h[["counts"]] / sum(h[["counts"]]))
-
-  if (is.null(hist.max)) {
-    ymax2 <- ceil(max(newdf3$pct * 1.5) * 20) * 5
-  } else {
-    ymax2 <- hist.max
-  }
-  scale_factor <- ymax2 / ymax1
   xtitle <- x
-  ytitle1 <- ifelse(is.null(covs), "Unadjusted HR (95% CI)", "Adjusted HR (95% CI)")
+  if (analysis_type == "cox") {
+    ytitle1 <- ifelse(length(covs) == 0, "Unadjusted HR (95% CI)", "Adjusted HR (95% CI)")
+  } else {
+    ytitle1 <- ifelse(length(covs) == 0, "Unadjusted OR (95% CI)", "Adjusted OR (95% CI)")
+  }
+
   ytitle2 <- "Percentage of Population (%)"
-  offsetx1 <- (xmax - xmin) * 0.02
+  offsetx1 <- (xlim[2] - xlim[1]) * 0.02
   offsety1 <- ymax1 * 0.02
-  labelx1 <- xmin + (xmax - xmin) * 0.05
+  labelx1 <- xlim[1] + (xlim[2] - xlim[1]) * 0.15
   labely1 <- ymax1 * 0.9
-  label1 <- paste0("Estimation", "\n", "95% CI")
-  labelx2 <- xmin + (xmax - xmin) * 0.6
+  label1_1 <- "Estimation"
+  label1_2 <- "95% CI"
+  labelx2 <- xlim[1] + (xlim[2] - xlim[1]) * 0.95
   labely2 <- ymax1 * 0.9
   label2 <- paste0(
     "P-overall ",
@@ -635,39 +595,61 @@ rcs_cox <- function(data, knot = 4, y, time, x, covs = NULL, ref = "median", ref
     "\nP-non-linear ",
     ifelse(pvalue_nonlin < 0.001, "< 0.001", paste0("= ", sprintf("%.3f", pvalue_nonlin)))
   )
-  if (print_pPH) {
+  if (analysis_type == "cox" && print_p_ph) {
     label2 <- paste0(
       label2, "\nP-proportional ",
-      ifelse(pvalue_PH < 0.001, "< 0.001", paste0("= ", sprintf("%.3f", pvalue_PH)))
+      ifelse(pvalue_ph < 0.001, "< 0.001", paste0("= ", sprintf("%.3f", pvalue_ph)))
     )
   }
 
+  p <- ggplot2::ggplot()
 
-  newdf3$Group <- cut_by(newdf3$x, ushap.cutoff, labels = fill.labels, label_type = "LMH")
-  tmp_group <- cut_by(indf$x, ushap.cutoff, labels = fill.labels, label_type = "LMH")
-  levels(newdf3$Group) <- paste0(levels(newdf3$Group), " (n=", table(tmp_group), ")")
-  grob <- grobTree(textGrob(paste0("N = ", nrow(indf)),
-    x = 0.5, y = 0.9,
-    gp = gpar(col = "black", fontsize = 11)
-  ))
+  if (add_hist) {
+    df_hist <- indf[indf[, "x"] >= xlim[1] & indf[, "x"] <= xlim[2], ]
+    if (length(breaks) == 1) {
+      breaks <- break_at(xlim, breaks, ref_val)
+    }
+    h <- hist(df_hist$x, breaks = breaks, right = FALSE, plot = F)
 
-  plot.ushap.type2 <- ggplot2::ggplot() +
-    geom_bar(
-      data = newdf3, aes(x = x, y = pct * 100 / scale_factor, fill = Group),
-      stat = "identity", # width=0.05,
-      # fill="#f9f7f7",
-      # color="white"
-    ) +
-    scale_fill_manual(values = col, name = fill.name) +
+    df_hist_plot <- data.frame(x = h[["mids"]], freq = h[["counts"]], pct = h[["counts"]] / sum(h[["counts"]]))
+
+    if (is.null(hist_max)) {
+      ymax2 <- ceiling(max(df_hist_plot$pct * 1.5) * 20) * 5
+    } else {
+      ymax2 <- hist_max
+    }
+    scale_factor <- ymax2 / ymax1
+
+    if (group_by_ref) {
+      df_hist_plot$Group <- cut_by(df_hist_plot$x, ref_val, labels = group_labels, label_type = "LMH")
+      tmp_group <- cut_by(indf$x, ref_val, labels = group_labels, label_type = "LMH")
+      levels(df_hist_plot$Group) <- paste0(levels(df_hist_plot$Group), " (n=", table(tmp_group), ")")
+      p <- p +
+        geom_bar(
+          data = df_hist_plot,
+          aes(x = x, y = pct * 100 / scale_factor, fill = Group),
+          stat = "identity",
+        ) +
+        scale_fill_manual(values = group_colors, name = group_title)
+    }else {
+      p <- p +
+        geom_bar(
+          data = df_hist_plot,
+          aes(x = x, y = pct * 100 / scale_factor, fill = "1"),
+          stat = "identity", show.legend = F
+        ) +
+        scale_fill_manual(values = group_colors)
+    }
+  }
+
+  p <- p +
     geom_hline(yintercept = 1, linewidth = 1, linetype = 2, color = "grey") +
     geom_ribbon(
-      data = newdf1, aes(x = x, ymin = lower, ymax = upper),
-      fill = "#e23e57", alpha = 0.1
+      data = df_rcs, aes(x = x, ymin = lower, ymax = upper),
+      fill = rcs_color, alpha = 0.1
     ) +
-    # geom_line(data=newdf1, aes(x=x, y=lower), linetype=2, color="#ff9999",linewidth=0.8) +
-    # geom_line(data=newdf1, aes(x=x, y=upper), linetype=2, color="#ff9999",linewidth=0.8) +
-    geom_line(data = newdf1, aes(x = x, y = y), color = "#e23e57", linewidth = 1) +
-    geom_point(aes(x = ushap.cutoff, y = 1), color = "#e23e57", size = 2) +
+    geom_line(data = df_rcs, aes(x = x, y = y), color = rcs_color, linewidth = 1) +
+    geom_point(aes(x = ref_val, y = 1), color = rcs_color, size = 2) +
     geom_segment(
       aes(
         x = c(labelx1 - offsetx1 * 5, labelx1 - offsetx1 * 5),
@@ -676,26 +658,43 @@ rcs_cox <- function(data, knot = 4, y, time, x, covs = NULL, ref = "median", ref
         yend = c(labely1 + offsety1, labely1 - offsety1)
       ),
       linetype = 1,
-      color = "#e23e57",
+      color = rcs_color,
       linewidth = 1,
       alpha = c(1, 0.1)
     ) +
     geom_text(aes(
-      x = ushap.cutoff, y = 0.9,
-      label = paste0("Ref=", format(ushap.cutoff, digits = ref.digits))
+      x = ref_val, y = 0.9,
+      label = paste0("Ref=", format(ref_val, digits = ref_digits))
     )) +
-    geom_text(aes(x = labelx1, y = labely1, label = label1), hjust = 0) +
-    geom_text(aes(x = labelx2, y = labely2, label = label2), hjust = 0) +
-    annotation_custom(grob) +
-    scale_x_continuous(xtitle, expand = c(0.01, 0.01)) +
-    scale_y_continuous(
-      ytitle1,
-      expand = c(0, 0),
-      limit = c(0, ymax1),
-      transform = trans,
-      sec.axis = sec_axis(
-        name = ytitle2, transform = ~ . * scale_factor,
+    geom_text(aes(x = labelx1, y = labely1 + offsety1, label = label1_1), hjust = 0) +
+    geom_text(aes(x = labelx1, y = labely1 - offsety1, label = label1_2), hjust = 0) +
+    geom_text(aes(x = labelx2, y = labely2, label = label2), hjust = 1) +
+    scale_x_continuous(xtitle, limits = xlim, expand = c(0.01, 0.01))
+  if (add_hist) {
+    p <- p +
+      scale_y_continuous(
+        ytitle1,
+        expand = c(0, 0),
+        limit = c(0, ymax1),
+        transform = trans,
+        sec.axis = sec_axis(
+          name = ytitle2, transform = ~ . * scale_factor,
+        )
       )
+  } else {
+    p <- p +
+      scale_y_continuous(
+        ytitle1,
+        expand = c(0, 0),
+        limit = c(0, ymax1),
+        transform = trans
+      )
+  }
+  p <- p +
+    annotate("text", label = paste0("N = ", nrow(indf)), size = 5,
+      x = mean(ggplot_build(p)$layout$panel_params[[1]]$x.range), # x轴中点
+      y = max(ggplot_build(p)$layout$panel_params[[1]]$y.range) * 0.9,  # y轴最大值
+      hjust = 0.5, vjust = 0.5
     ) +
     theme_bw() +
     theme(
@@ -705,75 +704,119 @@ rcs_cox <- function(data, knot = 4, y, time, x, covs = NULL, ref = "median", ref
       legend.position = "top"
     )
 
-  fname <- ifelse(is.null(filename), paste0(paste0(c(x, covs, paste0("knot", knot)), collapse = "_"), ".png"), filename)
-  ggsave(fname, plot.ushap.type2,
-    width = 6, height = 6,
-    # device = cairo_pdf, family = "Times"
-  )
+  if (save_plot) {
+    if (is.null(filename)) {
+      filename = paste0(paste0(c(x, paste0(knot, "knot"), paste0("with_", length(covs), "covs")),
+                               collapse = "_"), ".png")
+    }
+    ggsave(filename, p, width = 6, height = 6)
+  }
 
-  message.print2 <- list(
-    aics = aics, knot = knot, n.valid = nrow(indf), n.plot = nrow(newdf2),
-    phassump = phassump, phresidual = phresidual,
-    # Q20=Q20,
-    pvalue_all = pvalue_all,
-    pvalue_nonlin = pvalue_nonlin,
-    ref = ushap.cutoff, plot = plot.ushap.type2
-  )
-  return(message.print2)
+  if (return_details) {
+    details <- list(
+      aics = aics, knot = knot, n.valid = nrow(indf), n.plot = nrow(df_hist),
+      phassump = phassump, phresidual = phresidual,
+      pvalue_all = pvalue_all,
+      pvalue_nonlin = pvalue_nonlin,
+      ref = ref_val, plot = p
+    )
+    return(details)
+  }else {
+    return(p)
+  }
+}
+
+# Generate breaks for histogram
+break_at = function(xlim, breaks, ref_val) {
+  if (length(xlim) != 2) stop("xlim must be a vector of length 2")
+  bks <- seq(xlim[1], xlim[2], length.out = breaks + 1)
+  if (!ref_val %in% bks) {
+    bks <- seq(xlim[1], xlim[2], length.out = breaks)
+    h <- (xlim[2] - xlim[1]) / (breaks - 1)
+    bks <- c(bks[1] - h, bks)
+    tmp <- ref_val - bks
+    tmp <- tmp[tmp > 0]
+    bks <- bks + tmp[length(tmp)]
+  }
+  bks
 }
 
 # 交互作用筛查----
-int.scan <- function(data, y, time, targets = NULL, group.vars = NULL, group.cut.quantiles = 0.5, filename = NULL) {
-  load_packages(c("survival", "openxlsx", "dplyr", "broom", "ggplot2", "splines", "rms"))
-  # if (!is.null(knot)) {warning("please be sure of knot by AIC min(default) or preliminary investigation suggested")}
-  if (missing(data)) {
-    stop("data required.")
+int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL,
+                     try_rcs = TRUE, save_table = TRUE, filename = NULL) {
+  analysis_type <- ifelse(is.null(time), "logistic", "cox")
+  if (is.null(predictors)) {
+    predictors <- setdiff(colnames(data), c(y, time))
+    message("Taking all variables as interaction predictors")
   }
-  if (missing(y)) {
-    stop("y (outcome) required.")
-  }
-  if (missing(time)) {
-    stop("time required.")
-  }
-  if (is.null(group.vars)) {
-    group.vars <- setdiff(colnames(data), c(y, time))
-  }
-  if (is.null(targets)) {
-    targets <- group.vars
-    print("taking all variables as interaction targets")
-  }
-  if (is.null(filename)) {
-    filename <- "交互作用亚组分析.xlsx"
+  if (is.null(group_vars)) {
+    group_vars <- setdiff(colnames(data), c(y, time))
+    message("Taking all variables as group variables")
   }
 
-  res.table <- NULL
-  for (target in targets) {
-    dat <- data
-    for (var in group.vars) {
-      if (var != target) {
-        if (is.numeric(dat[, var]) && length(unique(dat[, var])) > 5) {
-          dat[, var] <- cut_by(dat[, var], group.cut.quantiles, breaks_as_quantiles = T)
-        } else {
-          dat[, var] <- as.factor(dat[, var])
-        }
-        if (sum(complete.cases(dat[, c(time, y, target, var)])) < 10) {
+  tmp <- data[, group_vars]
+  for (var in group_vars) {
+    if (is.numeric(tmp[[var]]) && length(unique(tmp[[var]])) > 5) {
+      tmp[[var]] <- cut_by(tmp[[var]], 0.5, breaks_as_quantiles = T)
+    } else {
+      tmp[[var]] <- as.factor(tmp[[var]])
+    }
+  }
+  colnames(tmp) <- paste0(group_vars, "_tmp")
+
+  tmp2 <- data[, predictors]
+  colnames(tmp2) <- paste0(predictors, "_p")
+  data <- cbind(data[, c(y, time), drop = F], tmp, tmp2)
+
+  if (try_rcs) {
+    res_df <- data.frame(matrix(NA, nrow = length(predictors) * length(group_vars), ncol = 5))
+    colnames(res_df) <- c("predictor", "group.by", "nvalid", "lin.pval", "rcs.pval")
+  }else {
+    res_df <- data.frame(matrix(NA, nrow = length(predictors) * length(group_vars), ncol = 4))
+    colnames(res_df) <- c("predictor", "group.by", "nvalid", "lin.pval")
+  }
+  irow <- 1
+  for (predictor in predictors) {
+    predictor_name = paste0(predictor, "_p")
+    for (var in group_vars) {
+      var_name = paste0(var, "_tmp")
+      if (var != predictor) {
+        nvalid = sum(complete.cases(data[, c(time, y, predictor_name, var_name)]))
+        if (nvalid < 10) {
           next
         }
-        formula1 <- paste0("Surv(", time, ",", y, ")~", target, "+", var)
-        formula2 <- paste0("Surv(", time, ",", y, ")~", target, "*", var)
-        model1 <- coxph(as.formula(formula1), data = dat)
-        model2 <- coxph(as.formula(formula2), data = dat)
+        if (analysis_type == "cox") {
+          outcome <- paste0("Surv(", time, ",", y, ")")
+        }else {
+          outcome <- y
+        }
+
+        formula1 <- paste0(outcome, "~", predictor_name, "+", var_name)
+        formula2 <- paste0(outcome, "~", predictor_name, "*", var_name)
+
+        if (analysis_type == "cox") {
+          model1 <- coxph(as.formula(formula1), data = data)
+          model2 <- coxph(as.formula(formula2), data = data)
+        }else {
+          model1 <- glm(as.formula(formula1), data = data, family = binomial())
+          model2 <- glm(as.formula(formula2), data = data, family = binomial())
+        }
         tmp1 <- anova(model1, model2, test = "LRT")
-        p1 <- tidy(tmp1)[[2, 5]]
-        if (length(unique(dat[, target])) > 5) {
+        p1 <- broom::tidy(tmp1)$p.value[2]
+        if (try_rcs && length(unique(data[, predictor_name])) > 10) {
+          formula3 <- paste0(outcome, "~rcs(", predictor_name, ",4) + ", var)
+          formula4 <- paste0(outcome, "~rcs(", predictor_name, ",4) * ", var)
           p2 <- tryCatch(
             {
-              formula3 <- paste0("Surv(", time, ",", y, ")~rcs(", target, ",4) + ", var)
-              formula4 <- paste0("Surv(", time, ",", y, ")~rcs(", target, ",4) * ", var)
-              model3 <- coxph(as.formula(formula3), data = dat)
-              model4 <- coxph(as.formula(formula4), data = dat)
+              if (analysis_type == "cox") {
+                model3 <- coxph(as.formula(formula1), data = data)
+                model4 <- coxph(as.formula(formula2), data = data)
+              }else {
+                model3 <- glm(as.formula(formula1), data = data, family = binomial())
+                model4 <- glm(as.formula(formula2), data = data, family = binomial())
+              }
               tmp2 <- anova(model3, model4, test = "LRT")
-              tidy(tmp2)[[2, 5]]
+              broom::tidy(tmp2)$p.value[2]
             },
             error = function(e) {
               NA
@@ -782,21 +825,31 @@ int.scan <- function(data, y, time, targets = NULL, group.vars = NULL, group.cut
         } else {
           p2 <- NA
         }
-
-        # print(tidy(tmp2))
-        tmp <- data.frame(
-          target = target, group.by = var,
-          nvalid = sum(complete.cases(dat[, c(time, y, target, var)])),
-          lin.pval = p1, rcs.pval = p2
-        )
-        res.table <- rbind(res.table, tmp)
+        res_df$predictor[irow] <- predictor
+        res_df$group.by[irow] <- var
+        res_df$nvalid[irow] <- nvalid
+        res_df$lin.pval[irow] <- p1
+        if (try_rcs) {
+          res_df$rcs.pval[irow] <- p2
+        }
+        irow <- irow + 1
       }
     }
   }
-  res.table <- res.table[order(res.table$lin.pval, decreasing = F), ]
-  # res.table$lin.p.adj=p.adjust(res.table$lin.pval)
-  # res.table$rcs.p.adj=p.adjust(res.table$rcs.pval)
-  write.xlsx(res.table, filename)
+  res_df <- res_df[order(res_df$lin.pval, decreasing = F), ]
+  res_df$lin.p.adj = p.adjust(res_df$lin.pval)
+  res_df$rcs.p.adj = p.adjust(res_df$rcs.pval)
+  if (save_table) {
+    if (is.null(filename)) {
+      filename = "interaction_scan.xlsx"
+    }
+    if (grepl(".csv", filename)) {
+      write.csv(res_df, filename, row.names = F)
+    }else if (grepl(".xlsx", filename)) {
+      openxlsx::write.xlsx(res_df, filename)
+    }
+  }
+  res_df[!is.na(res_df$predictor),]
 }
 
 # 交互作用作图----

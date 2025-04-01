@@ -121,7 +121,6 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
   }
 
   dd[["limits"]]["Adjust to", "x"] <<- ref_val
-  # options(datadist = "dd")
 
   fit <- update(fit)
   df_pred <- rms::Predict(fit, x, fun = exp, type = "predictions", ref.zero = T, conf.int = 0.95, digits = 2)
@@ -168,10 +167,6 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
     )
   }
 
-  # grob <- grobTree(textGrob(paste0("N = ", nrow(indf)),
-  #   x = 0.5, y = 0.9,
-  #   gp = gpar(col = "black", fontsize = 11)
-  # ))
   p <- ggplot2::ggplot()
 
   if (add_hist) {
@@ -239,7 +234,6 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
     geom_text(aes(x = labelx1, y = labely1 + offsety1, label = label1_1), hjust = 0) +
     geom_text(aes(x = labelx1, y = labely1 - offsety1, label = label1_2), hjust = 0) +
     geom_text(aes(x = labelx2, y = labely2, label = label2), hjust = 1) +
-    # annotation_custom(grob) +
     scale_x_continuous(xtitle, limits = xlim, expand = c(0.01, 0.01))
   if (add_hist) {
     p <- p +
