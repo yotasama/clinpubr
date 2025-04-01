@@ -46,7 +46,6 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
                      group_by_ref = TRUE, group_title = NULL, group_labels = NULL, group_colors = NULL, breaks = 20,
                      rcs_color = "#e23e57", print_p_ph = T, trans = "identity", save_plot = TRUE, filename = NULL,
                      ratio_max = NULL, hist_max = NULL, xlim = NULL, return_details = FALSE) {
-  # if (!is.null(knot)) {warning("please be sure of knot by AIC min(default) or preliminary investigation suggested")}
   if (!is.null(xlim) && length(xlim) != 2) stop("xlim must be a vector of length 2")
   if (is.null(group_colors)) {
     group_colors <- c("#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854", "#FFD92F", "#E5C494", "#B3B3B3")
