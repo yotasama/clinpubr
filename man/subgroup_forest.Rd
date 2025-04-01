@@ -56,8 +56,8 @@ Create subgroup forest plot with \code{glm} or \code{coxph} models. The interact
 are calculated using likelihood ratio tests.
 }
 \examples{
-# coxph model with time assigned
 data(cancer, package = "survival")
+# coxph model with time assigned
 subgroup_forest(cancer,var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "status",
   time = "time", covs = "ph.karno", ticks_at = c(1, 2))
 

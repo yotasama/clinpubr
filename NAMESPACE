@@ -2,6 +2,7 @@
 
 export(add_lists)
 export(answer_check)
+export(break_at)
 export(calculate_index)
 export(check_nonnum)
 export(combine_files)

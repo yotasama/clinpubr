@@ -19,13 +19,15 @@ rcs_plot(
   group_labels = NULL,
   group_colors = NULL,
   breaks = 20,
+  rcs_color = "#e23e57",
   print_p_ph = T,
   trans = "identity",
+  save_plot = TRUE,
   filename = NULL,
   ratio_max = NULL,
-  hist.max = NULL,
+  hist_max = NULL,
   xlim = NULL,
-  ...
+  return_details = FALSE
 )
 }
 \arguments{
@@ -53,24 +55,48 @@ predictor variable that has the minium predicted risk is used. If a numeric valu
 \item{group_by_ref}{A logical value. If \code{TRUE}, split the histogram at the reference value from \code{ref} into
 two groups.}
 
-\item{group_title}{A character string of the title for the group.}
+\item{group_title}{A character string of the title for the group. Ignored if \code{group_by_ref} is \code{FALSE}.}
 
 \item{group_labels}{A character vector of the labels for the group. If \code{NULL}, the labels are generated
-automatically.}
+automatically. Ignored if \code{group_by_ref} is \code{FALSE}.}
 
-\item{group_colors}{A character vector of colors for the plot. If \code{NULL}, the default colors are used.}
+\item{group_colors}{A character vector of colors for the plot. If \code{NULL}, the default colors are used.
+If \code{group_by_ref} is \code{FALSE}, the first color is used as fill color.}
 
-\item{breaks}{The number of breaks for the histogram. Default is 20.}
+\item{breaks}{The number of breaks for the histogram.}
+
+\item{rcs_color}{The color for the restricted cubic spline.}
 
 \item{print_p_ph}{A logical value. If \code{TRUE}, print the p-value of the proportional hazards test
 (\code{survival::cox.zph()}) in the plot.}
 
-\item{trans}{The transformation for the y axis in the plot.}
+\item{trans}{The transformation for the y axis in the plot.
+Passed to \code{ggplot2::scale_y_continuous(transform = trans)}.}
+
+\item{save_plot}{A logical value indicating whether to save the plot.}
 
 \item{filename}{A character string specifying the filename for the plot. If \code{NULL}, a default filename is used.}
 
-\item{save_plot}{A logical value indicating whether to save the plot.}
+\item{ratio_max}{The maximum ratio of the plot. If \code{NULL}, the maximum ratio is determined automatically.}
+
+\item{hist_max}{The maximum value for the histogram. If \code{NULL}, the maximum value is determined automatically.}
+
+\item{xlim}{The x-axis limits for the plot. If \code{NULL}, the limits are determined automatically.}
+
+\item{return_details}{A logical value indicating whether to return the details of the plot.}
+}
+\value{
+A ggplot2 object, or a list containing the ggplot2 object and other details if \code{return_details} is \code{TRUE}.
 }
 \description{
 Plot ristricted cubic spline based on rms package. Support both logistic and cox model.
+}
+\examples{
+data(cancer, package = "survival")
+# coxph model with time assigned
+rcs_plot(cancer, x = "age", y = "status", time = "time", covs = "ph.karno")
+
+# logistic model with time not assigned
+cancer$dead <- cancer$status == 2
+rcs_plot(cancer, x = "age", y = "dead", covs = "ph.karno")
 }
