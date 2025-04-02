@@ -23,7 +23,7 @@
 #' @examples
 #' data(cancer, package = "survival")
 #' # coxph model with time assigned
-#' subgroup_forest(cancer,var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "status",
+#' subgroup_forest(cancer, var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "status",
 #'   time = "time", covs = "ph.karno", ticks_at = c(1, 2))
 #'
 #' # logistic model with time not assigned
@@ -38,8 +38,10 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
 
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
   covs <- setdiff(covs, c(y, x, time))
-  var_subgroups <- setdiff(var_subgroups, c(y, x, time))
+  if (length(covs) == 0) covs <- NULL
   ori_covs <- covs
+  var_subgroups <- setdiff(var_subgroups, c(y, x, time))
+  if (length(var_subgroups) == 0) stop("No valid var_subgroups specified.")
 
   if (analysis_type == "cox") {
     indf <- dplyr::select(data, all_of(c(y, x, time, covs)))
@@ -49,7 +51,7 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
     colnames(indf)[1:2] <- c("y", "x")
   }
 
-  if (length(covs) > 0) {
+  if (!is.null(covs)) {
     covs <- paste0("cov", seq_along(covs))
     start_col <- ifelse(analysis_type == "cox", 4, 3)
     colnames(indf)[start_col:(start_col + length(covs) - 1)] <- covs
@@ -196,9 +198,13 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
   )
   if (save_plot) {
     if (is.null(filename)) {
-      filename = paste0(paste0(c("subgroup_forest_", x, paste0("with_", length(var_subgroups),
-                                                               "subgroups_and_", length(covs), "covs")),
-                               collapse = "_"), ".png")
+      filename <- paste0(paste0(
+        c("subgroup_forest_", x, paste0(
+          "with_", length(var_subgroups),
+          "subgroups_and_", length(covs), "covs"
+        )),
+        collapse = "_"
+      ), ".png")
     }
     ggplot2::ggsave(filename, p, width = 10, height = plot_nrow / 4)
   }

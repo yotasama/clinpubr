@@ -53,6 +53,7 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
 
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
   covs <- setdiff(covs, c(y, x, time))
+  if (length(covs) == 0) covs <- NULL
   if (analysis_type == "cox") {
     indf <- dplyr::select(data, all_of(c(y, x, time, covs)))
     colnames(indf)[1:3] <- c("y", "x", "time")
@@ -140,9 +141,9 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
 
   xtitle <- x
   if (analysis_type == "cox") {
-    ytitle1 <- ifelse(length(covs) == 0, "Unadjusted HR (95% CI)", "Adjusted HR (95% CI)")
+    ytitle1 <- ifelse(is.null(covs), "Unadjusted HR (95% CI)", "Adjusted HR (95% CI)")
   } else {
-    ytitle1 <- ifelse(length(covs) == 0, "Unadjusted OR (95% CI)", "Adjusted OR (95% CI)")
+    ytitle1 <- ifelse(is.null(covs), "Unadjusted OR (95% CI)", "Adjusted OR (95% CI)")
   }
 
   ytitle2 <- "Percentage of Population (%)"
