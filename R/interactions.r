@@ -86,11 +86,11 @@ int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL,
           p2 <- tryCatch(
             {
               if (analysis_type == "cox") {
-                model3 <- coxph(as.formula(formula1), data = data)
-                model4 <- coxph(as.formula(formula2), data = data)
+                model3 <- coxph(as.formula(formula3), data = data)
+                model4 <- coxph(as.formula(formula4), data = data)
               }else {
-                model3 <- glm(as.formula(formula1), data = data, family = binomial())
-                model4 <- glm(as.formula(formula2), data = data, family = binomial())
+                model3 <- glm(as.formula(formula3), data = data, family = binomial())
+                model4 <- glm(as.formula(formula4), data = data, family = binomial())
               }
               tmp2 <- anova(model3, model4, test = "LRT")
               broom::tidy(tmp2)$p.value[2]
@@ -130,17 +130,11 @@ int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL,
 }
 
 #' Plot interactions
-int_plot <- function(data, y, time = NULL, predictor = NULL, group_var = NULL, covs = NULL, group_breaks = 0.5,
+int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, group_breaks = 0.5,
                      breaks_as_quantiles = T, group_labels = NULL, group_colors = NULL, predictor_as_factor = T,
                      save_plot = TRUE, filename = NULL, height = 4, width = 4, xlab = predictor,
                      group_title = group_var, ...) {
 
-  if (is.null(predictor)) {
-    stop("predictor (continuous) required.")
-  }
-  if (is.null(group_var)) {
-    stop("group_var (categorical) required.")
-  }
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
   if (is.null(group_colors)) {
     group_colors <- c("#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854", "#FFD92F", "#E5C494", "#B3B3B3")
@@ -316,4 +310,54 @@ int_plot <- function(data, y, time = NULL, predictor = NULL, group_var = NULL, c
       }
     )
   }
+}
+
+#' Calculate interaction p-value
+#' @description This function calculates the interaction p-value between a predictor and a group variable in a
+#'   logistic or Cox proportional hazards model.
+#' @param data A data frame.
+#' @param y A character string of the outcome variable.
+#' @param predictor A character string of the predictor variable.
+#' @param group_var A character string of the group variable. The variable should be categorical. If a
+#'   numeric variable is provided, it will be splited by the median value.
+#' @param time A character string of the time variable. If `NULL`, logistic regression is used.
+#'   Otherwise, Cox proportional hazards regression is used.
+#' @param covs A character vector of covariate names.
+#' @param rcs_knots The number of rcs knots. If `NULL`, a linear model would be fitted instead.
+#' @param max_numerical_groups The maximum number of numerical groups. If the number of unique values in the
+#'   group variable is greater than this value, the variable will be splited by the median value.
+#' @return The interaction p-value
+#' @export
+#' @examples
+#' data(cancer, package = "survival")
+#' int_p_value(data = cancer, y = "status", predictor = "age", group_var = "sex", time = "time", rcs_knots = 3)
+int_p_value <- function(data, y, predictor, group_var, time = NULL, covs = NULL, rcs_knots = NULL,
+                        max_numerical_groups = 5) {
+  analysis_type <- ifelse(is.null(time), "logistic", "cox")
+  if (analysis_type == "cox") {
+    outcome <- paste0("Surv(", time, ",", y, ")")
+  }else {
+    outcome <- y
+  }
+  if (!is.null(rcs_knots)) {
+    predictor <- paste0("rcs(", predictor, ",", rcs_knots, ")")
+  }
+  if (is.numeric(data[[group_var]]) && (length(unique(data[[group_var]])) > max_numerical_groups)) {
+    data[[group_var]] <- cut_by(data[[group_var]], 0.5, breaks_as_quantiles = T)
+  } else {
+    data[[group_var]] <- as.factor(data[[group_var]])
+  }
+
+  formula1 <- formula_add_covs(paste0(outcome, "~", predictor, "+", group_var), covs)
+  formula2 <- formula_add_covs(paste0(outcome, "~", predictor, "*", group_var), covs)
+
+  if (analysis_type == "cox") {
+    model1 <- coxph(formula1, data = data)
+    model2 <- coxph(formula2, data = data)
+  }else {
+    model1 <- glm(formula1, data = data, family = binomial())
+    model2 <- glm(formula2, data = data, family = binomial())
+  }
+  tmp1 <- anova(model1, model2, test = "LRT")
+  return(broom::tidy(tmp1)$p.value[2])
 }
