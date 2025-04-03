@@ -37,50 +37,31 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
   }
 
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
-  covs <- setdiff(covs, c(y, x, time))
-  if (length(covs) == 0) covs <- NULL
+  covs <- remove_conflict(covs, c(y, x, time))
   ori_covs <- covs
-  var_subgroups <- setdiff(var_subgroups, c(y, x, time))
+  var_subgroups <- remove_conflict(var_subgroups, c(y, x, time))
   if (length(var_subgroups) == 0) stop("No valid var_subgroups specified.")
 
-  if (analysis_type == "cox") {
-    indf <- dplyr::select(data, all_of(c(y, x, time, covs)))
-    colnames(indf)[1:3] <- c("y", "x", "time")
-  } else {
-    indf <- dplyr::select(data, all_of(c(y, x, covs)))
-    colnames(indf)[1:2] <- c("y", "x")
-  }
+  indf <- dplyr::select(data, all_of(c(y, x, time, covs)))
 
   if (!is.null(covs)) {
-    covs <- paste0("cov", seq_along(covs))
+    covs <- paste0(".cov", seq_along(covs))
+    if (anyDuplicated(c(covs, colnames(data)))) stop("Colnames start with '.cov' are reserved.")
     start_col <- ifelse(analysis_type == "cox", 4, 3)
     colnames(indf)[start_col:(start_col + length(covs) - 1)] <- covs
   }
 
   indf <- cbind(indf, dplyr::select(data, all_of(var_subgroups)))
   plot_nrow <- 4 + length(var_subgroups)
-
-  process_variable <- function(var) {
-    if (is.numeric(indf[[var]])) {
-      if (length(unique(indf[[var]])) == 2) {
-        indf[[var]] <<- factor(indf[[var]], labels = c("No", "Yes"))
-      } else if (length(unique(indf[[var]])) > 5) {
-        indf[[var]] <<- cut_by(indf[[var]], group_cut_quantiles, breaks_as_quantiles = TRUE)
-      } else {
-        indf[[var]] <<- as.factor(indf[[var]])
-      }
-    } else {
-      indf[[var]] <<- as.factor(indf[[var]])
-    }
-    plot_nrow <<- plot_nrow + length(levels(indf[[var]]))
+  for (var in var_subgroups){
+    indf[[var]] <- to_factor(indf[[var]])
+    plot_nrow <- plot_nrow + length(levels(indf[[var]]))
   }
 
-  sapply(var_subgroups, process_variable)
-
-  formula_base <- if (analysis_type == "cox") {
-    "Surv(time, y) ~ x"
-  } else {
-    "y ~ x"
+  if (analysis_type == "cox") {
+    formula_base <- paste0("Surv(", time, ",", y, ") ~ ", x)
+  }else {
+    formula_base <- paste0(y, " ~ ", x)
   }
   formula0 <- formula_add_covs(formula_base, covs)
 
@@ -107,19 +88,7 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
   for (var in var_subgroups) {
     tmp_covs <- covs[ori_covs != var]
 
-    if (analysis_type == "cox") {
-      formula1 <- formula_add_covs(paste0("Surv(time, y) ~ x + ", var), tmp_covs)
-      formula2 <- formula_add_covs(paste0("Surv(time, y) ~ x * ", var), tmp_covs)
-      model1 <- coxph(formula1, data = indf)
-      model2 <- coxph(formula2, data = indf)
-    } else {
-      formula1 <- formula_add_covs(paste0("y ~ x + ", var), tmp_covs)
-      formula2 <- formula_add_covs(paste0("y ~ x * ", var), tmp_covs)
-      model1 <- glm(formula1, data = indf, family = binomial())
-      model2 <- glm(formula2, data = indf, family = binomial())
-    }
-
-    tmp1 <- anova(model1, model2, test = "LRT")
+    p_int <- int_p_value(indf, y, x, var, time = time, covs = tmp_covs)
 
     res <- rbind(res, data.frame(
       Variable = var,
@@ -129,7 +98,7 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
       Lower = NA,
       Upper = NA,
       `P value` = NA,
-      `P for interaction` = broom::tidy(tmp1)$p.value[2],
+      `P for interaction` = p_int,
       check.names = FALSE
     ))
 
@@ -137,12 +106,11 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
     tmp_res <- NULL
     for (lvl in lvls) {
       subset_data <- indf[indf[[var]] == lvl, ]
+      formula <- formula_add_covs(formula_base, tmp_covs)
       if (analysis_type == "cox") {
-        formula <- formula_add_covs("Surv(time, y) ~ x", tmp_covs)
         model <- coxph(formula, data = subset_data)
         lvl_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)[1, ]
       } else {
-        formula <- formula_add_covs("y ~ x", tmp_covs)
         model <- glm(formula, data = subset_data, family = binomial())
         lvl_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)[2, ]
       }
@@ -199,7 +167,7 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
   if (save_plot) {
     if (is.null(filename)) {
       filename <- paste0(paste0(
-        c("subgroup_forest_", x, paste0(
+        c("subgroup_forest", x, paste0(
           "with_", length(var_subgroups),
           "subgroups_and_", length(covs), "covs"
         )),

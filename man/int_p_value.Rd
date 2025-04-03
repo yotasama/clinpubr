@@ -11,8 +11,7 @@ int_p_value(
   group_var,
   time = NULL,
   covs = NULL,
-  rcs_knots = NULL,
-  max_numerical_groups = 5
+  rcs_knots = NULL
 )
 }
 \arguments{
@@ -31,9 +30,6 @@ Otherwise, Cox proportional hazards regression is used.}
 \item{covs}{A character vector of covariate names.}
 
 \item{rcs_knots}{The number of rcs knots. If \code{NULL}, a linear model would be fitted instead.}
-
-\item{max_numerical_groups}{The maximum number of numerical groups. If the number of unique values in the
-group variable is greater than this value, the variable will be splited by the median value.}
 }
 \value{
 The interaction p-value

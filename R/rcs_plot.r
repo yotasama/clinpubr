@@ -48,12 +48,11 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
                      ratio_max = NULL, hist_max = NULL, xlim = NULL, return_details = FALSE) {
   if (!is.null(xlim) && length(xlim) != 2) stop("xlim must be a vector of length 2")
   if (is.null(group_colors)) {
-    group_colors <- c("#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854", "#FFD92F", "#E5C494", "#B3B3B3")
+    group_colors <- .color_panel
   }
 
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
-  covs <- setdiff(covs, c(y, x, time))
-  if (length(covs) == 0) covs <- NULL
+  covs <- remove_conflict(covs, c(y, x, time))
   if (analysis_type == "cox") {
     indf <- dplyr::select(data, all_of(c(y, x, time, covs)))
     colnames(indf)[1:3] <- c("y", "x", "time")

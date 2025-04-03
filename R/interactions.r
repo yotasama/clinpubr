@@ -11,6 +11,7 @@
 #' @param group_vars The group variables to be scanned for interactions. If `NULL`, all variables
 #'   except `y` and `time` are taken as group variables. The group variables should be categorical. If a
 #'   numeric variable is included, it will be splited by the median value.
+#' @param covs A character vector of covariate names.
 #' @param try_rcs A logical value indicating whether to perform ristricted cubic spline interaction analysis.
 #' @param save_table A logical value indicating whether to save the results as a table.
 #' @param filename The name of the file to save the results. Support both `.xlsx` and `.csv` formats.
@@ -19,7 +20,7 @@
 #' @examples
 #' data(cancer, package = "survival")
 #' int_scan(cancer, y = "status", time = "time")
-int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL,
+int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL, covs = NULL,
                      try_rcs = TRUE, save_table = TRUE, filename = NULL) {
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
   if (is.null(predictors)) {
@@ -31,70 +32,22 @@ int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL,
     message("Taking all variables as group variables")
   }
 
-  tmp <- data[, group_vars]
-  for (var in group_vars) {
-    if (is.numeric(tmp[[var]]) && length(unique(tmp[[var]])) > 5) {
-      tmp[[var]] <- cut_by(tmp[[var]], 0.5, breaks_as_quantiles = T)
-    } else {
-      tmp[[var]] <- as.factor(tmp[[var]])
-    }
-  }
-  colnames(tmp) <- paste0(group_vars, "_tmp")
+  res_df <- data.frame(matrix(NA, nrow = length(predictors) * length(group_vars), ncol = 5))
+  colnames(res_df) <- c("predictor", "group.by", "nvalid", "lin.pval", "rcs.pval")
 
-  tmp2 <- data[, predictors]
-  colnames(tmp2) <- paste0(predictors, "_p")
-  data <- cbind(data[, c(y, time), drop = F], tmp, tmp2)
-
-  if (try_rcs) {
-    res_df <- data.frame(matrix(NA, nrow = length(predictors) * length(group_vars), ncol = 5))
-    colnames(res_df) <- c("predictor", "group.by", "nvalid", "lin.pval", "rcs.pval")
-  }else {
-    res_df <- data.frame(matrix(NA, nrow = length(predictors) * length(group_vars), ncol = 4))
-    colnames(res_df) <- c("predictor", "group.by", "nvalid", "lin.pval")
-  }
   irow <- 1
   for (predictor in predictors) {
-    predictor_name = paste0(predictor, "_p")
-    for (var in group_vars) {
-      var_name = paste0(var, "_tmp")
-      if (var != predictor) {
-        nvalid = sum(complete.cases(data[, c(time, y, predictor_name, var_name)]))
+    for (group_var in group_vars) {
+      if (group_var != predictor) {
+        nvalid = sum(complete.cases(data[, c(time, y, predictor, group_var)]))
         if (nvalid < 10) {
           next
         }
-        if (analysis_type == "cox") {
-          outcome <- paste0("Surv(", time, ",", y, ")")
-        }else {
-          outcome <- y
-        }
 
-        formula1 <- paste0(outcome, "~", predictor_name, "+", var_name)
-        formula2 <- paste0(outcome, "~", predictor_name, "*", var_name)
-
-        if (analysis_type == "cox") {
-          model1 <- coxph(as.formula(formula1), data = data)
-          model2 <- coxph(as.formula(formula2), data = data)
-        }else {
-          model1 <- glm(as.formula(formula1), data = data, family = binomial())
-          model2 <- glm(as.formula(formula2), data = data, family = binomial())
-        }
-        tmp1 <- anova(model1, model2, test = "LRT")
-        p1 <- broom::tidy(tmp1)$p.value[2]
-        if (try_rcs && length(unique(data[, predictor_name])) > 10) {
-          formula3 <- paste0(outcome, "~rcs(", predictor_name, ",4) + ", var)
-          formula4 <- paste0(outcome, "~rcs(", predictor_name, ",4) * ", var)
+        p1 <- int_p_value(data, y, predictor, group_var, time = time, covs = covs)
+        if (try_rcs && length(unique(data[, predictor])) > 10) {
           p2 <- tryCatch(
-            {
-              if (analysis_type == "cox") {
-                model3 <- coxph(as.formula(formula3), data = data)
-                model4 <- coxph(as.formula(formula4), data = data)
-              }else {
-                model3 <- glm(as.formula(formula3), data = data, family = binomial())
-                model4 <- glm(as.formula(formula4), data = data, family = binomial())
-              }
-              tmp2 <- anova(model3, model4, test = "LRT")
-              broom::tidy(tmp2)$p.value[2]
-            },
+            int_p_value(data, y, predictor, group_var, time = time, covs = covs, rcs_knots = 4),
             error = function(e) {
               NA
             }
@@ -103,12 +56,10 @@ int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL,
           p2 <- NA
         }
         res_df$predictor[irow] <- predictor
-        res_df$group.by[irow] <- var
+        res_df$group.by[irow] <- group_var
         res_df$nvalid[irow] <- nvalid
         res_df$lin.pval[irow] <- p1
-        if (try_rcs) {
-          res_df$rcs.pval[irow] <- p2
-        }
+        res_df$rcs.pval[irow] <- p2
         irow <- irow + 1
       }
     }
@@ -116,6 +67,11 @@ int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL,
   res_df <- res_df[order(res_df$lin.pval, decreasing = F), ]
   res_df$lin.p.adj = p.adjust(res_df$lin.pval)
   res_df$rcs.p.adj = p.adjust(res_df$rcs.pval)
+  if (try_rcs) {
+    res_df = res_df[!is.na(res_df$predictor), ]
+  }else {
+    res_df = res_df[!is.na(res_df$predictor), -c(5, 7)]
+  }
   if (save_table) {
     if (is.null(filename)) {
       filename = "interaction_scan.xlsx"
@@ -126,18 +82,17 @@ int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL,
       openxlsx::write.xlsx(res_df, filename)
     }
   }
-  res_df[!is.na(res_df$predictor),]
+  return(res_df)
 }
 
 #' Plot interactions
-int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, group_breaks = 0.5,
-                     breaks_as_quantiles = T, group_labels = NULL, group_colors = NULL, predictor_as_factor = T,
+int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, group_colors = NULL,
                      save_plot = TRUE, filename = NULL, height = 4, width = 4, xlab = predictor,
                      group_title = group_var, ...) {
 
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
   if (is.null(group_colors)) {
-    group_colors <- c("#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854", "#FFD92F", "#E5C494", "#B3B3B3")
+    group_colors <- .color_panel
   }
   if (any(c(y, time, predictor, group_var) %in% covs)) {
     stop("Conflict of model variables!")
@@ -147,30 +102,17 @@ int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, gr
                              collapse = "_"), ".png")
   }
 
-  if (analysis_type == "cox") {
-    dat <- dplyr::select(data, all_of(c(y, time, predictor, group_var, covs)))
-    colnames(dat)[1:4] <- c("y", "time", "predictor", "group_var")
-  } else {
-    dat <- dplyr::select(data, all_of(c(y, predictor, group_var, covs)))
-    colnames(dat)[1:3] <- c("y", "predictor", "group_var")
-  }
-
-  if (is.numeric(dat$group_var) && (length(unique(dat$group_var)) > 5)) {
-    dat$group_var <- cut_by(dat$group_var, group_breaks,
-      breaks_as_quantiles = breaks_as_quantiles,
-      labels = group_labels, label_type = "LMH"
-    )
-  } else {
-    dat$group_var <- as.factor(dat$group_var)
-  }
-  levels(dat$group_var) <- paste0(levels(dat$group_var), " (n=", table(dat$group_var), ")")
+  dat <- dplyr::select(data, all_of(c(y, time, predictor, group_var, covs)))
   dat <- na.omit(dat)
-  if (predictor_as_factor && length(unique(dat$predictor)) <= 5) {
-    dat$predictor <- as.factor(dat$predictor)
-    predictor_lvl <- levels(dat$predictor)
+  dat[[group_var]] <- to_factor(dat[[group_var]])
+  levels(dat[[group_var]]) <- paste0(levels(dat[[group_var]]), " (n=", table(dat[[group_var]]), ")")
+
+  if (!is.numeric(dat[[predictor]])) {
+    dat[[predictor]] <- as.factor(dat[[predictor]])
+    predictor_lvl <- levels(dat[[predictor]])
     prefix <- "factor_"
   } else {
-    predictor_lvl <- seq(min(dat$predictor), max(dat$predictor), length.out = 100)
+    predictor_lvl <- seq(min(dat[[predictor]]), max(dat[[predictor]]), length.out = 100)
     prefix <- "lin_"
   }
   dd <<- rms::datadist(dat)
@@ -190,7 +132,7 @@ int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, gr
       logLik_model2 <- logLik(model2)
       LR_statistic <- 2 * (logLik_model2 - logLik_model1)
       df <- model2$stats[["d.f."]] - model1$stats[["d.f."]]
-      lin_p_value <- 1 - pchisq(LR_statistic, df)
+      lin_p_value <- int_p_value(data, y, predictor, group_var, time = time, covs = covs)
       # print(paste0('lin p diff:',tmp1$`Pr(>|Chi|)`[2]/lin_p_value))
       # pdata = expand.grid(x=predictor_lvl,y=group_lvl)
       # for(var in covs){
@@ -211,7 +153,7 @@ int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, gr
       # y1=cbind(pdata[,1:2],exp(y1))
       # colnames(y1)=c('predictor','group_var','y','ylb','yub')
       plt1 <- ggplot(data = y1, aes(x = predictor, y = yhat, ymin = lower, ymax = upper, fill = group_var, color = group_var))
-      if (is.factor(dat$predictor)) {
+      if (is.factor(dat[[predictor]])) {
         plt1 <- plt1 +
           geom_point(position = position_dodge(width = 1)) +
           geom_errorbar(position = position_dodge(width = 1))
@@ -254,7 +196,7 @@ int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, gr
     error = function(e) {
     }
   )
-  if (length(unique(dat$predictor)) > 5) {
+  if (length(unique(dat[[predictor]])) > 5) {
     tryCatch(
       {
         formula3 <- paste0("Surv(time,y)~rcs(predictor,4) + group_var", cov.terms)
@@ -324,16 +266,15 @@ int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, gr
 #'   Otherwise, Cox proportional hazards regression is used.
 #' @param covs A character vector of covariate names.
 #' @param rcs_knots The number of rcs knots. If `NULL`, a linear model would be fitted instead.
-#' @param max_numerical_groups The maximum number of numerical groups. If the number of unique values in the
-#'   group variable is greater than this value, the variable will be splited by the median value.
 #' @return The interaction p-value
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
 #' int_p_value(data = cancer, y = "status", predictor = "age", group_var = "sex", time = "time", rcs_knots = 3)
-int_p_value <- function(data, y, predictor, group_var, time = NULL, covs = NULL, rcs_knots = NULL,
-                        max_numerical_groups = 5) {
+int_p_value <- function(data, y, predictor, group_var, time = NULL, covs = NULL, rcs_knots = NULL) {
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
+  data[[group_var]] <- to_factor(data[[group_var]])
+  covs <- remove_conflict(covs, c(y, predictor, group_var, time))
   if (analysis_type == "cox") {
     outcome <- paste0("Surv(", time, ",", y, ")")
   }else {
@@ -341,11 +282,6 @@ int_p_value <- function(data, y, predictor, group_var, time = NULL, covs = NULL,
   }
   if (!is.null(rcs_knots)) {
     predictor <- paste0("rcs(", predictor, ",", rcs_knots, ")")
-  }
-  if (is.numeric(data[[group_var]]) && (length(unique(data[[group_var]])) > max_numerical_groups)) {
-    data[[group_var]] <- cut_by(data[[group_var]], 0.5, breaks_as_quantiles = T)
-  } else {
-    data[[group_var]] <- as.factor(data[[group_var]])
   }
 
   formula1 <- formula_add_covs(paste0(outcome, "~", predictor, "+", group_var), covs)
