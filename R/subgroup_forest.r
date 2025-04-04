@@ -46,7 +46,7 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
 
   if (!is.null(covs)) {
     covs <- paste0(".cov", seq_along(covs))
-    if (anyDuplicated(c(covs, colnames(data)))) stop("Colnames start with '.cov' are reserved.")
+    if (any(covs %in% colnames(data))) stop("Colnames start with '.cov' are reserved.")
     start_col <- ifelse(analysis_type == "cox", 4, 3)
     colnames(indf)[start_col:(start_col + length(covs) - 1)] <- covs
   }
@@ -58,12 +58,7 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
     plot_nrow <- plot_nrow + length(levels(indf[[var]]))
   }
 
-  if (analysis_type == "cox") {
-    formula_base <- paste0("Surv(", time, ",", y, ") ~ ", x)
-  }else {
-    formula_base <- paste0(y, " ~ ", x)
-  }
-  formula0 <- formula_add_covs(formula_base, covs)
+  formula0 <- create_formula(y, x, time = time, covs = covs)
 
   if (analysis_type == "cox") {
     model <- coxph(formula0, data = indf)
@@ -106,7 +101,7 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
     tmp_res <- NULL
     for (lvl in lvls) {
       subset_data <- indf[indf[[var]] == lvl, ]
-      formula <- formula_add_covs(formula_base, tmp_covs)
+      formula <- create_formula(y, x, time = time, covs = tmp_covs)
       if (analysis_type == "cox") {
         model <- coxph(formula, data = subset_data)
         lvl_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)[1, ]

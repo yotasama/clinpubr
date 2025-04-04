@@ -53,13 +53,7 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
 
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
   covs <- remove_conflict(covs, c(y, x, time))
-  if (analysis_type == "cox") {
-    indf <- dplyr::select(data, all_of(c(y, x, time, covs)))
-    colnames(indf)[1:3] <- c("y", "x", "time")
-  } else {
-    indf <- dplyr::select(data, all_of(c(y, x, covs)))
-    colnames(indf)[1:2] <- c("y", "x")
-  }
+  indf <- dplyr::select(data, all_of(c(y, x, time, covs)))
 
   nmissing <- sum(!complete.cases(indf))
   if (nmissing > 0) {
@@ -67,20 +61,16 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
   }
   indf <- indf[complete.cases(indf), ]
   dd <- NULL
-  dd <<- rms::datadist(indf)
+  dd <- rms::datadist(indf)
+  dd_out <<- dd
   old <- options()
   on.exit(options(old))
-  options(datadist = "dd")
+  options(datadist = "dd_out")
 
   aics <- NULL
-  formula_base <- if (analysis_type == "cox") {
-    "Surv(time, y) ~ "
-  } else {
-    "y ~ "
-  }
   if (is.null(knot)) {
     for (i in 3:7) {
-      formula <- formula_add_covs(paste0(formula_base, "rcs(x, ", i, ")"), covs)
+      formula <- create_formula(y, x, time = time, covs = covs, rcs_knots = i)
       if (analysis_type == "cox") {
         fit <- rms::cph(formula, data = indf, x = TRUE, y = TRUE, se.fit = TRUE,
                         tol = 1e-25, surv = TRUE)
@@ -93,7 +83,7 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
     knot <- kn
   }
 
-  formula <- formula_add_covs(paste0(formula_base, "rcs(x, ", knot, ")"), covs)
+  formula <- create_formula(y, x, time = time, covs = covs, rcs_knots = knot)
   phassump <- NULL
   phresidual <- NULL
   if (analysis_type == "cox") {
@@ -109,27 +99,29 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
   anova_fit <- anova(fit)
   pvalue_all <- anova_fit[1, 3]
   pvalue_nonlin <- round(anova_fit[2, 3], 3)
-  df_pred <- rms::Predict(fit, x, fun = exp, type = "predictions", ref.zero = T, conf.int = 0.95, digits = 2)
+  df_pred <- rms::Predict(fit, name = x, fun = exp, type = "predictions", ref.zero = T, conf.int = 0.95, digits = 2)
 
   df_pred <- data.frame(df_pred)
   if (ref == "min") {
-    ref_val <- ushap$x[which.min(ushap$yhat)]
+    ref_val <- df_pred[[x]][which.min(df_pred$yhat)]
   } else if (ref == "median") {
-    ref_val <- median(indf$x)
+    ref_val <- median(indf[[x]])
   } else {
     ref_val <- ref
   }
 
-  dd[["limits"]]["Adjust to", "x"] <<- ref_val
+  dd[["limits"]]["Adjust to", x] <- ref_val
 
-  fit <- update(fit)
-  df_pred <- rms::Predict(fit, x, fun = exp, type = "predictions", ref.zero = T, conf.int = 0.95, digits = 2)
-  df_rcs <- as.data.frame(dplyr::select(df_pred, all_of(c("x", "yhat", "lower", "upper"))))
   if (!is.null(xlim)) {
-    df_rcs <- filter(df_rcs, (x >= xlim[1]) & (x <= xlim[2]))
+    dd[["limits"]][c("Low:prediction", "High:prediction"), x] <- xlim
   }else {
-    xlim = c(min(df_rcs$x), max(df_rcs$x))
+    xlim <- dd[["limits"]][c("Low:prediction", "High:prediction"), x]
   }
+  dd_out <<- dd
+  fit <- update(fit)
+  df_pred <- rms::Predict(fit, name = x, fun = exp, type = "predictions", ref.zero = T, conf.int = 0.95, digits = 2)
+  df_rcs <- as.data.frame(dplyr::select(df_pred, all_of(c(x, "yhat", "lower", "upper"))))
+
   colnames(df_rcs) <- c("x", "y", "lower", "upper")
   if (is.null(ratio_max)) {
     ymax1 <- ceiling(min(max(df_rcs[, "upper"], na.rm = T), max(df_rcs[, "y"], na.rm = T) * 1.5))
@@ -170,11 +162,11 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
   p <- ggplot2::ggplot()
 
   if (add_hist) {
-    df_hist <- indf[indf[, "x"] >= xlim[1] & indf[, "x"] <= xlim[2], ]
+    df_hist <- indf[indf[[x]] >= xlim[1] & indf[[x]] <= xlim[2], ]
     if (length(breaks) == 1) {
       breaks <- break_at(xlim, breaks, ref_val)
     }
-    h <- hist(df_hist$x, breaks = breaks, right = FALSE, plot = F)
+    h <- hist(df_hist[[x]], breaks = breaks, right = FALSE, plot = F)
 
     df_hist_plot <- data.frame(x = h[["mids"]], freq = h[["counts"]], pct = h[["counts"]] / sum(h[["counts"]]))
 
@@ -187,7 +179,7 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
 
     if (group_by_ref) {
       df_hist_plot$Group <- cut_by(df_hist_plot$x, ref_val, labels = group_labels, label_type = "LMH")
-      tmp_group <- cut_by(indf$x, ref_val, labels = group_labels, label_type = "LMH")
+      tmp_group <- cut_by(indf[[x]], ref_val, labels = group_labels, label_type = "LMH")
       levels(df_hist_plot$Group) <- paste0(levels(df_hist_plot$Group), " (n=", table(tmp_group), ")")
       p <- p +
         geom_bar(

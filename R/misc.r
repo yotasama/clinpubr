@@ -194,7 +194,7 @@ unmake_names <- function(x, ori_names, wrap_backtick = F) {
 #' formula_add_covs(y ~ a + b, c("c", "d"))
 formula_add_covs <- function(formula, covs) {
   if (!class(formula) %in% c("formula", "character")) stop("formula should be a formula or a character string")
-  if (length(covs) == 0) {
+  if (is.null(covs)) {
     res <- formula
   }else {
     if (class(formula) == "formula") {
@@ -204,50 +204,4 @@ formula_add_covs <- function(formula, covs) {
     }
   }
   as.formula(res)
-}
-
-# Create a formula for coxph or glm
-create_formula <- function(y, predictor, group_var, time = NULL, covs = NULL, rcs_knots = NULL,
-                           interaction = F) {
-  if (!is.null(time)) {
-    outcome <- paste0("Surv(", time, ",", y, ")")
-  }else {
-    outcome <- y
-  }
-  if (!is.null(rcs_knots)) {
-    predictor <- paste0("rcs(", predictor, ",", rcs_knots, ")")
-  }
-  if (!is.null(group_var)) {
-    if (interaction) {
-      predictor <- paste0(predictor, "*", group_var)
-    } else {
-      predictor <- paste0(predictor, "+", group_var)
-    }
-  }
-
-  formula_add_covs(paste0(outcome, "~", predictor), covs)
-}
-
-# Convert a numeric vector to a factor
-to_factor <- function(x, max_numerical_groups = 5, na_as_level = F) {
-  if (is.numeric(x) && (length(na.omit(unique(x))) > max_numerical_groups)) {
-    x <- cut_by(x, 0.5, breaks_as_quantiles = T)
-  } else {
-    x <- as.factor(x)
-  }
-  if (na_as_level) {
-    levels(x) <- c(levels(x), "NA")
-    x[is.na(x)] <- "NA"
-  }
-  x
-}
-
-# Remove conflict variables
-remove_conflict <- function(x, y) {
-  if (any(x %in% y)) {
-    warning(paste0(x[x %in% y], collapse = ", "), " are removed to resolve variable conflict.")
-    x <- x[!x %in% y]
-  }
-  if (length(x) == 0) x <- NULL
-  x
 }

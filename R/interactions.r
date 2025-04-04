@@ -22,7 +22,6 @@
 #' int_scan(cancer, y = "status", time = "time")
 int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL, covs = NULL,
                      try_rcs = TRUE, save_table = TRUE, filename = NULL) {
-  analysis_type <- ifelse(is.null(time), "logistic", "cox")
   if (is.null(predictors)) {
     predictors <- setdiff(colnames(data), c(y, time))
     message("Taking all variables as interaction predictors")
@@ -39,7 +38,7 @@ int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL,
   for (predictor in predictors) {
     for (group_var in group_vars) {
       if (group_var != predictor) {
-        nvalid = sum(complete.cases(data[, c(time, y, predictor, group_var)]))
+        nvalid <- sum(complete.cases(data[, c(time, y, predictor, group_var)]))
         if (nvalid < 10) {
           next
         }
@@ -65,20 +64,20 @@ int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL,
     }
   }
   res_df <- res_df[order(res_df$lin.pval, decreasing = F), ]
-  res_df$lin.p.adj = p.adjust(res_df$lin.pval)
-  res_df$rcs.p.adj = p.adjust(res_df$rcs.pval)
+  res_df$lin.p.adj <- p.adjust(res_df$lin.pval)
+  res_df$rcs.p.adj <- p.adjust(res_df$rcs.pval)
   if (try_rcs) {
-    res_df = res_df[!is.na(res_df$predictor), ]
-  }else {
-    res_df = res_df[!is.na(res_df$predictor), -c(5, 7)]
+    res_df <- res_df[!is.na(res_df$predictor), ]
+  } else {
+    res_df <- res_df[!is.na(res_df$predictor), -c(5, 7)]
   }
   if (save_table) {
     if (is.null(filename)) {
-      filename = "interaction_scan.xlsx"
+      filename <- "interaction_scan.xlsx"
     }
     if (grepl(".csv", filename)) {
       write.csv(res_df, filename, row.names = F)
-    }else if (grepl(".xlsx", filename)) {
+    } else if (grepl(".xlsx", filename)) {
       openxlsx::write.xlsx(res_df, filename)
     }
   }
@@ -86,10 +85,34 @@ int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL,
 }
 
 #' Plot interactions
+#' @description Plot interactions between variables. Both logistic and Cox proportional hazards regression models
+#'   are supported. The predictor variables in the model are can be used both in linear form or in ristricted cubic
+#'   spline form.
+#' @param data A data frame.
+#' @param data A data frame.
+#' @param y A character string of the outcome variable.
+#' @param predictor A character string of the predictor variable.
+#' @param group_var A character string of the group variable. The variable should be categorical. If a
+#'   numeric variable is provided, it will be splited by the median value.
+#' @param time A character string of the time variable. If `NULL`, logistic regression is used.
+#'   Otherwise, Cox proportional hazards regression is used.
+#' @param covs A character vector of covariate names.
+#' @param group_colors A character vector of colors for the plot. If `NULL`, the default colors are used.
+#' @param save_plot A logical value indicating whether to save the plot.
+#' @param filename The name of the file to save the plot. Support both `.png` and `.pdf` formats.
+#' @param height The height of the plot.
+#' @param width The width of the plot.
+#' @param xlab The label of the x-axis.
+#' @param group_title The title of the group variable.
+#' @param ... Additional arguments passed to the `ggplot` function.
+#' @return A plot object.
+#' @export
+#' @examples
+#' data(cancer, package = "survival")
+#' int_plot(cancer, y = "status", time = "time", predictor = "age", group_var = "sex")
 int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, group_colors = NULL,
                      save_plot = TRUE, filename = NULL, height = 4, width = 4, xlab = predictor,
                      group_title = group_var, ...) {
-
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
   if (is.null(group_colors)) {
     group_colors <- .color_panel
@@ -98,62 +121,52 @@ int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, gr
     stop("Conflict of model variables!")
   }
   if (is.null(filename)) {
-    filename = paste0(paste0(c("interaction", predictor, "by", group_var, paste0("with_", length(covs), "covs")),
-                             collapse = "_"), ".png")
+    filename <- paste0(paste0(c("interaction", predictor, "by", group_var, paste0("with_", length(covs), "covs")),
+      collapse = "_"), ".png")
   }
 
-  dat <- dplyr::select(data, all_of(c(y, time, predictor, group_var, covs)))
+  dat <- dplyr::select(data, all_of(c(y, predictor, group_var, time, covs)))
+  if (".predictor" %in% c(y, time, covs)) stop("Colname '.predictor' is reserved!")
+  if (".group_var" %in% c(y, time, covs)) stop("Colname '.group_var' is reserved!")
+  colnames(dat)[c(2, 3)] <- c(".predictor", ".group_var")
   dat <- na.omit(dat)
-  dat[[group_var]] <- to_factor(dat[[group_var]])
-  levels(dat[[group_var]]) <- paste0(levels(dat[[group_var]]), " (n=", table(dat[[group_var]]), ")")
+  dat$.group_var <- to_factor(dat$.group_var)
+  levels(dat$.group_var) <- paste0(levels(dat$.group_var), " (n=", table(dat$.group_var), ")")
 
-  if (!is.numeric(dat[[predictor]])) {
-    dat[[predictor]] <- as.factor(dat[[predictor]])
-    predictor_lvl <- levels(dat[[predictor]])
+  if (!is.numeric(dat$.predictor)) {
+    dat$.predictor <- as.factor(dat$.predictor)
+    predictor_lvl <- levels(dat$.predictor)
     prefix <- "factor_"
   } else {
-    predictor_lvl <- seq(min(dat[[predictor]]), max(dat[[predictor]]), length.out = 100)
+    predictor_lvl <- seq(min(dat$.predictor), max(dat$.predictor), length.out = 100)
     prefix <- "lin_"
   }
   dd <<- rms::datadist(dat)
   old <- options()
   on.exit(options(old))
   options(datadist = "dd")
+
+  plt1 <- NULL
+  plt2 <- NULL
+
   tryCatch(
     {
-      formula1 <- paste0("Surv(time,y)~predictor+group_var", cov.terms)
-      formula2 <- paste0("Surv(time,y)~predictor*group_var", cov.terms)
-      # model1=coxph(as.formula(formula1),data=dat)
-      # model2=coxph(as.formula(formula2),data=dat)
-      # tmp1=anova(model1,model2,test = 'LRT')
-      model1 <- cph(as.formula(formula1), data = dat)
-      model2 <- cph(as.formula(formula2), data = dat)
-      logLik_model1 <- logLik(model1)
-      logLik_model2 <- logLik(model2)
-      LR_statistic <- 2 * (logLik_model2 - logLik_model1)
-      df <- model2$stats[["d.f."]] - model1$stats[["d.f."]]
-      lin_p_value <- int_p_value(data, y, predictor, group_var, time = time, covs = covs)
-      # print(paste0('lin p diff:',tmp1$`Pr(>|Chi|)`[2]/lin_p_value))
-      # pdata = expand.grid(x=predictor_lvl,y=group_lvl)
-      # for(var in covs){
-      #   pdata[,var]=median(dat[,var])
-      # }
-      # colnames(pdata)[c(1,2)]=c(predictor,group_var)
+      formula <- create_formula(y, ".predictor", group_var = ".group_var", time = time, covs = covs, interaction = T)
+      if (analysis_type == "cox") {
+        model <- rms::cph(formula, data = dat)
+      }else {
+        model <- rms::Glm(formula, data = dat, family = binomial(link = "logit"))
+      }
+      p_value <- int_p_value(dat, y, ".predictor", ".group_var", time = time, covs = covs)
+      y1 <- as.data.frame(Predict(model, .predictor, .group_var,
+        fun = exp, type = "predictions", conf.int = 0.95, digits = 2
+      ))
 
-      y1 <- as.data.frame(Predict(model2, predictor, group_var,
-        fun = exp,
-        type = "predictions", conf.int = 0.95, digits = 2
+      plt1 <- ggplot(data = y1, aes(
+        x = .predictor, y = yhat, ymin = lower, ymax = upper,
+        fill = .group_var, color = .group_var
       ))
-      grob <- grobTree(textGrob(paste0("N = ", nrow(dat)),
-        x = 0.5, y = 0.9,
-        gp = gpar(col = "black", fontsize = 12)
-      ))
-      # ypred1 = predict(model2, newdata=pdata, se=TRUE)
-      # y1 = ypred1$linear.predictors + outer(ypred1$se.fit, c(0, -1.96, 1.96), '*')-mean(ypred1$linear.predictors)
-      # y1=cbind(pdata[,1:2],exp(y1))
-      # colnames(y1)=c('predictor','group_var','y','ylb','yub')
-      plt1 <- ggplot(data = y1, aes(x = predictor, y = yhat, ymin = lower, ymax = upper, fill = group_var, color = group_var))
-      if (is.factor(dat[[predictor]])) {
+      if (is.factor(dat$.predictor)) {
         plt1 <- plt1 +
           geom_point(position = position_dodge(width = 1)) +
           geom_errorbar(position = position_dodge(width = 1))
@@ -163,20 +176,24 @@ int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, gr
           geom_line(linewidth = 1)
       }
       plt1 <- plt1 +
-        scale_y_log10() + # 对数变换
+        scale_y_log10() +
         scale_color_manual(values = group_colors) +
         scale_fill_manual(values = group_colors) +
         labs(
-          x = xlab, y = "HR (95% CI)", color = group_title, fill = group_title,
+          x = xlab, y = ifelse(analysis_type == "cox", "HR (95% CI)", "OR (95% CI)"),
+          color = group_title, fill = group_title,
           title = paste0(
             "p interaction : ",
-            base::format.pval(lin_p_value,
-              digits = 1,
-              nsmall = 3, eps = 0.001
-            )
+            format_pval(p_value)
           )
+        )
+      plt1 <- plt1 +
+        annotate("text",
+          label = paste0("N = ", nrow(dat)), size = 5,
+          x = mean(ggplot_build(plt1)$layout$panel_params[[1]]$x.range),
+          y = 10^(max(ggplot_build(plt1)$layout$panel_params[[1]]$y.range) * 0.9),
+          hjust = 0.5, vjust = 0.5
         ) +
-        annotation_custom(grob) +
         theme_classic() +
         geom_hline(yintercept = 1, linetype = 3, color = "black", linewidth = 1) +
         theme(
@@ -196,44 +213,47 @@ int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, gr
     error = function(e) {
     }
   )
-  if (length(unique(dat[[predictor]])) > 5) {
+  if (length(unique(dat$.predictor)) > 5) {
     tryCatch(
       {
-        formula3 <- paste0("Surv(time,y)~rcs(predictor,4) + group_var", cov.terms)
-        formula4 <- paste0("Surv(time,y)~rcs(predictor,4) * group_var", cov.terms)
-        # model3=coxph(as.formula(formula3),data=dat)
-        # model4=coxph(as.formula(formula4),data=dat)
-        # tmp2=anova(model3,model4,test = 'LRT')
-        model3 <- cph(as.formula(formula3), data = dat)
-        model4 <- cph(as.formula(formula4), data = dat)
-        logLik_model3 <- logLik(model3)
-        logLik_model4 <- logLik(model4)
-        LR_statistic <- 2 * (logLik_model4 - logLik_model3)
-        df <- model4$stats[["d.f."]] - model3$stats[["d.f."]]
-        rcs_p_value <- c(1 - pchisq(LR_statistic, df))
-        # print(paste0('rcs p diff:',tmp2$`Pr(>|Chi|)`[2]/rcs_p_value))
-        # ypred2 = predict(model4, newdata=pdata, se=TRUE)
-        # y2 = ypred2$fit + outer(ypred2$se, c(0, -1.96, 1.96), '*')-mean(ypred2$fit)
-        # y2=cbind(pdata[,1:2],exp(y2))
-        # colnames(y2)=c('predictor','group_var','y','ylb','yub')
-        y2 <- as.data.frame(Predict(model4, predictor, group_var,
-          fun = exp,
-          type = "predictions", conf.int = 0.95, digits = 2
+        formula2 <- create_formula(y, ".predictor",
+          group_var = ".group_var", time = time, covs = covs, rcs_knots = 4,
+          interaction = T
+        )
+        if (analysis_type == "cox") {
+          model2 <- rms::cph(formula2, data = dat)
+        }else {
+          model2 <- rms::Glm(formula2, data = dat, family = binomial(link = "logit"))
+        }
+        rcs_p_value <- int_p_value(dat, y, ".predictor", ".group_var", time = time, covs = covs,
+                                   rcs_knots = 4)
+        y2 <- as.data.frame(Predict(model2, .predictor, .group_var,
+          fun = exp, type = "predictions", conf.int = 0.95, digits = 2
         ))
-        plt2 <- ggplot(data = y2, aes(x = predictor, y = yhat, ymin = lower, ymax = upper, fill = group_var, color = group_var)) +
+        plt2 <- ggplot(data = y2, aes(
+          x = .predictor, y = yhat, ymin = lower, ymax = upper,
+          fill = .group_var, color = .group_var
+        )) +
           geom_line(linewidth = 1) +
           geom_ribbon(lty = 2, alpha = 0.2, linewidth = 1) +
-          scale_y_log10() + # 对数变换
+          scale_y_log10() +
           scale_color_manual(values = group_colors) +
           scale_fill_manual(values = group_colors) +
           labs(
-            x = xlab, y = "HR (95% CI)", color = group_title, fill = group_title,
-            title = paste0("p interaction : ", base::format.pval(rcs_p_value,
-              digits = 1,
-              nsmall = 3, eps = 0.001
-            ))
+            x = xlab, y = ifelse(analysis_type == "cox", "HR (95% CI)", "OR (95% CI)"),
+            color = group_title, fill = group_title,
+            title = paste0(
+              "p interaction : ",
+              format_pval(rcs_p_value)
+            )
+          )
+        plt2 <- plt2 +
+          annotate("text",
+            label = paste0("N = ", nrow(dat)), size = 5,
+            x = mean(ggplot_build(plt2)$layout$panel_params[[1]]$x.range),
+            y = 10^(max(ggplot_build(plt2)$layout$panel_params[[1]]$y.range) * 0.9),
+            hjust = 0.5, vjust = 0.5
           ) +
-          annotation_custom(grob) +
           theme_classic() +
           geom_hline(yintercept = 1, linetype = 3, color = "black", linewidth = 1) +
           theme(
@@ -246,11 +266,16 @@ int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, gr
             legend.text = element_text(size = 12),
             axis.title = element_text(size = 15)
           )
-        ggsave(paste0("rcs_", fname), plt2, height = height, width = width)
+        if (save_plot) {
+          ggsave(paste0("rcs_", filename), plt2, height = height, width = width)
+        }
       },
       error = function(e) {
       }
     )
+    return(list(plt1 = plt1, plt2 = plt2))
+  } else {
+    return(plt1)
   }
 }
 
@@ -275,22 +300,20 @@ int_p_value <- function(data, y, predictor, group_var, time = NULL, covs = NULL,
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
   data[[group_var]] <- to_factor(data[[group_var]])
   covs <- remove_conflict(covs, c(y, predictor, group_var, time))
-  if (analysis_type == "cox") {
-    outcome <- paste0("Surv(", time, ",", y, ")")
-  }else {
-    outcome <- y
-  }
-  if (!is.null(rcs_knots)) {
-    predictor <- paste0("rcs(", predictor, ",", rcs_knots, ")")
-  }
 
-  formula1 <- formula_add_covs(paste0(outcome, "~", predictor, "+", group_var), covs)
-  formula2 <- formula_add_covs(paste0(outcome, "~", predictor, "*", group_var), covs)
+  formula1 <- create_formula(y, predictor, group_var,
+    time = time, covs = covs, rcs_knots = rcs_knots,
+    interaction = F
+  )
+  formula2 <- create_formula(y, predictor, group_var,
+    time = time, covs = covs, rcs_knots = rcs_knots,
+    interaction = T
+  )
 
   if (analysis_type == "cox") {
     model1 <- coxph(formula1, data = data)
     model2 <- coxph(formula2, data = data)
-  }else {
+  } else {
     model1 <- glm(formula1, data = data, family = binomial())
     model2 <- glm(formula2, data = data, family = binomial())
   }

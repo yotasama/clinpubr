@@ -11,11 +11,7 @@ int_plot(
   group_var,
   time = NULL,
   covs = NULL,
-  group_breaks = 0.5,
-  breaks_as_quantiles = T,
-  group_labels = NULL,
   group_colors = NULL,
-  predictor_as_factor = T,
   save_plot = TRUE,
   filename = NULL,
   height = 4,
@@ -25,6 +21,46 @@ int_plot(
   ...
 )
 }
+\arguments{
+\item{data}{A data frame.}
+
+\item{y}{A character string of the outcome variable.}
+
+\item{predictor}{A character string of the predictor variable.}
+
+\item{group_var}{A character string of the group variable. The variable should be categorical. If a
+numeric variable is provided, it will be splited by the median value.}
+
+\item{time}{A character string of the time variable. If \code{NULL}, logistic regression is used.
+Otherwise, Cox proportional hazards regression is used.}
+
+\item{covs}{A character vector of covariate names.}
+
+\item{group_colors}{A character vector of colors for the plot. If \code{NULL}, the default colors are used.}
+
+\item{save_plot}{A logical value indicating whether to save the plot.}
+
+\item{filename}{The name of the file to save the plot. Support both \code{.png} and \code{.pdf} formats.}
+
+\item{height}{The height of the plot.}
+
+\item{width}{The width of the plot.}
+
+\item{xlab}{The label of the x-axis.}
+
+\item{group_title}{The title of the group variable.}
+
+\item{...}{Additional arguments passed to the \code{ggplot} function.}
+}
+\value{
+A plot object.
+}
 \description{
-Plot interactions
+Plot interactions between variables. Both logistic and Cox proportional hazards regression models
+are supported. The predictor variables in the model are can be used both in linear form or in ristricted cubic
+spline form.
+}
+\examples{
+data(cancer, package = "survival")
+int_plot(cancer, y = "status", time = "time", predictor = "age", group_var = "sex")
 }
