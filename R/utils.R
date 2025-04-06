@@ -1,14 +1,15 @@
 #' @import survival
 #' @import survminer
 #' @import rms
-#' @import broom
 #' @import ggplot2
 #' @import dplyr
 #' @import stringr
 #' @import rlang
-#' @import forestploter
+#' @importFrom broom tidy
+#' @importFrom forestploter forest
 #' @importFrom magrittr %>%
 #' @importFrom tibble as_tibble
+#' @importFrom fBasics shapiroTest lillieTest adTest jarqueberaTest sfTest
 
 .color_panel = c("#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854", "#FFD92F", "#E5C494", "#B3B3B3")
 
@@ -19,31 +20,6 @@ load_packages <- function(pkgs) {
       install.packages(pkg, character.only = T)
       require(pkg, character.only = T, quietly = T)
     }
-  }
-}
-
-# Compare the order of two elements in a list of vectors
-#   based on the first occurrence
-.calculate_order <- function(elem1, elem2, vectors) {
-  count_before <- 0
-  count_after <- 0
-  for (vec in vectors) {
-    idx1 <- match(elem1, vec)
-    idx2 <- match(elem2, vec)
-    if (!is.na(idx1) && !is.na(idx2)) {
-      if (idx1 < idx2) {
-        count_before <- count_before + 1
-      } else if (idx1 > idx2) {
-        count_after <- count_after + 1
-      }
-    }
-  }
-  if (count_before > count_after) {
-    return(1)
-  } else if (count_before < count_after) {
-    return(-1)
-  } else {
-    return(0)
   }
 }
 
@@ -91,4 +67,39 @@ remove_conflict <- function(x, y) {
   }
   if (length(x) == 0) x <- NULL
   x
+}
+
+# Get wilcox test p-value
+wilcox_test_pval <- function(...) {
+  tryCatch(
+    wilcox.test(...)$p.value,
+    error = function(e) {
+      NA
+    }
+  )
+}
+
+# Compare the order of two elements in a list of vectors
+#   based on the first occurrence
+.calculate_order <- function(elem1, elem2, vectors) {
+  count_before <- 0
+  count_after <- 0
+  for (vec in vectors) {
+    idx1 <- match(elem1, vec)
+    idx2 <- match(elem2, vec)
+    if (!is.na(idx1) && !is.na(idx2)) {
+      if (idx1 < idx2) {
+        count_before <- count_before + 1
+      } else if (idx1 > idx2) {
+        count_after <- count_after + 1
+      }
+    }
+  }
+  if (count_before > count_after) {
+    return(1)
+  } else if (count_before < count_after) {
+    return(-1)
+  } else {
+    return(0)
+  }
 }

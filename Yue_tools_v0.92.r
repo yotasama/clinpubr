@@ -1255,7 +1255,7 @@ qqshow <- function(x,
 }
 
 # 令wilcox.test报错时直接返回NA
-my.wilcox.test <- function(...) {
+wilcox_test_pval <- function(...) {
   tryCatch(
     wilcox.test(...)$p.value,
     error = function(e) {
@@ -1265,7 +1265,7 @@ my.wilcox.test <- function(...) {
 }
 
 # 根据实验结果计算正态性检验p值阈值
-alpha.by.n <- function(n) {
+alpha_by_n <- function(n) {
   if (n < 100) {
     0.05
   } else {
@@ -1274,7 +1274,7 @@ alpha.by.n <- function(n) {
 }
 
 # 将变量自动归类，同时为数值变量输出QQ图帮助人工检验正态性
-get.var.types <- function(data, strata = NULL, test.as.whole = F, omit.factor.above = 50,
+get_var_types <- function(data, strata = NULL, test.as.whole = F, omit.factor.above = 50,
                           num.to.fact = 5, save.qqplots = T, folder_name = "qqplots") {
   load_packages(c("fBasics", "dplyr"))
   if (save.qqplots & !file.exists(folder_name)) {
@@ -1301,7 +1301,7 @@ get.var.types <- function(data, strata = NULL, test.as.whole = F, omit.factor.ab
       dat.list[[i]] <- filter(data, tmp == groups[i])
     }
   }
-  p.sigs <- sapply(sapply(dat.list, nrow), alpha.by.n)
+  p.sigs <- sapply(sapply(dat.list, nrow), alpha_by_n)
   nonvars <- c()
   factvars <- c()
   exactvars <- c()
@@ -1367,7 +1367,7 @@ baseline.table <- function(data, auto.var.types = NULL, strata = NULL, vars = se
                            factor.vars = NULL, exact.vars = NULL, nonnormal.vars = NULL,
                            filename = "baseline.csv", p.adjust.method = "BH", ...) {
   if (!is.null(auto.var.types) && !"auto.var.types" %in% class(auto.var.types)) {
-    stop("Invalid 'auto.var.types' arguement! Please use result from get.var.types function.")
+    stop("Invalid 'auto.var.types' arguement! Please use result from get_var_types function.")
   }
   if (!grepl(".csv", filename)) {
     stop("please save as .csv file")
@@ -1455,7 +1455,7 @@ baseline.table <- function(data, auto.var.types = NULL, strata = NULL, vars = se
         compare.levels <- function(i, j) {
           xi <- data[as.integer(g) == i, var]
           xj <- data[as.integer(g) == j, var]
-          my.wilcox.test(xi, xj)
+          wilcox_test_pval(xi, xj)
         }
         pt <- pairwise.table(compare.levels, levels(g), p.adjust.method)
       } else {

@@ -196,7 +196,7 @@ formula_add_covs <- function(formula, covs) {
   if (!class(formula) %in% c("formula", "character")) stop("formula should be a formula or a character string")
   if (is.null(covs)) {
     res <- formula
-  }else {
+  } else {
     if (class(formula) == "formula") {
       res <- paste0(c(deparse(formula), covs), collapse = "+")
     } else {
@@ -204,4 +204,37 @@ formula_add_covs <- function(formula, covs) {
     }
   }
   as.formula(res)
+}
+
+#' QQ plot
+#' @description QQ plot for a sample.
+#' @param x A sample.
+#' @param title Title of the plot.
+#' @param save If TRUE, save the plot.
+#' @param filename Filename of the plot.
+#' @param width Width of the plot.
+#' @param height Height of the plot.
+#'
+#' @returns A plot.
+#' @export
+qq_show <- function(x,
+                    title = NULL,
+                    save = FALSE,
+                    filename = "QQplot.png",
+                    width = 2,
+                    height = 2) {
+  dat <- data.frame(sample = scale(x))
+  p <- ggplot(dat, aes(sample = sample)) +
+    stat_qq(size = 0.5) +
+    geom_abline(slope = 1, intercept = 0, alpha = 0.3, lwd = 0.5) +
+    theme_classic() +
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text = element_text(colour = "black"))
+  if (!is.null(title)) {
+    p <- p + labs(title = title)
+  }
+  if (save) {
+    ggsave(filename, p, width = width, height = height)
+  }
+  p
 }
