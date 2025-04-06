@@ -27,3 +27,19 @@ Collate:
     'subgroup_forest.r'
     'to_date.r'
     'unit_standardize.r'
+Imports: 
+    stringr,
+    DescTools,
+    broom,
+    dplyr,
+    fBasics,
+    forestploter,
+    ggplot2,
+    magrittr,
+    rlang,
+    rms,
+    survival,
+    survminer,
+    tableone,
+    tibble,
+    tidyr
