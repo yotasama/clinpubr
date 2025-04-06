@@ -34,9 +34,9 @@ tests do not work well for some variables, and the QQ plots can be used to check
 }
 \value{
 An object from class \code{var_types}, which is just list containing the following elements:
-\item{factvars}{A character vector of variables that are factors.}
-\item{exactvars}{A character vector of variables that require fisher exact test.}
-\item{nonvars}{A character vector of variables that are nonnormal.}
+\item{factor_vars}{A character vector of variables that are factors.}
+\item{exact_vars}{A character vector of variables that require fisher exact test.}
+\item{nonnormal_vars}{A character vector of variables that are nonnormal.}
 \item{omitvars}{A character vector of variables that are excluded form the baseline table.}
 \item{strata}{A character vector of the strata variable.}
 }
@@ -51,7 +51,9 @@ is nonnormal, then it is considered nonnormal. To alieviate the problem that nor
 too sensitive when sample size gets larger, the alpha level is determined by an experience formula
 that decrease with sample size.
 
-This function also determines whether variables are factors or not. If a variable has less than
+This function also marks the factor variables that require fisher exact tests if any cell haves
+expected frequency less than or equal to 5. Note that this criterion less strict than the commonly
+used one.
 }
 \examples{
 data(cancer, package = "survival")
@@ -59,5 +61,5 @@ get_var_types(cancer, strata = "sex")
 
 var_types <- get_var_types(cancer, strata = "sex", save_qqplots = T)
 # for some reason we want the variable "pat.karno" ro be considered normal.
-var_types$nonvars <- setdiff(var_types$nonvars, "pat.karno")
+var_types$nonnormal_vars <- setdiff(var_types$nonnormal_vars, "pat.karno")
 }

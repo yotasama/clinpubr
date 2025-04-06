@@ -5,7 +5,9 @@
 #' @import dplyr
 #' @import stringr
 #' @import rlang
+#' @import tableone
 #' @importFrom broom tidy
+#' @importFrom tidyr pivot_wider
 #' @importFrom forestploter forest
 #' @importFrom magrittr %>%
 #' @importFrom tibble as_tibble

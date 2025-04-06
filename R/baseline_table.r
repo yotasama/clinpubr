@@ -12,9 +12,9 @@
 #' @param folder_name A character string indicating the folder name for saving QQ plots.
 #'
 #' @returns An object from class `var_types`, which is just list containing the following elements:
-#'   \item{factvars}{A character vector of variables that are factors.}
-#'   \item{exactvars}{A character vector of variables that require fisher exact test.}
-#'   \item{nonvars}{A character vector of variables that are nonnormal.}
+#'   \item{factor_vars}{A character vector of variables that are factors.}
+#'   \item{exact_vars}{A character vector of variables that require fisher exact test.}
+#'   \item{nonnormal_vars}{A character vector of variables that are nonnormal.}
 #'   \item{omitvars}{A character vector of variables that are excluded form the baseline table.}
 #'   \item{strata}{A character vector of the strata variable.}
 #' @note This function performs normality tests on the variables in the data frame and determines 
@@ -24,7 +24,8 @@
 #'   too sensitive when sample size gets larger, the alpha level is determined by an experience formula 
 #'   that decrease with sample size.
 #' @note This function also marks the factor variables that require fisher exact tests if any cell haves 
-#'   expected frequency less than or equal to 5. Note that this criterion less strict than the commonly used one.
+#'   expected frequency less than or equal to 5. Note that this criterion less strict than the commonly 
+#'   used one.
 #'   
 #' @export
 #' @examples
@@ -33,7 +34,7 @@
 #'
 #' var_types <- get_var_types(cancer, strata = "sex", save_qqplots = T)
 #' # for some reason we want the variable "pat.karno" ro be considered normal.
-#' var_types$nonvars <- setdiff(var_types$nonvars, "pat.karno")
+#' var_types$nonnormal_vars <- setdiff(var_types$nonnormal_vars, "pat.karno")
 get_var_types <- function(data, strata = NULL, norm_test_by_group = T, omit_factor_above = 20,
                           num_to_factor = 5, save_qqplots = F, folder_name = "qqplots") {
   if (save_qqplots && !file.exists(folder_name)) {
@@ -61,24 +62,28 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = T, omit_fact
     }
   }
   alphas <- sapply(sapply(dat_list, nrow), alpha_by_n)
-  nonvars <- c()
-  factvars <- c()
-  exactvars <- c()
+  nonnormal_vars <- c()
+  factor_vars <- c()
+  exact_vars <- c()
   omitvars <- c()
   vars <- colnames(data)
   for (var in vars) {
+    if (length(na.omit(data[[var]])) == 0) {
+      omitvars <- union(omitvars, var)
+      next
+    }
     if ((length(na.omit(unique(data[[var]]))) <= num_to_factor) || !is.numeric(data[[var]])) {
       if ((!is.numeric(data[[var]])) && (length(na.omit(unique(data[[var]]))) > omit_factor_above)) {
         omitvars <- union(omitvars, var)
         warning(paste0(var, " excluded due to too many levels."))
       } else {
-        factvars <- union(factvars, var)
-        if (any(table(data[, var]) <= 5)) {
-          exactvars <- union(exactvars, var)
+        factor_vars <- union(factor_vars, var)
+        if (any(table(data[[var]]) <= 5)) {
+          exact_vars <- union(exact_vars, var)
         }else if(is.null(strata)) {
           next
         }else {
-          x = table(data[, var], data[, strata])
+          x = table(data[[var]], data[[strata]])
           nr <- as.integer(nrow(x))
           nc <- as.integer(ncol(x))
           if (is.na(nr) || is.na(nc) || is.na(nr * nc)) 
@@ -87,7 +92,7 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = T, omit_fact
           sc <- colSums(x)
           E <- outer(sr, sc) / sum(x)
           if (any(E <= 5)) {
-            exactvars <- union(exactvars, var)
+            exact_vars <- union(exact_vars, var)
           }
         }
       }
@@ -95,7 +100,7 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = T, omit_fact
       all.pos <- all(data[[var]] >= 0, na.rm = T)
       for (i in seq_along(dat_list)) {
         dat <- dat_list[[i]]
-        x <- c(scale(dat[, var]))
+        x <- c(scale(dat[[var]]))
         ps <- c()
         for (j in seq_along(normal_tests)) {
           ps[j] <- tryCatch(
@@ -114,7 +119,7 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = T, omit_fact
         }
         if ((all.pos && (sd(x, na.rm = T) < mean(x, na.rm = T))) |
           (sum(ps < alphas[i], na.rm = T) >= sum(!is.na(ps)) - 2)) {
-          nonvars <- union(nonvars, var)
+          nonnormal_vars <- union(nonnormal_vars, var)
           prefix <- "nonnormal"
         } else {
           prefix <- "normal"
@@ -130,109 +135,122 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = T, omit_fact
       }
     }
   }
-  res <- list(factvars = factvars, exactvars = exactvars, nonvars = nonvars, omitvars = omitvars, strata = strata)
+  res <- list(factor_vars = factor_vars, exact_vars = exact_vars, nonnormal_vars = nonnormal_vars,
+              omitvars = omitvars, strata = strata)
   class(res) <- "var_types"
   res
 }
 
-# 基线表格一键生成
-baseline.table <- function(data, var_types = NULL, strata = NULL, vars = setdiff(colnames(data), strata),
-                           factor.vars = NULL, exact.vars = NULL, nonnormal.vars = NULL, seed = NULL,
-                           filename = "baseline.csv", p.adjust.method = "BH", ...) {
+#' Create a baseline table for a dataset.
+#' @description Create a baseline table and a table of missing values. If the strata variable has more 
+#'   than 2 levels, a pairwise comparison table will also be created.
+#' @param data A data frame.
+#' @param var_types An object from class `var_types` returned by `get_var_types` function. 
+#' @param strata A variable to stratify the table. Overwrites the strata variable in `var_types`.
+#' @param vars A vector of variables to include in the table.
+#' @param factor_vars A vector of factor variables. Overwrites the factor variables in `var_types`.
+#' @param exact_vars A vector of variables to test for exactness. Overwrites the exact variables in `var_types`.
+#' @param nonnormal_vars A vector of variables to test for normality. Overwrites the nonnormal variables in `var_types`.
+#' @param seed A seed for the random number generator. This seed can be set for consistant simulation when
+#'   performing fisher exact tests.
+#' @param filename The name of the file to save the table. The file names for accompanying tables will
+#'   be the same as the main table, but with "_missing" and "_pairwise" appended.
+#' @param p_adjust_method The method to use for p-value adjustment for pairwise comparison. Default is "BH". 
+#'   See `?p.adjust.methods`.
+#' @param ... Additional arguments passed to `tableone::print.TableOne`.
+#' @return `NULL`. The tables are saved to files.
+#' @export
+#' @examples
+#' data(cancer, package = "survival")
+#' var_types <- get_var_types(cancer, strata = "sex")
+#' baseline_table(cancer, var_types = var_types)
+baseline_table <- function(data, var_types = NULL, strata = NULL, vars = setdiff(colnames(data), strata),
+                           factor_vars = NULL, exact_vars = NULL, nonnormal_vars = NULL, seed = NULL,
+                           filename = "baseline.csv", p_adjust_method = "BH", ...) {
   if (!is.null(var_types) && !"var_types" %in% class(var_types)) {
     stop("Invalid 'var_types' arguement! Please use result from get_var_types function.")
   }
-  if (!grepl(".csv", filename)) {
-    stop("please save as .csv file")
-  }
-  if (is.null(strata) & !is.null(var_types)) {
-    strata <- var_types$strata
-  }
-  if (is.null(factor.vars) & !is.null(var_types)) {
-    factor.vars <- var_types$factvars
-  }
-  if (is.null(exact.vars) & !is.null(var_types)) {
-    exact.vars <- var_types$exactvars
-  }
-  if (is.null(nonnormal.vars) & !is.null(var_types)) {
-    nonnormal.vars <- var_types$nonvars
-  }
-  if (!is.null(var_types$omitvars)) {
-    vars <- setdiff(vars, var_types$omitvars)
-  }
-  data <- data[!is.na(data[[strata]]), ]
+  if (!grepl(".csv", filename)) stop("please save as .csv file")
+  if (is.null(strata) & !is.null(var_types)) strata <- var_types$strata
+  if (!is.null(strata)) data <- data[!is.na(data[[strata]]), ]
+  if (is.null(factor_vars) & !is.null(var_types)) factor_vars <- var_types$factor_vars
+  if (is.null(exact_vars) & !is.null(var_types)) exact_vars <- var_types$exact_vars
+  if (is.null(nonnormal_vars) & !is.null(var_types)) nonnormal_vars <- var_types$nonnormal_vars
+  if (!is.null(var_types$omitvars)) vars <- setdiff(vars, var_types$omitvars)
+  if (is.null(seed)) set.seed(seed)
+  
+  factor_vars = union(factor_vars, exact_vars)
 
-  load_packages(c("tableone", "stringr", "tidyr"))
   if (is.null(strata)) {
     tab1 <- CreateTableOne(
       vars = vars, argsNormal = list(var.equal = F),
       argsExact = list(workspace = 2 * 10^5, simulate.p.value = TRUE, B=1e4),
-      data = data, factorVars = factor.vars, addOverall = TRUE
+      data = data, factorVars = factor_vars, addOverall = TRUE
     )
   } else {
     tab1 <- CreateTableOne(
       vars = vars, strata = strata, argsNormal = list(var.equal = F),
       argsExact = list(workspace = 2 * 10^5, simulate.p.value = TRUE, B=1e4),
-      data = data, factorVars = factor.vars, addOverall = TRUE
+      data = data, factorVars = factor_vars, addOverall = TRUE
     )
   }
-  tab4Mat <- print(tab1,
-    nonnormal = nonnormal.vars, exact = exact.vars,
+  printed_table <- print(tab1,
+    nonnormal = nonnormal_vars, exact = exact_vars,
     quote = FALSE, noSpaces = TRUE, printToggle = FALSE, ...
   )
-  write.csv(tab4Mat, file = filename)
+  write.csv(printed_table, file = filename)
 
-  missing.df <- as.data.frame(is.na(data))
-  for (i in 1:ncol(missing.df)) {
-    missing.df[, i] <- factor(missing.df[, i], levels = c(F, T))
+  missing_df <- as.data.frame(is.na(data))
+  for (i in 1:ncol(missing_df)) {
+    missing_df[, i] <- factor(missing_df[, i], levels = c(F, T))
   }
   if (is.null(strata)) {
     tab2 <- CreateTableOne(
       vars = vars,
-      data = missing.df, addOverall = TRUE
+      data = missing_df, addOverall = TRUE
     )
   } else {
-    missing.df$.strata <- data[[strata]]
+    missing_df[[strata]] <- data[[strata]]
     tab2 <- CreateTableOne(
-      vars = vars, strata = ".strata",
-      data = missing.df, addOverall = TRUE
+      vars = vars, strata = strata,
+      data = missing_df, addOverall = TRUE
     )
   }
-  tab2Mat <- print(tab2, quote = FALSE, noSpaces = TRUE, printToggle = FALSE, ...)
-  write.csv(tab2Mat, file = str_replace(filename, ".csv", "_missing.csv"))
+  printed_table <- print(tab2, quote = FALSE, noSpaces = TRUE, printToggle = FALSE, ...)
+  write.csv(printed_table, file = str_replace(filename, ".csv", "_missing.csv"))
 
-  if (length(na.omit(unique(data[[strata]]))) > 2) {
+  if (!is.null(strata) && length(na.omit(unique(data[[strata]]))) > 2) {
     g <- factor(data[[strata]])
-    pairwise.result <- data.frame()
-    for (var in vars) {
-      if (var %in% exact.vars) {
-        cont.table <- table(data[[var]], g)
-        compare.levels <- function(i, j) {
+    pairwise_result <- data.frame()
+    for (var in vars) { 
+      if (var %in% exact_vars) {
+        cont_table <- table(data[[var]], g)
+        compare_levels <- function(i, j) {
           tryCatch(
             {
-              fisher.test(cont.table[, c(i, j)], simulate.p.value = TRUE, B=1e4)$p.value
+              fisher.test(cont_table[, c(i, j)], simulate.p.value = TRUE, B=1e4)$p.value
             },
             error = function(e) {
               NA
             }
           )
         }
-        pt <- pairwise.table(compare.levels, levels(g), p.adjust.method)
-      } else if (var %in% factor.vars) {
-        cont.table <- table(data[[var]], g)
-        compare.levels <- function(i, j) {
-          chisq.test(cont.table[, c(i, j)])$p.value
+        pt <- pairwise.table(compare_levels, levels(g), p_adjust_method)
+      } else if (var %in% factor_vars) {
+        cont_table <- table(data[[var]], g)
+        compare_levels <- function(i, j) {
+          chisq.test(cont_table[, c(i, j)])$p.value
         }
-        pt <- pairwise.table(compare.levels, levels(g), p.adjust.method)
-      } else if (var %in% nonnormal.vars) {
-        compare.levels <- function(i, j) {
+        pt <- pairwise.table(compare_levels, levels(g), p_adjust_method)
+      } else if (var %in% nonnormal_vars) {
+        compare_levels <- function(i, j) {
           xi <- data[as.integer(g) == i, var]
           xj <- data[as.integer(g) == j, var]
           wilcox_test_pval(xi, xj)
         }
-        pt <- pairwise.table(compare.levels, levels(g), p.adjust.method)
+        pt <- pairwise.table(compare_levels, levels(g), p_adjust_method)
       } else {
-        pt <- pairwise.t.test(data[[var]], g, p.adjust.method = p.adjust.method)$p.value
+        pt <- pairwise.t.test(data[[var]], g, p.adjust.method = p_adjust_method)$p.value
       }
       tmp <- as.data.frame(as.table(pt))
       tmp$Var1 <- factor(tmp$Var1, levels = levels(g))
@@ -242,11 +260,12 @@ baseline.table <- function(data, var_types = NULL, strata = NULL, vars = setdiff
         mutate(Comparison = paste(Var1, Var2, sep = "_")) %>%
         select(Comparison, Freq)
       p_values_wide <- as.data.frame(pivot_wider(p_values_long, names_from = Comparison, values_from = Freq))
-      pairwise.result <- rbind(pairwise.result, p_values_wide)
+      pairwise_result <- rbind(pairwise_result, p_values_wide)
     }
-    rownames(pairwise.result) <- vars
-    write.csv(pairwise.result, file = str_replace(filename, ".csv", "_pairwise.csv"))
+    rownames(pairwise_result) <- vars
+    write.csv(pairwise_result, file = str_replace(filename, ".csv", "_pairwise.csv"))
   }
+  invisible(NULL)
 }
 
 # Calculate alpha by sample size with an experience formula
