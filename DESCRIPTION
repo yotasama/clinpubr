@@ -36,6 +36,7 @@ Imports:
     forestploter,
     ggplot2,
     magrittr,
+    openxlsx,
     rlang,
     rms,
     survival,

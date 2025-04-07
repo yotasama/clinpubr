@@ -3,9 +3,9 @@
 #' @param data A data frame.
 #' @param strata A character string indicating the column name of the strata variable.
 #' @param norm_test_by_group A logical value indicating whether to perform normality tests by group.
-#' @param omit_factor_above An integer indicating the maximum number of levels for a variable to be 
+#' @param omit_factor_above An integer indicating the maximum number of levels for a variable to be
 #'   considered a factor.
-#' @param num_to_factor An integer. Numerical variables with number of unique values below or equal 
+#' @param num_to_factor An integer. Numerical variables with number of unique values below or equal
 #'   to this value would be considered a factor.
 #' @param save_qqplots A logical value indicating whether to save QQ plots. Sometimes the normality
 #'   tests do not work well for some variables, and the QQ plots can be used to check the distribution.
@@ -17,26 +17,26 @@
 #'   \item{nonnormal_vars}{A character vector of variables that are nonnormal.}
 #'   \item{omitvars}{A character vector of variables that are excluded form the baseline table.}
 #'   \item{strata}{A character vector of the strata variable.}
-#' @note This function performs normality tests on the variables in the data frame and determines 
+#' @note This function performs normality tests on the variables in the data frame and determines
 #'   whether they are normal. This is done by performing Shapiro-Wilk, Lilliefors, Anderson-Darling,
 #'   Jarque-Bera, and Shapiro-Francia tests. If at least two of these tests indicate that the variable
 #'   is nonnormal, then it is considered nonnormal. To alieviate the problem that normality tests become
-#'   too sensitive when sample size gets larger, the alpha level is determined by an experience formula 
+#'   too sensitive when sample size gets larger, the alpha level is determined by an experience formula
 #'   that decrease with sample size.
-#' @note This function also marks the factor variables that require fisher exact tests if any cell haves 
-#'   expected frequency less than or equal to 5. Note that this criterion less strict than the commonly 
+#' @note This function also marks the factor variables that require fisher exact tests if any cell haves
+#'   expected frequency less than or equal to 5. Note that this criterion less strict than the commonly
 #'   used one.
-#'   
+#'
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
 #' get_var_types(cancer, strata = "sex")
 #'
-#' var_types <- get_var_types(cancer, strata = "sex", save_qqplots = T)
+#' var_types <- get_var_types(cancer, strata = "sex", save_qqplots = TRUE)
 #' # for some reason we want the variable "pat.karno" ro be considered normal.
 #' var_types$nonnormal_vars <- setdiff(var_types$nonnormal_vars, "pat.karno")
-get_var_types <- function(data, strata = NULL, norm_test_by_group = T, omit_factor_above = 20,
-                          num_to_factor = 5, save_qqplots = F, folder_name = "qqplots") {
+get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_factor_above = 20,
+                          num_to_factor = 5, save_qqplots = FALSE, folder_name = "qqplots") {
   if (save_qqplots && !file.exists(folder_name)) {
     dir.create(folder_name)
   }
@@ -80,14 +80,15 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = T, omit_fact
         factor_vars <- union(factor_vars, var)
         if (any(table(data[[var]]) <= 5)) {
           exact_vars <- union(exact_vars, var)
-        }else if(is.null(strata)) {
+        } else if (is.null(strata)) {
           next
-        }else {
-          x = table(data[[var]], data[[strata]])
+        } else {
+          x <- table(data[[var]], data[[strata]])
           nr <- as.integer(nrow(x))
           nc <- as.integer(ncol(x))
-          if (is.na(nr) || is.na(nc) || is.na(nr * nc)) 
-              stop("invalid nrow(x) or ncol(x)", domain = NA)
+          if (is.na(nr) || is.na(nc) || is.na(nr * nc)) {
+            stop("invalid nrow(x) or ncol(x)", domain = NA)
+          }
           sr <- rowSums(x)
           sc <- colSums(x)
           E <- outer(sr, sc) / sum(x)
@@ -97,7 +98,7 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = T, omit_fact
         }
       }
     } else {
-      all.pos <- all(data[[var]] >= 0, na.rm = T)
+      all.pos <- all(data[[var]] >= 0, na.rm = TRUE)
       for (i in seq_along(dat_list)) {
         dat <- dat_list[[i]]
         x <- c(scale(dat[[var]]))
@@ -117,8 +118,8 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = T, omit_fact
             }
           )
         }
-        if ((all.pos && (sd(x, na.rm = T) < mean(x, na.rm = T))) |
-          (sum(ps < alphas[i], na.rm = T) >= sum(!is.na(ps)) - 2)) {
+        if ((all.pos && (sd(x, na.rm = TRUE) < mean(x, na.rm = TRUE))) ||
+          (sum(ps < alphas[i], na.rm = TRUE) >= sum(!is.na(ps)) - 2)) {
           nonnormal_vars <- union(nonnormal_vars, var)
           prefix <- "nonnormal"
         } else {
@@ -135,17 +136,19 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = T, omit_fact
       }
     }
   }
-  res <- list(factor_vars = factor_vars, exact_vars = exact_vars, nonnormal_vars = nonnormal_vars,
-              omitvars = omitvars, strata = strata)
+  res <- list(
+    factor_vars = factor_vars, exact_vars = exact_vars, nonnormal_vars = nonnormal_vars,
+    omitvars = omitvars, strata = strata
+  )
   class(res) <- "var_types"
   res
 }
 
 #' Create a baseline table for a dataset.
-#' @description Create a baseline table and a table of missing values. If the strata variable has more 
+#' @description Create a baseline table and a table of missing values. If the strata variable has more
 #'   than 2 levels, a pairwise comparison table will also be created.
 #' @param data A data frame.
-#' @param var_types An object from class `var_types` returned by `get_var_types` function. 
+#' @param var_types An object from class `var_types` returned by `get_var_types` function.
 #' @param strata A variable to stratify the table. Overwrites the strata variable in `var_types`.
 #' @param vars A vector of variables to include in the table.
 #' @param factor_vars A vector of factor variables. Overwrites the factor variables in `var_types`.
@@ -155,7 +158,7 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = T, omit_fact
 #'   performing fisher exact tests.
 #' @param filename The name of the file to save the table. The file names for accompanying tables will
 #'   be the same as the main table, but with "_missing" and "_pairwise" appended.
-#' @param p_adjust_method The method to use for p-value adjustment for pairwise comparison. Default is "BH". 
+#' @param p_adjust_method The method to use for p-value adjustment for pairwise comparison. Default is "BH".
 #'   See `?p.adjust.methods`.
 #' @param ... Additional arguments passed to `tableone::print.TableOne`.
 #' @return `NULL`. The tables are saved to files.
@@ -171,26 +174,26 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = setdiff
     stop("Invalid 'var_types' arguement! Please use result from get_var_types function.")
   }
   if (!grepl(".csv", filename)) stop("please save as .csv file")
-  if (is.null(strata) & !is.null(var_types)) strata <- var_types$strata
+  if (is.null(strata) && !is.null(var_types)) strata <- var_types$strata
   if (!is.null(strata)) data <- data[!is.na(data[[strata]]), ]
-  if (is.null(factor_vars) & !is.null(var_types)) factor_vars <- var_types$factor_vars
-  if (is.null(exact_vars) & !is.null(var_types)) exact_vars <- var_types$exact_vars
-  if (is.null(nonnormal_vars) & !is.null(var_types)) nonnormal_vars <- var_types$nonnormal_vars
+  if (is.null(factor_vars) && !is.null(var_types)) factor_vars <- var_types$factor_vars
+  if (is.null(exact_vars) && !is.null(var_types)) exact_vars <- var_types$exact_vars
+  if (is.null(nonnormal_vars) && !is.null(var_types)) nonnormal_vars <- var_types$nonnormal_vars
   if (!is.null(var_types$omitvars)) vars <- setdiff(vars, var_types$omitvars)
   if (is.null(seed)) set.seed(seed)
-  
-  factor_vars = union(factor_vars, exact_vars)
+
+  factor_vars <- union(factor_vars, exact_vars)
 
   if (is.null(strata)) {
     tab1 <- CreateTableOne(
-      vars = vars, argsNormal = list(var.equal = F),
-      argsExact = list(workspace = 2 * 10^5, simulate.p.value = TRUE, B=1e4),
+      vars = vars, argsNormal = list(var.equal = FALSE),
+      argsExact = list(workspace = 2 * 10^5, simulate.p.value = TRUE, B = 1e4),
       data = data, factorVars = factor_vars, addOverall = TRUE
     )
   } else {
     tab1 <- CreateTableOne(
-      vars = vars, strata = strata, argsNormal = list(var.equal = F),
-      argsExact = list(workspace = 2 * 10^5, simulate.p.value = TRUE, B=1e4),
+      vars = vars, strata = strata, argsNormal = list(var.equal = FALSE),
+      argsExact = list(workspace = 2 * 10^5, simulate.p.value = TRUE, B = 1e4),
       data = data, factorVars = factor_vars, addOverall = TRUE
     )
   }
@@ -201,8 +204,8 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = setdiff
   write.csv(printed_table, file = filename)
 
   missing_df <- as.data.frame(is.na(data))
-  for (i in 1:ncol(missing_df)) {
-    missing_df[, i] <- factor(missing_df[, i], levels = c(F, T))
+  for (i in seq_len(ncol(missing_df))) {
+    missing_df[, i] <- factor(missing_df[, i], levels = c(FALSE, TRUE))
   }
   if (is.null(strata)) {
     tab2 <- CreateTableOne(
@@ -222,13 +225,13 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = setdiff
   if (!is.null(strata) && length(na.omit(unique(data[[strata]]))) > 2) {
     g <- factor(data[[strata]])
     pairwise_result <- data.frame()
-    for (var in vars) { 
+    for (var in vars) {
       if (var %in% exact_vars) {
         cont_table <- table(data[[var]], g)
         compare_levels <- function(i, j) {
           tryCatch(
             {
-              fisher.test(cont_table[, c(i, j)], simulate.p.value = TRUE, B=1e4)$p.value
+              fisher.test(cont_table[, c(i, j)], simulate.p.value = TRUE, B = 1e4)$p.value
             },
             error = function(e) {
               NA

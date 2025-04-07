@@ -63,7 +63,7 @@ int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL,
       }
     }
   }
-  res_df <- res_df[order(res_df$lin.pval, decreasing = F), ]
+  res_df <- res_df[order(res_df$lin.pval, decreasing = FALSE), ]
   res_df$lin.p.adj <- p.adjust(res_df$lin.pval)
   res_df$rcs.p.adj <- p.adjust(res_df$rcs.pval)
   if (try_rcs) {
@@ -76,7 +76,7 @@ int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL,
       filename <- "interaction_scan.xlsx"
     }
     if (grepl(".csv", filename)) {
-      write.csv(res_df, filename, row.names = F)
+      write.csv(res_df, filename, row.names = FALSE)
     } else if (grepl(".xlsx", filename)) {
       openxlsx::write.xlsx(res_df, filename)
     }
@@ -122,7 +122,8 @@ int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, gr
   }
   if (is.null(filename)) {
     filename <- paste0(paste0(c("interaction", predictor, "by", group_var, paste0("with_", length(covs), "covs")),
-      collapse = "_"), ".png")
+      collapse = "_"
+    ), ".png")
   }
 
   dat <- dplyr::select(data, all_of(c(y, predictor, group_var, time, covs)))
@@ -151,10 +152,10 @@ int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, gr
 
   tryCatch(
     {
-      formula <- create_formula(y, ".predictor", group_var = ".group_var", time = time, covs = covs, interaction = T)
+      formula <- create_formula(y, ".predictor", group_var = ".group_var", time = time, covs = covs, interaction = TRUE)
       if (analysis_type == "cox") {
         model <- rms::cph(formula, data = dat)
-      }else {
+      } else {
         model <- rms::Glm(formula, data = dat, family = binomial(link = "logit"))
       }
       p_value <- int_p_value(dat, y, ".predictor", ".group_var", time = time, covs = covs)
@@ -218,15 +219,17 @@ int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, gr
       {
         formula2 <- create_formula(y, ".predictor",
           group_var = ".group_var", time = time, covs = covs, rcs_knots = 4,
-          interaction = T
+          interaction = TRUE
         )
         if (analysis_type == "cox") {
           model2 <- rms::cph(formula2, data = dat)
-        }else {
+        } else {
           model2 <- rms::Glm(formula2, data = dat, family = binomial(link = "logit"))
         }
-        rcs_p_value <- int_p_value(dat, y, ".predictor", ".group_var", time = time, covs = covs,
-                                   rcs_knots = 4)
+        rcs_p_value <- int_p_value(dat, y, ".predictor", ".group_var",
+          time = time, covs = covs,
+          rcs_knots = 4
+        )
         y2 <- as.data.frame(Predict(model2, .predictor, .group_var,
           fun = exp, type = "predictions", conf.int = 0.95, digits = 2
         ))
@@ -303,11 +306,11 @@ int_p_value <- function(data, y, predictor, group_var, time = NULL, covs = NULL,
 
   formula1 <- create_formula(y, predictor, group_var,
     time = time, covs = covs, rcs_knots = rcs_knots,
-    interaction = F
+    interaction = FALSE
   )
   formula2 <- create_formula(y, predictor, group_var,
     time = time, covs = covs, rcs_knots = rcs_knots,
-    interaction = T
+    interaction = TRUE
   )
 
   if (analysis_type == "cox") {

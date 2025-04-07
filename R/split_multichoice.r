@@ -15,8 +15,8 @@ NULL
 #' @examples
 #' df <- data.frame(q1 = c("a b", "c d a", "b a"), q2 = c("a b", "a c", "d"))
 #' split_multichoice(df, quest_cols = c("q1", "q2"))
-split_multichoice <- function(df, quest_cols, split = "", remove_space = T,
-                              link = "_", remove_cols = T) {
+split_multichoice <- function(df, quest_cols, split = "", remove_space = TRUE,
+                              link = "_", remove_cols = TRUE) {
   for (col in quest_cols) {
     if (remove_space) {
       df[, col] <- str_remove_all(df[, col], " ")

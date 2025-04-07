@@ -6,8 +6,8 @@
 \usage{
 to_date(
   x,
-  from_excel = T,
-  print_failure = T,
+  from_excel = TRUE,
+  print_failure = TRUE,
   try_formats = c("\%Y-\%m-\%d", "\%Y/\%m/\%d", "\%Y\%m\%d", "\%Y.\%m.\%d")
 )
 }

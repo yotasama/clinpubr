@@ -16,12 +16,12 @@
 #' @returns A numeric vector.
 #' @export
 #' @examples
-#' x <- c("1.2(已复查)", "3.4(复查)", "5-8阳性", "未见", "满视野", "5.5", "4.2")
+#' x <- c("1.2(XXX)", "5-8POS", "NS", "FULL", "5.5", "4.2")
 #' extract_num(x)
-#' extract_num(x, res_type = "first", multimatch2na = TRUE)
-#' extract_num(x, res_type = "range", allow_neg = FALSE)
+#' extract_num(x, res_type = "first", multimatch2na = TRUE, zero_regexp = "NEG|NS", max_regexp = "FULL")
+#' extract_num(x, res_type = "range", allow_neg = FALSE, zero_regexp = "NEG|NS", max_regexp = "FULL")
 extract_num <- function(x, res_type = c("first", "range"), multimatch2na = FALSE, leq_1 = FALSE,
-                        allow_neg = TRUE, zero_regexp = "阴性|未见", max_regexp = "满", max_quantile = 0.95) {
+                        allow_neg = TRUE, zero_regexp = NULL, max_regexp = NULL, max_quantile = 0.95) {
   res_type <- match.arg(res_type)
   if (!is.null(zero_regexp)) {
     flag_zero <- grepl(zero_regexp, x)
@@ -37,10 +37,12 @@ extract_num <- function(x, res_type = c("first", "range"), multimatch2na = FALSE
   match_res <- regmatches(x, gregexpr(my_expr, x))
   if (res_type == "first") {
     res <- as.numeric(sapply(match_res, `[`, 1))
-    if (multimatch2na)
-      res[sapply(match_res, length) != 1] = NA
-    if (leq_1)
+    if (multimatch2na) {
+      res[sapply(match_res, length) != 1] <- NA
+    }
+    if (leq_1) {
       res[res > 1] <- NA
+    }
   } else if (res_type == "range") {
     res <- ifelse(
       sapply(match_res, length) == 1,

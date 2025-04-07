@@ -44,7 +44,7 @@
 #' rcs_plot(cancer, x = "age", y = "dead", covs = "ph.karno")
 rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = TRUE, ref = "median", ref_digits = 3,
                      group_by_ref = TRUE, group_title = NULL, group_labels = NULL, group_colors = NULL, breaks = 20,
-                     rcs_color = "#e23e57", print_p_ph = T, trans = "identity", save_plot = TRUE, filename = NULL,
+                     rcs_color = "#e23e57", print_p_ph = TRUE, trans = "identity", save_plot = TRUE, filename = NULL,
                      ratio_max = NULL, hist_max = NULL, xlim = NULL, return_details = FALSE) {
   if (!is.null(xlim) && length(xlim) != 2) stop("xlim must be a vector of length 2")
   if (is.null(group_colors)) {
@@ -72,8 +72,10 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
     for (i in 3:7) {
       formula <- create_formula(y, x, time = time, covs = covs, rcs_knots = i)
       if (analysis_type == "cox") {
-        fit <- rms::cph(formula, data = indf, x = TRUE, y = TRUE, se.fit = TRUE,
-                        tol = 1e-25, surv = TRUE)
+        fit <- rms::cph(formula,
+          data = indf, x = TRUE, y = TRUE, se.fit = TRUE,
+          tol = 1e-25, surv = TRUE
+        )
       } else {
         fit <- rms::Glm(formula, data = indf, x = TRUE, y = TRUE, family = binomial(link = "logit"))
       }
@@ -87,8 +89,10 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
   phassump <- NULL
   phresidual <- NULL
   if (analysis_type == "cox") {
-    fit <- rms::cph(formula, data = indf, x = TRUE, y = TRUE, se.fit = TRUE,
-                    tol = 1e-25, surv = TRUE)
+    fit <- rms::cph(formula,
+      data = indf, x = TRUE, y = TRUE, se.fit = TRUE,
+      tol = 1e-25, surv = TRUE
+    )
     phassump <- survival::cox.zph(fit, transform = "km")
     phresidual <- survminer::ggcoxzph(phassump)
     pvalue_ph <- phassump$table[1, 3]
@@ -99,7 +103,7 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
   anova_fit <- anova(fit)
   pvalue_all <- anova_fit[1, 3]
   pvalue_nonlin <- round(anova_fit[2, 3], 3)
-  df_pred <- rms::Predict(fit, name = x, fun = exp, type = "predictions", ref.zero = T, conf.int = 0.95, digits = 2)
+  df_pred <- rms::Predict(fit, name = x, fun = exp, type = "predictions", ref.zero = TRUE, conf.int = 0.95, digits = 2)
 
   df_pred <- data.frame(df_pred)
   if (ref == "min") {
@@ -114,17 +118,17 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
 
   if (!is.null(xlim)) {
     dd[["limits"]][c("Low:prediction", "High:prediction"), x] <- xlim
-  }else {
+  } else {
     xlim <- dd[["limits"]][c("Low:prediction", "High:prediction"), x]
   }
   dd_out <<- dd
   fit <- update(fit)
-  df_pred <- rms::Predict(fit, name = x, fun = exp, type = "predictions", ref.zero = T, conf.int = 0.95, digits = 2)
+  df_pred <- rms::Predict(fit, name = x, fun = exp, type = "predictions", ref.zero = TRUE, conf.int = 0.95, digits = 2)
   df_rcs <- as.data.frame(dplyr::select(df_pred, all_of(c(x, "yhat", "lower", "upper"))))
 
   colnames(df_rcs) <- c("x", "y", "lower", "upper")
   if (is.null(ratio_max)) {
-    ymax1 <- ceiling(min(max(df_rcs[, "upper"], na.rm = T), max(df_rcs[, "y"], na.rm = T) * 1.5))
+    ymax1 <- ceiling(min(max(df_rcs[, "upper"], na.rm = TRUE), max(df_rcs[, "y"], na.rm = TRUE) * 1.5))
   } else {
     ymax1 <- ratio_max
   }
@@ -166,7 +170,7 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
     if (length(breaks) == 1) {
       breaks <- break_at(xlim, breaks, ref_val)
     }
-    h <- hist(df_hist[[x]], breaks = breaks, right = FALSE, plot = F)
+    h <- hist(df_hist[[x]], breaks = breaks, right = FALSE, plot = FALSE)
 
     df_hist_plot <- data.frame(x = h[["mids"]], freq = h[["counts"]], pct = h[["counts"]] / sum(h[["counts"]]))
 
@@ -188,12 +192,12 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
           stat = "identity",
         ) +
         scale_fill_manual(values = group_colors, name = group_title)
-    }else {
+    } else {
       p <- p +
         geom_bar(
           data = df_hist_plot,
           aes(x = x, y = pct * 100 / scale_factor, fill = "1"),
-          stat = "identity", show.legend = F
+          stat = "identity", show.legend = FALSE
         ) +
         scale_fill_manual(values = group_colors)
     }
@@ -248,9 +252,10 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
       )
   }
   p <- p +
-    annotate("text", label = paste0("N = ", nrow(indf)), size = 5,
+    annotate("text",
+      label = paste0("N = ", nrow(indf)), size = 5,
       x = mean(ggplot_build(p)$layout$panel_params[[1]]$x.range), # x轴中点
-      y = max(ggplot_build(p)$layout$panel_params[[1]]$y.range) * 0.9,  # y轴最大值
+      y = max(ggplot_build(p)$layout$panel_params[[1]]$y.range) * 0.9, # y轴最大值
       hjust = 0.5, vjust = 0.5
     ) +
     theme_bw() +
@@ -263,8 +268,9 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
 
   if (save_plot) {
     if (is.null(filename)) {
-      filename = paste0(paste0(c(x, paste0(knot, "knot"), paste0("with_", length(covs), "covs")),
-                               collapse = "_"), ".png")
+      filename <- paste0(paste0(c(x, paste0(knot, "knot"), paste0("with_", length(covs), "covs")),
+        collapse = "_"
+      ), ".png")
     }
     ggsave(filename, p, width = 6, height = 6)
   }
@@ -278,7 +284,7 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
       ref = ref_val, plot = p
     )
     return(details)
-  }else {
+  } else {
     return(p)
   }
 }
@@ -292,8 +298,8 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
 #' @returns A vector of breaks of length `breaks + 1`.
 #' @export
 #' @examples
-#' break_at(xlim = c(0,10), breaks = 12, ref_val = 3.12)
-break_at = function(xlim, breaks, ref_val) {
+#' break_at(xlim = c(0, 10), breaks = 12, ref_val = 3.12)
+break_at <- function(xlim, breaks, ref_val) {
   if (length(xlim) != 2) stop("xlim must be a vector of length 2")
   bks <- seq(xlim[1], xlim[2], length.out = breaks + 1)
   if (!ref_val %in% bks) {

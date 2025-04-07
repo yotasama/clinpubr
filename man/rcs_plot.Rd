@@ -20,7 +20,7 @@ rcs_plot(
   group_colors = NULL,
   breaks = 20,
   rcs_color = "#e23e57",
-  print_p_ph = T,
+  print_p_ph = TRUE,
   trans = "identity",
   save_plot = TRUE,
   filename = NULL,

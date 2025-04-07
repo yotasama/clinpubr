@@ -4,7 +4,7 @@
 \alias{unmake_names}
 \title{Unmake names}
 \usage{
-unmake_names(x, ori_names, wrap_backtick = F)
+unmake_names(x, ori_names, wrap_backtick = FALSE)
 }
 \arguments{
 \item{x}{A vector of "maked" names.}

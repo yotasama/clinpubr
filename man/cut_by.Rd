@@ -43,5 +43,5 @@ left closed right open convention.
 \examples{
 set.seed(123)
 cut_by(rnorm(100), c(0, 1, 2))
-cut_by(rnorm(100), c(1/3,2/3), breaks_as_quantiles = TRUE, label_type = "LMH")
+cut_by(rnorm(100), c(1 / 3, 2 / 3), breaks_as_quantiles = TRUE, label_type = "LMH")
 }

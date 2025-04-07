@@ -10,7 +10,7 @@
 #' @export
 #' @examples
 #' to_date(c(43562, "2020-01-01", "2020/01/01", "20200101", "2020.01.01"))
-to_date <- function(x, from_excel = T, print_failure = T,
+to_date <- function(x, from_excel = TRUE, print_failure = TRUE,
                     try_formats = c("%Y-%m-%d", "%Y/%m/%d", "%Y%m%d", "%Y.%m.%d")) {
   if (is.numeric(x)) {
     if (from_excel) {
@@ -27,7 +27,7 @@ to_date <- function(x, from_excel = T, print_failure = T,
   y
 }
 
-.to_date <- function(x, from_excel = T, print_failure = T,
+.to_date <- function(x, from_excel = TRUE, print_failure = TRUE,
                      try_formats = c("%Y-%m-%d", "%Y/%m/%d", "%Y%m%d", "%Y.%m.%d")) {
   if (suppressWarnings((!is.na(as.numeric(x))) && (as.numeric(x) < 100000) && from_excel)) {
     as.Date(as.numeric(x), origin = "1899-12-30")

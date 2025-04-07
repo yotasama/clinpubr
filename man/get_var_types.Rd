@@ -7,10 +7,10 @@
 get_var_types(
   data,
   strata = NULL,
-  norm_test_by_group = T,
+  norm_test_by_group = TRUE,
   omit_factor_above = 20,
   num_to_factor = 5,
-  save_qqplots = F,
+  save_qqplots = FALSE,
   folder_name = "qqplots"
 )
 }
@@ -59,7 +59,7 @@ used one.
 data(cancer, package = "survival")
 get_var_types(cancer, strata = "sex")
 
-var_types <- get_var_types(cancer, strata = "sex", save_qqplots = T)
+var_types <- get_var_types(cancer, strata = "sex", save_qqplots = TRUE)
 # for some reason we want the variable "pat.karno" ro be considered normal.
 var_types$nonnormal_vars <- setdiff(var_types$nonnormal_vars, "pat.karno")
 }

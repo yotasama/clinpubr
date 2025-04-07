@@ -18,5 +18,5 @@ A formula.
 Add covariates to a formula. Support both formula and character string.
 }
 \examples{
-formula_add_covs(y ~ a + b, c("c", "d"))
+formula_add_covs("y ~ a + b", c("c", "d"))
 }

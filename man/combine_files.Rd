@@ -7,7 +7,7 @@
 combine_files(
   path = ".",
   pattern = NULL,
-  unique_only = T,
+  unique_only = TRUE,
   reader_fun = read.csv,
   ...
 )

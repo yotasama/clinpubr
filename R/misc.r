@@ -175,7 +175,7 @@ fill_with_last <- function(x) {
 #' ori_names <- c("xx (mg/dl)", "b*x", "Covid-19")
 #' x <- c(make.names(ori_names), "aa")
 #' unmake_names(x, ori_names)
-unmake_names <- function(x, ori_names, wrap_backtick = F) {
+unmake_names <- function(x, ori_names, wrap_backtick = FALSE) {
   out <- ori_names[match(x, make.names(ori_names))]
   if (wrap_backtick) {
     out[!is.na(out)] <- paste0("`", out[!is.na(out)], "`")
@@ -191,7 +191,7 @@ unmake_names <- function(x, ori_names, wrap_backtick = F) {
 #' @returns A formula.
 #' @export
 #' @examples
-#' formula_add_covs(y ~ a + b, c("c", "d"))
+#' formula_add_covs("y ~ a + b", c("c", "d"))
 formula_add_covs <- function(formula, covs) {
   if (!class(formula) %in% c("formula", "character")) stop("formula should be a formula or a character string")
   if (is.null(covs)) {
@@ -217,6 +217,8 @@ formula_add_covs <- function(formula, covs) {
 #'
 #' @returns A plot.
 #' @export
+#' @examples
+#' qq_show(rnorm(100))
 qq_show <- function(x,
                     title = NULL,
                     save = FALSE,
@@ -228,8 +230,10 @@ qq_show <- function(x,
     stat_qq(size = 0.5) +
     geom_abline(slope = 1, intercept = 0, alpha = 0.3, lwd = 0.5) +
     theme_classic() +
-    theme(plot.title = element_text(hjust = 0.5),
-          axis.text = element_text(colour = "black"))
+    theme(
+      plot.title = element_text(hjust = 0.5),
+      axis.text = element_text(colour = "black")
+    )
   if (!is.null(title)) {
     p <- p + labs(title = title)
   }

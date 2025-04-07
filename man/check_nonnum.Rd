@@ -4,7 +4,7 @@
 \alias{check_nonnum}
 \title{Check elements that are not numeric}
 \usage{
-check_nonnum(x, return_idx = F, show_unique = T)
+check_nonnum(x, return_idx = FALSE, show_unique = TRUE)
 }
 \arguments{
 \item{x}{A string vector that stores numerical values.}
@@ -26,5 +26,5 @@ The function uses the \code{as.numeric()} function to try to convert the element
 If the conversion fails, the element is considered non-numeric.
 }
 \examples{
-check_nonnum(c("１２３", "11..23", "11ａ：","2.131","35.2."))
+check_nonnum(c("１２３", "11..23", "11ａ：", "2.131", "35.2."))
 }

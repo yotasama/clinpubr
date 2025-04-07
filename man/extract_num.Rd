@@ -10,8 +10,8 @@ extract_num(
   multimatch2na = FALSE,
   leq_1 = FALSE,
   allow_neg = TRUE,
-  zero_regexp = "阴性|未见",
-  max_regexp = "满",
+  zero_regexp = NULL,
+  max_regexp = NULL,
   max_quantile = 0.95
 )
 }
@@ -46,8 +46,8 @@ The function uses regular expressions to extract numbers from strings. The regul
 negative sign.
 }
 \examples{
-x <- c("1.2(已复查)", "3.4(复查)", "5-8阳性", "未见", "满视野", "5.5", "4.2")
+x <- c("1.2(XXX)", "5-8POS", "NS", "FULL", "5.5", "4.2")
 extract_num(x)
-extract_num(x, res_type = "first", multimatch2na = TRUE)
-extract_num(x, res_type = "range", allow_neg = FALSE)
+extract_num(x, res_type = "first", multimatch2na = TRUE, zero_regexp = "NEG|NS", max_regexp = "FULL")
+extract_num(x, res_type = "range", allow_neg = FALSE, zero_regexp = "NEG|NS", max_regexp = "FULL")
 }

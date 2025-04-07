@@ -8,9 +8,9 @@ split_multichoice(
   df,
   quest_cols,
   split = "",
-  remove_space = T,
+  remove_space = TRUE,
   link = "_",
-  remove_cols = T
+  remove_cols = TRUE
 )
 }
 \arguments{

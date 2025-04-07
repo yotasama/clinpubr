@@ -29,7 +29,10 @@ would expect an exact match of \code{seq}.
 dat <- data.frame(Q1 = c("A", "B", "C"), Q2 = c("AD", "AE", "ABF"))
 seq <- c("A", "AE")
 answer_check(dat, seq)
-dat <- data.frame(Q1 = c("A", "B", "C"), Q2.A = c(T, T, F), Q2.B = c(T, F, T), Q2.C = c(F, T, F))
+dat <- data.frame(
+  Q1 = c("A", "B", "C"), Q2.A = c(TRUE, TRUE, FALSE),
+  Q2.B = c(TRUE, FALSE, TRUE), Q2.C = c(FALSE, TRUE, FALSE)
+)
 seq <- c("A", "TFT")
 answer_check(dat, seq, multi_column = TRUE)
 }

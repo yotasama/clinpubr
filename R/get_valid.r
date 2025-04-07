@@ -11,8 +11,8 @@
 #' @export
 #' @examples
 #' get_valid(c(NA, 1, 2, NA, 3, NA, 4))
-#' get_valid(c(NA, 1, NA), mode = "last", disjoint = T)
-get_valid <- function(l, mode = c("first", "mid", "last"), disjoint = F) {
+#' get_valid(c(NA, 1, NA), mode = "last", disjoint = TRUE)
+get_valid <- function(l, mode = c("first", "mid", "last"), disjoint = FALSE) {
   mode <- match.arg(mode)
   tmp <- na.omit(l)
   if (length(tmp) > 0) {

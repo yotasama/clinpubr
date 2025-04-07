@@ -23,13 +23,17 @@
 #' @examples
 #' data(cancer, package = "survival")
 #' # coxph model with time assigned
-#' subgroup_forest(cancer, var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "status",
-#'   time = "time", covs = "ph.karno", ticks_at = c(1, 2))
+#' subgroup_forest(cancer,
+#'   var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "status",
+#'   time = "time", covs = "ph.karno", ticks_at = c(1, 2)
+#' )
 #'
 #' # logistic model with time not assigned
 #' cancer$dead <- cancer$status == 2
-#' subgroup_forest(cancer, var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "dead",
-#'   covs = "ph.karno", ticks_at = c(1, 2))
+#' subgroup_forest(cancer,
+#'   var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "dead",
+#'   covs = "ph.karno", ticks_at = c(1, 2)
+#' )
 subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL, decimal_est = 2, p_nsmall = 3,
                             group_cut_quantiles = 0.5, save_plot = TRUE, filename = NULL, ...) {
   if (!is.numeric(data[[x]]) && (!is.factor(data[[x]]) || length(levels(data[[x]])) != 2)) {
@@ -53,7 +57,7 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
 
   indf <- cbind(indf, dplyr::select(data, all_of(var_subgroups)))
   plot_nrow <- 4 + length(var_subgroups)
-  for (var in var_subgroups){
+  for (var in var_subgroups) {
     indf[[var]] <- to_factor(indf[[var]])
     plot_nrow <- plot_nrow + length(levels(indf[[var]]))
   }
@@ -116,7 +120,7 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
           Variable = paste("  ", lvl), Count = if (analysis_type == "cox") model$n else stats::nobs(model),
           Percent = NA, `Point Estimate` = lvl_res$estimate,
           Lower = lvl_res$conf.low, Upper = lvl_res$conf.high,
-          `P value` = lvl_res$p.value, `P for interaction` = NA, check.names = F
+          `P value` = lvl_res$p.value, `P for interaction` = NA, check.names = FALSE
         )
       )
     }

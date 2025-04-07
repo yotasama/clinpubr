@@ -20,5 +20,5 @@ A vector of breaks of length \code{breaks + 1}.
 Generate breaks for histogram that covers xlim and includes a ref_val.
 }
 \examples{
-break_at(xlim = c(0,10), breaks = 12, ref_val = 3.12)
+break_at(xlim = c(0, 10), breaks = 12, ref_val = 3.12)
 }

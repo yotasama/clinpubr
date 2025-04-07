@@ -6,6 +6,7 @@
 #' @import stringr
 #' @import rlang
 #' @import tableone
+#' @import openxlsx
 #' @importFrom broom tidy
 #' @importFrom tidyr pivot_wider
 #' @importFrom forestploter forest
@@ -13,24 +14,24 @@
 #' @importFrom tibble as_tibble
 #' @importFrom fBasics shapiroTest lillieTest adTest jarqueberaTest sfTest
 
-.color_panel = c("#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854", "#FFD92F", "#E5C494", "#B3B3B3")
+.color_panel <- c("#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854", "#FFD92F", "#E5C494", "#B3B3B3")
 
 # Load packages, install if necessary
 load_packages <- function(pkgs) {
   for (pkg in pkgs) {
-    if (!require(pkg, character.only = T, quietly = T)) {
-      install.packages(pkg, character.only = T)
-      require(pkg, character.only = T, quietly = T)
+    if (!require(pkg, character.only = TRUE, quietly = TRUE)) {
+      install.packages(pkg, character.only = TRUE)
+      require(pkg, character.only = TRUE, quietly = TRUE)
     }
   }
 }
 
 # Create a formula for coxph or glm
 create_formula <- function(y, predictor, group_var = NULL, time = NULL, covs = NULL, rcs_knots = NULL,
-                           interaction = F) {
+                           interaction = FALSE) {
   if (!is.null(time)) {
     outcome <- paste0("Surv(", time, ",", y, ")")
-  }else {
+  } else {
     outcome <- y
   }
   if (!is.null(rcs_knots)) {
@@ -48,9 +49,9 @@ create_formula <- function(y, predictor, group_var = NULL, time = NULL, covs = N
 }
 
 # Convert a numeric vector to a factor
-to_factor <- function(x, max_numerical_groups = 5, na_as_level = F) {
+to_factor <- function(x, max_numerical_groups = 5, na_as_level = FALSE) {
   if (is.numeric(x) && (length(na.omit(unique(x))) > max_numerical_groups)) {
-    x <- cut_by(x, 0.5, breaks_as_quantiles = T)
+    x <- cut_by(x, 0.5, breaks_as_quantiles = TRUE)
   } else {
     x <- as.factor(x)
   }

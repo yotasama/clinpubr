@@ -9,8 +9,8 @@
 #' @returns A data frame. If no data files found, return `NULL`.
 #' @export
 
-combine_files <- function(path = ".", pattern = NULL, unique_only = T, reader_fun = read.csv, ...) {
-  files <- list.files(path = path, pattern = pattern, full.names = T)
+combine_files <- function(path = ".", pattern = NULL, unique_only = TRUE, reader_fun = read.csv, ...) {
+  files <- list.files(path = path, pattern = pattern, full.names = TRUE)
   if (length(files) > 0) {
     for (f in files) {
       tmp <- reader_fun(f, ...)

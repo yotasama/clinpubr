@@ -17,7 +17,7 @@
 #' @examples
 #' set.seed(123)
 #' cut_by(rnorm(100), c(0, 1, 2))
-#' cut_by(rnorm(100), c(1/3,2/3), breaks_as_quantiles = TRUE, label_type = "LMH")
+#' cut_by(rnorm(100), c(1 / 3, 2 / 3), breaks_as_quantiles = TRUE, label_type = "LMH")
 cut_by <- function(x, breaks,
                    breaks_as_quantiles = FALSE,
                    labels = NULL,
@@ -35,14 +35,14 @@ cut_by <- function(x, breaks,
     cut.labels <- NULL
   }
   if (breaks_as_quantiles) {
-    cut(x, c(quantile(x, c(0, breaks, 1), na.rm = T)),
-      right = F,
-      include.lowest = T, labels = cut.labels, ...
+    cut(x, c(quantile(x, c(0, breaks, 1), na.rm = TRUE)),
+      right = FALSE,
+      include.lowest = TRUE, labels = cut.labels, ...
     )
   } else {
     cut(x, c(-Inf, breaks, Inf),
-      right = F,
-      include.lowest = T, labels = cut.labels, ...
+      right = FALSE,
+      include.lowest = TRUE, labels = cut.labels, ...
     )
   }
 }

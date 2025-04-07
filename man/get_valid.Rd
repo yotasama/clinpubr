@@ -4,7 +4,7 @@
 \alias{get_valid}
 \title{Get one valid value from vector.}
 \usage{
-get_valid(l, mode = c("first", "mid", "last"), disjoint = F)
+get_valid(l, mode = c("first", "mid", "last"), disjoint = FALSE)
 }
 \arguments{
 \item{l}{A vector.}
@@ -24,5 +24,5 @@ Extract one valid (non-NA) value from a vector.
 }
 \examples{
 get_valid(c(NA, 1, 2, NA, 3, NA, 4))
-get_valid(c(NA, 1, NA), mode = "last", disjoint = T)
+get_valid(c(NA, 1, NA), mode = "last", disjoint = TRUE)
 }

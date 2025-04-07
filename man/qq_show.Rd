@@ -32,3 +32,6 @@ A plot.
 \description{
 QQ plot for a sample.
 }
+\examples{
+qq_show(rnorm(100))
+}
