@@ -40,5 +40,6 @@ logistic or Cox proportional hazards model.
 }
 \examples{
 data(cancer, package = "survival")
-int_p_value(data = cancer, y = "status", predictor = "age", group_var = "sex", time = "time", rcs_knots = 3)
+int_p_value(data = cancer, y = "status", predictor = "age", group_var = "sex",
+            time = "time", rcs_knots = 3)
 }

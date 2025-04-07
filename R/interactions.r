@@ -298,7 +298,8 @@ int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, gr
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
-#' int_p_value(data = cancer, y = "status", predictor = "age", group_var = "sex", time = "time", rcs_knots = 3)
+#' int_p_value(data = cancer, y = "status", predictor = "age", group_var = "sex",
+#'             time = "time", rcs_knots = 3)
 int_p_value <- function(data, y, predictor, group_var, time = NULL, covs = NULL, rcs_knots = NULL) {
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
   data[[group_var]] <- to_factor(data[[group_var]])

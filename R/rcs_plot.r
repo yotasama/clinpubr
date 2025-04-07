@@ -236,7 +236,7 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
       scale_y_continuous(
         ytitle1,
         expand = c(0, 0),
-        limit = c(0, ymax1),
+        limits = c(0, ymax1),
         transform = trans,
         sec.axis = sec_axis(
           name = ytitle2, transform = ~ . * scale_factor,
@@ -247,7 +247,7 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
       scale_y_continuous(
         ytitle1,
         expand = c(0, 0),
-        limit = c(0, ymax1),
+        limits = c(0, ymax1),
         transform = trans
       )
   }
