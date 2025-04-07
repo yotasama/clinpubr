@@ -7,6 +7,7 @@
 #' @param labels A vector of labels for the resulting factor levels.
 #' @param label_type If `labels` is `NULL`, this sets the label type. `"ori"` for original labels,
 #'   `"LMH"` for "Low Medium High" style.
+#' @param ... Other arguments passed to `base::cut()`.
 #'
 #' @details `cut_by()` is a wrapper for `base::cut()`. Compared with the argument `breaks` in `base::cut()`,
 #'   `breaks` here automatically sets the minimum and maximum to `-Inf` and `Inf`.

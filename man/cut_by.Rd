@@ -25,6 +25,8 @@ is a proportion of the data. See \code{Details}.}
 
 \item{label_type}{If \code{labels} is \code{NULL}, this sets the label type. \code{"ori"} for original labels,
 \code{"LMH"} for "Low Medium High" style.}
+
+\item{...}{Other arguments passed to \code{base::cut()}.}
 }
 \value{
 A factor.
