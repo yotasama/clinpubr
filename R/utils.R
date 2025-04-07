@@ -7,6 +7,9 @@
 #' @import rlang
 #' @import tableone
 #' @import openxlsx
+#' @import ResourceSelection
+#' @import pROC
+#' @importFrom caret confusionMatrix
 #' @importFrom broom tidy
 #' @importFrom tidyr pivot_wider
 #' @importFrom forestploter forest
