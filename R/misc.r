@@ -39,8 +39,6 @@ format_pval <- function(p) {
   base::format.pval(p, digits = 1, nsmall = 2, eps = 1e-3)
 }
 
-#' @importFrom DescTools Mode
-NULL
 #' Calculate the first mode
 #' @description  Calculate the first mode of a vector. Ignore NA values.
 #'   Can be used if any mode is acceptable.
@@ -58,7 +56,7 @@ first_mode <- function(x) {
   } else if (l == 1 || l == length(x)) {
     x[1]
   } else {
-    Mode(x)[1]
+    DescTools::Mode(x)[1]
   }
 }
 

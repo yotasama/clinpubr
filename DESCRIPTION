@@ -1,10 +1,15 @@
-Package: easypubr
-Title: Tools that Make Publication Easier
+Package: ezmedpub
+Title: Tools that Make Medical Publication Easier
 Version: 0.0.0.9000
 Authors@R: 
-    person("Yue", "Niu", , "niuyuesam@163.com", role = c("aut", "cre"))
-Description: Useful tools that generate various types of figures commonly used in publication, 
-    along with some convenient data cleaning tools.
+    person("Yue", "Niu", email = "niuyuesam@163.com", role = c("aut", "cre"))
+Description: 'easypubr' provides some easy-to-use functions for creating various 
+    types of figures and tables commonly used in medical publication, along with 
+    some convenient data cleaning tools. This package makes it possible to create 
+    figures and tables with only a few lines of code.
+Maintainer: Yue Niu <niuyuesam@163.com>
+URL: https://github.com/yotasama/ezmedpub
+BugReports: https://github.com/yotasama/ezmedpub/issues
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -14,6 +19,7 @@ Collate:
     'baseline_table.r'
     'calculate_index.r'
     'check_nonnum.r'
+    'classif_model_compare.r'
     'combine_files.r'
     'cut_by.r'
     'extract_num.r'
@@ -44,5 +50,4 @@ Imports:
     survival,
     survminer,
     tableone,
-    tibble,
     tidyr
