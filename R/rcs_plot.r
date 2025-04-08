@@ -269,8 +269,7 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
   if (save_plot) {
     if (is.null(filename)) {
       filename <- paste0(paste0(c(x, paste0(knot, "knot"), paste0("with_", length(covs), "covs")),
-        collapse = "_"
-      ), ".png")
+                                collapse = "_"), ".png")
     }
     ggsave(filename, p, width = 6, height = 6)
   }
