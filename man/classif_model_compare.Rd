@@ -4,19 +4,24 @@
 \alias{classif_model_compare}
 \title{Performance comparison of classification models}
 \usage{
-classif_model_compare(pred_list, target, filename = "model_compare.csv")
+classif_model_compare(
+  data,
+  target_var,
+  model_names,
+  filename = "model_compare.csv"
+)
 }
 \arguments{
-\item{pred_list}{A named list of predictions from models.}
+\item{data}{A data frame containing the target variable and the predicted values.}
 
-\item{target}{A favtor vector of classification labels with two levels. The second
-level would be considered positive. Must be of the same length as the prediction
-sublists form \code{pred_list}.}
+\item{target_var}{A string specifying the name of the target variable in the data frame.}
+
+\item{model_names}{A vector of strings specifying the names of the models to compare.}
 
 \item{filename}{A string specifying the filename to save the comparison results.}
 }
 \value{
-A data frame with additional columns.
+A data frame.
 }
 \description{
 Compare the performance of classification models by commonly used
@@ -24,7 +29,7 @@ metrics.
 }
 \details{
 This function calculates various performance metrics for each model
-in the \code{pred_list} and saves the results to a CSV file.
+and output the comparison table and plots.
 }
 \section{Metrics}{
 
@@ -48,11 +53,10 @@ based on this value.
 \examples{
 data(cancer, package = "survival")
 cancer$dead <- factor(cancer$status == 2)
+cancer <- na.omit(cancer[, c("dead", "age", "ph.ecog")])
 
-model <- glm(dead ~ age + sex + ph.ecog, family = binomial(), data = cancer)
-logistic_pred <- predict(model, newdata = cancer, type = "response")
+model <- glm(dead ~ age + ph.ecog, family = binomial(), data = cancer)
+cancer$logistic_pred <- predict(model, newdata = cancer, type = "response")
 
-set.seed(123)
-dummy_pred <- rnorm(length(pred))
-classif_model_compare(list(logistic_pred, dummy_pred), cancer$dead)
+classif_model_compare(cancer, "dead", c("logistic_pred","age", "ph.ecog"))
 }
