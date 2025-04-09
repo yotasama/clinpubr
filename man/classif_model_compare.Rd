@@ -8,7 +8,10 @@ classif_model_compare(
   data,
   target_var,
   model_names,
-  filename = "model_compare.csv"
+  colors = NULL,
+  output_files = TRUE,
+  output_prefix = "model_compare",
+  return_results = !output_files
 )
 }
 \arguments{
@@ -18,7 +21,13 @@ classif_model_compare(
 
 \item{model_names}{A vector of strings specifying the names of the models to compare.}
 
-\item{filename}{A string specifying the filename to save the comparison results.}
+\item{colors}{A vector of colors to use for the plots.}
+
+\item{output_files}{A logical value indicating whether to output the results to files.}
+
+\item{output_prefix}{A string specifying the prefix for the output files.}
+
+\item{return_results}{A logical value indicating whether to return the results.}
 }
 \value{
 A data frame.
@@ -58,5 +67,5 @@ cancer <- na.omit(cancer[, c("dead", "age", "ph.ecog")])
 model <- glm(dead ~ age + ph.ecog, family = binomial(), data = cancer)
 cancer$logistic_pred <- predict(model, newdata = cancer, type = "response")
 
-classif_model_compare(cancer, "dead", c("logistic_pred","age", "ph.ecog"))
+classif_model_compare(cancer, "dead", c("logistic_pred", "age", "ph.ecog"))
 }
