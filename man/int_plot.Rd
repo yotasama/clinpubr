@@ -53,7 +53,7 @@ Otherwise, Cox proportional hazards regression is used.}
 \item{...}{Additional arguments passed to the \code{ggplot} function.}
 }
 \value{
-A plot object.
+A \code{ggplot} object.
 }
 \description{
 Plot interactions between variables. Both logistic and Cox proportional hazards regression models

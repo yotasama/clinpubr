@@ -86,7 +86,7 @@ Passed to \code{ggplot2::scale_y_continuous(transform = trans)}.}
 \item{return_details}{A logical value indicating whether to return the details of the plot.}
 }
 \value{
-A ggplot2 object, or a list containing the ggplot2 object and other details if \code{return_details} is \code{TRUE}.
+A \code{ggplot} object, or a list containing the \code{ggplot} object and other details if \code{return_details} is \code{TRUE}.
 }
 \description{
 Plot ristricted cubic spline based on rms package. Support both logistic and cox model.

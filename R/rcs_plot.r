@@ -32,7 +32,7 @@
 #' @param xlim The x-axis limits for the plot. If `NULL`, the limits are determined automatically.
 #' @param return_details A logical value indicating whether to return the details of the plot.
 #'
-#' @returns A ggplot2 object, or a list containing the ggplot2 object and other details if `return_details` is `TRUE`.
+#' @returns A `ggplot` object, or a list containing the `ggplot` object and other details if `return_details` is `TRUE`.
 #' @export
 #' @examples
 #' data(cancer, package = "survival")

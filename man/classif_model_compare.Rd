@@ -21,7 +21,8 @@ classif_model_compare(
 
 \item{model_names}{A vector of strings specifying the names of the models to compare.}
 
-\item{colors}{A vector of colors to use for the plots.}
+\item{colors}{A vector of colors to use for the plots. The last 2 colors are used for the
+"Treat all" and "Treat none" lines in the DCA plot.}
 
 \item{output_files}{A logical value indicating whether to output the results to files.}
 
@@ -30,15 +31,19 @@ classif_model_compare(
 \item{return_results}{A logical value indicating whether to return the results.}
 }
 \value{
-A data frame.
+A list of various results. If the output files are not in desired format,
+these results can be modified for further use.
+\itemize{
+\item model_metrics: A data frame containing the performance metrics for each model.
+\item roc_plots: A \code{ggplot} object of ROC curves.
+\item dca_plots: A \code{ggplot} object of decision curve analysis plots.
+\item calibration_plots: A \code{ggplot} object of calibration plots.
+}
 }
 \description{
 Compare the performance of classification models by commonly used
-metrics.
-}
-\details{
-This function calculates various performance metrics for each model
-and output the comparison table and plots.
+metrics, and generate commonly used plots including receiver operating characteristic
+curve plot, decision curve analysis plot, and calibration plot.
 }
 \section{Metrics}{
 
@@ -61,11 +66,14 @@ based on this value.
 
 \examples{
 data(cancer, package = "survival")
-cancer$dead <- factor(cancer$status == 2)
-cancer <- na.omit(cancer[, c("dead", "age", "ph.ecog")])
+df <- kidney
+df$dead <- ifelse(df$time <= 100 & df$status == 0, NA, df$time <= 100)
+df <- na.omit(df[, -c(1:3)])
 
-model <- glm(dead ~ age + ph.ecog, family = binomial(), data = cancer)
-cancer$logistic_pred <- predict(model, newdata = cancer, type = "response")
+model0 <- glm(dead ~ age + frail, family = binomial(), data = df)
+df$base_pred <- predict(model0, type = "response")
+model <- glm(dead ~ ., family = binomial(), data = df)
+df$full_pred <- predict(model, type = "response")
 
-classif_model_compare(cancer, "dead", c("logistic_pred", "age", "ph.ecog"))
+classif_model_compare(df, "dead", c("base_pred", "full_pred"))
 }

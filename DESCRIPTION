@@ -36,6 +36,7 @@ Collate:
 Imports: 
     broom,
     caret,
+    dcurves,
     DescTools,
     dplyr,
     fBasics,

@@ -105,7 +105,7 @@ int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL,
 #' @param xlab The label of the x-axis.
 #' @param group_title The title of the group variable.
 #' @param ... Additional arguments passed to the `ggplot` function.
-#' @return A plot object.
+#' @return A `ggplot` object.
 #' @export
 #' @examples
 #' data(cancer, package = "survival")

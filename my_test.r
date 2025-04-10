@@ -1,49 +1,23 @@
-#' Performance comparison of classification models
-#' @description Compare the performance of classification models by commonly used
-#'   metrics, and generate commonly used plots including receiver operating characteristic
-#'   curve plot, decision curve analysis plot, and calibration plot.
-#' @param data A data frame containing the target variable and the predicted values.
-#' @param target_var A string specifying the name of the target variable in the data frame.
-#' @param model_names A vector of strings specifying the names of the models to compare.
-#' @param colors A vector of colors to use for the plots. The last 2 colors are used for the
-#'   "Treat all" and "Treat none" lines in the DCA plot.
-#' @param output_files A logical value indicating whether to output the results to files.
-#' @param output_prefix A string specifying the prefix for the output files.
-#' @param return_results A logical value indicating whether to return the results.
-#' @section Metrics:
-#'   - AUC: Area Under the Receiver Operating Characteristic Curve
-#'   - Accuracy: Overall accuracy
-#'   - Sensitivity: True positive rate
-#'   - Specificity: True negative rate
-#'   - Pos Pred Value: Positive predictive value
-#'   - Neg Pred Value: Negative predictive value
-#'   - F1: F1 score
-#'   - Kappa: Cohen's kappa
-#'   - Brier: Brier score
-#'   - cutoff: Optimal cutoff for classification, metrics that require a cutoff are
-#'     based on this value.
-#'   - Youden: Youden's J statistic
-#'   - HosLem: Hosmer-Lemeshow test p-value
-#'
-#' @returns A list of various results. If the output files are not in desired format,
-#'   these results can be modified for further use.
-#'   - model_metrics: A data frame containing the performance metrics for each model.
-#'   - roc_plots: A `ggplot` object of ROC curves.
-#'   - dca_plots: A `ggplot` object of decision curve analysis plots.
-#'   - calibration_plots: A `ggplot` object of calibration plots.
-#' @export
-#' @examples
-#' data(cancer, package = "survival")
-#' df <- kidney
-#' df$dead <- ifelse(df$time <= 100 & df$status == 0, NA, df$time <= 100)
-#' df <- na.omit(df[, -c(1:3)])
-#'
-#' model0 <- glm(dead ~ age + frail, family = binomial(), data = df)
-#' df$base_pred <- predict(model0, type = "response")
-#' model <- glm(dead ~ ., family = binomial(), data = df)
-#' df$full_pred <- predict(model, type = "response")
-#'
-#' classif_model_compare(df, "dead", c("base_pred", "full_pred"))
+data(cancer, package = "survival")
+df <- kidney
+df$dead <- ifelse(df$time<=20 & df$status==0, NA, df$time <= 20)
+df <- na.omit(df[,-c(1:3)])
+
+model0 <- glm(dead ~ age + frail, family = binomial(), data = df)
+df$base_pred <- predict(model0, type = "response")
+model <- glm(dead ~ ., family = binomial(), data = df)
+df$full_pred <- predict(model, type = "response")
+
+classif_model_compare(df, "dead", c("base_pred", "full_pred"))
+
+data = df
+target_var="dead"
+model_names="base_pred"
+colors = NULL
+output_files = TRUE
+output_prefix = "model_compare"
+return_results = !output_files
+
 classif_model_compare <- function(data, target_var, model_names, colors = NULL, output_files = TRUE,
                                   output_prefix = "model_compare", return_results = !output_files) {
   if (!output_files && !return_results) stop("Results are neither saved or returned!")
@@ -71,8 +45,8 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
     model_predict <- cut(data[[model_name]], c(-Inf, metric_table$cutoff[i], Inf), right = FALSE)
     levels(model_predict) <- levels(target)
     cm <- caret::confusionMatrix(model_predict, target,
-      mode = "everything",
-      positive = levels(target)[2]
+                                 mode = "everything",
+                                 positive = levels(target)[2]
     )
     aucs <- pROC::ci.auc(target, data[[model_name]], direction = "<", quiet = TRUE)
     aucs <- format(aucs, digits = 2, nsmall = 3)
@@ -97,16 +71,16 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   plot_formula <- as.formula(paste0(target_var, " ~ ", paste(model_names, collapse = " + ")))
 
   # Plot DCA curves
-  pos_rate <- mean(as.numeric(as.factor(data[[target_var]]))) - 1
+  pos_rate = mean(as.numeric(as.factor(data[[target_var]]))) - 1
   if (pos_rate < 0.5) {
     legend_pos <- c(0.75, 0.75)
   } else {
     legend_pos <- c(0.25, 0.4)
   }
   if (pos_rate < 0.2) {
-    dca_thresholds <- seq(0.005, 0.5, by = 0.005)
-  } else {
-    dca_thresholds <- seq(0.01, 0.99, by = 0.01)
+    dca_thresholds = seq(0.005, 0.5, by = 0.005)
+  }else {
+    dca_thresholds = seq(0.01, 0.99, by = 0.01)
   }
 
   dca_plot <- dcurves::dca(plot_formula, data = data, thresholds = dca_thresholds) %>%
@@ -129,9 +103,9 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
 
   # plot ROC curves
   roc_list <- pROC::roc(plot_formula, data = data, direction = "<", quiet = TRUE)
-  if (length(model_names) == 1) {
-    roc_list <- list(roc_list)
-    names(roc_list) <- model_names
+  if (length(model_names)==1){
+    roc_list = list(roc_list)
+    names(roc_list) = model_names
   }
   names(roc_list) <- paste0(names(roc_list), " (", sapply(roc_list, function(x) sprintf("%.3f", x$auc)), ")")
   roc_plot <- pROC::ggroc(roc_list, legacy.axes = TRUE, linewidth = 1) +
@@ -196,3 +170,20 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
     ))
   }
 }
+
+library(rms)
+dd <- datadist(cancer)
+options(datadist="dd")
+
+fit2 <- lrm(dead ~ age + sex + meal.cal, data = cancer, x=TRUE,y=TRUE)
+
+cal2 <- calibrate(fit2, method='boot', B=500)
+plot(cal2,
+     xlim = c(0,1),
+     ylim = c(0,1),
+     xlab = "Prediced Probability",
+     ylab = "Observed Probability",
+     cex.lab=1.2, cex.axis=1, cex.main=1.2, cex.sub=0.8,
+     #subtitles = FALSE,
+     legend = FALSE
+)

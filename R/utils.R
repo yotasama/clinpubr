@@ -9,12 +9,13 @@
 #' @import ResourceSelection
 #' @importFrom caret confusionMatrix
 #' @importFrom broom tidy
-#' @importFrom tidyr pivot_wider
+#' @importFrom tidyr pivot_wider pivot_longer
 #' @importFrom forestploter forest
 #' @importFrom magrittr %>%
 #' @importFrom fBasics shapiroTest lillieTest adTest jarqueberaTest sfTest
 
-.color_panel <- c("#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854", "#FFD92F", "#E5C494", "#B3B3B3")
+.color_panel <- c("#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854",
+                  "#FFD92F", "#E5C494", "#B3B3B3", "#ad4c5e", "#474747")
 
 # Load packages, install if necessary
 load_packages <- function(pkgs) {
