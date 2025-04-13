@@ -47,7 +47,7 @@
 classif_model_compare <- function(data, target_var, model_names, colors = NULL, output_files = TRUE,
                                   output_prefix = "model_compare", return_results = !output_files) {
   if (!output_files && !return_results) stop("Results are neither saved or returned!")
-  if (max(data[, model_names]) > 1 | min(data[, model_names]) < 0) {
+  if (max(data[, model_names]) > 1 || min(data[, model_names]) < 0) {
     stop("Only predicted probabilities are alowed, detected values not in range 0 to 1.")
   }
   if (is.null(colors)) colors <- .color_panel

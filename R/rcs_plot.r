@@ -1,5 +1,5 @@
 #' Plot ristricted cubic spline
-#' @description Plot ristricted cubic spline based on rms package. Support both logistic and cox model.
+#' @description Plot ristricted cubic spline based on package `rms`. Support both logistic and cox model.
 #' @param data A data frame.
 #' @param x A character string of the predictor variable.
 #' @param y A character string of the outcome variable.
@@ -8,8 +8,8 @@
 #' @param covs A character vector of covariate names.
 #' @param knot The number of knots. If `NULL`, the number of knots is determined by AIC minimum.
 #' @param add_hist A logical value. If `TRUE`, add histogram to the plot.
-#' @param ref The reference value for the plot. Could be `"median"`, `"min"`, or a numeric value.
-#'   If `"median"`, the median of the predictor variable is used. If `"min"`, the value of the
+#' @param ref The reference value for the plot. Could be `"x_median"`, `"x_mean"`, `"ratio_min"`, or a numeric value.
+#'   If `"x_median"`, the median of the predictor variable is used. If `"ratio_min"`, the value of the
 #'   predictor variable that has the minium predicted risk is used. If a numeric value, that value is used.
 #' @param ref_digits The number of digits for the reference value.
 #' @param group_by_ref A logical value. If `TRUE`, split the histogram at the reference value from `ref` into
@@ -42,7 +42,7 @@
 #' # logistic model with time not assigned
 #' cancer$dead <- cancer$status == 2
 #' rcs_plot(cancer, x = "age", y = "dead", covs = "ph.karno")
-rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = TRUE, ref = "median", ref_digits = 3,
+rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = TRUE, ref = "x_median", ref_digits = 3,
                      group_by_ref = TRUE, group_title = NULL, group_labels = NULL, group_colors = NULL, breaks = 20,
                      rcs_color = "#e23e57", print_p_ph = TRUE, trans = "identity", save_plot = TRUE, filename = NULL,
                      ratio_max = NULL, hist_max = NULL, xlim = NULL, return_details = FALSE) {
@@ -106,10 +106,12 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
   df_pred <- rms::Predict(fit, name = x, fun = exp, type = "predictions", ref.zero = TRUE, conf.int = 0.95, digits = 2)
 
   df_pred <- data.frame(df_pred)
-  if (ref == "min") {
+  if (ref == "ratio_min") {
     ref_val <- df_pred[[x]][which.min(df_pred$yhat)]
-  } else if (ref == "median") {
+  } else if (ref == "x_median") {
     ref_val <- median(indf[[x]])
+  } else if (ref == "x_mean") {
+    ref_val <- mean(indf[[x]])
   } else {
     ref_val <- ref
   }

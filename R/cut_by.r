@@ -6,7 +6,8 @@
 #' @param breaks_as_quantiles If TRUE, `breaks` is interpreted as a proportion of the data.
 #' @param labels A vector of labels for the resulting factor levels.
 #' @param label_type If `labels` is `NULL`, this sets the label type. `"ori"` for original labels,
-#'   `"LMH"` for "Low Medium High" style.
+#'   `"LMH"` for "Low Medium High" style. `"combined"` labels that combine `"LMH"` type or provided `labels`
+#'   with the original range labels.
 #' @param ... Other arguments passed to `base::cut()`.
 #'
 #' @details `cut_by()` is a wrapper for `base::cut()`. Compared with the argument `breaks` in `base::cut()`,
@@ -22,28 +23,39 @@
 cut_by <- function(x, breaks,
                    breaks_as_quantiles = FALSE,
                    labels = NULL,
-                   label_type = "ori", # 'LMH' to set to 'Low Medium High' style
+                   label_type = "ori",
                    ...) {
   if (!is.null(labels)) {
-    cut.labels <- labels
-  } else if (label_type == "LMH") {
+    cut_labels <- labels
+  } else if (label_type %in% c("combined", "LMH")) {
     if (length(breaks) == 1) {
-      cut.labels <- c("Low", "High")
+      cut_labels <- c("Low", "High")
     } else if (length(breaks) == 2) {
-      cut.labels <- c("Low", "Medium", "High")
+      cut_labels <- c("Low", "Medium", "High")
     }
   } else {
-    cut.labels <- NULL
+    cut_labels <- NULL
+  }
+  if (!is.null(cut_labels) && length(cut_labels) != length(breaks) + 1) {
+    stop("the number of labels and levels does not match")
   }
   if (breaks_as_quantiles) {
-    cut(x, c(quantile(x, c(0, breaks, 1), na.rm = TRUE)),
+    res <- cut(x, c(quantile(x, c(0, breaks, 1), na.rm = TRUE)),
       right = FALSE,
-      include.lowest = TRUE, labels = cut.labels, ...
+      include.lowest = TRUE, ...
     )
   } else {
-    cut(x, c(-Inf, breaks, Inf),
+    res <-cut(x, c(-Inf, breaks, Inf),
       right = FALSE,
-      include.lowest = TRUE, labels = cut.labels, ...
+      include.lowest = TRUE, ...
     )
   }
+  if (!is.null(cut_labels)) {
+    if (label_type == "combined") {
+      levels(res) <- paste(cut_labels, levels(res), sep = " ")
+    }else {
+      levels(res) <- cut_labels
+    }
+  }
+  res
 }
