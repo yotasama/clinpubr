@@ -17,5 +17,5 @@ Cleaning illegal characters in string vectors that store numerical values.
 The function is useful for cleaning electrical health records in Chinese.
 }
 \examples{
-num_simple_cleaning(c("１２３", "11..23", "11ａ："))
+num_simple_cleaning(c("１２３＊＿＋", "11..23", "11ａ：　Ａ"))
 }

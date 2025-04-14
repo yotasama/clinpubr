@@ -29,6 +29,7 @@ Collate:
     'misc.r'
     'num_simple_cleaning.r'
     'rcs_plot.r'
+    'regression_basic_results.r'
     'split_multichoice.r'
     'subgroup_forest.r'
     'to_date.r'

@@ -24,7 +24,8 @@ is a proportion of the data. See \code{Details}.}
 \item{labels}{A vector of labels for the resulting factor levels.}
 
 \item{label_type}{If \code{labels} is \code{NULL}, this sets the label type. \code{"ori"} for original labels,
-\code{"LMH"} for "Low Medium High" style.}
+\code{"LMH"} for "Low Medium High" style. \code{"combined"} labels that combine \code{"LMH"} type or provided \code{labels}
+with the original range labels.}
 
 \item{...}{Other arguments passed to \code{base::cut()}.}
 }

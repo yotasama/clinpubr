@@ -12,7 +12,7 @@ rcs_plot(
   covs = NULL,
   knot = 4,
   add_hist = TRUE,
-  ref = "median",
+  ref = "x_median",
   ref_digits = 3,
   group_by_ref = TRUE,
   group_title = NULL,
@@ -46,8 +46,8 @@ Otherwise, Cox proportional hazards regression is used.}
 
 \item{add_hist}{A logical value. If \code{TRUE}, add histogram to the plot.}
 
-\item{ref}{The reference value for the plot. Could be \code{"median"}, \code{"min"}, or a numeric value.
-If \code{"median"}, the median of the predictor variable is used. If \code{"min"}, the value of the
+\item{ref}{The reference value for the plot. Could be \code{"x_median"}, \code{"x_mean"}, \code{"ratio_min"}, or a numeric value.
+If \code{"x_median"}, the median of the predictor variable is used. If \code{"ratio_min"}, the value of the
 predictor variable that has the minium predicted risk is used. If a numeric value, that value is used.}
 
 \item{ref_digits}{The number of digits for the reference value.}
@@ -89,7 +89,7 @@ Passed to \code{ggplot2::scale_y_continuous(transform = trans)}.}
 A \code{ggplot} object, or a list containing the \code{ggplot} object and other details if \code{return_details} is \code{TRUE}.
 }
 \description{
-Plot ristricted cubic spline based on rms package. Support both logistic and cox model.
+Plot ristricted cubic spline based on package \code{rms}. Support both logistic and cox model.
 }
 \examples{
 data(cancer, package = "survival")

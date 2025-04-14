@@ -6,29 +6,63 @@
 #' @param y A character string of the outcome variable.
 #' @param time A character string of the time variable. If `NULL`, logistic regression is used.
 #'   Otherwise, Cox proportional hazards regression is used.
+#' @param model_covs A named list of covariates for different models. If `NULL`, only the crude model is used.
+#' @param pers A numeric vector of the denominators of variable `x`. Set this denominator to obtain a reasonable
+#'   OR or HR.
+#' @param factor_breaks A numeric vector of the breaks to factorize the `x` variable.
+#' @param factor_labels A character vector of the labels for the factor levels.
+#' @param quantile_breaks A numeric vector of the quantile breaks to factorize the `x` variable.
+#' @param quantile_labels A character vector of the labels for the quantile levels.
+#' @param label_with_range A logical value indicating whether to add the range of the levels to the labels.
+#' @param output_dir A character string of the directory to save the output files.
+#' @param ref_levels A vector of strings of the reference levels of the factor variable. You can use `"lowest"`
+#'   or `"highest"` to select the lowest or highest level as the reference level. Otherwise, any level that
+#'   matches the provided strings will be used as the reference level.
+#' @param ratio_nsmall The minimum number of digits to the right of the decimal point for the OR or HR.
+#' @param pval_nsmall The minimum number of digits to the right of the decimal point for the p-value.
+#' @param pval_eps The threshold for rounding p values to 0.
+#' @param median_nsmall The minimum number of digits to the right of the decimal point for the median survival time.
+#' @param colors A vector of colors for the KM curves.
+#' @param xlab A character string of the x-axis label.
+#' @param legend_title A character string of the title of the legend.
+#' @param legend_pos A numeric vector of the position of the legend.
+#' @param height The height of the plot.
+#' @param width The width of the plot.
+#' @param pval_pos A numeric vector of the position of the p-value.
+#' @param ... Additional arguments passed to the `survminer::ggsurvplot` function for KM curve.
 #'
+#' @details The function `regression_basic_results` generates the result table of logistic or Cox regression with
+#'   different settings of the predictor variable and covariates. The setting of the predictor variable includes
+#'   the original `x`, the standardized `x`, the log of `x`, and `x` devided by denominators in `pers` as continuous
+#'   variables, and the factorization of the variable including splitted by median, by quartiles, and by `factor_breaks`
+#'   and `quantile_breaks`. The setting of the covariates includes different models with different covariates.
+#' @note For factor variables with more than 2 levels, p value for trend is also calculated.
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
 #' # coxph model with time assigned
-#' regression_basic_results(cancer, x = "age", y = "status", time = "time",
-#'                          model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex")))
+#' regression_basic_results(cancer,
+#'   x = "age", y = "status", time = "time",
+#'   model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex"))
+#' )
 #'
 #' # logistic model with time not assigned
 #' cancer$dead <- cancer$status == 2
-#' regression_basic_results(cancer, x = "age", y = "dead",
-#'                          model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex")))
+#' regression_basic_results(cancer,
+#'   x = "age", y = "dead", ref_levels = c("Q3", "High"),
+#'   model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex"))
+#' )
 regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL, pers = c(0.1, 10, 100),
-                                     factor_breaks = NULL, factor_labels = NULL,
-                                     quantile_breaks = NULL, quantile_labels = NULL, output_dir = NULL,
-                                     ref_levels = "lowest", ratio_nsmall = 2, pval_nsmall = 3, pval_eps = 0.001,
-                                     median_nsmall = 0, colors = NULL, xlab = NULL, legend_title = x,
+                                     factor_breaks = NULL, factor_labels = NULL, quantile_breaks = NULL,
+                                     quantile_labels = NULL, label_with_range = FALSE,
+                                     output_dir = NULL, ref_levels = "lowest", ratio_nsmall = 2, pval_nsmall = 3,
+                                     pval_eps = 1e-3, median_nsmall = 0, colors = NULL, xlab = NULL, legend_title = x,
                                      legend_pos = c(0.8, 0.8), height = 6, width = 6, pval_pos = NULL, ...) {
   if (is.null(colors)) {
     colors <- .color_panel
   }
 
-  if (is.null(time)){
+  if (is.null(time)) {
     analysis_type <- "logistic"
     ratio_type <- "OR"
     new_time_var <- NULL
@@ -37,6 +71,8 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
     ratio_type <- "HR"
     new_time_var <- "time"
   }
+
+  label_type <- ifelse(label_with_range, "combined", "LMH")
 
   if (is.null(model_covs)) {
     model_covs <- list(Crude = c())
@@ -50,6 +86,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
   }
 
   dat <- dplyr::select(data, all_of(c(y, x, time, covs)))
+  dat <- dat[complete.cases(dat[, c(y, x, time)]), ]
   colnames(dat)[c(1:2)] <- c("y", "x")
   ori_covs <- covs
   if (!is.null(covs)) {
@@ -75,18 +112,22 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
   ncol_res <- length(model_covs) * 2 + 2
   nrow_res <- 0
   if (is.numeric(dat$x) && (length(na.omit(unique(dat$x))) > 5)) {
+    nrow_res <- 12 + length(pers)
     for (per in pers) {
       dat[[paste0("x.", per)]] <- dat$x / per
     }
     dat$x.std <- c(scale(dat$x))
+    if (all(dat$x > 0)) {
+      dat$x.log <- log(dat$x)
+      nrow_res <- nrow_res + 1
+    }
     dat$x.quartile <- cut_by(dat$x, c(1:3) / 4,
       breaks_as_quantiles = TRUE, labels = paste0("Q", 1:4),
-      label_type = "combined"
+      label_type = label_type
     )
-    dat$x.median <- cut_by(dat$x, 1 / 2, breaks_as_quantiles = TRUE, label_type = "combined")
-    nrow_res <- 12 + length(pers)
+    dat$x.median <- cut_by(dat$x, 1 / 2, breaks_as_quantiles = TRUE, label_type = label_type)
     if (!is.null(factor_breaks)) {
-      dat$x.clin <- cut_by(dat$x, factor_breaks, labels = factor_labels, label_type = "combined")
+      dat$x.clin <- cut_by(dat$x, factor_breaks, labels = factor_labels, label_type = label_type)
       if (length(factor_breaks) == 1) {
         nrow_res <- nrow_res + 3
       } else {
@@ -96,7 +137,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
     if (!is.null(quantile_breaks)) {
       dat$x.quantile <- cut_by(dat$x, quantile_breaks,
         breaks_as_quantiles = T, labels = quantile_labels,
-        label_type = "combined"
+        label_type = label_type
       )
       if (length(quantile_breaks) == 1) {
         nrow_res <- nrow_res + 3
@@ -192,6 +233,8 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
         res_table$Terms[i] <- "Continuous"
       } else if (var == "x.std") {
         res_table$Terms[i] <- "Continuous, per 1 SD"
+      } else if (var == "x.log") {
+        res_table$Terms[i] <- "Continuous, logarithm"
       } else {
         res_table$Terms[i] <- paste0("Continuous, per ", str_remove(var, "x\\."))
       }
@@ -207,11 +250,11 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
       } else {
         res_table$Terms[i] <- "Values"
       }
-      res_table$Terms[i + 1:n_levels] <- levels(dat[[var]])
+      res_table$Terms[i + 1:n_levels] <- paste0("  ", levels(dat[[var]]))
       res_table$Count[i + 1:n_levels] <- c(table(dat[[var]]))
       i <- i + n_levels + 1
       if (n_levels > 2) {
-        res_table$Terms[i] <- "P for trend"
+        res_table$Terms[i] <- "  P for trend"
         i <- i + 1
       }
     }

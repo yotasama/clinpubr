@@ -4,17 +4,27 @@
 \alias{format_pval}
 \title{Format p-value for publication}
 \usage{
-format_pval(p)
+format_pval(p, text_ahead = NULL, digits = 1, nsmall = 2, eps = 0.001)
 }
 \arguments{
 \item{p}{The numerical p values to be formated.}
+
+\item{text_ahead}{A string to be added before the p value. If not \code{NULL}, this string
+will be connected to the formatted p value with \code{"="} or \code{"<"}.}
+
+\item{digits}{The number of digits to be used. Same as in \code{base::format.pval}.}
+
+\item{nsmall}{The number of digits after the decimal point. Same as in \code{base::format.pval}.}
+
+\item{eps}{The threshold for rounding p values to 0. Same as in \code{base::format.pval}.}
 }
 \value{
 A string vector of formated p values.
 }
 \description{
-Format p-value for publication
+Format p-value with modified defalt settings suitable for publication.
 }
 \examples{
 format_pval(c(0.001, 0.0001, 0.05, 0.1123456))
+format_pval(c(0.001, 0.0001, 0.05, 0.1123456), text_ahead = "p value")
 }
