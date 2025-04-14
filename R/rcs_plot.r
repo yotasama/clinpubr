@@ -256,8 +256,8 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
   p <- p +
     annotate("text",
       label = paste0("N = ", nrow(indf)), size = 5,
-      x = mean(ggplot_build(p)$layout$panel_params[[1]]$x.range), # x轴中点
-      y = max(ggplot_build(p)$layout$panel_params[[1]]$y.range) * 0.9, # y轴最大值
+      x = mean(ggplot_build(p)$layout$panel_params[[1]]$x.range),
+      y = max(ggplot_build(p)$layout$panel_params[[1]]$y.range) * 0.9,
       hjust = 0.5, vjust = 0.5
     ) +
     theme_bw() +
