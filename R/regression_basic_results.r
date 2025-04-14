@@ -1,4 +1,3 @@
-# logistic 待修复
 #' Basic results of logistic or Cox regression.
 #' @description Generate the result table of logistic or Cox regression with different settings of the predictor
 #'   variable and covariates. Also generate KM curves for Cox regression.
@@ -12,11 +11,13 @@
 #' @examples
 #' data(cancer, package = "survival")
 #' # coxph model with time assigned
-#' regression_basic_results(cancer, x = "age", y = "status", time = "time", covs = "ph.karno")
+#' regression_basic_results(cancer, x = "age", y = "status", time = "time",
+#'                          model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex")))
 #'
 #' # logistic model with time not assigned
 #' cancer$dead <- cancer$status == 2
-#' regression_basic_results(cancer, x = "age", y = "dead", covs = "ph.karno")
+#' regression_basic_results(cancer, x = "age", y = "dead",
+#'                          model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex")))
 regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL, pers = c(0.1, 10, 100),
                                      factor_breaks = NULL, factor_labels = NULL,
                                      quantile_breaks = NULL, quantile_labels = NULL, output_dir = NULL,
@@ -27,8 +28,16 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
     colors <- .color_panel
   }
 
-  analysis_type <- ifelse(is.null(time), "logistic", "cox")
-  ratio_type <- ifelse(is.null(time), "OR", "HR")
+  if (is.null(time)){
+    analysis_type <- "logistic"
+    ratio_type <- "OR"
+    new_time_var <- NULL
+  } else {
+    analysis_type <- "cox"
+    ratio_type <- "HR"
+    new_time_var <- "time"
+  }
+
   if (is.null(model_covs)) {
     model_covs <- list(Crude = c())
   }
@@ -47,8 +56,8 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
     covs <- paste0(".cov", seq_along(covs))
     if (analysis_type == "cox") {
       start_col <- 4
-      colnames(dat)[3] <- "time"
-    }else {
+      colnames(dat)[3] <- new_time_var
+    } else {
       start_col <- 3
     }
     colnames(dat)[start_col:(start_col + length(covs) - 1)] <- covs
@@ -70,8 +79,10 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
       dat[[paste0("x.", per)]] <- dat$x / per
     }
     dat$x.std <- c(scale(dat$x))
-    dat$x.quartile <- cut_by(dat$x, c(1:3) / 4, breaks_as_quantiles = TRUE, labels = paste0("Q", 1:4),
-                        label_type = "combined")
+    dat$x.quartile <- cut_by(dat$x, c(1:3) / 4,
+      breaks_as_quantiles = TRUE, labels = paste0("Q", 1:4),
+      label_type = "combined"
+    )
     dat$x.median <- cut_by(dat$x, 1 / 2, breaks_as_quantiles = TRUE, label_type = "combined")
     nrow_res <- 12 + length(pers)
     if (!is.null(factor_breaks)) {
@@ -83,8 +94,10 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
       }
     }
     if (!is.null(quantile_breaks)) {
-      dat$x.quantile <- cut_by(dat$x, quantile_breaks, breaks_as_quantiles = T, labels = quantile_labels,
-                               label_type = "combined")
+      dat$x.quantile <- cut_by(dat$x, quantile_breaks,
+        breaks_as_quantiles = T, labels = quantile_labels,
+        label_type = "combined"
+      )
       if (length(quantile_breaks) == 1) {
         nrow_res <- nrow_res + 3
       } else {
@@ -103,12 +116,14 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
   vars <- colnames(dat)[grep("x", colnames(dat))]
   for (var in vars) {
     if (is.factor(dat[[var]])) {
-      formula <- create_formula("y", var, time = "time")
+      formula <- create_formula("y", var, time = new_time_var)
       if (analysis_type == "cox") {
         fit <- survminer::surv_fit(formula = formula, data = dat)
         log_rank_p <- survdiff(formula = formula, data = dat)$pvalue
-        log_rank_p <- format_pval(log_rank_p, text_ahead = "Log-rank\np",
-                                  nsmall = pval_nsmall, eps = pval_eps)
+        log_rank_p <- format_pval(log_rank_p,
+          text_ahead = "Log-rank\np",
+          nsmall = pval_nsmall, eps = pval_eps
+        )
         p <- survminer::ggsurvplot(fit,
           pval = log_rank_p,
           pval_pos = pval_pos,
@@ -208,7 +223,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
     i <- 2
     covs_tmp <- covs[match(model_covs[[j]], ori_covs)]
     for (var in vars) {
-      formula <- create_formula("y", var, time = "time", covs = covs_tmp)
+      formula <- create_formula("y", var, time = new_time_var, covs = covs_tmp)
       if (analysis_type == "cox") {
         model <- coxph(formula, data = dat)
         model_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)
@@ -236,7 +251,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
         i <- i + nrow(tmp) + 2
         if (nrow(tmp) > 1) {
           dat$tmp <- as.numeric(dat0[[var]])
-          formula <- create_formula("y", "tmp", time = "time", covs = covs_tmp)
+          formula <- create_formula("y", "tmp", time = new_time_var, covs = covs_tmp)
           if (analysis_type == "cox") {
             model <- coxph(formula, data = dat)
             model_res <- broom::tidy(model)[1, ]
