@@ -1,5 +1,5 @@
 #' Scan for interactions between variables
-#' @description Scan for interactions between variables and output results as tables. Both logistic and Cox
+#' @description Scan for interactions between variables and output results. Both logistic and Cox
 #'   proportional hazards regression models are supported. The predictor variables in the model are can be
 #'   used both in linear form or in ristricted cubic spline form.
 #' @param data A data frame.
@@ -14,14 +14,15 @@
 #' @param covs A character vector of covariate names.
 #' @param try_rcs A logical value indicating whether to perform ristricted cubic spline interaction analysis.
 #' @param save_table A logical value indicating whether to save the results as a table.
-#' @param filename The name of the file to save the results. Support both `.xlsx` and `.csv` formats.
+#' @param filename The name of the file to save the results. File will be saved in `.csv` format.
 #' @return A data frame containing the results of the interaction analysis.
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
-#' int_scan(cancer, y = "status", time = "time")
-int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL, covs = NULL,
-                     try_rcs = TRUE, save_table = TRUE, filename = NULL) {
+#' interaction_scan(cancer, y = "status", time = "time")
+interaction_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL, covs = NULL,
+                             try_rcs = TRUE, save_table = TRUE, filename = NULL) {
+  analysis_type <- ifelse(is.null(time), "logistic", "cox")
   if (is.null(predictors)) {
     predictors <- setdiff(colnames(data), c(y, time))
     message("Taking all variables as interaction predictors")
@@ -30,23 +31,29 @@ int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL,
     group_vars <- setdiff(colnames(data), c(y, time))
     message("Taking all variables as group variables")
   }
+  if (any(!predictors %in% colnames(data))) {
+    stop("Some predictors are not in the data")
+  }
+  if (any(!group_vars %in% colnames(data))) {
+    stop("Some group variables are not in the data")
+  }
 
   res_df <- data.frame(matrix(NA, nrow = length(predictors) * length(group_vars), ncol = 5))
-  colnames(res_df) <- c("predictor", "group.by", "nvalid", "lin.pval", "rcs.pval")
+  colnames(res_df) <- c("predictor", "group.by", "nvalid", "linear.p.int", "rcs.p.int")
 
   irow <- 1
   for (predictor in predictors) {
     for (group_var in group_vars) {
       if (group_var != predictor) {
-        nvalid <- sum(complete.cases(data[, c(time, y, predictor, group_var)]))
+        nvalid <- sum(complete.cases(data[, c(time, y, predictor, group_var, covs)]))
         if (nvalid < 10) {
           next
         }
 
-        p1 <- int_p_value(data, y, predictor, group_var, time = time, covs = covs)
+        p1 <- interaction_p_value(data, y, predictor, group_var, time = time, covs = covs)
         if (try_rcs && length(unique(data[, predictor])) > 10) {
           p2 <- tryCatch(
-            int_p_value(data, y, predictor, group_var, time = time, covs = covs, rcs_knots = 4),
+            interaction_p_value(data, y, predictor, group_var, time = time, covs = covs, rcs_knots = 4),
             error = function(e) {
               NA
             }
@@ -73,13 +80,9 @@ int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL,
   }
   if (save_table) {
     if (is.null(filename)) {
-      filename <- "interaction_scan.xlsx"
+      filename <- paste(analysis_type, y, "interaction_scan.csv", sep = "_")
     }
-    if (grepl(".csv", filename)) {
-      write.csv(res_df, filename, row.names = FALSE)
-    } else if (grepl(".xlsx", filename)) {
-      openxlsx::write.xlsx(res_df, filename)
-    }
+    write.csv(res_df, filename, row.names = FALSE)
   }
   return(res_df)
 }
@@ -109,10 +112,10 @@ int_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL,
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
-#' int_plot(cancer, y = "status", time = "time", predictor = "age", group_var = "sex")
-int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, group_colors = NULL,
-                     save_plot = TRUE, filename = NULL, height = 4, width = 4, xlab = predictor,
-                     group_title = group_var, ...) {
+#' interaction_plot(cancer, y = "status", time = "time", predictor = "age", group_var = "sex")
+interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, group_colors = NULL,
+                             save_plot = TRUE, filename = NULL, height = 4, width = 4, xlab = predictor,
+                             group_title = group_var, ...) {
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
   if (is.null(group_colors)) {
     group_colors <- .color_panel
@@ -122,8 +125,7 @@ int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, gr
   }
   if (is.null(filename)) {
     filename <- paste0(paste0(c("interaction", predictor, "by", group_var, paste0("with_", length(covs), "covs")),
-      collapse = "_"
-    ), ".png")
+                              collapse = "_"), ".png")
   }
 
   dat <- dplyr::select(data, all_of(c(y, predictor, group_var, time, covs)))
@@ -158,7 +160,7 @@ int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, gr
       } else {
         model <- rms::Glm(formula, data = dat, family = binomial(link = "logit"))
       }
-      p_value <- int_p_value(dat, y, ".predictor", ".group_var", time = time, covs = covs)
+      p_value <- interaction_p_value(dat, y, ".predictor", ".group_var", time = time, covs = covs)
       y1 <- as.data.frame(Predict(model, .predictor, .group_var,
         fun = exp, type = "predictions", conf.int = 0.95, digits = 2
       ))
@@ -226,7 +228,7 @@ int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, gr
         } else {
           model2 <- rms::Glm(formula2, data = dat, family = binomial(link = "logit"))
         }
-        rcs_p_value <- int_p_value(dat, y, ".predictor", ".group_var",
+        rcs_p_value <- interaction_p_value(dat, y, ".predictor", ".group_var",
           time = time, covs = covs,
           rcs_knots = 4
         )
@@ -298,9 +300,11 @@ int_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, gr
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
-#' int_p_value(data = cancer, y = "status", predictor = "age", group_var = "sex",
-#'             time = "time", rcs_knots = 3)
-int_p_value <- function(data, y, predictor, group_var, time = NULL, covs = NULL, rcs_knots = NULL) {
+#' interaction_p_value(
+#'   data = cancer, y = "status", predictor = "age", group_var = "sex",
+#'   time = "time", rcs_knots = 4
+#' )
+interaction_p_value <- function(data, y, predictor, group_var, time = NULL, covs = NULL, rcs_knots = NULL) {
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
   data[[group_var]] <- to_factor(data[[group_var]])
   covs <- remove_conflict(covs, c(y, predictor, group_var, time))
@@ -321,6 +325,5 @@ int_p_value <- function(data, y, predictor, group_var, time = NULL, covs = NULL,
     model1 <- glm(formula1, data = data, family = binomial())
     model2 <- glm(formula2, data = data, family = binomial())
   }
-  tmp1 <- anova(model1, model2, test = "LRT")
-  return(broom::tidy(tmp1)$p.value[2])
+  return(broom::tidy(anova(model1, model2, test = "LRT"))$p.value[2])
 }

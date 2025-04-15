@@ -212,7 +212,7 @@ formula_add_covs <- function(formula, covs) {
       res <- paste0(c(formula, covs), collapse = "+")
     }
   }
-  as.formula(res)
+  as.formula(res, env = new.env())
 }
 
 #' QQ plot

@@ -176,7 +176,6 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
           palette = colors,
           ...
         )
-        dt <- p$data.survplot
         if (!is.null(fit$strata) || is.matrix(fit$surv)) {
           .table <- as.data.frame(summary(fit)$table)
         } else {
@@ -308,5 +307,156 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
       }
     }
   }
-  write.xlsx(res_table, paste0(output_dir, "/table_", x, ".xlsx"))
+  write.csv(res_table, paste0(output_dir, "/table_", x, ".csv"), row.names = FALSE)
+}
+
+
+#' Scan for significant regression predictors
+#' @description Scan for significant regression predictors and output results. Both logistic and Cox
+#'   proportional hazards regression models are supported. The predictor variables in the model are can be
+#'   used both in linear form or in ristricted cubic spline form.
+#' @param data A data frame.
+#' @param y A character string of the outcome variable.
+#' @param time A character string of the time variable. If `NULL`, logistic regression is used.
+#'   Otherwise, Cox proportional hazards regression is used.
+#' @param predictors The predictor variables to be scanned for interactions. If `NULL`, all variables
+#'   except `y` and `time` are taken as predictors.
+#' @param covs A character vector of covariate names.
+#' @param save_table A logical value indicating whether to save the results as a table.
+#' @param filename The name of the file to save the results. File will be saved in `.csv` format.
+#' @return A data frame containing the results of the interaction analysis.
+#' @export
+#' @examples
+#' data(cancer, package = "survival")
+#' int_scan(cancer, y = "status", time = "time")
+regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL,
+                            try_rcs = TRUE, save_table = TRUE, filename = NULL) {
+  if (is.null(time)) {
+    analysis_type <- "logistic"
+    ratio_type <- "OR"
+    new_time_var <- NULL
+  } else {
+    analysis_type <- "cox"
+    ratio_type <- "HR"
+    new_time_var <- "time"
+  }
+  if (is.null(predictors)) {
+    predictors <- setdiff(colnames(data), c(y, time))
+    message("Taking all variables as interaction predictors")
+  }
+  if (any(!predictors %in% colnames(data))) {
+    stop("Some predictors are not in the data")
+  }
+
+  res_df <- data.frame(matrix(NA, nrow = length(predictors), ncol = 15))
+  colnames(res_df) <- c(
+    "predictor", "nvalid",
+    paste0("linear.", ratio_type), "linear.pval", "linear.padj",
+    paste0("logarithm.", ratio_type), "logarithm.pval", "logarithm.padj",
+    paste0("cat.median.", ratio_type), "cat.median.pval", "cat.median.padj",
+    "rcs.overall.pval", "rcs.overall.padj", "rcs.nonlinear.pval", "rcs.nonlinear.padj"
+  )
+
+  irow <- 1
+  for (predictor in predictors) {
+    dat <- dplyr::select(data, all_of(c(y, predictor, time, covs)))
+    dat <- na.omit(dat)
+    nvalid <- nrow(dat)
+    if (nvalid < 10) {
+      next
+    }
+
+    p1 <- int_p_value(data, y, predictor, group_var, time = time, covs = covs)
+    if (try_rcs && length(unique(data[, predictor])) > 10) {
+      p2 <- tryCatch(
+        int_p_value(data, y, predictor, group_var, time = time, covs = covs, rcs_knots = 4),
+        error = function(e) {
+          NA
+        }
+      )
+    } else {
+      p2 <- NA
+    }
+    res_df$predictor[irow] <- predictor
+    res_df$group.by[irow] <- group_var
+    res_df$nvalid[irow] <- nvalid
+    res_df$lin.pval[irow] <- p1
+    res_df$rcs.pval[irow] <- p2
+    irow <- irow + 1
+  }
+  res_df <- res_df[order(res_df$lin.pval, decreasing = FALSE), ]
+  res_df$lin.p.adj <- p.adjust(res_df$lin.pval)
+  res_df$rcs.p.adj <- p.adjust(res_df$rcs.pval)
+  if (try_rcs) {
+    res_df <- res_df[!is.na(res_df$predictor), ]
+  } else {
+    res_df <- res_df[!is.na(res_df$predictor), -c(5, 7)]
+  }
+  if (save_table) {
+    if (is.null(filename)) {
+      filename <- paste(analysis_type, y, "interaction_scan.csv", sep = "_")
+    }
+    write.csv(res_df, filename, row.names = FALSE)
+  }
+  return(res_df)
+}
+
+#' Calculate regression p-value
+#' @description This function calculates the regression p-value of a predictor in a
+#'   logistic or Cox proportional hazards model.
+#' @param data A data frame.
+#' @param y A character string of the outcome variable.
+#' @param predictor A character string of the predictor variable.
+#' @param time A character string of the time variable. If `NULL`, logistic regression is used.
+#'   Otherwise, Cox proportional hazards regression is used.
+#' @param covs A character vector of covariate names.
+#' @param rcs_knots The number of rcs knots. If `NULL`, a linear model would be fitted instead.
+#' @return A list containing the regression ratio and p-value of the predictor. If `rcs_knots` is not `NULL`,
+#'   the list contains the overall p-value and the nonlinear p-value of the rcs model.
+#' @export
+#' @examples
+#' data(cancer, package = "survival")
+#' regression_p_value(data = cancer, y = "status", predictor="age", time = "time", rcs_knots = 4)
+regression_p_value <- function(data, y, predictor, time = NULL, covs = NULL, rcs_knots = NULL) {
+  if (!is.null(rcs_knots) && rcs_knots == 0) rcs_knots <- NULL
+  analysis_type <- ifelse(is.null(time), "logistic", "cox")
+  covs <- remove_conflict(covs, c(y, predictor, time))
+  if (is.factor(data[[predictor]]) && length(levels(data[[predictor]])) > 2) {
+    predictor_type <- "multi_factor"
+  } else {
+    predictor_type <- "num_or_binary"
+  }
+
+  formula <- create_formula(y, predictor, time = time, covs = covs, rcs_knots = rcs_knots)
+
+  if (is.factor(data[[predictor]]) || is.null(rcs_knots)) {
+    res <- list(estimate = NA, conf.low = NA, conf.high = NA, p.value = NA)
+    if (analysis_type == "cox") {
+      model <- coxph(formula, data = data)
+      if (predictor_type == "num_or_binary") {
+        predictor_summary <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)[1, ]
+        res$estimate <- predictor_summary$estimate
+        res$conf.low <- predictor_summary$conf.low
+        res$conf.high <- predictor_summary$conf.high
+      }
+    } else {
+      model <- glm(formula, data = data, family = binomial())
+      if (predictor_type == "num_or_binary") {
+        predictor_summary <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)[2, ]
+        res$estimate <- predictor_summary$estimate
+        res$conf.low <- predictor_summary$conf.low
+        res$conf.high <- predictor_summary$conf.high
+      }
+    }
+    res$p.value <- broom::tidy(car::Anova(model, type = 2, test.statistic = "Wald"))$p.value[1]
+    return(res)
+  } else {
+    if (analysis_type == "cox") {
+      model <- cph(formula, data = data)
+    } else {
+      model <- Glm(formula, data = data, family = binomial())
+    }
+    ps <- unname(anova(model)[, "P"])
+    return(list(p_overall = ps[1], p_nonlinear = ps[2]))
+  }
 }

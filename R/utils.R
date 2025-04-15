@@ -5,13 +5,11 @@
 #' @import stringr
 #' @import rlang
 #' @import tableone
-#' @import openxlsx
 #' @import ResourceSelection
 #' @importFrom caret confusionMatrix
 #' @importFrom broom tidy
 #' @importFrom tidyr pivot_wider pivot_longer
 #' @importFrom forestploter forest
-#' @importFrom magrittr %>%
 #' @importFrom fBasics shapiroTest lillieTest adTest jarqueberaTest sfTest
 
 .color_panel <- c("#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854",

@@ -56,25 +56,18 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
   }
 
   indf <- cbind(indf, dplyr::select(data, all_of(var_subgroups)))
+  indf <- indf[complete.cases(indf[, c(y, x, time, covs)]), ]
   plot_nrow <- 4 + length(var_subgroups)
   for (var in var_subgroups) {
     indf[[var]] <- to_factor(indf[[var]])
     plot_nrow <- plot_nrow + length(levels(indf[[var]]))
   }
 
-  formula0 <- create_formula(y, x, time = time, covs = covs)
-
-  if (analysis_type == "cox") {
-    model <- coxph(formula0, data = indf)
-    overall_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)[1, ]
-  } else {
-    model <- glm(formula0, data = indf, family = binomial())
-    overall_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)[2, ]
-  }
+  overall_res <- regression_p_value(indf, y, x, time = time, covs = covs)
 
   res <- data.frame(
     Variable = "Overall",
-    Count = if (analysis_type == "cox") model$n else stats::nobs(model),
+    Count = nrow(indf),
     Percent = 100,
     `Point Estimate` = overall_res$estimate,
     Lower = overall_res$conf.low,
@@ -104,20 +97,13 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
     lvls <- levels(indf[[var]])
     tmp_res <- NULL
     for (lvl in lvls) {
-      subset_data <- indf[indf[[var]] == lvl, ]
-      formula <- create_formula(y, x, time = time, covs = tmp_covs)
-      if (analysis_type == "cox") {
-        model <- coxph(formula, data = subset_data)
-        lvl_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)[1, ]
-      } else {
-        model <- glm(formula, data = subset_data, family = binomial())
-        lvl_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)[2, ]
-      }
+      subset_data <- indf[which(indf[[var]] == lvl), ]
+      lvl_res <- regression_p_value(subset_data, y, x, time = time, covs = tmp_covs)
 
       tmp_res <- rbind(
         tmp_res,
         data.frame(
-          Variable = paste("  ", lvl), Count = if (analysis_type == "cox") model$n else stats::nobs(model),
+          Variable = paste("  ", lvl), Count = nrow(subset_data),
           Percent = NA, `Point Estimate` = lvl_res$estimate,
           Lower = lvl_res$conf.low, Upper = lvl_res$conf.high,
           `P value` = lvl_res$p.value, `P for interaction` = NA, check.names = FALSE
