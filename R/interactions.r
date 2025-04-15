@@ -64,15 +64,15 @@ interaction_scan <- function(data, y, time = NULL, predictors = NULL, group_vars
         res_df$predictor[irow] <- predictor
         res_df$group.by[irow] <- group_var
         res_df$nvalid[irow] <- nvalid
-        res_df$lin.pval[irow] <- p1
-        res_df$rcs.pval[irow] <- p2
+        res_df$linear.p.int[irow] <- p1
+        res_df$rcs.p.int[irow] <- p2
         irow <- irow + 1
       }
     }
   }
-  res_df <- res_df[order(res_df$lin.pval, decreasing = FALSE), ]
-  res_df$lin.p.adj <- p.adjust(res_df$lin.pval)
-  res_df$rcs.p.adj <- p.adjust(res_df$rcs.pval)
+  res_df <- res_df[order(res_df$linear.p.int, decreasing = FALSE), ]
+  res_df$linear.p.adj <- p.adjust(res_df$linear.p.int)
+  res_df$rcs.p.adj <- p.adjust(res_df$rcs.p.int)
   if (try_rcs) {
     res_df <- res_df[!is.na(res_df$predictor), ]
   } else {

@@ -49,8 +49,8 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
   indf <- dplyr::select(data, all_of(c(y, x, time, covs)))
 
   if (!is.null(covs)) {
-    covs <- paste0(".cov", seq_along(covs))
-    if (any(covs %in% colnames(data))) stop("Colnames start with '.cov' are reserved.")
+    covs <- paste0("tmp_cov", seq_along(covs))
+    if (any(covs %in% colnames(data))) stop("Colnames start with 'tmp_cov' are reserved.")
     start_col <- ifelse(analysis_type == "cox", 4, 3)
     colnames(indf)[start_col:(start_col + length(covs) - 1)] <- covs
   }
@@ -79,8 +79,9 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
 
   for (var in var_subgroups) {
     tmp_covs <- covs[ori_covs != var]
+    if (length(tmp_covs) == 0) tmp_covs <- NULL
 
-    p_int <- int_p_value(indf, y, x, var, time = time, covs = tmp_covs)
+    p_int <- interaction_p_value(indf, y, x, var, time = time, covs = tmp_covs)
 
     res <- rbind(res, data.frame(
       Variable = var,

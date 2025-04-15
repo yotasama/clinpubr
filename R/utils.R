@@ -62,9 +62,9 @@ to_factor <- function(x, max_numerical_groups = 5, na_as_level = FALSE) {
 }
 
 # Remove conflict variables
-remove_conflict <- function(x, y) {
+remove_conflict <- function(x, y, silent = FALSE) {
   if (any(x %in% y)) {
-    warning(paste0(x[x %in% y], collapse = ", "), " are removed to resolve variable conflict.")
+    if (!silent) warning(paste0(x[x %in% y], collapse = ", "), " are removed to resolve variable conflict.")
     x <- x[!x %in% y]
   }
   if (length(x) == 0) x <- NULL

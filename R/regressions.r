@@ -265,14 +265,10 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
     i <- 2
     covs_tmp <- covs[match(model_covs[[j]], ori_covs)]
     for (var in vars) {
-      formula <- create_formula("y", var, time = new_time_var, covs = covs_tmp)
-      if (analysis_type == "cox") {
-        model <- coxph(formula, data = dat)
-        model_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)
-      } else {
-        model <- glm(formula, data = dat, family = binomial())
-        model_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)
-      }
+      model_res <- regression_p_value(
+        data = dat, y = "y", predictor = var, time = new_time_var,
+        covs = covs_tmp, return_full_result = TRUE
+      )
       model_res <- data.frame(model_res[grepl("x", model_res$term), ])
       for (col in c("estimate", "conf.low", "conf.high")) {
         model_res[, col] <- format(model_res[, col], digits = 1, nsmall = ratio_nsmall)
@@ -293,14 +289,10 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
         i <- i + nrow(tmp) + 2
         if (nrow(tmp) > 1) {
           dat$tmp <- as.numeric(dat0[[var]])
-          formula <- create_formula("y", "tmp", time = new_time_var, covs = covs_tmp)
-          if (analysis_type == "cox") {
-            model <- coxph(formula, data = dat)
-            model_res <- broom::tidy(model)[1, ]
-          } else {
-            model <- glm(formula, data = dat, family = binomial())
-            model_res <- broom::tidy(model)[2, ]
-          }
+          model_res <- regression_p_value(
+            data = dat, y = "y", predictor = "tmp", time = new_time_var,
+            covs = covs_tmp
+          )
           res_table[i, col2] <- format_pval(model_res$p.value, nsmall = pval_nsmall, eps = pval_eps)
           i <- i + 1
         }
@@ -309,7 +301,6 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
   }
   write.csv(res_table, paste0(output_dir, "/table_", x, ".csv"), row.names = FALSE)
 }
-
 
 #' Scan for significant regression predictors
 #' @description Scan for significant regression predictors and output results. Both logistic and Cox
@@ -357,9 +348,11 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
     "rcs.overall.pval", "rcs.overall.padj", "rcs.nonlinear.pval", "rcs.nonlinear.padj"
   )
 
-  irow <- 1
-  for (predictor in predictors) {
-    dat <- dplyr::select(data, all_of(c(y, predictor, time, covs)))
+  res_df$predictor <- predictors
+  for (i in seq_along(predictors)) {
+    predictor <- predictors[i]
+    tmp_covs <- remove_conflict(covs, c(y, predictor, time), silent = TRUE)
+    dat <- dplyr::select(data, all_of(c(y, predictor, time, tmp_covs)))
     dat <- na.omit(dat)
     nvalid <- nrow(dat)
     if (nvalid < 10) {
@@ -411,13 +404,17 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
 #'   Otherwise, Cox proportional hazards regression is used.
 #' @param covs A character vector of covariate names.
 #' @param rcs_knots The number of rcs knots. If `NULL`, a linear model would be fitted instead.
+#' @param return_full_result A logical value indicating whether to return the complete model. Does not work
+#'   for rcs models where `rcs_knots` is not `NULL`.
 #' @return A list containing the regression ratio and p-value of the predictor. If `rcs_knots` is not `NULL`,
-#'   the list contains the overall p-value and the nonlinear p-value of the rcs model.
+#'   the list contains the overall p-value and the nonlinear p-value of the rcs model. If `return_full_result`
+#'   is `TRUE`, the complete result of the regression model is returned.
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
-#' regression_p_value(data = cancer, y = "status", predictor="age", time = "time", rcs_knots = 4)
-regression_p_value <- function(data, y, predictor, time = NULL, covs = NULL, rcs_knots = NULL) {
+#' regression_p_value(data = cancer, y = "status", predictor = "age", time = "time", rcs_knots = 4)
+regression_p_value <- function(data, y, predictor, time = NULL, covs = NULL, rcs_knots = NULL,
+                               return_full_result = FALSE) {
   if (!is.null(rcs_knots) && rcs_knots == 0) rcs_knots <- NULL
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
   covs <- remove_conflict(covs, c(y, predictor, time))
@@ -426,23 +423,31 @@ regression_p_value <- function(data, y, predictor, time = NULL, covs = NULL, rcs
   } else {
     predictor_type <- "num_or_binary"
   }
-
   formula <- create_formula(y, predictor, time = time, covs = covs, rcs_knots = rcs_knots)
+  formula <- as.formula(deparse(formula))
 
   if (is.factor(data[[predictor]]) || is.null(rcs_knots)) {
     res <- list(estimate = NA, conf.low = NA, conf.high = NA, p.value = NA)
     if (analysis_type == "cox") {
       model <- coxph(formula, data = data)
+      full_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)
+      if (return_full_result) {
+        return(full_res)
+      }
       if (predictor_type == "num_or_binary") {
-        predictor_summary <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)[1, ]
+        predictor_summary <- full_res[1, ]
         res$estimate <- predictor_summary$estimate
         res$conf.low <- predictor_summary$conf.low
         res$conf.high <- predictor_summary$conf.high
       }
     } else {
       model <- glm(formula, data = data, family = binomial())
+      full_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)
+      if (return_full_result) {
+        return(full_res)
+      }
       if (predictor_type == "num_or_binary") {
-        predictor_summary <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)[2, ]
+        predictor_summary <- full_res[2, ]
         res$estimate <- predictor_summary$estimate
         res$conf.low <- predictor_summary$conf.low
         res$conf.high <- predictor_summary$conf.high
