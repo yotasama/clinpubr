@@ -48,7 +48,7 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
                      ratio_max = NULL, hist_max = NULL, xlim = NULL, return_details = FALSE) {
   if (!is.null(xlim) && length(xlim) != 2) stop("xlim must be a vector of length 2")
   if (is.null(group_colors)) {
-    group_colors <- .color_panel
+    group_colors <- emp_colors
   }
 
   analysis_type <- ifelse(is.null(time), "logistic", "cox")

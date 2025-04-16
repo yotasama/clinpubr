@@ -50,7 +50,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   if (max(data[, model_names]) > 1 || min(data[, model_names]) < 0) {
     stop("Only predicted probabilities are alowed, detected values not in range 0 to 1.")
   }
-  if (is.null(colors)) colors <- .color_panel
+  if (is.null(colors)) colors <- emp_colors
   data[[target_var]] <- factor(data[[target_var]])
   target <- data[[target_var]]
   metric_table <- data.frame(matrix(NA, nrow = length(model_names), ncol = 13))

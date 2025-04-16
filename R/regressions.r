@@ -59,7 +59,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
                                      pval_eps = 1e-3, median_nsmall = 0, colors = NULL, xlab = NULL, legend_title = x,
                                      legend_pos = c(0.8, 0.8), height = 6, width = 6, pval_pos = NULL, ...) {
   if (is.null(colors)) {
-    colors <- .color_panel
+    colors <- emp_colors
   }
 
   if (is.null(time)) {

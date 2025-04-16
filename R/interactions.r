@@ -118,7 +118,7 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
                              group_title = group_var, ...) {
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
   if (is.null(group_colors)) {
-    group_colors <- .color_panel
+    group_colors <- emp_colors
   }
   if (any(c(y, time, predictor, group_var) %in% covs)) {
     stop("Conflict of model variables!")
