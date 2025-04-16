@@ -13,6 +13,8 @@
 #'   numeric variable is included, it will be splited by the median value.
 #' @param covs A character vector of covariate names.
 #' @param try_rcs A logical value indicating whether to perform ristricted cubic spline interaction analysis.
+#' @param p_adjust_method The method to use for p-value adjustment for pairwise comparison. Default is "BH".
+#'   See `?p.adjust.methods`.
 #' @param save_table A logical value indicating whether to save the results as a table.
 #' @param filename The name of the file to save the results. File will be saved in `.csv` format.
 #' @return A data frame containing the results of the interaction analysis.
@@ -21,7 +23,7 @@
 #' data(cancer, package = "survival")
 #' interaction_scan(cancer, y = "status", time = "time")
 interaction_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL, covs = NULL,
-                             try_rcs = TRUE, save_table = TRUE, filename = NULL) {
+                             try_rcs = TRUE, p_adjust_method = "BH", save_table = TRUE, filename = NULL) {
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
   if (is.null(predictors)) {
     predictors <- setdiff(colnames(data), c(y, time))
@@ -71,8 +73,8 @@ interaction_scan <- function(data, y, time = NULL, predictors = NULL, group_vars
     }
   }
   res_df <- res_df[order(res_df$linear.p.int, decreasing = FALSE), ]
-  res_df$linear.p.adj <- p.adjust(res_df$linear.p.int)
-  res_df$rcs.p.adj <- p.adjust(res_df$rcs.p.int)
+  res_df$linear.p.adj <- p.adjust(res_df$linear.p.int, method = p_adjust_method)
+  res_df$rcs.p.adj <- p.adjust(res_df$rcs.p.int, method = p_adjust_method)
   if (try_rcs) {
     res_df <- res_df[!is.na(res_df$predictor), ]
   } else {
@@ -144,10 +146,13 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
     predictor_lvl <- seq(min(dat$.predictor), max(dat$.predictor), length.out = 100)
     prefix <- "lin_"
   }
-  dd <<- rms::datadist(dat)
-  old <- options()
-  on.exit(options(old))
+  dd <- rms::datadist(dat)
+  old_datadist <- getOption("datadist")
   options(datadist = "dd")
+  on.exit({
+    options(datadist = old_datadist)
+    rm(dd)
+  }, add = TRUE)
 
   plt1 <- NULL
   plt2 <- NULL

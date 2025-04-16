@@ -313,15 +313,44 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
 #' @param predictors The predictor variables to be scanned for interactions. If `NULL`, all variables
 #'   except `y` and `time` are taken as predictors.
 #' @param covs A character vector of covariate names.
+#' @param num_to_factor An integer. Numerical variables with number of unique values below or equal
+#'   to this value would be considered a factor.
+#' @param p_adjust_method The method to use for p-value adjustment for pairwise comparison. Default is "BH".
+#'   See `?p.adjust.methods`.
 #' @param save_table A logical value indicating whether to save the results as a table.
 #' @param filename The name of the file to save the results. File will be saved in `.csv` format.
 #' @return A data frame containing the results of the interaction analysis.
+#' @details The function first determines the type of each predictor variable (`numerical`, `categorical`,
+#'   `num_categorical` (numerical but with less unique values than or equal to `num_to_factor`), or
+#'   `other`). Then, it performs regression analysis for available transforms of each predictor variable
+#'   and saves the results.
+#' @section The available transforms for each predictor type are:
+#'   - `numerical`: `original`, `logarithm`, `categorized`, `rcs`
+#'   - `num_factor`: `original`, `categorized`
+#'   - `factor`: `original`
+#'   - `other`: none
+#' @section The transforms are applied as follows:
+#'   - `original`: Fit the regression model with the original variable. Provide HR/OR and p-values in results.
+#'   - `logarithm`: If the `numerical` variable is all greater than 0, fit the regression model with the
+#'   log-transformed variable. Provide HR/OR and p-values in results.
+#'   - `categorized`: For `numerical` variables, fit the regression model with the binarized variable splitted
+#'   at the median value. For `num_factor` variables, fit the regression model with the variable after `as.factor()`.
+#'   Provide HR/OR and p-values in results. If the number of levels is greater than 2, no single HR/OR is provided,
+#'   but the p-value of the overall test can be provided with TYPE-2 ANOVA from `car::Anova()`.
+#'   - `rcs`: Fit the regression model with the restricted cubic spline variable. The overall and nonlinear p-values
+#'   are provided in results. These p-vals are calculated by `anova()` of `rms::cph()` or `rms::Glm`.
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
-#' int_scan(cancer, y = "status", time = "time")
-regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL,
-                            try_rcs = TRUE, save_table = TRUE, filename = NULL) {
+#' regression_scan(cancer, y = "status", time = "time")
+regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL, num_to_factor = 5,
+                            p_adjust_method = "BH", save_table = TRUE, filename = NULL) {
+  supported_var_trans <- list(
+    numerical = c("original", "logarithm", "categorized", "rcs"),
+    num_factor = c("original", "categorized"),
+    factor = c("original"),
+    other = c()
+  )
   if (is.null(time)) {
     analysis_type <- "logistic"
     ratio_type <- "OR"
@@ -342,10 +371,11 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
   res_df <- data.frame(matrix(NA, nrow = length(predictors), ncol = 15))
   colnames(res_df) <- c(
     "predictor", "nvalid",
-    paste0("linear.", ratio_type), "linear.pval", "linear.padj",
-    paste0("logarithm.", ratio_type), "logarithm.pval", "logarithm.padj",
-    paste0("cat.median.", ratio_type), "cat.median.pval", "cat.median.padj",
-    "rcs.overall.pval", "rcs.overall.padj", "rcs.nonlinear.pval", "rcs.nonlinear.padj"
+    paste(rep(c("original", "logarithm", "categorized"), each = 3),
+      c(ratio_type, "pval", "padj"),
+      sep = "."
+    ),
+    paste("rcs", rep(c("overall", "nonlinear"), each = 2), c("pval", "padj"), sep = ".")
   )
 
   res_df$predictor <- predictors
@@ -355,39 +385,65 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
     dat <- dplyr::select(data, all_of(c(y, predictor, time, tmp_covs)))
     dat <- na.omit(dat)
     nvalid <- nrow(dat)
+    res_df$nvalid[i] <- nvalid
     if (nvalid < 10) {
       next
     }
-
-    p1 <- int_p_value(data, y, predictor, group_var, time = time, covs = covs)
-    if (try_rcs && length(unique(data[, predictor])) > 10) {
-      p2 <- tryCatch(
-        int_p_value(data, y, predictor, group_var, time = time, covs = covs, rcs_knots = 4),
-        error = function(e) {
-          NA
-        }
-      )
+    if (is.factor(dat[[predictor]])) {
+      predictor_type <- "factor"
+    } else if (is.numeric(dat[[predictor]])) {
+      if (length(unique(dat[[predictor]])) <= num_to_factor) {
+        predictor_type <- "num_factor"
+      } else {
+        predictor_type <- "numerical"
+      }
     } else {
-      p2 <- NA
+      predictor_type <- "other"
     }
-    res_df$predictor[irow] <- predictor
-    res_df$group.by[irow] <- group_var
-    res_df$nvalid[irow] <- nvalid
-    res_df$lin.pval[irow] <- p1
-    res_df$rcs.pval[irow] <- p2
-    irow <- irow + 1
+    for (var_trans in supported_var_trans[[predictor_type]]) {
+      tmp_dat <- dat
+      rcs_knots <- NULL
+      if (var_trans == "logarithm") {
+        if (any(dat[[predictor]] <= 0)) {
+          next
+        }
+        tmp_dat[[predictor]] <- log(tmp_dat[[predictor]])
+      } else if (var_trans == "categorized") {
+        if (predictor_type == "num_factor") {
+          tmp_dat[[predictor]] <- as.factor(tmp_dat[[predictor]])
+        } else {
+          tmp_dat[[predictor]] <- cut_by(
+            tmp_dat[[predictor]],
+            breaks = 0.5,
+            breaks_as_quantiles = TRUE
+          )
+        }
+      } else if (var_trans == "rcs") {
+        rcs_knots <- 4
+      }
+      model_res <- regression_p_value(
+        data = tmp_dat, y = y, predictor = predictor, time = new_time_var,
+        covs = tmp_covs, rcs_knots = rcs_knots
+      )
+      if (var_trans == "rcs") {
+        res_df$rcs.overall.pval[i] <- model_res$p_overall
+        res_df$rcs.nonlinear.pval[i] <- model_res$p_nonlinear
+      } else {
+        res_df[[paste(var_trans, ratio_type, sep = ".")]][i] <- model_res$estimate
+        res_df[[paste(var_trans, "pval", sep = ".")]][i] <- model_res$p.value
+      }
+    }
   }
-  res_df <- res_df[order(res_df$lin.pval, decreasing = FALSE), ]
-  res_df$lin.p.adj <- p.adjust(res_df$lin.pval)
-  res_df$rcs.p.adj <- p.adjust(res_df$rcs.pval)
-  if (try_rcs) {
-    res_df <- res_df[!is.na(res_df$predictor), ]
-  } else {
-    res_df <- res_df[!is.na(res_df$predictor), -c(5, 7)]
+  res_df <- res_df[order(res_df$original.pval, decreasing = FALSE), ]
+  for (p_types in c("original", "logarithm", "categorized", "rcs.overall", "rcs.nonlinear")) {
+    res_df[[paste(p_types, "padj", sep = ".")]] <- p.adjust(
+      res_df[[paste(p_types, "pval", sep = ".")]],
+      method = p_adjust_method
+    )
   }
   if (save_table) {
     if (is.null(filename)) {
-      filename <- paste(analysis_type, y, "interaction_scan.csv", sep = "_")
+      filename <- paste(analysis_type, y, "regression_scan.csv", sep = "_")
     }
     write.csv(res_df, filename, row.names = FALSE)
   }
@@ -424,7 +480,7 @@ regression_p_value <- function(data, y, predictor, time = NULL, covs = NULL, rcs
     predictor_type <- "num_or_binary"
   }
   formula <- create_formula(y, predictor, time = time, covs = covs, rcs_knots = rcs_knots)
-  formula <- as.formula(deparse(formula))
+  environment(formula) <- environment()
 
   if (is.factor(data[[predictor]]) || is.null(rcs_knots)) {
     res <- list(estimate = NA, conf.low = NA, conf.high = NA, p.value = NA)

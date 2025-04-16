@@ -10,7 +10,8 @@ regression_scan(
   time = NULL,
   predictors = NULL,
   covs = NULL,
-  try_rcs = TRUE,
+  num_to_factor = 5,
+  p_adjust_method = "BH",
   save_table = TRUE,
   filename = NULL
 )
@@ -28,6 +29,12 @@ except \code{y} and \code{time} are taken as predictors.}
 
 \item{covs}{A character vector of covariate names.}
 
+\item{num_to_factor}{An integer. Numerical variables with number of unique values below or equal
+to this value would be considered a factor.}
+
+\item{p_adjust_method}{The method to use for p-value adjustment for pairwise comparison. Default is "BH".
+See \code{?p.adjust.methods}.}
+
 \item{save_table}{A logical value indicating whether to save the results as a table.}
 
 \item{filename}{The name of the file to save the results. File will be saved in \code{.csv} format.}
@@ -40,7 +47,38 @@ Scan for significant regression predictors and output results. Both logistic and
 proportional hazards regression models are supported. The predictor variables in the model are can be
 used both in linear form or in ristricted cubic spline form.
 }
+\details{
+The function first determines the type of each predictor variable (\code{numerical}, \code{categorical},
+\code{num_categorical} (numerical but with less unique values than or equal to \code{num_to_factor}), or
+\code{other}). Then, it performs regression analysis for available transforms of each predictor variable
+and saves the results.
+}
+\section{The available transforms for each predictor type are}{
+
+\itemize{
+\item \code{numerical}: \code{original}, \code{logarithm}, \code{categorized}, \code{rcs}
+\item \code{num_factor}: \code{original}, \code{categorized}
+\item \code{factor}: \code{original}
+\item \code{other}: none
+}
+}
+
+\section{The transforms are applied as follows}{
+
+\itemize{
+\item \code{original}: Fit the regression model with the original variable. Provide HR/OR and p-values in results.
+\item \code{logarithm}: If the \code{numerical} variable is all greater than 0, fit the regression model with the
+log-transformed variable. Provide HR/OR and p-values in results.
+\item \code{categorized}: For \code{numerical} variables, fit the regression model with the binarized variable splitted
+at the median value. For \code{num_factor} variables, fit the regression model with the variable after \code{as.factor()}.
+Provide HR/OR and p-values in results. If the number of levels is greater than 2, no single HR/OR is provided,
+but the p-value of the overall test can be provided with TYPE-2 ANOVA from \code{car::Anova()}.
+\item \code{rcs}: Fit the regression model with the restricted cubic spline variable. The overall and nonlinear p-values
+are provided in results. These p-vals are calculated by \code{anova()} of \code{rms::cph()} or \code{rms::Glm}.
+}
+}
+
 \examples{
 data(cancer, package = "survival")
-int_scan(cancer, y = "status", time = "time")
+regression_scan(cancer, y = "status", time = "time")
 }

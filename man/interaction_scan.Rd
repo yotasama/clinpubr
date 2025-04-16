@@ -12,6 +12,7 @@ interaction_scan(
   group_vars = NULL,
   covs = NULL,
   try_rcs = TRUE,
+  p_adjust_method = "BH",
   save_table = TRUE,
   filename = NULL
 )
@@ -34,6 +35,9 @@ numeric variable is included, it will be splited by the median value.}
 \item{covs}{A character vector of covariate names.}
 
 \item{try_rcs}{A logical value indicating whether to perform ristricted cubic spline interaction analysis.}
+
+\item{p_adjust_method}{The method to use for p-value adjustment for pairwise comparison. Default is "BH".
+See \code{?p.adjust.methods}.}
 
 \item{save_table}{A logical value indicating whether to save the results as a table.}
 
