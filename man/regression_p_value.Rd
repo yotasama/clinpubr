@@ -10,7 +10,8 @@ regression_p_value(
   predictor,
   time = NULL,
   covs = NULL,
-  rcs_knots = NULL
+  rcs_knots = NULL,
+  return_full_result = FALSE
 )
 }
 \arguments{
@@ -26,10 +27,14 @@ Otherwise, Cox proportional hazards regression is used.}
 \item{covs}{A character vector of covariate names.}
 
 \item{rcs_knots}{The number of rcs knots. If \code{NULL}, a linear model would be fitted instead.}
+
+\item{return_full_result}{A logical value indicating whether to return the complete model. Does not work
+for rcs models where \code{rcs_knots} is not \code{NULL}.}
 }
 \value{
 A list containing the regression ratio and p-value of the predictor. If \code{rcs_knots} is not \code{NULL},
-the list contains the overall p-value and the nonlinear p-value of the rcs model.
+the list contains the overall p-value and the nonlinear p-value of the rcs model. If \code{return_full_result}
+is \code{TRUE}, the complete result of the regression model is returned.
 }
 \description{
 This function calculates the regression p-value of a predictor in a
@@ -37,5 +42,5 @@ logistic or Cox proportional hazards model.
 }
 \examples{
 data(cancer, package = "survival")
-regression_p_value(data = cancer, y = "status", predictor="age", time = "time", rcs_knots = 4)
+regression_p_value(data = cancer, y = "status", predictor = "age", time = "time", rcs_knots = 4)
 }
