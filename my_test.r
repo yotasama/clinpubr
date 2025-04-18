@@ -1,8 +1,8 @@
 data(cancer, package = "survival")
 # coxph model with time assigned
-data=cancer
-y="status"
-time="time"
+data=dat
+y="结局"
+time="最大狼疮脑随访天数"
 predictors = NULL; covs = NULL; num_to_factor = 5;
 p_adjust_method = "BH"; save_table = TRUE; filename = NULL
 regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL, num_to_factor = 5,
@@ -16,11 +16,9 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
   if (is.null(time)) {
     analysis_type <- "logistic"
     ratio_type <- "OR"
-    new_time_var <- NULL
   } else {
     analysis_type <- "cox"
     ratio_type <- "HR"
-    new_time_var <- "time"
   }
   if (is.null(predictors)) {
     predictors <- setdiff(colnames(data), c(y, time))
@@ -81,10 +79,10 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
           )
         }
       } else if (var_trans == "rcs") {
-        rcs_knots <- 5
+        rcs_knots <- 4
       }
       model_res <- regression_p_value(
-        data = tmp_dat, y = y, predictor = predictor, time = new_time_var,
+        data = tmp_dat, y = y, predictor = predictor, time = time,
         covs = tmp_covs, rcs_knots = rcs_knots
       )
       if (var_trans == "rcs") {

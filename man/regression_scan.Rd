@@ -48,8 +48,8 @@ proportional hazards regression models are supported. The predictor variables in
 used both in linear form or in ristricted cubic spline form.
 }
 \details{
-The function first determines the type of each predictor variable (\code{numerical}, \code{categorical},
-\code{num_categorical} (numerical but with less unique values than or equal to \code{num_to_factor}), or
+The function first determines the type of each predictor variable (\code{numerical}, \code{factor},
+\code{num_factor} (numerical but with less unique values than or equal to \code{num_to_factor}), or
 \code{other}). Then, it performs regression analysis for available transforms of each predictor variable
 and saves the results.
 }

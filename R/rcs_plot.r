@@ -64,9 +64,12 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
   dd <- rms::datadist(indf)
   .dd_out <<- dd
   old_datadist <- getOption("datadist")
-  on.exit({
-    options(datadist = old_datadist)
-  }, add = TRUE)
+  on.exit(
+    {
+      options(datadist = old_datadist)
+    },
+    add = TRUE
+  )
   options(datadist = ".dd_out")
 
   aics <- NULL
@@ -273,7 +276,8 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
   if (save_plot) {
     if (is.null(filename)) {
       filename <- paste0(paste0(c(x, paste0(knot, "knot"), paste0("with_", length(covs), "covs")),
-                                collapse = "_"), ".png")
+        collapse = "_"
+      ), ".png")
     }
     ggsave(filename, p, width = 6, height = 6)
   }
@@ -314,4 +318,24 @@ break_at <- function(xlim, breaks, ref_val) {
     bks <- bks + tmp[length(tmp)]
   }
   bks
+}
+
+#' Filter predictors for RCS
+#' @description Filter predictors that can be used to fit for RCS models.
+#' @param data A data frame.
+#' @param predictors A vector of predictor names to be filtered.
+#'
+#' @returns A vector of predictor names. These variables are numeric and have more than 5 unique values.
+#' @export
+filter_rcs_predictors <- function(data, predictors = NULL) {
+  if (is.null(predictors)) {
+    predictors <- colnames(data)
+  }
+  res <- c()
+  for (x in predictors) {
+    if (is.numeric(data[[x]]) && length(na.omit(unique(data[[x]]))) > 5) {
+      res <- union(res, x)
+    }
+  }
+  return(res)
 }

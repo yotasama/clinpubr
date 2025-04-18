@@ -39,21 +39,23 @@ cut_by <- function(x, breaks,
   if (!is.null(cut_labels) && length(cut_labels) != length(breaks) + 1) {
     stop("the number of labels and levels does not match")
   }
+  m1 <- min(x, na.rm = TRUE)
+  m2 <- max(x, na.rm = TRUE)
   if (breaks_as_quantiles) {
-    res <- cut(x, c(quantile(x, c(0, breaks, 1), na.rm = TRUE)),
-      right = FALSE,
-      include.lowest = TRUE, ...
-    )
+    q <- quantile(x, probs = c(0, breaks, 1), na.rm = TRUE, names = FALSE)
   } else {
-    res <-cut(x, c(-Inf, breaks, Inf),
-      right = FALSE,
-      include.lowest = TRUE, ...
-    )
+    q <- c(min(x, na.rm = TRUE), breaks, max(x, na.rm = TRUE))
   }
+  for (i in 2:length(q)) {
+    if (q[i] <= q[i - 1]) {
+      q[i] <- q[i - 1] + 1e-8
+    }
+  }
+  res <- cut(x, breaks = q, right = FALSE, include.lowest = TRUE, ...)
   if (!is.null(cut_labels)) {
     if (label_type == "combined") {
       levels(res) <- paste(cut_labels, levels(res), sep = " ")
-    }else {
+    } else {
       levels(res) <- cut_labels
     }
   }

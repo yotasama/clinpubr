@@ -320,8 +320,8 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
 #' @param save_table A logical value indicating whether to save the results as a table.
 #' @param filename The name of the file to save the results. File will be saved in `.csv` format.
 #' @return A data frame containing the results of the interaction analysis.
-#' @details The function first determines the type of each predictor variable (`numerical`, `categorical`,
-#'   `num_categorical` (numerical but with less unique values than or equal to `num_to_factor`), or
+#' @details The function first determines the type of each predictor variable (`numerical`, `factor`,
+#'   `num_factor` (numerical but with less unique values than or equal to `num_to_factor`), or
 #'   `other`). Then, it performs regression analysis for available transforms of each predictor variable
 #'   and saves the results.
 #' @section The available transforms for each predictor type are:
@@ -354,11 +354,9 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
   if (is.null(time)) {
     analysis_type <- "logistic"
     ratio_type <- "OR"
-    new_time_var <- NULL
   } else {
     analysis_type <- "cox"
     ratio_type <- "HR"
-    new_time_var <- "time"
   }
   if (is.null(predictors)) {
     predictors <- setdiff(colnames(data), c(y, time))
@@ -368,14 +366,15 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
     stop("Some predictors are not in the data")
   }
 
-  res_df <- data.frame(matrix(NA, nrow = length(predictors), ncol = 15))
+  res_df <- data.frame(matrix(NA, nrow = length(predictors), ncol = 16))
   colnames(res_df) <- c(
     "predictor", "nvalid",
     paste(rep(c("original", "logarithm", "categorized"), each = 3),
       c(ratio_type, "pval", "padj"),
       sep = "."
     ),
-    paste("rcs", rep(c("overall", "nonlinear"), each = 2), c("pval", "padj"), sep = ".")
+    paste("rcs", rep(c("overall", "nonlinear"), each = 2), c("pval", "padj"), sep = "."),
+    "best.var.trans"
   )
 
   res_df$predictor <- predictors
@@ -389,7 +388,7 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
     if (nvalid < 10) {
       next
     }
-    if (is.factor(dat[[predictor]])) {
+    if (is.factor(dat[[predictor]]) || is.logical(dat[[predictor]])) {
       predictor_type <- "factor"
     } else if (is.numeric(dat[[predictor]])) {
       if (length(unique(dat[[predictor]])) <= num_to_factor) {
@@ -422,7 +421,7 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
         rcs_knots <- 4
       }
       model_res <- regression_p_value(
-        data = tmp_dat, y = y, predictor = predictor, time = new_time_var,
+        data = tmp_dat, y = y, predictor = predictor, time = time,
         covs = tmp_covs, rcs_knots = rcs_knots
       )
       if (var_trans == "rcs") {
@@ -435,11 +434,16 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
     }
   }
   res_df <- res_df[order(res_df$original.pval, decreasing = FALSE), ]
-  for (p_types in c("original", "logarithm", "categorized", "rcs.overall", "rcs.nonlinear")) {
-    res_df[[paste(p_types, "padj", sep = ".")]] <- p.adjust(
-      res_df[[paste(p_types, "pval", sep = ".")]],
+  p_types <- c("original", "logarithm", "categorized", "rcs.overall", "rcs.nonlinear")
+  for (p_type in p_types) {
+    res_df[[paste(p_type, "padj", sep = ".")]] <- p.adjust(
+      res_df[[paste(p_type, "pval", sep = ".")]],
       method = p_adjust_method
     )
+  }
+  p_table <- res_df[, grepl("pval", colnames(res_df))]
+  for (i in seq_along(predictors)) {
+    res_df$best.var.trans[i] <- p_types[which.min(unlist(p_table[i, ]))]
   }
   if (save_table) {
     if (is.null(filename)) {
