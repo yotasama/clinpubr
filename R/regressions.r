@@ -88,15 +88,15 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
   dat <- dplyr::select(data, all_of(c(y, x, time, covs)))
   dat <- dat[complete.cases(dat[, c(y, x, time)]), ]
   colnames(dat)[c(1:2)] <- c("y", "x")
+  if (analysis_type == "cox") {
+    start_col <- 4
+    colnames(dat)[3] <- new_time_var
+  } else {
+    start_col <- 3
+  }
   ori_covs <- covs
   if (!is.null(covs)) {
     covs <- paste0(".cov", seq_along(covs))
-    if (analysis_type == "cox") {
-      start_col <- 4
-      colnames(dat)[3] <- new_time_var
-    } else {
-      start_col <- 3
-    }
     colnames(dat)[start_col:(start_col + length(covs) - 1)] <- covs
   }
   if (is.null(output_dir)) {

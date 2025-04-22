@@ -156,6 +156,7 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_f
 #' @param nonnormal_vars A vector of variables to test for normality. Overwrites the nonnormal variables in `var_types`.
 #' @param seed A seed for the random number generator. This seed can be set for consistent simulation when
 #'   performing fisher exact tests.
+#' @param omit_missing_strata A logical value indicating whether to omit missing values in the strata variable.
 #' @param filename The name of the file to save the table. The file names for accompanying tables will
 #'   be the same as the main table, but with "_missing" and "_pairwise" appended.
 #' @param p_adjust_method The method to use for p-value adjustment for pairwise comparison. Default is "BH".
@@ -169,19 +170,19 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_f
 #' baseline_table(cancer, var_types = var_types)
 baseline_table <- function(data, var_types = NULL, strata = NULL, vars = setdiff(colnames(data), strata),
                            factor_vars = NULL, exact_vars = NULL, nonnormal_vars = NULL, seed = NULL,
-                           filename = "baseline.csv", p_adjust_method = "BH", ...) {
+                           omit_missing_strata = FALSE, filename = NULL, p_adjust_method = "BH", ...) {
   if (!is.null(var_types) && !"var_types" %in% class(var_types)) {
     stop("Invalid 'var_types' arguement! Please use result from get_var_types function.")
   }
-  if (!grepl(".csv", filename)) stop("please save as .csv file")
   if (is.null(strata) && !is.null(var_types)) strata <- var_types$strata
-  if (!is.null(strata)) data <- data[!is.na(data[[strata]]), ]
+  if (!is.null(strata) && omit_missing_strata) data <- data[!is.na(data[[strata]]), ]
   if (is.null(factor_vars) && !is.null(var_types)) factor_vars <- var_types$factor_vars
   if (is.null(exact_vars) && !is.null(var_types)) exact_vars <- var_types$exact_vars
   if (is.null(nonnormal_vars) && !is.null(var_types)) nonnormal_vars <- var_types$nonnormal_vars
   if (!is.null(var_types$omitvars)) vars <- setdiff(vars, var_types$omitvars)
   if (is.null(seed)) set.seed(seed)
-
+  if (is.null(filename)) filename <- paste0("baseline_by", strata, ".csv")
+  if (!grepl(".csv", filename)) stop("please save as .csv file")
   factor_vars <- union(factor_vars, exact_vars)
 
   if (is.null(strata)) {
