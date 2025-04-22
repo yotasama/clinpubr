@@ -1,6 +1,6 @@
 #' Extract numbers from string.
-#' @description Exract numberical values from strings. Can be used to filter out the unwanted information
-#'   comming along with the numbers.
+#' @description Extract numerical values from strings. Can be used to filter out the unwanted information
+#'   coming along with the numbers.
 #' @param x A character vector.
 #' @param res_type The type of the result. Can be `"first"` or `"range"`. If `"first"`, the first number in the string
 #'   is extracted. If `"range"`, the mean of the range in the string is extracted.

@@ -9,6 +9,9 @@
 #'   "Treat all" and "Treat none" lines in the DCA plot.
 #' @param output_files A logical value indicating whether to output the results to files.
 #' @param output_prefix A string specifying the prefix for the output files.
+#' @param as_probability A logical or a vector of variable names. The logical value indicates
+#'   whether to convert variables not in range 0 to 1 into this range.
+#'   The vector of variable names means to convert these variables to the range of 0 to 1.
 #' @param return_results A logical value indicating whether to return the results.
 #' @section Metrics:
 #'   - AUC: Area Under the Receiver Operating Characteristic Curve
@@ -45,10 +48,25 @@
 #'
 #' classif_model_compare(df, "dead", c("base_pred", "full_pred"))
 classif_model_compare <- function(data, target_var, model_names, colors = NULL, output_files = TRUE,
-                                  output_prefix = "model_compare", return_results = !output_files) {
+                                  output_prefix = "model_compare", as_probability = FALSE,
+                                  return_results = !output_files) {
   if (!output_files && !return_results) stop("Results are neither saved or returned!")
+  if (isTRUE(as_probability)) {
+    vars_to_prob <- model_names[apply(data[, model_names, drop = FALSE], 2, function(x) any(x < 0 | x > 1))]
+  } else if (is.character(as_probability)) {
+    vars_to_prob <- as_probability
+  } else {
+    vars_to_prob <- NULL
+  }
+  for (var in vars_to_prob) {
+    data[[var]] <- (data[[var]] - min(data[[var]])) / (max(data[[var]]) - min(data[[var]]))
+  }
   if (max(data[, model_names]) > 1 || min(data[, model_names]) < 0) {
-    stop("Only predicted probabilities are alowed, detected values not in range 0 to 1.")
+    stop(paste0(
+      "Only predicted probabilities are allowed, detected values not in range 0 to 1.\n",
+      "Set `as_probability = TRUE` to convert illegal variables to the range of 0 to 1.\n",
+      "You can also pass a vector of variable names to `as_probability` to convert only those variables.\n"
+    ))
   }
   if (is.null(colors)) colors <- emp_colors
   data[[target_var]] <- factor(data[[target_var]])

@@ -2,7 +2,7 @@
 % Please edit documentation in R/rcs_plot.r
 \name{rcs_plot}
 \alias{rcs_plot}
-\title{Plot ristricted cubic spline}
+\title{Plot restricted cubic spline}
 \usage{
 rcs_plot(
   data,
@@ -89,7 +89,7 @@ Passed to \code{ggplot2::scale_y_continuous(transform = trans)}.}
 A \code{ggplot} object, or a list containing the \code{ggplot} object and other details if \code{return_details} is \code{TRUE}.
 }
 \description{
-Plot ristricted cubic spline based on package \code{rms}. Support both logistic and cox model.
+Plot restricted cubic spline based on package \code{rms}. Support both logistic and cox model.
 }
 \examples{
 data(cancer, package = "survival")

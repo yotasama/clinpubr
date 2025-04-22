@@ -11,6 +11,7 @@ classif_model_compare(
   colors = NULL,
   output_files = TRUE,
   output_prefix = "model_compare",
+  as_probability = FALSE,
   return_results = !output_files
 )
 }
@@ -27,6 +28,10 @@ classif_model_compare(
 \item{output_files}{A logical value indicating whether to output the results to files.}
 
 \item{output_prefix}{A string specifying the prefix for the output files.}
+
+\item{as_probability}{A logical or a vector of variable names. The logical value indicates
+whether to convert variables not in range 0 to 1 into this range.
+The vector of variable names means to convert these variables to the range of 0 to 1.}
 
 \item{return_results}{A logical value indicating whether to return the results.}
 }

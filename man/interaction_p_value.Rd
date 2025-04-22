@@ -22,7 +22,7 @@ interaction_p_value(
 \item{predictor}{A character string of the predictor variable.}
 
 \item{group_var}{A character string of the group variable. The variable should be categorical. If a
-numeric variable is provided, it will be splited by the median value.}
+numeric variable is provided, it will be split by the median value.}
 
 \item{time}{A character string of the time variable. If \code{NULL}, logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}

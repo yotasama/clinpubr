@@ -1,5 +1,5 @@
-#' Plot ristricted cubic spline
-#' @description Plot ristricted cubic spline based on package `rms`. Support both logistic and cox model.
+#' Plot restricted cubic spline
+#' @description Plot restricted cubic spline based on package `rms`. Support both logistic and cox model.
 #' @param data A data frame.
 #' @param x A character string of the predictor variable.
 #' @param y A character string of the outcome variable.

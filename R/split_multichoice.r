@@ -1,10 +1,10 @@
 #' @include utils.R
 NULL
-#' Split multichoice data into columns
-#' @description Split multichoice data into columns, each new column consists of
+#' Split multi-choice data into columns
+#' @description Split multi-choice data into columns, each new column consists of
 #'   booleans whether a choice is presented.
 #' @param df A data frame.
-#' @param quest_cols A vector of column names that contain multichoice data.
+#' @param quest_cols A vector of column names that contain multi-choice data.
 #' @param split A string to split the data. Default is `""`.
 #' @param remove_space If `TRUE`, remove space in the data.
 #' @param link A string to link the column name and the option. Default is `"_"`.

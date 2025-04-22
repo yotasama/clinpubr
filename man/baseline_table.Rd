@@ -33,7 +33,7 @@ baseline_table(
 
 \item{nonnormal_vars}{A vector of variables to test for normality. Overwrites the nonnormal variables in \code{var_types}.}
 
-\item{seed}{A seed for the random number generator. This seed can be set for consistant simulation when
+\item{seed}{A seed for the random number generator. This seed can be set for consistent simulation when
 performing fisher exact tests.}
 
 \item{filename}{The name of the file to save the table. The file names for accompanying tables will

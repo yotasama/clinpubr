@@ -37,8 +37,8 @@ is extracted. If \code{"range"}, the mean of the range in the string is extracte
 A numeric vector.
 }
 \description{
-Exract numberical values from strings. Can be used to filter out the unwanted information
-comming along with the numbers.
+Extract numerical values from strings. Can be used to filter out the unwanted information
+coming along with the numbers.
 }
 \details{
 The function uses regular expressions to extract numbers from strings. The regular expression used is

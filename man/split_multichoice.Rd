@@ -2,7 +2,7 @@
 % Please edit documentation in R/split_multichoice.r
 \name{split_multichoice}
 \alias{split_multichoice}
-\title{Split multichoice data into columns}
+\title{Split multi-choice data into columns}
 \usage{
 split_multichoice(
   df,
@@ -16,7 +16,7 @@ split_multichoice(
 \arguments{
 \item{df}{A data frame.}
 
-\item{quest_cols}{A vector of column names that contain multichoice data.}
+\item{quest_cols}{A vector of column names that contain multi-choice data.}
 
 \item{split}{A string to split the data. Default is \code{""}.}
 
@@ -30,7 +30,7 @@ split_multichoice(
 A data frame with additional columns.
 }
 \description{
-Split multichoice data into columns, each new column consists of
+Split multi-choice data into columns, each new column consists of
 booleans whether a choice is presented.
 }
 \examples{

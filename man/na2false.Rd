@@ -14,7 +14,7 @@ A vector with \code{NA} values replaced by \code{FALSE}.
 }
 \description{
 Replace \code{NA} values with \code{FALSE} in logical vectors.
-For other vectors, the behavior relys on R's automatic conversion rules.
+For other vectors, the behavior relies on R's automatic conversion rules.
 }
 \examples{
 na2false(c(TRUE, FALSE, NA, TRUE, NA))

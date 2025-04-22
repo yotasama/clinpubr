@@ -2,7 +2,7 @@
 % Please edit documentation in R/misc.r
 \name{add_lists}
 \alias{add_lists}
-\title{Adding lists elementwise}
+\title{Adding lists element-wise}
 \usage{
 add_lists(l1, l2)
 }
@@ -13,7 +13,7 @@ add_lists(l1, l2)
 A list.
 }
 \description{
-Combine lists by adding elements elementwise.
+Combine lists by adding element-wise.
 }
 \examples{
 l1 <- list(a = 1, b = 2)

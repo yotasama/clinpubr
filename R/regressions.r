@@ -33,8 +33,8 @@
 #'
 #' @details The function `regression_basic_results` generates the result table of logistic or Cox regression with
 #'   different settings of the predictor variable and covariates. The setting of the predictor variable includes
-#'   the original `x`, the standardized `x`, the log of `x`, and `x` devided by denominators in `pers` as continuous
-#'   variables, and the factorization of the variable including splitted by median, by quartiles, and by `factor_breaks`
+#'   the original `x`, the standardized `x`, the log of `x`, and `x` divided by denominators in `pers` as continuous
+#'   variables, and the factorization of the variable including split by median, by quartiles, and by `factor_breaks`
 #'   and `quantile_breaks`. The setting of the covariates includes different models with different covariates.
 #' @note For factor variables with more than 2 levels, p value for trend is also calculated.
 #' @export
@@ -305,7 +305,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
 #' Scan for significant regression predictors
 #' @description Scan for significant regression predictors and output results. Both logistic and Cox
 #'   proportional hazards regression models are supported. The predictor variables in the model are can be
-#'   used both in linear form or in ristricted cubic spline form.
+#'   used both in linear form or in restricted cubic spline form.
 #' @param data A data frame.
 #' @param y A character string of the outcome variable.
 #' @param time A character string of the time variable. If `NULL`, logistic regression is used.
@@ -333,7 +333,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
 #'   - `original`: Fit the regression model with the original variable. Provide HR/OR and p-values in results.
 #'   - `logarithm`: If the `numerical` variable is all greater than 0, fit the regression model with the
 #'   log-transformed variable. Provide HR/OR and p-values in results.
-#'   - `categorized`: For `numerical` variables, fit the regression model with the binarized variable splitted
+#'   - `categorized`: For `numerical` variables, fit the regression model with the binarized variable split
 #'   at the median value. For `num_factor` variables, fit the regression model with the variable after `as.factor()`.
 #'   Provide HR/OR and p-values in results. If the number of levels is greater than 2, no single HR/OR is provided,
 #'   but the p-value of the overall test can be provided with TYPE-2 ANOVA from `car::Anova()`.

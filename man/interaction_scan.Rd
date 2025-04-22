@@ -30,11 +30,11 @@ except \code{y} and \code{time} are taken as predictors.}
 
 \item{group_vars}{The group variables to be scanned for interactions. If \code{NULL}, all variables
 except \code{y} and \code{time} are taken as group variables. The group variables should be categorical. If a
-numeric variable is included, it will be splited by the median value.}
+numeric variable is included, it will be split by the median value.}
 
 \item{covs}{A character vector of covariate names.}
 
-\item{try_rcs}{A logical value indicating whether to perform ristricted cubic spline interaction analysis.}
+\item{try_rcs}{A logical value indicating whether to perform restricted cubic spline interaction analysis.}
 
 \item{p_adjust_method}{The method to use for p-value adjustment for pairwise comparison. Default is "BH".
 See \code{?p.adjust.methods}.}
@@ -49,7 +49,7 @@ A data frame containing the results of the interaction analysis.
 \description{
 Scan for interactions between variables and output results. Both logistic and Cox
 proportional hazards regression models are supported. The predictor variables in the model are can be
-used both in linear form or in ristricted cubic spline form.
+used both in linear form or in restricted cubic spline form.
 }
 \examples{
 data(cancer, package = "survival")

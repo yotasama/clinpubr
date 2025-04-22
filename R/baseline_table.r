@@ -20,7 +20,7 @@
 #' @note This function performs normality tests on the variables in the data frame and determines
 #'   whether they are normal. This is done by performing Shapiro-Wilk, Lilliefors, Anderson-Darling,
 #'   Jarque-Bera, and Shapiro-Francia tests. If at least two of these tests indicate that the variable
-#'   is nonnormal, then it is considered nonnormal. To alieviate the problem that normality tests become
+#'   is nonnormal, then it is considered nonnormal. To alleviate the problem that normality tests become
 #'   too sensitive when sample size gets larger, the alpha level is determined by an experience formula
 #'   that decrease with sample size.
 #' @note This function also marks the factor variables that require fisher exact tests if any cell haves
@@ -154,7 +154,7 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_f
 #' @param factor_vars A vector of factor variables. Overwrites the factor variables in `var_types`.
 #' @param exact_vars A vector of variables to test for exactness. Overwrites the exact variables in `var_types`.
 #' @param nonnormal_vars A vector of variables to test for normality. Overwrites the nonnormal variables in `var_types`.
-#' @param seed A seed for the random number generator. This seed can be set for consistant simulation when
+#' @param seed A seed for the random number generator. This seed can be set for consistent simulation when
 #'   performing fisher exact tests.
 #' @param filename The name of the file to save the table. The file names for accompanying tables will
 #'   be the same as the main table, but with "_missing" and "_pairwise" appended.

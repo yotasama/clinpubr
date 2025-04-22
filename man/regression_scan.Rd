@@ -45,7 +45,7 @@ A data frame containing the results of the interaction analysis.
 \description{
 Scan for significant regression predictors and output results. Both logistic and Cox
 proportional hazards regression models are supported. The predictor variables in the model are can be
-used both in linear form or in ristricted cubic spline form.
+used both in linear form or in restricted cubic spline form.
 }
 \details{
 The function first determines the type of each predictor variable (\code{numerical}, \code{factor},
@@ -69,7 +69,7 @@ and saves the results.
 \item \code{original}: Fit the regression model with the original variable. Provide HR/OR and p-values in results.
 \item \code{logarithm}: If the \code{numerical} variable is all greater than 0, fit the regression model with the
 log-transformed variable. Provide HR/OR and p-values in results.
-\item \code{categorized}: For \code{numerical} variables, fit the regression model with the binarized variable splitted
+\item \code{categorized}: For \code{numerical} variables, fit the regression model with the binarized variable split
 at the median value. For \code{num_factor} variables, fit the regression model with the variable after \code{as.factor()}.
 Provide HR/OR and p-values in results. If the number of levels is greater than 2, no single HR/OR is provided,
 but the p-value of the overall test can be provided with TYPE-2 ANOVA from \code{car::Anova()}.

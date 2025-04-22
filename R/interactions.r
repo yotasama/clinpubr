@@ -1,7 +1,7 @@
 #' Scan for interactions between variables
 #' @description Scan for interactions between variables and output results. Both logistic and Cox
 #'   proportional hazards regression models are supported. The predictor variables in the model are can be
-#'   used both in linear form or in ristricted cubic spline form.
+#'   used both in linear form or in restricted cubic spline form.
 #' @param data A data frame.
 #' @param y A character string of the outcome variable.
 #' @param time A character string of the time variable. If `NULL`, logistic regression is used.
@@ -10,9 +10,9 @@
 #'   except `y` and `time` are taken as predictors.
 #' @param group_vars The group variables to be scanned for interactions. If `NULL`, all variables
 #'   except `y` and `time` are taken as group variables. The group variables should be categorical. If a
-#'   numeric variable is included, it will be splited by the median value.
+#'   numeric variable is included, it will be split by the median value.
 #' @param covs A character vector of covariate names.
-#' @param try_rcs A logical value indicating whether to perform ristricted cubic spline interaction analysis.
+#' @param try_rcs A logical value indicating whether to perform restricted cubic spline interaction analysis.
 #' @param p_adjust_method The method to use for p-value adjustment for pairwise comparison. Default is "BH".
 #'   See `?p.adjust.methods`.
 #' @param save_table A logical value indicating whether to save the results as a table.
@@ -91,14 +91,14 @@ interaction_scan <- function(data, y, time = NULL, predictors = NULL, group_vars
 
 #' Plot interactions
 #' @description Plot interactions between variables. Both logistic and Cox proportional hazards regression models
-#'   are supported. The predictor variables in the model are can be used both in linear form or in ristricted cubic
+#'   are supported. The predictor variables in the model are can be used both in linear form or in restricted cubic
 #'   spline form.
 #' @param data A data frame.
 #' @param data A data frame.
 #' @param y A character string of the outcome variable.
 #' @param predictor A character string of the predictor variable.
 #' @param group_var A character string of the group variable. The variable should be categorical. If a
-#'   numeric variable is provided, it will be splited by the median value.
+#'   numeric variable is provided, it will be split by the median value.
 #' @param time A character string of the time variable. If `NULL`, logistic regression is used.
 #'   Otherwise, Cox proportional hazards regression is used.
 #' @param covs A character vector of covariate names.
@@ -296,7 +296,7 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
 #' @param y A character string of the outcome variable.
 #' @param predictor A character string of the predictor variable.
 #' @param group_var A character string of the group variable. The variable should be categorical. If a
-#'   numeric variable is provided, it will be splited by the median value.
+#'   numeric variable is provided, it will be split by the median value.
 #' @param time A character string of the time variable. If `NULL`, logistic regression is used.
 #'   Otherwise, Cox proportional hazards regression is used.
 #' @param covs A character vector of covariate names.

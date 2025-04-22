@@ -19,7 +19,7 @@ unit_standardize(df, subject_col, value_col, unit_col, change_list)
 \itemize{
 \item \code{subject}: The subject to be standardized.
 \item \code{target_unit}: The target unit to be standardized to. If not specified,
-the function will use the most common unit in the data (retrived by \code{first_mode()}).
+the function will use the most common unit in the data (retrieved by \code{first_mode()}).
 \item \code{units2change}: The units to be changed. If not specified, the function will use
 all units except the target unit. Must be specified to apply different \code{coeffs}.
 \item \code{coeffs}: The coefficients to be used for the conversion. If not specified, the

@@ -29,7 +29,7 @@ interaction_plot(
 \item{predictor}{A character string of the predictor variable.}
 
 \item{group_var}{A character string of the group variable. The variable should be categorical. If a
-numeric variable is provided, it will be splited by the median value.}
+numeric variable is provided, it will be split by the median value.}
 
 \item{time}{A character string of the time variable. If \code{NULL}, logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}
@@ -57,7 +57,7 @@ A \code{ggplot} object.
 }
 \description{
 Plot interactions between variables. Both logistic and Cox proportional hazards regression models
-are supported. The predictor variables in the model are can be used both in linear form or in ristricted cubic
+are supported. The predictor variables in the model are can be used both in linear form or in restricted cubic
 spline form.
 }
 \examples{

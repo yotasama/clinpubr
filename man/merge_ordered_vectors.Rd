@@ -10,14 +10,14 @@ merge_ordered_vectors(vectors)
 \item{vectors}{A list of vectors to be merged.}
 }
 \value{
-A vector that tried to keep the order.
+A vector.
 }
 \description{
 Merge multiple vectors into one while trying to maintain
 the order of elements in each vector. The relative order of elements
 is compared by their first occurrence in the vectors in the list.
 This function is useful when merging slightly different vectors,
-such as questionares of different version.
+such as questionnaires of different versions.
 }
 \examples{
 merge_ordered_vectors(list(c(1, 3, 4, 5, 7, 10), c(2, 5, 6, 7, 8), c(1, 7, 5, 10)))

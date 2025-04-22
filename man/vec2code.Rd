@@ -3,7 +3,7 @@
 \name{vec2code}
 \alias{vec2code}
 \title{Generate code from string vector
-Genearte the code that can be used to generate the string vector.}
+Generate the code that can be used to generate the string vector.}
 \usage{
 vec2code(x)
 }
@@ -15,7 +15,7 @@ A string that contains the code to generate the vector.
 }
 \description{
 Generate code from string vector
-Genearte the code that can be used to generate the string vector.
+Generate the code that can be used to generate the string vector.
 }
 \examples{
 vec2code(colnames(mtcars))

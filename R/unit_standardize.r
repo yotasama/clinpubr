@@ -8,7 +8,7 @@
 #'   \itemize{
 #'     \item `subject`: The subject to be standardized.
 #'     \item `target_unit`: The target unit to be standardized to. If not specified,
-#'       the function will use the most common unit in the data (retrived by `first_mode()`).
+#'       the function will use the most common unit in the data (retrieved by `first_mode()`).
 #'     \item `units2change`: The units to be changed. If not specified, the function will use
 #'       all units except the target unit. Must be specified to apply different `coeffs`.
 #'     \item `coeffs`: The coefficients to be used for the conversion. If not specified, the

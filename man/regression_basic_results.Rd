@@ -94,8 +94,8 @@ variable and covariates. Also generate KM curves for Cox regression.
 \details{
 The function \code{regression_basic_results} generates the result table of logistic or Cox regression with
 different settings of the predictor variable and covariates. The setting of the predictor variable includes
-the original \code{x}, the standardized \code{x}, the log of \code{x}, and \code{x} devided by denominators in \code{pers} as continuous
-variables, and the factorization of the variable including splitted by median, by quartiles, and by \code{factor_breaks}
+the original \code{x}, the standardized \code{x}, the log of \code{x}, and \code{x} divided by denominators in \code{pers} as continuous
+variables, and the factorization of the variable including split by median, by quartiles, and by \code{factor_breaks}
 and \code{quantile_breaks}. The setting of the covariates includes different models with different covariates.
 }
 \note{
