@@ -6,7 +6,8 @@
 #' @param y A character string of the outcome variable.
 #' @param time A character string of the time variable. If `NULL`, logistic regression is used.
 #'   Otherwise, Cox proportional hazards regression is used.
-#' @param model_covs A named list of covariates for different models. If `NULL`, only the crude model is used.
+#' @param model_covs A character vector or a named list of covariates for different models.
+#'   If `NULL`, only the crude model is used.
 #' @param pers A numeric vector of the denominators of variable `x`. Set this denominator to obtain a reasonable
 #'   OR or HR.
 #' @param factor_breaks A numeric vector of the breaks to factorize the `x` variable.
@@ -76,17 +77,33 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
 
   if (is.null(model_covs)) {
     model_covs <- list(Crude = c())
+  } else if (is.vector(model_covs, mode = "character")) {
+    model_covs <- list(Crude = model_covs)
+  } else if (!is.list(model_covs)) {
+    stop("model_covs should be a character vector of covariates or a named list of covariates of multiple models.")
   }
+
   ref_levels <- str_replace_all(ref_levels, c("\\[" = "\\\\[", "\\(" = "\\\\(", "\\]" = "\\\\]", "\\)" = "\\\\)"))
 
   covs <- unique(unlist(model_covs))
   if (any(c(y, time, x) %in% covs)) {
-    print("conflict of model variables!")
-    return()
+    stop("conflict of model variables!")
   }
 
   dat <- dplyr::select(data, all_of(c(y, x, time, covs)))
-  dat <- dat[complete.cases(dat[, c(y, x, time)]), ]
+  if (length(model_covs) > 1) {
+    model_complete_cases <- sapply(model_covs, function(tmp_covs) {
+      complete.cases(dat[, tmp_covs])
+    })
+    if (any(!rowSums(model_complete_cases) %in% c(0, length(model_covs)))) {
+      warn(paste0(
+        "The missing values are present differently across models.\n",
+        "The analysis will be performed with the complete cases only.\n",
+        "Consider imputing the data before doing this analysis."
+      ))
+    }
+  }
+  dat <- na.omit(dat)
   colnames(dat)[c(1:2)] <- c("y", "x")
   if (analysis_type == "cox") {
     start_col <- 4
@@ -263,11 +280,11 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
     col2 <- 2 * j + 2
     res_table[1, col1:col2] <- c(ratio_type, "P")
     i <- 2
-    covs_tmp <- covs[match(model_covs[[j]], ori_covs)]
+    tmp_covs <- covs[match(model_covs[[j]], ori_covs)]
     for (var in vars) {
       model_res <- regression_p_value(
         data = dat, y = "y", predictor = var, time = new_time_var,
-        covs = covs_tmp, return_full_result = TRUE
+        covs = tmp_covs, return_full_result = TRUE
       )
       model_res <- data.frame(model_res[grepl("x", model_res$term), ])
       for (col in c("estimate", "conf.low", "conf.high")) {
@@ -291,7 +308,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
           dat$tmp <- as.numeric(dat0[[var]])
           model_res <- regression_p_value(
             data = dat, y = "y", predictor = "tmp", time = new_time_var,
-            covs = covs_tmp
+            covs = tmp_covs
           )
           res_table[i, col2] <- format_pval(model_res$p.value, nsmall = pval_nsmall, eps = pval_eps)
           i <- i + 1
@@ -301,6 +318,51 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
   }
   write.csv(res_table, paste0(output_dir, "/table_", x, ".csv"), row.names = FALSE)
 }
+
+
+#' Forest plot of regression results
+#' @description Generate the forest plot of logistic or Cox regression with different models.
+#' @param data A data frame.
+#' @param x A character string of the predictor variable.
+#' @param y A character string of the outcome variable.
+#' @param time A character string of the time variable. If `NULL`, logistic regression is used.
+#'   Otherwise, Cox proportional hazards regression is used.
+#' @param model_covs A character vector or a named list of covariates for different models.
+#'   If `NULL`, only the crude model is used.
+#' @param ratio_nsmall The minimum number of digits to the right of the decimal point for the OR or HR.
+#' @param pval_nsmall The minimum number of digits to the right of the decimal point for the p-value.
+#' @param pval_eps The threshold for rounding p values to 0.
+#' @param xlab A character string of the x-axis label.
+#' @param height The height of the plot.
+#' @param width The width of the plot.
+#' @param ... Additional arguments passed to the `survminer::ggsurvplot` function for KM curve.
+#'
+#' @details The function `regression_basic_results` generates the result table of logistic or Cox regression with
+#'   different settings of the predictor variable and covariates. The setting of the predictor variable includes
+#'   the original `x`, the standardized `x`, the log of `x`, and `x` divided by denominators in `pers` as continuous
+#'   variables, and the factorization of the variable including split by median, by quartiles, and by `factor_breaks`
+#'   and `quantile_breaks`. The setting of the covariates includes different models with different covariates.
+#' @note For factor variables with more than 2 levels, p value for trend is also calculated.
+#' @export
+#' @examples
+#' data(cancer, package = "survival")
+#' # coxph model with time assigned
+#' regression_basic_results(cancer,
+#'   x = "age", y = "status", time = "time",
+#'   model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex"))
+#' )
+#'
+#' # logistic model with time not assigned
+#' cancer$dead <- cancer$status == 2
+#' regression_basic_results(cancer,
+#'   x = "age", y = "dead", ref_levels = c("Q3", "High"),
+#'   model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex"))
+#' )
+regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL, ratio_nsmall = 2, pval_nsmall = 3,
+                                     pval_eps = 1e-3, xlab = NULL, height = 6, width = 6, ...) {
+  
+}
+
 
 #' Scan for significant regression predictors
 #' @description Scan for significant regression predictors and output results. Both logistic and Cox
@@ -380,8 +442,8 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
   res_df$predictor <- predictors
   for (i in seq_along(predictors)) {
     predictor <- predictors[i]
-    tmp_covs <- remove_conflict(covs, c(y, predictor, time), silent = TRUE)
-    dat <- dplyr::select(data, all_of(c(y, predictor, time, tmp_covs)))
+    covs <- remove_conflict(covs, c(y, predictor, time), silent = TRUE)
+    dat <- dplyr::select(data, all_of(c(y, predictor, time, covs)))
     dat <- na.omit(dat)
     nvalid <- nrow(dat)
     res_df$nvalid[i] <- nvalid
@@ -422,7 +484,7 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
       }
       model_res <- regression_p_value(
         data = tmp_dat, y = y, predictor = predictor, time = time,
-        covs = tmp_covs, rcs_knots = rcs_knots
+        covs = covs, rcs_knots = rcs_knots
       )
       if (var_trans == "rcs") {
         res_df$rcs.overall.pval[i] <- model_res$p_overall
