@@ -34,6 +34,6 @@ Split multi-choice data into columns, each new column consists of
 booleans whether a choice is presented.
 }
 \examples{
-df <- data.frame(q1 = c("a b", "c d a", "b a"), q2 = c("a b", "a c", "d"))
+df <- data.frame(q1 = c("ab", "c da", "b a", NA), q2 = c("a b", "a c", "d", "ab"))
 split_multichoice(df, quest_cols = c("q1", "q2"))
 }

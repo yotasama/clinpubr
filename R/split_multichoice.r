@@ -13,7 +13,7 @@ NULL
 #' @returns A data frame with additional columns.
 #' @export
 #' @examples
-#' df <- data.frame(q1 = c("a b", "c d a", "b a"), q2 = c("a b", "a c", "d"))
+#' df <- data.frame(q1 = c("ab", "c da", "b a", NA), q2 = c("a b", "a c", "d", "ab"))
 #' split_multichoice(df, quest_cols = c("q1", "q2"))
 split_multichoice <- function(df, quest_cols, split = "", remove_space = TRUE,
                               link = "_", remove_cols = TRUE) {
@@ -31,7 +31,10 @@ split_multichoice <- function(df, quest_cols, split = "", remove_space = TRUE,
     unique_options <- na.omit(unique(unlist(tmp_split)))
 
     for (opt in unique_options) {
-      df[, paste0(col, link, opt)] <- sapply(tmp_split, function(x) opt %in% x)
+      df[, paste0(col, link, opt)] <- ifelse(
+        is.na(tmp_split), NA,
+        sapply(tmp_split, function(x) opt %in% x)
+      )
     }
   }
   if (remove_cols) {

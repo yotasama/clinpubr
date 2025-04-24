@@ -13,7 +13,8 @@ baseline_table(
   exact_vars = NULL,
   nonnormal_vars = NULL,
   seed = NULL,
-  filename = "baseline.csv",
+  omit_missing_strata = FALSE,
+  filename = NULL,
   p_adjust_method = "BH",
   ...
 )
@@ -35,6 +36,8 @@ baseline_table(
 
 \item{seed}{A seed for the random number generator. This seed can be set for consistent simulation when
 performing fisher exact tests.}
+
+\item{omit_missing_strata}{A logical value indicating whether to omit missing values in the strata variable.}
 
 \item{filename}{The name of the file to save the table. The file names for accompanying tables will
 be the same as the main table, but with "_missing" and "_pairwise" appended.}

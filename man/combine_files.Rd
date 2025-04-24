@@ -2,11 +2,12 @@
 % Please edit documentation in R/combine_files.r
 \name{combine_files}
 \alias{combine_files}
-\title{combine multiple data files into a single dataframe}
+\title{combine multiple data files into a single data frame}
 \usage{
 combine_files(
   path = ".",
   pattern = NULL,
+  add_file_name = FALSE,
   unique_only = TRUE,
   reader_fun = read.csv,
   ...
@@ -16,6 +17,9 @@ combine_files(
 \item{path}{A string as the path to find the data files.}
 
 \item{pattern}{A file pattern to filter the required data files.}
+
+\item{add_file_name}{A logical value to indicate whether to add the file name as a column. Note that
+the added file name will affect the uniqueness of the data.}
 
 \item{unique_only}{A logical value to indicate whether to remove the duplicated rows.}
 
@@ -27,5 +31,5 @@ combine_files(
 A data frame. If no data files found, return \code{NULL}.
 }
 \description{
-combine multiple data files into a single dataframe
+combine multiple data files into a single data frame
 }
