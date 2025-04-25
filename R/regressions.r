@@ -358,8 +358,8 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
 #'   x = "age", y = "dead", ref_levels = c("Q3", "High"),
 #'   model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex"))
 #' )
-regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL, ratio_nsmall = 2, pval_nsmall = 3,
-                                     pval_eps = 1e-3, xlab = NULL, height = 6, width = 6, ...) {
+regression_forest <- function(data, x, y, time = NULL, model_covs = NULL, ratio_nsmall = 2, pval_nsmall = 3,
+                              pval_eps = 1e-3, xlab = NULL, height = 6, width = 6, ...) {
   
 }
 
@@ -516,8 +516,8 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
   return(res_df)
 }
 
-#' Calculate regression p-value
-#' @description This function calculates the regression p-value of a predictor in a
+#' Obtain regression results
+#' @description This function fit the regression of a predictor in a
 #'   logistic or Cox proportional hazards model.
 #' @param data A data frame.
 #' @param y A character string of the outcome variable.
@@ -526,57 +526,48 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
 #'   Otherwise, Cox proportional hazards regression is used.
 #' @param covs A character vector of covariate names.
 #' @param rcs_knots The number of rcs knots. If `NULL`, a linear model would be fitted instead.
-#' @param return_full_result A logical value indicating whether to return the complete model. Does not work
-#'   for rcs models where `rcs_knots` is not `NULL`.
+#' @param returned The return mode of this function.
+#'   - `"full"`: return the full regression model.
+#'   - `"predictor"`: return the regression ratio and p-value of the predictor.
+#'   - `"pval"`: return the p-value of the predictor.
 #' @return A list containing the regression ratio and p-value of the predictor. If `rcs_knots` is not `NULL`,
 #'   the list contains the overall p-value and the nonlinear p-value of the rcs model. If `return_full_result`
 #'   is `TRUE`, the complete result of the regression model is returned.
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
-#' regression_p_value(data = cancer, y = "status", predictor = "age", time = "time", rcs_knots = 4)
-regression_p_value <- function(data, y, predictor, time = NULL, covs = NULL, rcs_knots = NULL,
-                               return_full_result = FALSE) {
+#' regression_fit(data = cancer, y = "status", predictor = "age", time = "time", rcs_knots = 4)
+regression_fit <- function(data, y, predictor, time = NULL, covs = NULL, rcs_knots = NULL,
+                           returned = c("full", "predictor", "pval")) {
   if (!is.null(rcs_knots) && rcs_knots == 0) rcs_knots <- NULL
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
   covs <- remove_conflict(covs, c(y, predictor, time))
-  if (is.factor(data[[predictor]]) && length(levels(data[[predictor]])) > 2) {
-    predictor_type <- "multi_factor"
+
+  predictor_type <- if (is.factor(data[[predictor]]) && length(levels(data[[predictor]])) > 2) {
+    "multi_factor"
   } else {
-    predictor_type <- "num_or_binary"
+    "num_or_binary"
   }
+
   formula <- create_formula(y, predictor, time = time, covs = covs, rcs_knots = rcs_knots)
   environment(formula) <- environment()
 
   if (is.factor(data[[predictor]]) || is.null(rcs_knots)) {
-    res <- list(estimate = NA, conf.low = NA, conf.high = NA, p.value = NA)
     if (analysis_type == "cox") {
-      model <- coxph(formula, data = data)
-      full_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)
-      if (return_full_result) {
-        return(full_res)
-      }
-      if (predictor_type == "num_or_binary") {
-        predictor_summary <- full_res[1, ]
-        res$estimate <- predictor_summary$estimate
-        res$conf.low <- predictor_summary$conf.low
-        res$conf.high <- predictor_summary$conf.high
-      }
+      model <- survival::coxph(formula, data = data)
     } else {
-      model <- glm(formula, data = data, family = binomial())
-      full_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)
-      if (return_full_result) {
-        return(full_res)
-      }
-      if (predictor_type == "num_or_binary") {
-        predictor_summary <- full_res[2, ]
-        res$estimate <- predictor_summary$estimate
-        res$conf.low <- predictor_summary$conf.low
-        res$conf.high <- predictor_summary$conf.high
-      }
+      model <- stats::glm(formula, data = data, family = stats::binomial())
     }
-    res$p.value <- broom::tidy(car::Anova(model, type = 2, test.statistic = "Wald"))$p.value[1]
-    return(res)
+    full_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)
+    if (analysis_type == "logistic") full_res <- full_res[-1, ]
+    if (return_full_result) return(as.data.frame(full_res))
+    if (predictor_type == "num_or_binary") {
+      return(as.data.frame(full_res[1, ]))
+    }else {
+      return(list(
+        p.value = broom::tidy(car::Anova(model, type = 2, test.statistic = "Wald"))$p.value[1]
+      ))
+    }
   } else {
     if (analysis_type == "cox") {
       model <- cph(formula, data = data)

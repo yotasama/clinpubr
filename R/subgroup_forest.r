@@ -4,7 +4,7 @@
 #' @param data A data frame.
 #' @param var_subgroups A character vector of variable names to be used as subgroups. It's recommended that
 #'   the variables are categorical. If the variables are continuous, they will be cut into groups.
-#' @param x A character string of the predictor variable. Must be numerical or a factor with 2 levels.
+#' @param x A character string of the predictor variable.
 #' @param y A character string of the outcome variable.
 #' @param time A character string of the time variable. If `NULL`, logistic regression is used.
 #'   Otherwise, Cox proportional hazards regression is used.
@@ -64,6 +64,41 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
   }
 
   overall_res <- regression_p_value(indf, y, x, time = time, covs = covs)
+
+  model_res <- regression_p_value(
+    data = dat, y = "y", predictor = var, time = new_time_var,
+    covs = tmp_covs, return_full_result = TRUE
+  )
+  model_res <- data.frame(model_res[grepl("x", model_res$term), ])
+  for (col in c("estimate", "conf.low", "conf.high")) {
+    model_res[, col] <- format(model_res[, col], digits = 1, nsmall = ratio_nsmall)
+  }
+  tmp <- data.frame(
+    term = model_res$term,
+    ratio = paste0(model_res$estimate, "(", model_res$conf.low, ",", model_res$conf.high, ")"),
+    P = format_pval(model_res$p.value, nsmall = pval_nsmall, eps = pval_eps)
+  )
+  colnames(tmp)[2] <- ratio_type
+  if (is.numeric(dat[[var]])) {
+    res_table[i, col1] <- tmp[[ratio_type]]
+    res_table[i, col2] <- tmp$P
+    i <- i + 1
+  } else {
+    res_table[i + 2:(nrow(tmp) + 1), col1:col2] <- tmp[, -1]
+    res_table[i + 1, col1] <- "1 (Reference)"
+    i <- i + nrow(tmp) + 2
+    if (nrow(tmp) > 1) {
+      dat$tmp <- as.numeric(dat0[[var]])
+      model_res <- regression_p_value(
+        data = dat, y = "y", predictor = "tmp", time = new_time_var,
+        covs = tmp_covs
+      )
+      res_table[i, col2] <- format_pval(model_res$p.value, nsmall = pval_nsmall, eps = pval_eps)
+      i <- i + 1
+    }
+  }
+
+
 
   res <- data.frame(
     Variable = "Overall",
