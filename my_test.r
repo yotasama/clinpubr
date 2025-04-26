@@ -227,3 +227,109 @@ regression_basic_results(cancer,
                    x = "age", y = "status", time = "time",
                    model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex"))
                  )
+
+set.seed(1)
+a=25; b=20
+n=a*b
+p=0.2
+all_data=ifelse(runif(n)<p,NA,1)
+df=matrix(all_data,nrow=a,ncol=b)
+tmp=is.na(df)
+hist(colSums(tmp))
+hist(rowSums(tmp))
+tmp=is.na(df)
+df2=df[,colSums(tmp)<0.25*nrow(tmp)]
+tmp=is.na(df2)
+df2=df2[rowSums(tmp)<0.25*ncol(tmp),]
+tmp=is.na(df)
+df2=df[,colSums(tmp)<0.23*nrow(tmp)]
+tmp=is.na(df2)
+df2=df2[rowSums(tmp)<0.23*ncol(tmp),]
+tmp=is.na(df2)
+df2=df2[,colSums(tmp)<=0.2*nrow(tmp)]
+tmp=is.na(df2)
+df2=df2[rowSums(tmp)<=0.2*ncol(tmp),]
+tmp=is.na(df2)
+df2=df2[,colSums(tmp)<=0.2*nrow(tmp)]
+tmp=is.na(df2)
+df2=df2[rowSums(tmp)<=0.2*ncol(tmp),]
+
+max(colSums(is.na(df2))/nrow(df2))
+max(rowSums(is.na(df2))/ncol(df2))
+
+val_id=find_optimal_subset(df,0.2,0.2,row_priority = 0.2)
+val_set=df[val_id$rows,val_id$cols]
+max(colSums(is.na(val_set))/nrow(val_set))
+max(rowSums(is.na(val_set))/ncol(val_set))
+
+find_optimal_subset <- function(df, row_na_ratio, col_na_ratio, row_priority = 1) {
+  # 参数验证
+  if (row_na_ratio < 0 || row_na_ratio > 1 || col_na_ratio < 0 || col_na_ratio > 1) {
+    stop("row_na_ratio和col_na_ratio必须在0到1之间")
+  }
+  ori_nrow = nrow(df)
+  ori_ncol = ncol(df)
+  # 预计算缺失矩阵和初始索引
+  na_mat <- as.matrix(is.na(df))
+  current_rows <- seq_len(ori_nrow)
+  current_cols <- seq_len(ori_ncol)
+  
+  # 计算动态权重函数
+  score_weight <- function(type, id) {
+    if (type == "row") {
+      sum(na_mat[id, current_cols]) / length(current_cols) - row_na_ratio  # 行缺失比例
+    } else {
+      sum(na_mat[current_rows, id]) / length(current_rows) - col_na_ratio # 列缺失比例
+    }
+  }
+  
+  # 迭代优化主循环
+  while (TRUE) {
+    # 计算当前缺失情况
+    row_missing <- rowSums(na_mat[current_rows, current_cols, drop = FALSE])
+    col_missing <- colSums(na_mat[current_rows, current_cols, drop = FALSE])
+    
+    # 检测违规项
+    bad_rows <- current_rows[(row_missing / length(current_cols)) > row_na_ratio]
+    bad_cols <- current_cols[(col_missing / length(current_rows)) > col_na_ratio]
+    
+    # 终止条件
+    if (length(bad_rows) + length(bad_cols) == 0) break
+    
+    # 生成候选列表（核心改进点）
+    candidates <- list()
+    
+    row_base = (length(current_rows)-1)^row_priority * length(current_cols)
+    col_base = length(current_rows)^row_priority * (length(current_cols)-1)
+    
+    # 行候选（优先处理缺失率高的行）
+    for (r in bad_rows) {
+      new_rows <- setdiff(current_rows, r)
+      score <- row_base * 
+        (1 - score_weight("row", r))  # 缺失率越高权重越大
+      candidates <- append(candidates, list(list(type = "row", id = r, score = score)))
+    }
+    
+    # 列候选（优先处理缺失率高的列）
+    for (c in bad_cols) {
+      new_cols <- setdiff(current_cols, c)
+      score <- col_base * 
+        (1 - score_weight("col", c))  # 缺失率越高权重越大
+      candidates <- append(candidates, list(list(type = "col", id = c, score = score)))
+    }
+    
+    # 选择最佳候选（分数越低越优先删除）
+    if (length(candidates) == 0) break
+    best <- candidates[[which.min(sapply(candidates, function(x) x$score))]]
+    
+    # 执行删除
+    if (best$type == "row") {
+      current_rows <- setdiff(current_rows, best$id)
+    } else {
+      current_cols <- setdiff(current_cols, best$id)
+    }
+  }
+  
+  # 返回有序结果
+  list(rows = sort(current_rows), cols = sort(current_cols))
+}
