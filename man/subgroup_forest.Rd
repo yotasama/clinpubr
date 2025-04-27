@@ -69,4 +69,9 @@ subgroup_forest(cancer,
   var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "dead",
   covs = "ph.karno", ticks_at = c(1, 2)
 )
+
+cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
+subgroup_forest(cancer, var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog_cat", y = "dead",
+  covs = "ph.karno", ticks_at = c(1, 2)
+)
 }

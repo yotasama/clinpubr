@@ -11,7 +11,7 @@ regression_fit(
   time = NULL,
   covs = NULL,
   rcs_knots = NULL,
-  returned = c("full", "predictor", "pval")
+  returned = c("full", "predictor_split", "predictor_combined")
 )
 }
 \arguments{
@@ -31,8 +31,9 @@ Otherwise, Cox proportional hazards regression is used.}
 \item{returned}{The return mode of this function.
 \itemize{
 \item \code{"full"}: return the full regression model.
-\item \code{"predictor"}: return the regression ratio and p-value of the predictor.
-\item \code{"pval"}: return the p-value of the predictor.
+\item \code{"predictor_split"}: return the regression parameter of the predictor, could have multiple lines.
+\item \code{"predictor_combined"}: return the regression parameter of the predictor, test the predictor as a whole and
+takes only one line.
 }}
 }
 \value{
