@@ -107,7 +107,7 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
 
   anova_fit <- anova(fit)
   pvalue_all <- anova_fit[1, 3]
-  pvalue_nonlin <- round(anova_fit[2, 3], 3)
+  pvalue_nonlin <- anova_fit[2, 3]
   df_pred <- rms::Predict(fit, name = x, fun = exp, type = "predictions", ref.zero = TRUE, conf.int = 0.95, digits = 2)
 
   df_pred <- data.frame(df_pred)
@@ -171,12 +171,14 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
   }
 
   p <- ggplot2::ggplot()
-
+  
+  xlim_plot <- xlim
   if (add_hist) {
     df_hist <- indf[indf[[x]] >= xlim[1] & indf[[x]] <= xlim[2], ]
     if (length(breaks) == 1) {
       breaks <- break_at(xlim, breaks, ref_val)
     }
+    xlim_plot <- xlim + c(-offsetx1 * 2, offsetx1 * 2)
     h <- hist(df_hist[[x]], breaks = breaks, right = FALSE, plot = FALSE)
 
     df_hist_plot <- data.frame(x = h[["mids"]], freq = h[["counts"]], pct = h[["counts"]] / sum(h[["counts"]]))
@@ -237,7 +239,7 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
     geom_text(aes(x = labelx1, y = labely1 + offsety1, label = label1_1), hjust = 0) +
     geom_text(aes(x = labelx1, y = labely1 - offsety1, label = label1_2), hjust = 0) +
     geom_text(aes(x = labelx2, y = labely2, label = label2), hjust = 1) +
-    scale_x_continuous(xtitle, limits = xlim, expand = c(0.01, 0.01))
+    scale_x_continuous(xtitle, limits = xlim_plot, expand = c(0.01, 0.01))
   if (add_hist) {
     p <- p +
       scale_y_continuous(

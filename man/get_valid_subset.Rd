@@ -19,7 +19,8 @@ get_valid_subset(
 
 \item{col_na_ratio}{The maximum acceptable missing rate of columns.}
 
-\item{row_priority}{A positive numerical, the priority to keep rows. The higher the value, the higher the priority.}
+\item{row_priority}{A positive numerical, the priority to keep rows. The higher the value, the higher the priority,
+with \code{1} indicating equal priority for rows and columns.}
 
 \item{return_index}{A logical, whether to return only the row and column indices of the subset.}
 }
@@ -32,10 +33,9 @@ Get the subset of a data frame that satisfies the missing rate condition using a
 \details{
 The function is based on a greedy algorithm. It iteratively removes the row or column with
 the highest excessive missing rate weighted by the inverse of \code{row_priority} until the missing rates
-of all rows and columns are below the specified threshold. Unfortunately, this algorithm does not
-guarantee to find the optimal solution, and the result depends on the \code{row_priority} parameter drastically.
-It happens sometimes that some \code{row_priority} values may lead to a smaller subset than some other values
-both in the number of rows and columns. Please try different \code{row_priority} values to find the best one.
+of all rows and columns are below the specified threshold. Then it reversely tries to add rows and columns that
+do not break the conditions back and finalize the subset. The result depends on the \code{row_priority} parameter
+drastically, so it's recommended to try different \code{row_priority} values to find the most satisfying one.
 }
 \examples{
 data(cancer, package = "survival")

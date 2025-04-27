@@ -220,7 +220,11 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
             ) +
             geom_segment(y = 0.5, yend = 0.5, x = 0, xend = max(tmp$x), linetype = 2, show.legend = F)
         }
-        ggsave(paste0(output_dir, "/kmplot_", var, ".png"), plot = p$plot, width = width, height = height)
+        ggsave(
+          paste0(output_dir, "/kmplot_", var, ".png"),
+          plot = survminer::arrange_ggsurvplots(list(p), print = FALSE, ncol = 1),
+          width = width, height = height
+        )
       }
     }
   }
@@ -282,9 +286,9 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
     i <- 2
     tmp_covs <- covs[match(model_covs[[j]], ori_covs)]
     for (var in vars) {
-      model_res <- regression_p_value(
+      model_res <- regression_fit(
         data = dat, y = "y", predictor = var, time = new_time_var,
-        covs = tmp_covs, return_full_result = TRUE
+        covs = tmp_covs, returned = "full"
       )
       model_res <- data.frame(model_res[grepl("x", model_res$term), ])
       for (col in c("estimate", "conf.low", "conf.high")) {
@@ -306,9 +310,9 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
         i <- i + nrow(tmp) + 2
         if (nrow(tmp) > 1) {
           dat$tmp <- as.numeric(dat0[[var]])
-          model_res <- regression_p_value(
+          model_res <- regression_fit(
             data = dat, y = "y", predictor = "tmp", time = new_time_var,
-            covs = tmp_covs
+            covs = tmp_covs, returned = "predictor_combined"
           )
           res_table[i, col2] <- format_pval(model_res$p.value, nsmall = pval_nsmall, eps = pval_eps)
           i <- i + 1
@@ -360,7 +364,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
 #' )
 regression_forest <- function(data, x, y, time = NULL, model_covs = NULL, ratio_nsmall = 2, pval_nsmall = 3,
                               pval_eps = 1e-3, xlab = NULL, height = 6, width = 6, ...) {
-  
+
 }
 
 
@@ -482,9 +486,9 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
       } else if (var_trans == "rcs") {
         rcs_knots <- 4
       }
-      model_res <- regression_p_value(
+      model_res <- regression_fit(
         data = tmp_dat, y = y, predictor = predictor, time = time,
-        covs = covs, rcs_knots = rcs_knots
+        covs = covs, rcs_knots = rcs_knots, returned = "predictor_combined"
       )
       if (var_trans == "rcs") {
         res_df$rcs.overall.pval[i] <- model_res$p_overall
@@ -528,8 +532,9 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
 #' @param rcs_knots The number of rcs knots. If `NULL`, a linear model would be fitted instead.
 #' @param returned The return mode of this function.
 #'   - `"full"`: return the full regression model.
-#'   - `"predictor"`: return the regression ratio and p-value of the predictor.
-#'   - `"pval"`: return the p-value of the predictor.
+#'   - `"predictor_split"`: return the regression parameter of the predictor, could have multiple lines.
+#'   - `"predictor_combined"`: return the regression parameter of the predictor, test the predictor as a whole and
+#'     takes only one line.
 #' @return A list containing the regression ratio and p-value of the predictor. If `rcs_knots` is not `NULL`,
 #'   the list contains the overall p-value and the nonlinear p-value of the rcs model. If `return_full_result`
 #'   is `TRUE`, the complete result of the regression model is returned.
@@ -538,7 +543,7 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
 #' data(cancer, package = "survival")
 #' regression_fit(data = cancer, y = "status", predictor = "age", time = "time", rcs_knots = 4)
 regression_fit <- function(data, y, predictor, time = NULL, covs = NULL, rcs_knots = NULL,
-                           returned = c("full", "predictor", "pval")) {
+                           returned = c("full", "predictor_split", "predictor_combined")) {
   if (!is.null(rcs_knots) && rcs_knots == 0) rcs_knots <- NULL
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
   covs <- remove_conflict(covs, c(y, predictor, time))
@@ -552,29 +557,40 @@ regression_fit <- function(data, y, predictor, time = NULL, covs = NULL, rcs_kno
   formula <- create_formula(y, predictor, time = time, covs = covs, rcs_knots = rcs_knots)
   environment(formula) <- environment()
 
-  if (is.factor(data[[predictor]]) || is.null(rcs_knots)) {
-    if (analysis_type == "cox") {
-      model <- survival::coxph(formula, data = data)
+  if (analysis_type == "cox") {
+    model <- survival::coxph(formula, data = data)
+  } else {
+    model <- stats::glm(formula, data = data, family = stats::binomial())
+  }
+  full_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)
+  if (analysis_type == "logistic") full_res <- full_res[-1, ]
+
+  if (returned == "full") {
+    return(as.data.frame(full_res))
+  } else if (predictor_type == "num_or_binary" && is.null(rcs_knots)) {
+    return(as.data.frame(full_res[1, ]))
+  } else if (returned == "predictor_split") {
+    if (is.numeric(data[[predictor]])) {
+      res <- as.data.frame(full_res[seq_len(rcs_knots - 1), ])
     } else {
-      model <- stats::glm(formula, data = data, family = stats::binomial())
+      res <- as.data.frame(full_res[seq_len(length(levels(data[[predictor]])) - 1), ])
     }
-    full_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)
-    if (analysis_type == "logistic") full_res <- full_res[-1, ]
-    if (return_full_result) return(as.data.frame(full_res))
-    if (predictor_type == "num_or_binary") {
-      return(as.data.frame(full_res[1, ]))
-    }else {
+    if (any(!grepl(predictor, res$term))) stop("predictor not found in the regression result")
+    return(res)
+  } else {
+    if (is.numeric(data[[predictor]]) && !is.null(rcs_knots)) {
+      if (analysis_type == "cox") {
+        model <- cph(formula, data = data, x = TRUE, y = TRUE)
+      } else {
+        model <- Glm(formula, data = data, family = binomial(), x = TRUE, y = TRUE)
+      }
+      ps <- unname(anova(model, test = "LR")[, "P"])
+      return(list(estimate = NA, p_overall = ps[1], p_nonlinear = ps[2]))
+    } else {
       return(list(
+        estimate = NA,
         p.value = broom::tidy(car::Anova(model, type = 2, test.statistic = "Wald"))$p.value[1]
       ))
     }
-  } else {
-    if (analysis_type == "cox") {
-      model <- cph(formula, data = data)
-    } else {
-      model <- Glm(formula, data = data, family = binomial())
-    }
-    ps <- unname(anova(model)[, "P"])
-    return(list(p_overall = ps[1], p_nonlinear = ps[2]))
   }
 }

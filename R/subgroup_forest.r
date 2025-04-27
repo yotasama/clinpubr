@@ -63,9 +63,9 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
     plot_nrow <- plot_nrow + length(levels(indf[[var]]))
   }
 
-  overall_res <- regression_p_value(indf, y, x, time = time, covs = covs)
+  overall_res <- regression_fit(indf, y, x, time = time, covs = covs)
 
-  model_res <- regression_p_value(
+  model_res <- regression_fit(
     data = dat, y = "y", predictor = var, time = new_time_var,
     covs = tmp_covs, return_full_result = TRUE
   )
@@ -89,7 +89,7 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
     i <- i + nrow(tmp) + 2
     if (nrow(tmp) > 1) {
       dat$tmp <- as.numeric(dat0[[var]])
-      model_res <- regression_p_value(
+      model_res <- regression_fit(
         data = dat, y = "y", predictor = "tmp", time = new_time_var,
         covs = tmp_covs
       )
@@ -134,7 +134,7 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
     tmp_res <- NULL
     for (lvl in lvls) {
       subset_data <- indf[which(indf[[var]] == lvl), ]
-      lvl_res <- regression_p_value(subset_data, y, x, time = time, covs = tmp_covs)
+      lvl_res <- regression_fit(subset_data, y, x, time = time, covs = tmp_covs)
 
       tmp_res <- rbind(
         tmp_res,
