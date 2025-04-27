@@ -544,6 +544,7 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
 #' regression_fit(data = cancer, y = "status", predictor = "age", time = "time", rcs_knots = 4)
 regression_fit <- function(data, y, predictor, time = NULL, covs = NULL, rcs_knots = NULL,
                            returned = c("full", "predictor_split", "predictor_combined")) {
+  returned <- match.arg(returned)
   if (!is.null(rcs_knots) && rcs_knots == 0) rcs_knots <- NULL
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
   covs <- remove_conflict(covs, c(y, predictor, time))

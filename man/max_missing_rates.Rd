@@ -7,7 +7,7 @@
 max_missing_rates(df)
 }
 \arguments{
-\item{x}{A data frame.}
+\item{df}{A data frame.}
 }
 \value{
 A list that contains the maximum missing rate of rows and columns.

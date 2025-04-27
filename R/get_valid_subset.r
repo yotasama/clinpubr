@@ -114,7 +114,7 @@ get_valid_subset <- function(df, row_na_ratio = 0.5, col_na_ratio = 0.2, row_pri
 
 #' Get the maximum missing rate of rows and columns.
 #' @description Get the maximum missing rate of rows and columns.
-#' @param x A data frame.
+#' @param df A data frame.
 #' @return A list that contains the maximum missing rate of rows and columns.
 #' @export
 #' @examples
