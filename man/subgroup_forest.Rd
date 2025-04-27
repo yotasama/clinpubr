@@ -25,7 +25,7 @@ subgroup_forest(
 \item{var_subgroups}{A character vector of variable names to be used as subgroups. It's recommended that
 the variables are categorical. If the variables are continuous, they will be cut into groups.}
 
-\item{x}{A character string of the predictor variable. Must be numerical or a factor with 2 levels.}
+\item{x}{A character string of the predictor variable.}
 
 \item{y}{A character string of the outcome variable.}
 

@@ -24,6 +24,7 @@ Collate:
     'cut_by.r'
     'extract_num.r'
     'get_valid.r'
+    'get_valid_subset.r'
     'interactions.r'
     'utils.R'
     'misc.r'
