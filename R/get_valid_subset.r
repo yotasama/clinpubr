@@ -5,6 +5,7 @@
 #' @param col_na_ratio The maximum acceptable missing rate of columns.
 #' @param row_priority A positive numerical, the priority to keep rows. The higher the value, the higher the priority,
 #'   with `1` indicating equal priority for rows and columns.
+#' @param speedup_ratio A positive numerical, the ratio of speedup. The higher the value, the greedier the algorithm.
 #' @param return_index A logical, whether to return only the row and column indices of the subset.
 #' @return The subset data frame, or a list that contains the row and column indices of the subset.
 #' @details The function is based on a greedy algorithm. It iteratively removes the row or column with
@@ -21,7 +22,8 @@
 #' cancer_valid <- get_valid_subset(cancer, row_na_ratio = 0.2, col_na_ratio = 0.1, row_priority = 1)
 #' dim(cancer_valid)
 #' max_missing_rates(cancer_valid)
-get_valid_subset <- function(df, row_na_ratio = 0.5, col_na_ratio = 0.2, row_priority = 1, return_index = FALSE) {
+get_valid_subset <- function(df, row_na_ratio = 0.5, col_na_ratio = 0.2, row_priority = 1, speedup_ratio = 0,
+                             return_index = FALSE) {
   ori_nrow <- nrow(df)
   ori_ncol <- ncol(df)
   na_mat <- as.matrix(is.na(df))
@@ -87,14 +89,13 @@ get_valid_subset <- function(df, row_na_ratio = 0.5, col_na_ratio = 0.2, row_pri
         }
         tmp_df <- tmp_df[real_candidate_ids, ]
       }
-      best <- tmp_df[which.max(tmp_df$score), ]
+
       if (direction == "remove") {
-        if (best$type == "row") {
-          current_rows <- setdiff(current_rows, best$id)
-        } else {
-          current_cols <- setdiff(current_cols, best$id)
-        }
+        best <- tmp_df[order(tmp_df$score, decreasing = T)[seq_len(max(1, round(speedup_ratio * nrow(tmp_df))))], ]
+        current_rows <- setdiff(current_rows, best$id[best$type == "row"])
+        current_cols <- setdiff(current_cols, best$id[best$type == "col"])
       } else {
+        best <- tmp_df[which.max(tmp_df$score), ]
         if (best$type == "row") {
           current_rows <- union(current_rows, best$id)
         } else {

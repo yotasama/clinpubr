@@ -9,6 +9,7 @@ get_valid_subset(
   row_na_ratio = 0.5,
   col_na_ratio = 0.2,
   row_priority = 1,
+  speedup_ratio = 0,
   return_index = FALSE
 )
 }
@@ -21,6 +22,8 @@ get_valid_subset(
 
 \item{row_priority}{A positive numerical, the priority to keep rows. The higher the value, the higher the priority,
 with \code{1} indicating equal priority for rows and columns.}
+
+\item{speedup_ratio}{A positive numerical, the ratio of speedup. The higher the value, the greedier the algorithm.}
 
 \item{return_index}{A logical, whether to return only the row and column indices of the subset.}
 }
