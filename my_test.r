@@ -1,3 +1,5 @@
+print(1+1)
+
 data(cancer, package = "survival")
 # coxph model with time assigned
 subgroup_forest(cancer,
