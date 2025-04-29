@@ -486,17 +486,23 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
       } else if (var_trans == "rcs") {
         rcs_knots <- 4
       }
-      model_res <- regression_fit(
-        data = tmp_dat, y = y, predictor = predictor, time = time,
-        covs = covs, rcs_knots = rcs_knots, returned = "predictor_combined"
+      tryCatch(
+        {
+          model_res <- regression_fit(
+            data = tmp_dat, y = y, predictor = predictor, time = time,
+            covs = covs, rcs_knots = rcs_knots, returned = "predictor_combined"
+          )
+          if (var_trans == "rcs") {
+            res_df$rcs.overall.pval[i] <- model_res$p_overall
+            res_df$rcs.nonlinear.pval[i] <- model_res$p_nonlinear
+          } else {
+            res_df[[paste(var_trans, ratio_type, sep = ".")]][i] <- model_res$estimate
+            res_df[[paste(var_trans, "pval", sep = ".")]][i] <- model_res$p.value
+          }
+        },
+        error = function(e) {
+        }
       )
-      if (var_trans == "rcs") {
-        res_df$rcs.overall.pval[i] <- model_res$p_overall
-        res_df$rcs.nonlinear.pval[i] <- model_res$p_nonlinear
-      } else {
-        res_df[[paste(var_trans, ratio_type, sep = ".")]][i] <- model_res$estimate
-        res_df[[paste(var_trans, "pval", sep = ".")]][i] <- model_res$p.value
-      }
     }
   }
   res_df <- res_df[order(res_df$original.pval, decreasing = FALSE), ]
@@ -509,7 +515,9 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
   }
   p_table <- res_df[, grepl("pval", colnames(res_df))]
   for (i in seq_along(predictors)) {
-    res_df$best.var.trans[i] <- p_types[which.min(unlist(p_table[i, ]))]
+    if (sum(!is.na(unlist(p_table[i, ])) > 0)) {
+      res_df$best.var.trans[i] <- p_types[which.min(unlist(p_table[i, ]))]
+    }
   }
   if (save_table) {
     if (is.null(filename)) {
