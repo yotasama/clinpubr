@@ -49,6 +49,7 @@ Imports:
     ResourceSelection,
     rlang,
     rms,
+    rstatix,
     stringr,
     survival,
     survminer,

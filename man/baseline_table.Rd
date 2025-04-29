@@ -8,13 +8,14 @@ baseline_table(
   data,
   var_types = NULL,
   strata = NULL,
-  vars = setdiff(colnames(data), strata),
+  vars = NULL,
   factor_vars = NULL,
   exact_vars = NULL,
   nonnormal_vars = NULL,
   seed = NULL,
   omit_missing_strata = FALSE,
   filename = NULL,
+  multiple_comparison_test = TRUE,
   p_adjust_method = "BH",
   ...
 )
@@ -42,6 +43,10 @@ performing fisher exact tests.}
 \item{filename}{The name of the file to save the table. The file names for accompanying tables will
 be the same as the main table, but with "_missing" and "_pairwise" appended.}
 
+\item{multiple_comparison_test}{A logical value indicating whether to perform multiple comparison tests. Variables in
+\code{factor_vars} and \code{exact_vars} are tested with pairwise \code{chisq.test} or \code{fisher.test}, and other variables are
+tested with \code{rstatix::dunn_test} or \code{rstatix::games_howell_test}.}
+
 \item{p_adjust_method}{The method to use for p-value adjustment for pairwise comparison. Default is "BH".
 See \code{?p.adjust.methods}.}
 
@@ -57,5 +62,10 @@ than 2 levels, a pairwise comparison table will also be created.
 \examples{
 data(cancer, package = "survival")
 var_types <- get_var_types(cancer, strata = "sex")
+baseline_table(cancer, var_types = var_types)
+
+# baseline table with pairwise comparison
+cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
+var_types <- get_var_types(cancer, strata = "ph.ecog_cat")
 baseline_table(cancer, var_types = var_types)
 }

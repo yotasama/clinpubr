@@ -159,6 +159,9 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_f
 #' @param omit_missing_strata A logical value indicating whether to omit missing values in the strata variable.
 #' @param filename The name of the file to save the table. The file names for accompanying tables will
 #'   be the same as the main table, but with "_missing" and "_pairwise" appended.
+#' @param multiple_comparison_test A logical value indicating whether to perform multiple comparison tests. Variables in
+#'   `factor_vars` and `exact_vars` are tested with pairwise `chisq.test` or `fisher.test`, and other variables are
+#'   tested with `rstatix::dunn_test` or `rstatix::games_howell_test`.
 #' @param p_adjust_method The method to use for p-value adjustment for pairwise comparison. Default is "BH".
 #'   See `?p.adjust.methods`.
 #' @param ... Additional arguments passed to `tableone::print.TableOne`.
@@ -168,9 +171,14 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_f
 #' data(cancer, package = "survival")
 #' var_types <- get_var_types(cancer, strata = "sex")
 #' baseline_table(cancer, var_types = var_types)
-baseline_table <- function(data, var_types = NULL, strata = NULL, vars = setdiff(colnames(data), strata),
-                           factor_vars = NULL, exact_vars = NULL, nonnormal_vars = NULL, seed = NULL,
-                           omit_missing_strata = FALSE, filename = NULL, p_adjust_method = "BH", ...) {
+#'
+#' # baseline table with pairwise comparison
+#' cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
+#' var_types <- get_var_types(cancer, strata = "ph.ecog_cat")
+#' baseline_table(cancer, var_types = var_types)
+baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, factor_vars = NULL, exact_vars = NULL,
+                           nonnormal_vars = NULL, seed = NULL, omit_missing_strata = FALSE, filename = NULL,
+                           multiple_comparison_test = TRUE, p_adjust_method = "BH", ...) {
   if (!is.null(var_types) && !"var_types" %in% class(var_types)) {
     stop("Invalid 'var_types' arguement! Please use result from get_var_types function.")
   }
@@ -179,6 +187,7 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = setdiff
   if (is.null(factor_vars) && !is.null(var_types)) factor_vars <- var_types$factor_vars
   if (is.null(exact_vars) && !is.null(var_types)) exact_vars <- var_types$exact_vars
   if (is.null(nonnormal_vars) && !is.null(var_types)) nonnormal_vars <- var_types$nonnormal_vars
+  if (is.null(vars)) vars <- setdiff(colnames(data), strata)
   if (!is.null(var_types$omitvars)) vars <- setdiff(vars, var_types$omitvars)
   if (is.null(seed)) set.seed(seed)
   if (is.null(filename)) filename <- paste0("baseline_by", strata, ".csv")
@@ -247,23 +256,31 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = setdiff
         }
         pt <- pairwise.table(compare_levels, levels(g), p_adjust_method)
       } else if (var %in% nonnormal_vars) {
-        compare_levels <- function(i, j) {
-          xi <- data[as.integer(g) == i, var]
-          xj <- data[as.integer(g) == j, var]
-          wilcox_test_pval(xi, xj)
-        }
-        pt <- pairwise.table(compare_levels, levels(g), p_adjust_method)
+        # compare_levels <- function(i, j) {
+        #   xi <- data[as.integer(g) == i, var]
+        #   xj <- data[as.integer(g) == j, var]
+        #   wilcox_test_pval(xi, xj)
+        # }
+        # pt <- pairwise.table(compare_levels, levels(g), p_adjust_method)
+        pt <- rstatix::dunn_test(data, as.formula(paste0(var, "~", strata)), p.adjust.method = p_adjust_method)
       } else {
-        pt <- pairwise.t.test(data[[var]], g, p.adjust.method = p_adjust_method)$p.value
+        # pt <- pairwise.t.test(data[[var]], g, p.adjust.method = p_adjust_method)$p.value
+        pt <- rstatix::games_howell_test(data, as.formula(paste0(var, "~", strata)), p.adjust.method = p_adjust_method)
       }
-      tmp <- as.data.frame(as.table(pt))
-      tmp$Var1 <- factor(tmp$Var1, levels = levels(g))
-      tmp$Var2 <- factor(tmp$Var2, levels = levels(g))
-      p_values_long <- tmp %>%
-        filter(as.numeric(Var1) > as.numeric(Var2)) %>%
-        mutate(Comparison = paste(Var1, Var2, sep = "_")) %>%
-        select(Comparison, Freq)
-      p_values_wide <- as.data.frame(pivot_wider(p_values_long, names_from = Comparison, values_from = Freq))
+
+      if (var %in% c(exact_vars, factor_vars)) {
+        tmp <- as.data.frame(as.table(pt))
+        tmp$Var1 <- factor(tmp$Var1, levels = levels(g))
+        tmp$Var2 <- factor(tmp$Var2, levels = levels(g))
+        p_values_long <- tmp %>%
+          filter(as.numeric(Var1) > as.numeric(Var2)) %>%
+          mutate(comparison = paste(Var2, Var1, sep = "_"), p.adj = Freq) %>%
+          select(comparison, p.adj)
+      } else {
+        p_values_long <- pt %>%
+          reframe(comparison = paste(group1, group2, sep = "_"), p.adj)
+      }
+      p_values_wide <- as.data.frame(pivot_wider(p_values_long, names_from = comparison, values_from = p.adj))
       pairwise_result <- rbind(pairwise_result, p_values_wide)
     }
     rownames(pairwise_result) <- vars
