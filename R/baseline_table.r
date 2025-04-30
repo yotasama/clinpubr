@@ -265,7 +265,7 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
         pt <- rstatix::dunn_test(data, as.formula(paste0(var, "~", strata)), p.adjust.method = p_adjust_method)
       } else {
         # pt <- pairwise.t.test(data[[var]], g, p.adjust.method = p_adjust_method)$p.value
-        pt <- rstatix::games_howell_test(data, as.formula(paste0(var, "~", strata)), p.adjust.method = p_adjust_method)
+        pt <- rstatix::games_howell_test(data, as.formula(paste0(var, "~", strata)))
       }
 
       if (var %in% c(exact_vars, factor_vars)) {
