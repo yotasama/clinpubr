@@ -169,6 +169,34 @@ fill_with_last <- function(x) {
   x
 }
 
+#' Match string and replace with corresponding value
+#' @description Partially match a string and replace with corresponding value. This function is useful to recover
+#'   the original names of variables after legalized using `make.names` or modified by other functions.
+#' @param x A vector.
+#' @param to_match A vector of strings to be matched.
+#' @param to_replace A vector of strings to replace the matched ones, must have the same length as `to_match`.
+#'
+#' @returns A vector.
+#' @export
+#' @examples
+#' ori_names <- c("xx (mg/dl)", "b*x", "Covid-19")
+#' modified_names <- c("v1", "v2", "v3")
+#' x <- c("v1.v2", "v3.yy", "v4")
+#' str_match_replace(x, modified_names, ori_names)
+str_match_replace <- function(x, to_match, to_replace) {
+  if (length(to_match) != length(to_replace)) stop("to_match and to_replace must have the same length!")
+
+  len <- nchar(to_match)
+  ord <- order(len, decreasing = TRUE)
+  match_ord <- to_match[ord]
+  replace_ord <- to_replace[ord]
+
+  for (i in seq_along(match_ord)) {
+    x <- gsub(match_ord[i], replace_ord[i], x, fixed = TRUE)
+  }
+  return(x)
+}
+
 #' Unmake names
 #' @description Inverse function of `make.names`. You can use `make.names` to make colnames legal for
 #'   subsequent processing and analysis in R. Then use this function to switch back for publication.

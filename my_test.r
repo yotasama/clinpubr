@@ -1,5 +1,47 @@
+generate_illegal_colnames <- function(n) {
+  # 定义一些常见的非法列名模式
+  patterns <- c(
+    # 以数字开头的列名
+    "^[0-9]",
+    # 包含空格的列名
+    " ",
+    # 包含特殊字符的列名
+    "[!@#$%^&*()+=|<>?{}~-]",
+    # 以点开头的列名
+    "^\\.",
+    # 保留字作为列名
+    "^if$|^else$|^repeat$|^while$|^function$|^for$|^in$|^next$|^break$|^TRUE$|^FALSE$|^NULL$|^Inf$|^NaN$|^NA$"
+  )
 
+  # 生成非法列名
+  illegal_colnames <- character(n)
 
+  for (i in 1:n) {
+    # 随机选择一种非法模式
+    pattern <- sample(patterns, 1)
+
+    # 根据模式生成非法列名
+    if (grepl("^[0-9]", pattern)) {
+      illegal_colnames[i] <- paste0(sample(0:9, 1), sample(letters, 5, replace = TRUE))
+    } else if (grepl(" ", pattern)) {
+      illegal_colnames[i] <- paste(sample(letters, 2), collapse = " ")
+    } else if (grepl("[!@#$%^&*()+=|<>?{}~-]", pattern)) {
+      illegal_colnames[i] <- paste0(sample(letters, 1), sample(c("!", "@", "#", "$", "%", "^", "&", "*"), 1), sample(letters, 1))
+    } else if (grepl("^\\.", pattern)) {
+      illegal_colnames[i] <- paste0(".", sample(letters, 5, replace = TRUE))
+    } else {
+      illegal_colnames[i] <- sample(c("if", "else", "repeat", "while", "function", "for", "in", "next", "break", "TRUE", "FALSE", "NULL", "Inf", "NaN", "NA"), 1)
+    }
+  }
+
+  return(illegal_colnames)
+}
+
+# 使用示例：生成10个非法列名
+ori_names <- c("xx (mg/dl)", "b*x", "Covid-19")
+modified_names <- c("v1", "v2", "v3")
+x <- c("v1.v2", "v3.yy", "v4")
+str_match_replace(x, modified_names, ori_names)
 data(cancer, package = "survival")
 cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
 var_types <- get_var_types(cancer, strata = "ph.ecog_cat")
@@ -27,7 +69,7 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
   if (is.null(filename)) filename <- paste0("baseline_by", strata, ".csv")
   if (!grepl(".csv", filename)) stop("please save as .csv file")
   factor_vars <- union(factor_vars, exact_vars)
-  
+
   if (is.null(strata)) {
     tab1 <- CreateTableOne(
       vars = vars, argsNormal = list(var.equal = FALSE),
@@ -46,7 +88,7 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
                          quote = FALSE, noSpaces = TRUE, printToggle = FALSE, ...
   )
   write.csv(printed_table, file = filename)
-  
+
   missing_df <- as.data.frame(is.na(data))
   for (i in seq_len(ncol(missing_df))) {
     missing_df[, i] <- factor(missing_df[, i], levels = c(FALSE, TRUE))
@@ -65,7 +107,7 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
   }
   printed_table <- print(tab2, quote = FALSE, noSpaces = TRUE, printToggle = FALSE, ...)
   write.csv(printed_table, file = str_replace(filename, ".csv", "_missing.csv"))
-  
+
   if (!is.null(strata) && length(na.omit(unique(data[[strata]]))) > 2) {
     g <- factor(data[[strata]])
     pairwise_result <- data.frame()
@@ -101,7 +143,7 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
         # pt <- pairwise.t.test(data[[var]], g, p.adjust.method = p_adjust_method)$p.value
         pt <- rstatix::games_howell_test(data, as.formula(paste0(var, "~", strata)), p.adjust.method = p_adjust_method)
       }
-      
+
       if (var %in% c(exact_vars, factor_vars)) {
         tmp <- as.data.frame(as.table(pt))
         tmp$Var1 <- factor(tmp$Var1, levels = levels(g))
