@@ -1,6 +1,6 @@
 #' Get one valid value from vector.
 #' @description Extract one valid (non-NA) value from a vector.
-#' @param l A vector.
+#' @param x A vector.
 #' @param mode The mode of the valid value to extract. `"first"` extracts the first valid value,
 #'   `"last"` extracts the last valid value, and `"mid"` extracts the middle valid value.
 #' @param disjoint If TRUE, the values extracted by the three modes are forced to be different.
@@ -12,9 +12,9 @@
 #' @examples
 #' get_valid(c(NA, 1, 2, NA, 3, NA, 4))
 #' get_valid(c(NA, 1, NA), mode = "last", disjoint = TRUE)
-get_valid <- function(l, mode = c("first", "mid", "last"), disjoint = FALSE) {
+get_valid <- function(x, mode = c("first", "mid", "last"), disjoint = FALSE) {
   mode <- match.arg(mode)
-  tmp <- na.omit(l)
+  tmp <- na.omit(x)
   if (length(tmp) > 0) {
     if (disjoint) {
       if (mode == "first") {
