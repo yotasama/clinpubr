@@ -6,71 +6,46 @@
 \usage{
 regression_forest(
   data,
-  x,
+  model_vars,
   y,
   time = NULL,
-  model_covs = NULL,
-  ratio_nsmall = 2,
-  pval_nsmall = 3,
-  pval_eps = 0.001,
-  xlab = NULL,
-  height = 6,
-  width = 6,
+  est_nsmall = 2,
+  p_nsmall = 3,
+  show_vars = NULL,
+  save_plot = TRUE,
+  filename = NULL,
   ...
 )
 }
 \arguments{
 \item{data}{A data frame.}
 
-\item{x}{A character string of the predictor variable.}
+\item{model_vars}{A character vector or a named list of predictor variables for different models.}
 
 \item{y}{A character string of the outcome variable.}
 
 \item{time}{A character string of the time variable. If \code{NULL}, logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}
 
-\item{model_covs}{A character vector or a named list of covariates for different models.
-If \code{NULL}, only the crude model is used.}
+\item{est_nsmall}{The minimum number of digits to the right of the decimal point for the OR or HR.}
 
-\item{ratio_nsmall}{The minimum number of digits to the right of the decimal point for the OR or HR.}
+\item{p_nsmall}{The minimum number of digits to the right of the decimal point for the p-value.}
 
-\item{pval_nsmall}{The minimum number of digits to the right of the decimal point for the p-value.}
+\item{show_vars}{A character vector of variable names to be shown in the plot. If \code{NULL}, all variables are shown.}
 
-\item{pval_eps}{The threshold for rounding p values to 0.}
+\item{save_plot}{A logical value indicating whether to save the plot.}
 
-\item{xlab}{A character string of the x-axis label.}
+\item{filename}{A character string specifying the filename for the plot. If \code{NULL}, a default filename is used.}
 
-\item{height}{The height of the plot.}
-
-\item{width}{The width of the plot.}
-
-\item{...}{Additional arguments passed to the \code{survminer::ggsurvplot} function for KM curve.}
+\item{...}{Additional arguments passed to the \code{forestploter::forest} function.}
+}
+\value{
+A \code{gtable} object.
 }
 \description{
 Generate the forest plot of logistic or Cox regression with different models.
 }
-\details{
-The function \code{regression_basic_results} generates the result table of logistic or Cox regression with
-different settings of the predictor variable and covariates. The setting of the predictor variable includes
-the original \code{x}, the standardized \code{x}, the log of \code{x}, and \code{x} divided by denominators in \code{pers} as continuous
-variables, and the factorization of the variable including split by median, by quartiles, and by \code{factor_breaks}
-and \code{quantile_breaks}. The setting of the covariates includes different models with different covariates.
-}
-\note{
-For factor variables with more than 2 levels, p value for trend is also calculated.
-}
 \examples{
 data(cancer, package = "survival")
-# coxph model with time assigned
-regression_basic_results(cancer,
-  x = "age", y = "status", time = "time",
-  model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex"))
-)
-
-# logistic model with time not assigned
-cancer$dead <- cancer$status == 2
-regression_basic_results(cancer,
-  x = "age", y = "dead", ref_levels = c("Q3", "High"),
-  model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex"))
-)
+regression_forest(cancer, model_vars = c("age", "sex", "wt.loss"), y = "status", time = "time")
 }

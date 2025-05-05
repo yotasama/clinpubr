@@ -19,8 +19,8 @@
 #' @param ref_levels A vector of strings of the reference levels of the factor variable. You can use `"lowest"`
 #'   or `"highest"` to select the lowest or highest level as the reference level. Otherwise, any level that
 #'   matches the provided strings will be used as the reference level.
-#' @param ratio_nsmall The minimum number of digits to the right of the decimal point for the OR or HR.
-#' @param pval_nsmall The minimum number of digits to the right of the decimal point for the p-value.
+#' @param est_nsmall The minimum number of digits to the right of the decimal point for the OR or HR.
+#' @param p_nsmall The minimum number of digits to the right of the decimal point for the p-value.
 #' @param pval_eps The threshold for rounding p values to 0.
 #' @param median_nsmall The minimum number of digits to the right of the decimal point for the median survival time.
 #' @param colors A vector of colors for the KM curves.
@@ -56,7 +56,7 @@
 regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL, pers = c(0.1, 10, 100),
                                      factor_breaks = NULL, factor_labels = NULL, quantile_breaks = NULL,
                                      quantile_labels = NULL, label_with_range = FALSE,
-                                     output_dir = NULL, ref_levels = "lowest", ratio_nsmall = 2, pval_nsmall = 3,
+                                     output_dir = NULL, ref_levels = "lowest", est_nsmall = 2, p_nsmall = 3,
                                      pval_eps = 1e-3, median_nsmall = 0, colors = NULL, xlab = NULL, legend_title = x,
                                      legend_pos = c(0.8, 0.8), height = 6, width = 6, pval_pos = NULL, ...) {
   if (is.null(colors)) {
@@ -180,7 +180,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
         log_rank_p <- survdiff(formula = formula, data = dat)$pvalue
         log_rank_p <- format_pval(log_rank_p,
           text_ahead = "Log-rank\np",
-          nsmall = pval_nsmall, eps = pval_eps
+          nsmall = p_nsmall, eps = pval_eps
         )
         p <- survminer::ggsurvplot(fit,
           pval = log_rank_p,
@@ -292,12 +292,12 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
       )
       model_res <- data.frame(model_res[grepl("x", model_res$term), ])
       for (col in c("estimate", "conf.low", "conf.high")) {
-        model_res[, col] <- format(model_res[, col], digits = 1, nsmall = ratio_nsmall)
+        model_res[, col] <- format(model_res[, col], digits = 1, nsmall = est_nsmall)
       }
       tmp <- data.frame(
         term = model_res$term,
         ratio = paste0(model_res$estimate, "(", model_res$conf.low, ",", model_res$conf.high, ")"),
-        P = format_pval(model_res$p.value, nsmall = pval_nsmall, eps = pval_eps)
+        P = format_pval(model_res$p.value, nsmall = p_nsmall, eps = pval_eps)
       )
       colnames(tmp)[2] <- ratio_type
       if (is.numeric(dat[[var]])) {
@@ -314,7 +314,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
             data = dat, y = "y", predictor = "tmp", time = new_time_var,
             covs = tmp_covs, returned = "predictor_combined"
           )
-          res_table[i, col2] <- format_pval(model_res$p.value, nsmall = pval_nsmall, eps = pval_eps)
+          res_table[i, col2] <- format_pval(model_res$p.value, nsmall = p_nsmall, eps = pval_eps)
           i <- i + 1
         }
       }
@@ -327,44 +327,90 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
 #' Forest plot of regression results
 #' @description Generate the forest plot of logistic or Cox regression with different models.
 #' @param data A data frame.
-#' @param x A character string of the predictor variable.
+#' @param model_vars A character vector or a named list of predictor variables for different models.
 #' @param y A character string of the outcome variable.
 #' @param time A character string of the time variable. If `NULL`, logistic regression is used.
 #'   Otherwise, Cox proportional hazards regression is used.
-#' @param model_covs A character vector or a named list of covariates for different models.
-#'   If `NULL`, only the crude model is used.
-#' @param ratio_nsmall The minimum number of digits to the right of the decimal point for the OR or HR.
-#' @param pval_nsmall The minimum number of digits to the right of the decimal point for the p-value.
-#' @param pval_eps The threshold for rounding p values to 0.
-#' @param xlab A character string of the x-axis label.
-#' @param height The height of the plot.
-#' @param width The width of the plot.
-#' @param ... Additional arguments passed to the `survminer::ggsurvplot` function for KM curve.
+#' @param est_nsmall The minimum number of digits to the right of the decimal point for the OR or HR.
+#' @param p_nsmall The minimum number of digits to the right of the decimal point for the p-value.
+#' @param show_vars A character vector of variable names to be shown in the plot. If `NULL`, all variables are shown.
+#' @param save_plot A logical value indicating whether to save the plot.
+#' @param filename A character string specifying the filename for the plot. If `NULL`, a default filename is used.
+#' @param ... Additional arguments passed to the `forestploter::forest` function.
 #'
-#' @details The function `regression_basic_results` generates the result table of logistic or Cox regression with
-#'   different settings of the predictor variable and covariates. The setting of the predictor variable includes
-#'   the original `x`, the standardized `x`, the log of `x`, and `x` divided by denominators in `pers` as continuous
-#'   variables, and the factorization of the variable including split by median, by quartiles, and by `factor_breaks`
-#'   and `quantile_breaks`. The setting of the covariates includes different models with different covariates.
-#' @note For factor variables with more than 2 levels, p value for trend is also calculated.
+#' @returns A `gtable` object.
 #' @export
-#' @examples
+#' @examples 
 #' data(cancer, package = "survival")
-#' # coxph model with time assigned
-#' regression_basic_results(cancer,
-#'   x = "age", y = "status", time = "time",
-#'   model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex"))
-#' )
-#'
-#' # logistic model with time not assigned
-#' cancer$dead <- cancer$status == 2
-#' regression_basic_results(cancer,
-#'   x = "age", y = "dead", ref_levels = c("Q3", "High"),
-#'   model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex"))
-#' )
-regression_forest <- function(data, x, y, time = NULL, model_covs = NULL, ratio_nsmall = 2, pval_nsmall = 3,
-                              pval_eps = 1e-3, xlab = NULL, height = 6, width = 6, ...) {
+#' regression_forest(cancer, model_vars = c("age", "sex", "wt.loss"), y = "status", time = "time")
+regression_forest <- function(data, model_vars, y, time = NULL, est_nsmall = 2, p_nsmall = 3, show_vars = NULL,
+                              save_plot = TRUE, filename = NULL, ...) {
+  analysis_type <- ifelse(is.null(time), "logistic", "cox")
+  effect_label <- ifelse(analysis_type == "cox", "HR (95% CI)", "OR (95% CI)")
 
+  if (is.vector(model_vars, mode = "character")) {
+    model_vars <- list(Model = model_vars)
+  } else if (!is.list(model_vars)) {
+    stop("model_vars should be a character vector or named list of variables")
+  }
+
+  vars <- unique(unlist(model_vars))
+  data <- na.omit(dplyr::select(data, all_of(c(y, time, vars))))
+
+  res_list <- list()
+  for (model_name in names(model_vars)) {
+    tmp_vars <- model_vars[[model_name]]
+
+    fit_res <- regression_fit(
+      data = data,
+      y = y,
+      predictor = tmp_vars[1],
+      time = time,
+      covs = tmp_vars[-1],
+      returned = "full"
+    )
+    
+    res_list[[model_name]] <- data.frame(
+      Model = model_name,
+      Variable = names(model_vars[[model_name]]),
+      Estimate = fit_res$estimate,
+      Lower = fit_res$conf.low,
+      Upper = fit_res$conf.high,
+      Pvalue = fit_res$p.value,
+      stringsAsFactors = FALSE
+    )
+  }
+  
+  plot_df <- do.call(rbind, res_list)
+  plot_df$Effect <- sprintf("%.*f (%.*f to %.*f)", 
+                          est_nsmall, plot_df$Estimate,
+                          est_nsmall, plot_df$Lower,
+                          est_nsmall, plot_df$Upper)
+  plot_df$Pvalue <- format.pval(plot_df$Pvalue, digits = 1, eps = 0.001)
+  
+  if (!is.null(show_vars)) {
+    plot_df <- plot_df[plot_df$Variable %in% show_vars, ]
+  }
+  
+  p <- forestploter::forest(
+    plot_df[, c("Model", "Variable", "Effect", "Pvalue")],
+    est = plot_df$Estimate,
+    lower = plot_df$Lower,
+    upper = plot_df$Upper,
+    ci_column = 3,
+    ref_line = 1,
+    x_trans = if(analysis_type=="cox") "log10" else "identity",
+    ...
+  )
+  
+  if (save_plot) {
+    if (is.null(filename)) {
+      filename <- paste("forestplot", analysis_type, "models", length(model_vars), "vars", length(unique(plot_df$Variable)), "png", sep = ".")
+    }
+    ggplot2::ggsave(filename, p, width = 10, height = 4 + nrow(plot_df)*0.4)
+  }
+  
+  invisible(p)
 }
 
 

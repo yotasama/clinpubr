@@ -2,15 +2,15 @@
 #' @description Create subgroup forest plot with `glm` or `coxph` models. The interaction p-values
 #'   are calculated using likelihood ratio tests.
 #' @param data A data frame.
-#' @param var_subgroups A character vector of variable names to be used as subgroups. It's recommended that
+#' @param subgroup_vars A character vector of variable names to be used as subgroups. It's recommended that
 #'   the variables are categorical. If the variables are continuous, they will be cut into groups.
 #' @param x A character string of the predictor variable.
 #' @param y A character string of the outcome variable.
 #' @param time A character string of the time variable. If `NULL`, logistic regression is used.
 #'   Otherwise, Cox proportional hazards regression is used.
-#' @param covs A character vector of covariate names. If duplicated with `var_subgroups`, the duplicated
+#' @param covs A character vector of covariate names. If duplicated with `subgroup_vars`, the duplicated
 #'   covariates will be temporarily removed during the corresponding subgroup analysis.
-#' @param decimal_est An integer specifying the number of decimal places for the estimates in the plot.
+#' @param est_nsmall An integer specifying the number of decimal places for the estimates in the plot.
 #' @param p_nsmall An integer specifying the number of decimal places for the p-values.
 #' @param group_cut_quantiles A vector of numerical values between 0 and 1, specifying the quantile to use
 #'   for cutting continuous subgroup variables.
@@ -24,29 +24,29 @@
 #' data(cancer, package = "survival")
 #' # coxph model with time assigned
 #' subgroup_forest(cancer,
-#'   var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "status",
+#'   subgroup_vars = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "status",
 #'   time = "time", covs = "ph.karno", ticks_at = c(1, 2)
 #' )
 #'
 #' # logistic model with time not assigned
 #' cancer$dead <- cancer$status == 2
 #' subgroup_forest(cancer,
-#'   var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "dead",
+#'   subgroup_vars = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "dead",
 #'   covs = "ph.karno", ticks_at = c(1, 2)
 #' )
 #'
 #' cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
-#' subgroup_forest(cancer, var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog_cat", y = "dead",
+#' subgroup_forest(cancer, subgroup_vars = c("age", "sex", "wt.loss"), x = "ph.ecog_cat", y = "dead",
 #'   covs = "ph.karno", ticks_at = c(1, 2)
 #' )
-subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL, decimal_est = 2, p_nsmall = 3,
+subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL, est_nsmall = 2, p_nsmall = 3,
                             group_cut_quantiles = 0.5, save_plot = TRUE, filename = NULL, ...) {
   x_type <- ifelse(!is.factor(data[[x]]), "number", "factor")
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
   covs <- remove_conflict(covs, c(y, x, time))
   ori_covs <- covs
-  var_subgroups <- remove_conflict(var_subgroups, c(y, x, time))
-  if (length(var_subgroups) == 0) stop("No valid var_subgroups specified.")
+  subgroup_vars <- remove_conflict(subgroup_vars, c(y, x, time))
+  if (length(subgroup_vars) == 0) stop("No valid subgroup_vars specified.")
 
   indf <- dplyr::select(data, all_of(c(y, x, time, covs)))
 
@@ -57,9 +57,9 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
     colnames(indf)[start_col:(start_col + length(covs) - 1)] <- covs
   }
 
-  indf <- cbind(indf, dplyr::select(data, all_of(var_subgroups)))
+  indf <- cbind(indf, dplyr::select(data, all_of(subgroup_vars)))
   indf <- indf[complete.cases(indf[, c(y, x, time, covs)]), ]
-  plot_nrow <- 4 + length(var_subgroups)
+  plot_nrow <- 4 + length(subgroup_vars)
   if (x_type == "factor") {
     plot_nrow <- plot_nrow + length(levels(indf[[x]])) - 1
     n_plot_levels <- length(levels(indf[[x]])) - 1
@@ -67,7 +67,7 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
     n_plot_levels <- 1
   }
 
-  for (var in var_subgroups) {
+  for (var in subgroup_vars) {
     indf[[var]] <- to_factor(indf[[var]])
     plot_nrow <- plot_nrow + length(levels(indf[[var]])) * n_plot_levels
   }
@@ -116,7 +116,7 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
     )
   }
 
-  for (var in var_subgroups) {
+  for (var in subgroup_vars) {
     tmp_covs <- covs[ori_covs != var]
     if (length(tmp_covs) == 0) tmp_covs <- NULL
 
@@ -197,7 +197,7 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
   plot_df <- res
   plot_df[[effect_label]] <- ifelse(is.na(plot_df$`Point Estimate`), "",
     sprintf(
-      paste0("%.", decimal_est, "f (%.", decimal_est, "f to %.", decimal_est, "f)"),
+      paste0("%.", est_nsmall, "f (%.", est_nsmall, "f to %.", est_nsmall, "f)"),
       plot_df$`Point Estimate`, plot_df$Lower, plot_df$Upper
     )
   )
@@ -233,7 +233,7 @@ subgroup_forest <- function(data, var_subgroups, x, y, time = NULL, covs = NULL,
     if (is.null(filename)) {
       filename <- paste0(paste0(
         c("subgroup_forest", x, paste0(
-          "with_", length(var_subgroups),
+          "with_", length(subgroup_vars),
           "subgroups_and_", length(covs), "covs"
         )),
         collapse = "_"

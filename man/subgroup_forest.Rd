@@ -6,12 +6,12 @@
 \usage{
 subgroup_forest(
   data,
-  var_subgroups,
+  subgroup_vars,
   x,
   y,
   time = NULL,
   covs = NULL,
-  decimal_est = 2,
+  est_nsmall = 2,
   p_nsmall = 3,
   group_cut_quantiles = 0.5,
   save_plot = TRUE,
@@ -22,7 +22,7 @@ subgroup_forest(
 \arguments{
 \item{data}{A data frame.}
 
-\item{var_subgroups}{A character vector of variable names to be used as subgroups. It's recommended that
+\item{subgroup_vars}{A character vector of variable names to be used as subgroups. It's recommended that
 the variables are categorical. If the variables are continuous, they will be cut into groups.}
 
 \item{x}{A character string of the predictor variable.}
@@ -32,10 +32,10 @@ the variables are categorical. If the variables are continuous, they will be cut
 \item{time}{A character string of the time variable. If \code{NULL}, logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}
 
-\item{covs}{A character vector of covariate names. If duplicated with \code{var_subgroups}, the duplicated
+\item{covs}{A character vector of covariate names. If duplicated with \code{subgroup_vars}, the duplicated
 covariates will be temporarily removed during the corresponding subgroup analysis.}
 
-\item{decimal_est}{An integer specifying the number of decimal places for the estimates in the plot.}
+\item{est_nsmall}{An integer specifying the number of decimal places for the estimates in the plot.}
 
 \item{p_nsmall}{An integer specifying the number of decimal places for the p-values.}
 
@@ -59,19 +59,19 @@ are calculated using likelihood ratio tests.
 data(cancer, package = "survival")
 # coxph model with time assigned
 subgroup_forest(cancer,
-  var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "status",
+  subgroup_vars = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "status",
   time = "time", covs = "ph.karno", ticks_at = c(1, 2)
 )
 
 # logistic model with time not assigned
 cancer$dead <- cancer$status == 2
 subgroup_forest(cancer,
-  var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "dead",
+  subgroup_vars = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "dead",
   covs = "ph.karno", ticks_at = c(1, 2)
 )
 
 cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
-subgroup_forest(cancer, var_subgroups = c("age", "sex", "wt.loss"), x = "ph.ecog_cat", y = "dead",
+subgroup_forest(cancer, subgroup_vars = c("age", "sex", "wt.loss"), x = "ph.ecog_cat", y = "dead",
   covs = "ph.karno", ticks_at = c(1, 2)
 )
 }

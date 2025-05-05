@@ -4,10 +4,10 @@
 \alias{get_valid}
 \title{Get one valid value from vector.}
 \usage{
-get_valid(l, mode = c("first", "mid", "last"), disjoint = FALSE)
+get_valid(x, mode = c("first", "mid", "last"), disjoint = FALSE)
 }
 \arguments{
-\item{l}{A vector.}
+\item{x}{A vector.}
 
 \item{mode}{The mode of the valid value to extract. \code{"first"} extracts the first valid value,
 \code{"last"} extracts the last valid value, and \code{"mid"} extracts the middle valid value.}

@@ -18,8 +18,8 @@ regression_basic_results(
   label_with_range = FALSE,
   output_dir = NULL,
   ref_levels = "lowest",
-  ratio_nsmall = 2,
-  pval_nsmall = 3,
+  est_nsmall = 2,
+  p_nsmall = 3,
   pval_eps = 0.001,
   median_nsmall = 0,
   colors = NULL,
@@ -64,9 +64,9 @@ OR or HR.}
 or \code{"highest"} to select the lowest or highest level as the reference level. Otherwise, any level that
 matches the provided strings will be used as the reference level.}
 
-\item{ratio_nsmall}{The minimum number of digits to the right of the decimal point for the OR or HR.}
+\item{est_nsmall}{The minimum number of digits to the right of the decimal point for the OR or HR.}
 
-\item{pval_nsmall}{The minimum number of digits to the right of the decimal point for the p-value.}
+\item{p_nsmall}{The minimum number of digits to the right of the decimal point for the p-value.}
 
 \item{pval_eps}{The threshold for rounding p values to 0.}
 
