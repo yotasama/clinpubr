@@ -14,8 +14,15 @@ save_plot = TRUE; filename = NULL;as_univariate = FALSE
 
 regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = FALSE, est_nsmall = 2, 
                               p_nsmall = 3, show_vars = NULL, save_plot = TRUE, filename = NULL, ...) {
-  analysis_type <- ifelse(is.null(time), "logistic", "cox")
-  effect_label <- ifelse(analysis_type == "cox", "HR (95% CI)", "OR (95% CI)")
+  if (is.null(time)) {
+    analysis_type <- "logistic"
+    effect_label <- "OR (95% CI)"
+    new_time_var <- NULL
+  } else {
+    analysis_type <- "cox"
+    effect_label <- "HR (95% CI)"
+    new_time_var <- "time"
+  }
   
   show_model_names = TRUE
   if (is.vector(model_vars, mode = "character")) {
@@ -34,26 +41,32 @@ regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = 
   if(is.null(show_vars)) show_vars=vars
   data <- na.omit(dplyr::select(data, all_of(c(y, time, vars))))
   
+  new_vars = paste0("v",
+                    str_pad(seq_along(vars),ceiling(log10(length(vars)+1)),'left','0'),
+                    "_")
+  colnames(data)=c("y",new_time_var, new_vars)
+  show_var_ids = as.vector(na.omit(match(show_vars,vars)))
   res_list <- list()
   for (model_name in names(model_vars)) {
-    tmp_vars <- model_vars[[model_name]]
+    tmp_var_ids = match(model_vars[[model_name]],vars)
     
     fit_res <- regression_fit(
       data = data,
-      y = y,
-      predictor = tmp_vars[1],
-      time = time,
-      covs = tmp_vars[-1],
+      y = "y",
+      predictor = new_vars[tmp_var_ids[1]],
+      time = new_time_var,
+      covs = new_vars[tmp_var_ids[-1]],
       returned = "full"
     )
     
     tmp_res=NULL
-    for(var in intersect(tmp_vars,show_vars)){
-      if(!is.factor(data[[var]])||length(levels(data[[var]]))==2){
-        tmp=fit_res[fit_res$term=="var"]
+    for(var_id in intersect(tmp_var_ids,show_var_ids)){
+      if(!is.factor(data[[new_vars[var_id]]])||length(levels(data[[new_vars[var_id]]]))==2){
+        tmp=fit_res[fit_res$term==new_vars[var_id],]
         tmp=data.frame(
           Model = model_name,
-          Variable = var,
+          Variable = vars[var_id],
+          Level = NA,
           Estimate = fit_res$estimate,
           Lower = fit_res$conf.low,
           Upper = fit_res$conf.high,
@@ -61,15 +74,16 @@ regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = 
           stringsAsFactors = FALSE
         )
       }else{
-        tmp=fit_res[fit_res$term=="var"]
+        tmp=fit_res[grepl(new_vars[var_id],fit_res$term),]
         tmp=data.frame(
-          Model = model_name,
-          Variable = var,
-          Estimate = fit_res$estimate,
-          Lower = fit_res$conf.low,
-          Upper = fit_res$conf.high,
-          `P value` = fit_res$p.value,
-          stringsAsFactors = FALSE
+          Model = c(model_name,rep(NA,nrow(tmp))),
+          Variable = c(vars[var_id],rep(NA,nrow(tmp))),
+          Level = levels(data[,new_vars[var_id]]),
+          Estimate = c(ifelse(analysis_type %in% c("cox", "logistic"), 1, 0),
+                       tmp$estimate),
+          Lower = c(NA,tmp$conf.low),
+          Upper = c(NA,tmp$conf.high),
+          `P value` = c(NA,tmp$p.value)
         )
       }
     }

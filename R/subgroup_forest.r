@@ -36,7 +36,8 @@
 #' )
 #'
 #' cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
-#' subgroup_forest(cancer, subgroup_vars = c("age", "sex", "wt.loss"), x = "ph.ecog_cat", y = "dead",
+#' subgroup_forest(cancer,
+#'   subgroup_vars = c("age", "sex", "wt.loss"), x = "ph.ecog_cat", y = "dead",
 #'   covs = "ph.karno", ticks_at = c(1, 2)
 #' )
 subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL, est_nsmall = 2, p_nsmall = 3,
@@ -94,7 +95,7 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL,
         Count = nrow(indf),
         Percent = 100,
         Level = levels(indf[[x]])[1],
-        `Point Estimate` = 1,
+        `Point Estimate` = ifelse(analysis_type %in% c("cox", "logistic"), 1, 0),
         Lower = NA,
         Upper = NA,
         `P value` = NA,
