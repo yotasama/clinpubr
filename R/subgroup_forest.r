@@ -10,7 +10,7 @@
 #'   Otherwise, Cox proportional hazards regression is used.
 #' @param covs A character vector of covariate names. If duplicated with `subgroup_vars`, the duplicated
 #'   covariates will be temporarily removed during the corresponding subgroup analysis.
-#' @param est_nsmall An integer specifying the number of decimal places for the estimates in the plot.
+#' @param est_precision An integer specifying the precision for the estimates in the plot.
 #' @param p_nsmall An integer specifying the number of decimal places for the p-values.
 #' @param group_cut_quantiles A vector of numerical values between 0 and 1, specifying the quantile to use
 #'   for cutting continuous subgroup variables.
@@ -37,13 +37,14 @@
 #'
 #' cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
 #' subgroup_forest(cancer,
-#'   subgroup_vars = c("age", "sex", "wt.loss"), x = "ph.ecog_cat", y = "dead",
+#'   subgroup_vars = c("sex", "wt.loss"), x = "ph.ecog_cat", y = "dead",
 #'   covs = "ph.karno", ticks_at = c(1, 2)
 #' )
-subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL, est_nsmall = 2, p_nsmall = 3,
+subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL, est_precision = 3, p_nsmall = 3,
                             group_cut_quantiles = 0.5, save_plot = TRUE, filename = NULL, ...) {
   x_type <- ifelse(!is.factor(data[[x]]), "number", "factor")
   analysis_type <- ifelse(is.null(time), "logistic", "cox")
+  ref_val <- ifelse(analysis_type %in% c("cox", "logistic"), 1, 0)
   covs <- remove_conflict(covs, c(y, x, time))
   ori_covs <- covs
   subgroup_vars <- remove_conflict(subgroup_vars, c(y, x, time))
@@ -60,9 +61,7 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL,
 
   indf <- cbind(indf, dplyr::select(data, all_of(subgroup_vars)))
   indf <- indf[complete.cases(indf[, c(y, x, time, covs)]), ]
-  plot_nrow <- 4 + length(subgroup_vars)
   if (x_type == "factor") {
-    plot_nrow <- plot_nrow + length(levels(indf[[x]])) - 1
     n_plot_levels <- length(levels(indf[[x]])) - 1
   } else {
     n_plot_levels <- 1
@@ -70,7 +69,6 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL,
 
   for (var in subgroup_vars) {
     indf[[var]] <- to_factor(indf[[var]])
-    plot_nrow <- plot_nrow + length(levels(indf[[var]])) * n_plot_levels
   }
 
   overall_res <- regression_fit(
@@ -81,7 +79,7 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL,
       Subgroup = "Overall",
       Count = nrow(indf),
       Percent = 100,
-      `Point Estimate` = overall_res$estimate,
+      Estimate = overall_res$estimate,
       Lower = overall_res$conf.low,
       Upper = overall_res$conf.high,
       `P value` = overall_res$p.value,
@@ -95,9 +93,9 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL,
         Count = nrow(indf),
         Percent = 100,
         Level = levels(indf[[x]])[1],
-        `Point Estimate` = ifelse(analysis_type %in% c("cox", "logistic"), 1, 0),
-        Lower = NA,
-        Upper = NA,
+        Estimate = ref_val,
+        Lower = ref_val,
+        Upper = ref_val,
         `P value` = NA,
         `P int` = NA,
         check.names = FALSE
@@ -107,7 +105,7 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL,
         Count = NA,
         Percent = NA,
         Level = levels(indf[[x]])[-1],
-        `Point Estimate` = overall_res$estimate,
+        Estimate = overall_res$estimate,
         Lower = overall_res$conf.low,
         Upper = overall_res$conf.high,
         `P value` = overall_res$p.value,
@@ -130,7 +128,7 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL,
           Subgroup = var,
           Count = NA,
           Percent = NA,
-          `Point Estimate` = NA,
+          Estimate = NA,
           Lower = NA,
           Upper = NA,
           `P value` = NA,
@@ -143,7 +141,7 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL,
           Count = NA,
           Percent = NA,
           Level = NA,
-          `Point Estimate` = NA,
+          Estimate = NA,
           Lower = NA,
           Upper = NA,
           `P value` = NA,
@@ -162,14 +160,14 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL,
       if (x_type == "number") {
         lvl_res <- data.frame(
           Subgroup = paste("  ", lvl), Count = nrow(subset_data),
-          Percent = NA, `Point Estimate` = lvl_res$estimate,
+          Percent = NA, Estimate = lvl_res$estimate,
           Lower = lvl_res$conf.low, Upper = lvl_res$conf.high,
           `P value` = lvl_res$p.value, `P int` = NA, check.names = FALSE
         )
       } else {
         lvl_res <- data.frame(
           Subgroup = paste("  ", lvl), Count = nrow(subset_data),
-          Percent = NA, Level = levels(indf[[x]])[-1], `Point Estimate` = lvl_res$estimate,
+          Percent = NA, Level = levels(indf[[x]])[-1], Estimate = lvl_res$estimate,
           Lower = lvl_res$conf.low, Upper = lvl_res$conf.high,
           `P value` = lvl_res$p.value, `P int` = NA, check.names = FALSE
         )
@@ -187,19 +185,20 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL,
 
   for (col in c("P value", "P int")) {
     res[[col]] <- ifelse(is.na(res[[col]]), "",
-      base::format.pval(as.numeric(res[[col]]),
-        digits = 1,
-        nsmall = p_nsmall, eps = 0.001
-      )
+      format_pval(as.numeric(res[[col]]), nsmall = p_nsmall)
     )
   }
 
   effect_label <- ifelse(analysis_type == "cox", "HR (95% CI)", "OR (95% CI)")
   plot_df <- res
-  plot_df[[effect_label]] <- ifelse(is.na(plot_df$`Point Estimate`), "",
-    sprintf(
-      paste0("%.", est_nsmall, "f (%.", est_nsmall, "f to %.", est_nsmall, "f)"),
-      plot_df$`Point Estimate`, plot_df$Lower, plot_df$Upper
+  plot_df[[effect_label]] <- ifelse(is.na(plot_df$Estimate), "",
+    paste0(
+      formatC(plot_df$Estimate, format = "g", digits = est_precision, flag = "#"),
+      " (",
+      formatC(plot_df$Lower, format = "g", digits = est_precision, flag = "#"),
+      " to ",
+      formatC(plot_df$Upper, format = "g", digits = est_precision, flag = "#"),
+      ")"
     )
   )
   if (x_type == "factor") {
@@ -222,11 +221,11 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL,
 
   p <- forestploter::forest(
     plot_df[, plot_columns],
-    est = plot_df$`Point Estimate`,
+    est = plot_df$Estimate,
     lower = plot_df$Lower,
     upper = plot_df$Upper,
     ci_column = ifelse(x_type == "number", 4, 5),
-    ref_line = 1,
+    ref_line = ref_val,
     x_trans = "log10",
     ...
   )
@@ -240,7 +239,8 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL,
         collapse = "_"
       ), ".png")
     }
-    ggplot2::ggsave(filename, p, width = 10, height = plot_nrow / 4)
+    p_wh <- forestploter::get_wh(p)
+    ggplot2::ggsave(filename, p, width = p_wh[1], height = p_wh[2])
   }
   p
 }

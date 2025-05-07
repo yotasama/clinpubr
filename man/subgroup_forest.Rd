@@ -11,7 +11,7 @@ subgroup_forest(
   y,
   time = NULL,
   covs = NULL,
-  est_nsmall = 2,
+  est_precision = 3,
   p_nsmall = 3,
   group_cut_quantiles = 0.5,
   save_plot = TRUE,
@@ -35,7 +35,7 @@ Otherwise, Cox proportional hazards regression is used.}
 \item{covs}{A character vector of covariate names. If duplicated with \code{subgroup_vars}, the duplicated
 covariates will be temporarily removed during the corresponding subgroup analysis.}
 
-\item{est_nsmall}{An integer specifying the number of decimal places for the estimates in the plot.}
+\item{est_precision}{An integer specifying the precision for the estimates in the plot.}
 
 \item{p_nsmall}{An integer specifying the number of decimal places for the p-values.}
 
@@ -71,7 +71,8 @@ subgroup_forest(cancer,
 )
 
 cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
-subgroup_forest(cancer, subgroup_vars = c("age", "sex", "wt.loss"), x = "ph.ecog_cat", y = "dead",
+subgroup_forest(cancer,
+  subgroup_vars = c("sex", "wt.loss"), x = "ph.ecog_cat", y = "dead",
   covs = "ph.karno", ticks_at = c(1, 2)
 )
 }

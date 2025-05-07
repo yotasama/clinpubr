@@ -158,20 +158,15 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
   labelx2 <- xlim[1] + (xlim[2] - xlim[1]) * 0.95
   labely2 <- ymax1 * 0.9
   label2 <- paste0(
-    "P-overall ",
-    ifelse(pvalue_all < 0.001, "< 0.001", paste0("= ", sprintf("%.3f", pvalue_all))),
-    "\nP-non-linear ",
-    ifelse(pvalue_nonlin < 0.001, "< 0.001", paste0("= ", sprintf("%.3f", pvalue_nonlin)))
+    format_pval(pvalue_all, text_ahead = "P-overall"), "\n",
+    format_pval(pvalue_nonlin, text_ahead = "P-non-linear")
   )
   if (analysis_type == "cox" && print_p_ph) {
-    label2 <- paste0(
-      label2, "\nP-proportional ",
-      ifelse(pvalue_ph < 0.001, "< 0.001", paste0("= ", sprintf("%.3f", pvalue_ph)))
-    )
+    label2 <- paste0(label2, "\n", format_pval(pvalue_ph, text_ahead = "P-proportional"))
   }
 
   p <- ggplot2::ggplot()
-  
+
   xlim_plot <- xlim
   if (add_hist) {
     df_hist <- indf[indf[[x]] >= xlim[1] & indf[[x]] <= xlim[2], ]

@@ -27,7 +27,7 @@
 #' importance_plot(dummy_importance, top_n = 15, split_at = 10)
 importance_plot <- function(x, top_n = NULL, color = c("#56B1F7", "#132B43"), show_legend = FALSE, split_at = NULL,
                             show_labels = TRUE, label_nsmall = 3, label_color = "black", label_size = 3,
-                            label_hjust = 0, save_plot = TRUE, filename = "importance.png") {
+                            label_hjust = 0.1, save_plot = TRUE, filename = "importance.png") {
   x <- sort(x, decreasing = TRUE)
   tmp <- data.frame(name = names(x), value = x)
   if (length(color) == 1) color <- rep(color, 2)

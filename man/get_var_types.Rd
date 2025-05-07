@@ -37,7 +37,7 @@ An object from class \code{var_types}, which is just list containing the followi
 \item{factor_vars}{A character vector of variables that are factors.}
 \item{exact_vars}{A character vector of variables that require fisher exact test.}
 \item{nonnormal_vars}{A character vector of variables that are nonnormal.}
-\item{omitvars}{A character vector of variables that are excluded form the baseline table.}
+\item{omit_vars}{A character vector of variables that are excluded form the baseline table.}
 \item{strata}{A character vector of the strata variable.}
 }
 \description{

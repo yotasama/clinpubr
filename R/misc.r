@@ -36,16 +36,26 @@ vec2code <- function(x) {
 #' @param digits The number of digits to be used. Same as in `base::format.pval`.
 #' @param nsmall The number of digits after the decimal point. Same as in `base::format.pval`.
 #' @param eps The threshold for rounding p values to 0. Same as in `base::format.pval`.
+#' @param na_empty If `TRUE`, replace `"NA"` in result with an empty string.
 #'
 #' @returns A string vector of formatted p values.
 #' @export
 #' @examples
 #' format_pval(c(0.001, 0.0001, 0.05, 0.1123456))
 #' format_pval(c(0.001, 0.0001, 0.05, 0.1123456), text_ahead = "p value")
-format_pval <- function(p, text_ahead = NULL, digits = 1, nsmall = 2, eps = 1e-3) {
+format_pval <- function(p, text_ahead = NULL, digits = 1, nsmall = 2, eps = 1e-3, na_empty = TRUE) {
   p_text <- base::format.pval(p, digits = digits, nsmall = nsmall, eps = eps)
   if (!is.null(text_ahead)) {
-    p_text <- paste0(text_ahead, ifelse(p < eps, "", "="), p_text)
+    p_text = str_replace(p_text, "<", " < ")
+    p_text <- ifelse(
+      p < eps,
+      paste0(text_ahead, p_text),
+      paste0(text_ahead, " = ", p_text)
+    )
+    p_text[is.na(p_text)] <- paste0(text_ahead, " NA")
+  }
+  if (na_empty) {
+    p_text <- ifelse(endsWith(p_text, "NA"), "", p_text)
   }
   p_text
 }
