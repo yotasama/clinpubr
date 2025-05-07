@@ -9,7 +9,8 @@ regression_forest(
   model_vars,
   y,
   time = NULL,
-  est_nsmall = 2,
+  as_univariate = FALSE,
+  est_precision = 3,
   p_nsmall = 3,
   show_vars = NULL,
   save_plot = TRUE,
@@ -27,9 +28,11 @@ regression_forest(
 \item{time}{A character string of the time variable. If \code{NULL}, logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}
 
-\item{est_nsmall}{The minimum number of digits to the right of the decimal point for the OR or HR.}
+\item{as_univariate}{A logical value indicating whether to treat the model_vars as univariate.}
 
-\item{p_nsmall}{The minimum number of digits to the right of the decimal point for the p-value.}
+\item{est_precision}{An integer specifying the precision for the estimates in the plot.}
+
+\item{p_nsmall}{An integer specifying the number of decimal places for the p-values.}
 
 \item{show_vars}{A character vector of variable names to be shown in the plot. If \code{NULL}, all variables are shown.}
 
@@ -47,5 +50,22 @@ Generate the forest plot of logistic or Cox regression with different models.
 }
 \examples{
 data(cancer, package = "survival")
-regression_forest(cancer, model_vars = c("age", "sex", "wt.loss"), y = "status", time = "time")
+cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
+regression_forest(cancer,
+  model_vars = c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal"), y = "status", time = "time",
+  as_univariate = TRUE
+)
+
+regression_forest(cancer,
+  model_vars = c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal"), y = "status", time = "time",
+  show_vars = c("age", "sex", "ph.ecog_cat", "meal.cal")
+)
+
+regression_forest(cancer,
+  model_vars = list(M0=c("age"), 
+                    M1=c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal"),
+                    M2=c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal", "pat.karno")),
+  y = "status", time = "time",
+  show_vars = c("age", "sex", "ph.ecog_cat", "meal.cal")
+)
 }

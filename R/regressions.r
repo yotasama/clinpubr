@@ -19,8 +19,8 @@
 #' @param ref_levels A vector of strings of the reference levels of the factor variable. You can use `"lowest"`
 #'   or `"highest"` to select the lowest or highest level as the reference level. Otherwise, any level that
 #'   matches the provided strings will be used as the reference level.
-#' @param est_nsmall The minimum number of digits to the right of the decimal point for the OR or HR.
-#' @param p_nsmall The minimum number of digits to the right of the decimal point for the p-value.
+#' @param est_precision An integer specifying the precision for the estimates in the plot.
+#' @param p_nsmall An integer specifying the number of decimal places for the p-values.
 #' @param pval_eps The threshold for rounding p values to 0.
 #' @param median_nsmall The minimum number of digits to the right of the decimal point for the median survival time.
 #' @param colors A vector of colors for the KM curves.
@@ -56,7 +56,7 @@
 regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL, pers = c(0.1, 10, 100),
                                      factor_breaks = NULL, factor_labels = NULL, quantile_breaks = NULL,
                                      quantile_labels = NULL, label_with_range = FALSE,
-                                     output_dir = NULL, ref_levels = "lowest", est_nsmall = 2, p_nsmall = 3,
+                                     output_dir = NULL, ref_levels = "lowest", est_precision = 3, p_nsmall = 3,
                                      pval_eps = 1e-3, median_nsmall = 0, colors = NULL, xlab = NULL, legend_title = x,
                                      legend_pos = c(0.8, 0.8), height = 6, width = 6, pval_pos = NULL, ...) {
   if (is.null(colors)) {
@@ -292,7 +292,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
       )
       model_res <- data.frame(model_res[grepl("x", model_res$term), ])
       for (col in c("estimate", "conf.low", "conf.high")) {
-        model_res[, col] <- format(model_res[, col], digits = 1, nsmall = est_nsmall)
+        model_res[, col] <- formatC(model_res[, col], format = "g", digits = est_precision, flag = "#")
       }
       tmp <- data.frame(
         term = model_res$term,
@@ -331,8 +331,9 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
 #' @param y A character string of the outcome variable.
 #' @param time A character string of the time variable. If `NULL`, logistic regression is used.
 #'   Otherwise, Cox proportional hazards regression is used.
-#' @param est_nsmall The minimum number of digits to the right of the decimal point for the OR or HR.
-#' @param p_nsmall The minimum number of digits to the right of the decimal point for the p-value.
+#' @param as_univariate A logical value indicating whether to treat the model_vars as univariate.
+#' @param est_precision An integer specifying the precision for the estimates in the plot.
+#' @param p_nsmall An integer specifying the number of decimal places for the p-values.
 #' @param show_vars A character vector of variable names to be shown in the plot. If `NULL`, all variables are shown.
 #' @param save_plot A logical value indicating whether to save the plot.
 #' @param filename A character string specifying the filename for the plot. If `NULL`, a default filename is used.
@@ -340,77 +341,167 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
 #'
 #' @returns A `gtable` object.
 #' @export
-#' @examples 
+#' @examples
 #' data(cancer, package = "survival")
-#' regression_forest(cancer, model_vars = c("age", "sex", "wt.loss"), y = "status", time = "time")
-regression_forest <- function(data, model_vars, y, time = NULL, est_nsmall = 2, p_nsmall = 3, show_vars = NULL,
-                              save_plot = TRUE, filename = NULL, ...) {
-  analysis_type <- ifelse(is.null(time), "logistic", "cox")
-  effect_label <- ifelse(analysis_type == "cox", "HR (95% CI)", "OR (95% CI)")
+#' cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
+#' regression_forest(cancer,
+#'   model_vars = c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal"), y = "status", time = "time",
+#'   as_univariate = TRUE
+#' )
+#'
+#' regression_forest(cancer,
+#'   model_vars = c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal"), y = "status", time = "time",
+#'   show_vars = c("age", "sex", "ph.ecog_cat", "meal.cal")
+#' )
+#'
+#' regression_forest(cancer,
+#'   model_vars = list(M0=c("age"), 
+#'                     M1=c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal"),
+#'                     M2=c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal", "pat.karno")),
+#'   y = "status", time = "time",
+#'   show_vars = c("age", "sex", "ph.ecog_cat", "meal.cal")
+#' )
+regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = FALSE, est_precision = 3,
+                              p_nsmall = 3, show_vars = NULL, save_plot = TRUE, filename = NULL, ...) {
+  if (is.null(time)) {
+    analysis_type <- "logistic"
+    effect_label <- "OR (95% CI)"
+    new_time_var <- NULL
+  } else {
+    analysis_type <- "cox"
+    effect_label <- "HR (95% CI)"
+    new_time_var <- "time"
+  }
+  ref_val <- ifelse(analysis_type %in% c("cox", "logistic"), 1, 0)
 
+  show_model_names <- TRUE
   if (is.vector(model_vars, mode = "character")) {
-    model_vars <- list(Model = model_vars)
-  } else if (!is.list(model_vars)) {
-    stop("model_vars should be a character vector or named list of variables")
+    if (as_univariate) {
+      model_vars <- as.list(model_vars)
+      names(model_vars) <- paste0("M", seq_along(model_vars))
+    } else {
+      model_vars <- list(M = model_vars)
+    }
+    show_model_names <- FALSE
+  }else if (as_univariate) {
+    stop("`as_univariate` should not be `TRUE` when you have multiple models")
+  }else if (!is.list(model_vars)) {
+    stop("`model_vars` should be a character vector or named list of variables")
   }
 
   vars <- unique(unlist(model_vars))
+  if (is.null(show_vars)) show_vars <- vars
   data <- na.omit(dplyr::select(data, all_of(c(y, time, vars))))
 
+  new_vars <- paste0(
+    "v",
+    str_pad(seq_along(vars), ceiling(log10(length(vars) + 1)), "left", "0"),
+    "_"
+  )
+  colnames(data) <- c("y", new_time_var, new_vars)
+  show_var_ids <- as.vector(na.omit(match(show_vars, vars)))
   res_list <- list()
   for (model_name in names(model_vars)) {
-    tmp_vars <- model_vars[[model_name]]
+    tmp_var_ids <- match(model_vars[[model_name]], vars)
 
     fit_res <- regression_fit(
       data = data,
-      y = y,
-      predictor = tmp_vars[1],
-      time = time,
-      covs = tmp_vars[-1],
+      y = "y",
+      predictor = new_vars[tmp_var_ids[1]],
+      time = new_time_var,
+      covs = new_vars[tmp_var_ids[-1]],
       returned = "full"
     )
-    
-    res_list[[model_name]] <- data.frame(
-      Model = model_name,
-      Variable = names(model_vars[[model_name]]),
-      Estimate = fit_res$estimate,
-      Lower = fit_res$conf.low,
-      Upper = fit_res$conf.high,
-      Pvalue = fit_res$p.value,
-      stringsAsFactors = FALSE
-    )
+
+    tmp_res <- NULL
+    for (var_id in intersect(tmp_var_ids, show_var_ids)) {
+      if (!is.factor(data[[new_vars[var_id]]]) || length(levels(data[[new_vars[var_id]]])) == 2) {
+        tmp <- fit_res[fit_res$term == new_vars[var_id], ]
+        tmp <- data.frame(
+          Model = model_name,
+          Variable = vars[var_id],
+          Level = NA,
+          Estimate = tmp$estimate,
+          Lower = tmp$conf.low,
+          Upper = tmp$conf.high,
+          `P value` = tmp$p.value,
+          check.names = FALSE
+        )
+      } else {
+        tmp <- fit_res[grepl(new_vars[var_id], fit_res$term), ]
+        tmp <- data.frame(
+          Model = c(model_name, rep(NA, nrow(tmp))),
+          Variable = c(vars[var_id], rep(NA, nrow(tmp))),
+          Level = levels(data[, new_vars[var_id]]),
+          Estimate = c(ref_val, tmp$estimate),
+          Lower = c(ref_val, tmp$conf.low),
+          Upper = c(ref_val, tmp$conf.high),
+          `P value` = c(NA, tmp$p.value),
+          check.names = FALSE
+        )
+      }
+      tmp_res <- rbind(tmp_res, tmp)
+      tmp_res$Model[-1] <- NA
+    }
+    res_list[[model_name]] <- tmp_res
   }
-  
+
   plot_df <- do.call(rbind, res_list)
-  plot_df$Effect <- sprintf("%.*f (%.*f to %.*f)", 
-                          est_nsmall, plot_df$Estimate,
-                          est_nsmall, plot_df$Lower,
-                          est_nsmall, plot_df$Upper)
-  plot_df$Pvalue <- format.pval(plot_df$Pvalue, digits = 1, eps = 0.001)
-  
-  if (!is.null(show_vars)) {
-    plot_df <- plot_df[plot_df$Variable %in% show_vars, ]
+  plot_df[[effect_label]] <- ifelse(!is.na(plot_df$Variable) & !is.na(plot_df$Level),
+    "Reference",
+    paste0(
+      formatC(plot_df$Estimate, format = "g", digits = est_precision, flag = "#"),
+      " (",
+      formatC(plot_df$Lower, format = "g", digits = est_precision, flag = "#"),
+      " to ",
+      formatC(plot_df$Upper, format = "g", digits = est_precision, flag = "#"),
+      ")"
+    )
+  )
+  max_var_width <- max(str_width(paste(plot_df$Variable, "  ", plot_df$Level)))
+  na_cols <- c("Model", "Variable", "Level")
+  plot_df$`P value` <- format_pval(plot_df$`P value`, nsmall = p_nsmall)
+  plot_df[na_cols][is.na(plot_df[na_cols])] <- " "
+  plot_df$` ` <- paste(rep(" ", 20), collapse = " ")
+
+  plot_columns <- c("Model", "Variable", "Level", " ", effect_label, "P value")
+  ci_column <- 4
+  if (all(is.na(plot_df$Level))) {
+    plot_columns <- setdiff(plot_columns, "Level")
+    ci_column <- ci_column - 1
   }
-  
+  if (as_univariate || length(model_vars) == 1) {
+    plot_columns <- setdiff(plot_columns, "Model")
+    ci_column <- ci_column - 1
+  }
+
   p <- forestploter::forest(
-    plot_df[, c("Model", "Variable", "Effect", "Pvalue")],
+    plot_df[, plot_columns],
     est = plot_df$Estimate,
     lower = plot_df$Lower,
     upper = plot_df$Upper,
-    ci_column = 3,
-    ref_line = 1,
-    x_trans = if(analysis_type=="cox") "log10" else "identity",
+    ci_column = ci_column,
+    ref_line = ref_val,
+    x_trans = "log10",
     ...
   )
-  
   if (save_plot) {
     if (is.null(filename)) {
-      filename <- paste("forestplot", analysis_type, "models", length(model_vars), "vars", length(unique(plot_df$Variable)), "png", sep = ".")
+      filename <- paste0(paste0(
+        c(
+          "regression_forest",
+          ifelse(as_univariate,
+            "univariate",
+            paste0(c("with", length(model_vars), "models"), collapse = "_")
+          )
+        ),
+        collapse = "_"
+      ), ".png")
     }
-    ggplot2::ggsave(filename, p, width = 10, height = 4 + nrow(plot_df)*0.4)
+    p_wh <- forestploter::get_wh(p)
+    ggplot2::ggsave(filename, p, width = p_wh[1], height = p_wh[2])
   }
-  
-  invisible(p)
+  p
 }
 
 
