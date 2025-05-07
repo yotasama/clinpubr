@@ -15,7 +15,7 @@
 #'   \item{factor_vars}{A character vector of variables that are factors.}
 #'   \item{exact_vars}{A character vector of variables that require fisher exact test.}
 #'   \item{nonnormal_vars}{A character vector of variables that are nonnormal.}
-#'   \item{omitvars}{A character vector of variables that are excluded form the baseline table.}
+#'   \item{omit_vars}{A character vector of variables that are excluded form the baseline table.}
 #'   \item{strata}{A character vector of the strata variable.}
 #' @note This function performs normality tests on the variables in the data frame and determines
 #'   whether they are normal. This is done by performing Shapiro-Wilk, Lilliefors, Anderson-Darling,
@@ -65,16 +65,16 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_f
   nonnormal_vars <- c()
   factor_vars <- c()
   exact_vars <- c()
-  omitvars <- c()
+  omit_vars <- c()
   vars <- colnames(data)
   for (var in vars) {
     if (length(na.omit(data[[var]])) == 0) {
-      omitvars <- union(omitvars, var)
+      omit_vars <- union(omit_vars, var)
       next
     }
     if ((length(na.omit(unique(data[[var]]))) <= num_to_factor) || !is.numeric(data[[var]])) {
       if ((!is.numeric(data[[var]])) && (length(na.omit(unique(data[[var]]))) > omit_factor_above)) {
-        omitvars <- union(omitvars, var)
+        omit_vars <- union(omit_vars, var)
         warning(paste0(var, " excluded due to too many levels."))
       } else {
         factor_vars <- union(factor_vars, var)
@@ -138,7 +138,7 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_f
   }
   res <- list(
     factor_vars = factor_vars, exact_vars = exact_vars, nonnormal_vars = nonnormal_vars,
-    omitvars = omitvars, strata = strata
+    omit_vars = omit_vars, strata = strata
   )
   class(res) <- "var_types"
   res
@@ -188,10 +188,10 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
   if (is.null(exact_vars) && !is.null(var_types)) exact_vars <- var_types$exact_vars
   if (is.null(nonnormal_vars) && !is.null(var_types)) nonnormal_vars <- var_types$nonnormal_vars
   if (is.null(vars)) vars <- setdiff(colnames(data), strata)
-  if (!is.null(var_types$omitvars)) vars <- setdiff(vars, var_types$omitvars)
+  if (!is.null(var_types$omit_vars)) vars <- setdiff(vars, var_types$omit_vars)
   if (is.null(seed)) set.seed(seed)
-  if (is.null(filename)) filename <- paste0("baseline_by", strata, ".csv")
-  if (!grepl(".csv", filename)) stop("please save as .csv file")
+  if (is.null(filename)) filename <- paste0("baseline_by_", strata, ".csv")
+  if (!endsWith(filename, ".csv")) stop("please save as .csv file")
   factor_vars <- union(factor_vars, exact_vars)
 
   if (is.null(strata)) {
