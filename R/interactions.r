@@ -127,7 +127,8 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
   }
   if (is.null(filename)) {
     filename <- paste0(paste0(c("interaction", predictor, "by", group_var, paste0("with_", length(covs), "covs")),
-                              collapse = "_"), ".png")
+      collapse = "_"
+    ), ".png")
   }
 
   dat <- dplyr::select(data, all_of(c(y, predictor, group_var, time, covs)))
@@ -149,10 +150,13 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
   dd <- rms::datadist(dat)
   old_datadist <- getOption("datadist")
   options(datadist = "dd")
-  on.exit({
-    options(datadist = old_datadist)
-    rm(dd)
-  }, add = TRUE)
+  on.exit(
+    {
+      options(datadist = old_datadist)
+      rm(dd)
+    },
+    add = TRUE
+  )
 
   plt1 <- NULL
   plt2 <- NULL
@@ -291,13 +295,15 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
 
 #' Calculate interaction p-value
 #' @description This function calculates the interaction p-value between a predictor and a group variable in a
-#'   logistic or Cox proportional hazards model.
+#'   linear, logistic, or Cox proportional hazards model.
 #' @param data A data frame.
-#' @param y A character string of the outcome variable.
+#' @param y A character string of the outcome variable. The variable should be binary or numeric and determines
+#'   the type of model to be used. If the variable is binary, logistic or Cox regression is used. If the variable is
+#'   numeric, linear regression is used.
 #' @param predictor A character string of the predictor variable.
 #' @param group_var A character string of the group variable. The variable should be categorical. If a
 #'   numeric variable is provided, it will be split by the median value.
-#' @param time A character string of the time variable. If `NULL`, logistic regression is used.
+#' @param time A character string of the time variable. If `NULL`, linear or logistic regression is used.
 #'   Otherwise, Cox proportional hazards regression is used.
 #' @param covs A character vector of covariate names.
 #' @param rcs_knots The number of rcs knots. If `NULL`, a linear model would be fitted instead.
@@ -310,7 +316,13 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
 #'   time = "time", rcs_knots = 4
 #' )
 interaction_p_value <- function(data, y, predictor, group_var, time = NULL, covs = NULL, rcs_knots = NULL) {
-  analysis_type <- ifelse(is.null(time), "logistic", "cox")
+  analysis_type <- if (!is.null(time)) {
+    "cox"
+  } else if (length(levels(as.factor(data[[y]]))) == 2) {
+    "logistic"
+  } else {
+    "linear"
+  }
   data[[group_var]] <- to_factor(data[[group_var]])
   covs <- remove_conflict(covs, c(y, predictor, group_var, time))
 
@@ -326,9 +338,14 @@ interaction_p_value <- function(data, y, predictor, group_var, time = NULL, covs
   if (analysis_type == "cox") {
     model1 <- coxph(formula1, data = data)
     model2 <- coxph(formula2, data = data)
-  } else {
+  } else if (analysis_type == "logistic") {
     model1 <- glm(formula1, data = data, family = binomial())
     model2 <- glm(formula2, data = data, family = binomial())
+  } else if (analysis_type == "linear") {
+    model1 <- lm(formula1, data = data)
+    model2 <- lm(formula2, data = data)
+  } else {
+    stop("Invalid analysis type")
   }
   return(broom::tidy(anova(model1, model2, test = "LRT"))$p.value[2])
 }

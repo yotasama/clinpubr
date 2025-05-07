@@ -576,11 +576,13 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
 
 #' Obtain regression results
 #' @description This function fit the regression of a predictor in a
-#'   logistic or Cox proportional hazards model.
+#'   linear, logistic, or Cox proportional hazards model.
 #' @param data A data frame.
-#' @param y A character string of the outcome variable.
+#' @param y A character string of the outcome variable. The variable should be binary or numeric and determines
+#'   the type of model to be used. If the variable is binary, logistic or cox regression is used. If the variable is
+#'   numeric, linear regression is used.
 #' @param predictor A character string of the predictor variable.
-#' @param time A character string of the time variable. If `NULL`, logistic regression is used.
+#' @param time A character string of the time variable. If `NULL`, linear or logistic regression is used.
 #'   Otherwise, Cox proportional hazards regression is used.
 #' @param covs A character vector of covariate names.
 #' @param rcs_knots The number of rcs knots. If `NULL`, a linear model would be fitted instead.
@@ -600,7 +602,13 @@ regression_fit <- function(data, y, predictor, time = NULL, covs = NULL, rcs_kno
                            returned = c("full", "predictor_split", "predictor_combined")) {
   returned <- match.arg(returned)
   if (!is.null(rcs_knots) && rcs_knots == 0) rcs_knots <- NULL
-  analysis_type <- ifelse(is.null(time), "logistic", "cox")
+  analysis_type <- if (!is.null(time)) {
+    "cox"
+  } else if (length(levels(as.factor(data[[y]]))) == 2) {
+    "logistic"
+  } else {
+    "linear"
+  }
   covs <- remove_conflict(covs, c(y, predictor, time))
 
   predictor_type <- if (is.factor(data[[predictor]]) && length(levels(data[[predictor]])) > 2) {
@@ -614,11 +622,15 @@ regression_fit <- function(data, y, predictor, time = NULL, covs = NULL, rcs_kno
 
   if (analysis_type == "cox") {
     model <- survival::coxph(formula, data = data)
-  } else {
+  } else if (analysis_type == "logistic") {
     model <- stats::glm(formula, data = data, family = stats::binomial())
+  } else if (analysis_type == "linear") {
+    model <- stats::lm(formula, data = data)
+  } else {
+    stop("Invalid analysis type")
   }
   full_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)
-  if (analysis_type == "logistic") full_res <- full_res[-1, ]
+  if (analysis_type %in% c("linear", "logistic")) full_res <- full_res[-1, ]
 
   if (returned == "full") {
     return(as.data.frame(full_res))
@@ -635,11 +647,15 @@ regression_fit <- function(data, y, predictor, time = NULL, covs = NULL, rcs_kno
   } else {
     if (is.numeric(data[[predictor]]) && !is.null(rcs_knots)) {
       if (analysis_type == "cox") {
-        model <- cph(formula, data = data, x = TRUE, y = TRUE)
+        model <- cph(formula, data = data)
+      }else if (analysis_type == "logistic") {
+        model <- Glm(formula, data = data, family = binomial())
+      }else if (analysis_type == "linear") {
+        model <- ols(formula, data = data)
       } else {
-        model <- Glm(formula, data = data, family = binomial(), x = TRUE, y = TRUE)
+        stop("Invalid analysis type")
       }
-      ps <- unname(anova(model, test = "LR")[, "P"])
+      ps <- unname(anova(model)[, "P"])
       return(list(estimate = NA, p_overall = ps[1], p_nonlinear = ps[2]))
     } else {
       return(list(
