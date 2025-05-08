@@ -17,11 +17,13 @@ regression_fit(
 \arguments{
 \item{data}{A data frame.}
 
-\item{y}{A character string of the outcome variable.}
+\item{y}{A character string of the outcome variable. The variable should be binary or numeric and determines
+the type of model to be used. If the variable is binary, logistic or cox regression is used. If the variable is
+numeric, linear regression is used.}
 
 \item{predictor}{A character string of the predictor variable.}
 
-\item{time}{A character string of the time variable. If \code{NULL}, logistic regression is used.
+\item{time}{A character string of the time variable. If \code{NULL}, linear or logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}
 
 \item{covs}{A character vector of covariate names.}
@@ -30,7 +32,7 @@ Otherwise, Cox proportional hazards regression is used.}
 
 \item{returned}{The return mode of this function.
 \itemize{
-\item \code{"full"}: return the full regression model.
+\item \code{"full"}: return the full regression result.
 \item \code{"predictor_split"}: return the regression parameter of the predictor, could have multiple lines.
 \item \code{"predictor_combined"}: return the regression parameter of the predictor, test the predictor as a whole and
 takes only one line.
@@ -43,7 +45,7 @@ is \code{TRUE}, the complete result of the regression model is returned.
 }
 \description{
 This function fit the regression of a predictor in a
-logistic or Cox proportional hazards model.
+linear, logistic, or Cox proportional hazards model.
 }
 \examples{
 data(cancer, package = "survival")

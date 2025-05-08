@@ -15,10 +15,10 @@ calculate_index <- function(.df, ..., .weight = 1, .na_replace = 0) {
 
   if (n_conds == 0) stop("Expressions must be provided")
   if (!length(.weight) %in% c(1, n_conds)) {
-    stop("weight must be of length 1 or equal to the number of conditions")
+    stop("`.weight` must be of length 1 or equal to the number of conditions")
   }
   if (!length(.na_replace) %in% c(1, n_conds)) {
-    stop("na_replace must be of length 1 or equal to the number of conditions")
+    stop("`.na_replace` must be of length 1 or equal to the number of conditions")
   }
 
   weight <- rep(.weight, length.out = n_conds)

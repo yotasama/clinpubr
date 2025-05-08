@@ -18,15 +18,19 @@
 #' @returns A data frame with subject units standardized.
 #' @export
 #' @examples
-#' df <- data.frame(subject = c("a", "a", "b", "b", "b", "c", "c"), value = c(1, 2, 3, 4, 5, 6, 7),
-#'                  unit = c(NA, "x", "x", "x", "y", "a", "b"))
+#' df <- data.frame(
+#'   subject = c("a", "a", "b", "b", "b", "c", "c"), value = c(1, 2, 3, 4, 5, 6, 7),
+#'   unit = c(NA, "x", "x", "x", "y", "a", "b")
+#' )
 #' change_list <- list(
 #'   list(subject = "a", target_unit = "x", units2change = c(NA), coeffs = c(20)),
 #'   list(subject = "b"),
 #'   list(subject = "c", target_unit = "b")
 #' )
-#' unit_standardize(df, subject_col = "subject", value_col = "value", unit_col = "unit",
-#'                  change_list = change_list)
+#' unit_standardize(df,
+#'   subject_col = "subject", value_col = "value", unit_col = "unit",
+#'   change_list = change_list
+#' )
 unit_standardize <- function(df, subject_col, value_col, unit_col, change_list) {
   for (i in seq_along(change_list)) {
     flag <- df[, subject_col] %in% change_list[[i]]$subject
@@ -54,7 +58,7 @@ unit_standardize_ <- function(df, target_unit = NULL, units2change = NULL, coeff
     units2change <- setdiff(unique(df[, 2]), target_unit)
   }
   if (!is.null(coeffs) && length(units2change) != length(coeffs)) {
-    stop("coeffs should have the same length as units2change!")
+    stop("`coeffs` should have the same length as `units2change`!")
   } else if (is.null(coeffs)) {
     coeffs <- rep(1, length(units2change))
   }

@@ -24,7 +24,13 @@
 #' interaction_scan(cancer, y = "status", time = "time")
 interaction_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL, covs = NULL,
                              try_rcs = TRUE, p_adjust_method = "BH", save_table = TRUE, filename = NULL) {
-  analysis_type <- ifelse(is.null(time), "logistic", "cox")
+  analysis_type <- if (!is.null(time)) {
+    "cox"
+  } else if (length(levels(as.factor(data[[y]]))) == 2) {
+    "logistic"
+  } else {
+    "linear"
+  }
   if (is.null(predictors)) {
     predictors <- setdiff(colnames(data), c(y, time))
     message("Taking all variables as interaction predictors")
@@ -115,10 +121,24 @@ interaction_scan <- function(data, y, time = NULL, predictors = NULL, group_vars
 #' @examples
 #' data(cancer, package = "survival")
 #' interaction_plot(cancer, y = "status", time = "time", predictor = "age", group_var = "sex")
+#' interaction_plot(cancer, y = "status", predictor = "age", group_var = "sex")
+#' interaction_plot(cancer, y = "wt.loss", predictor = "age", group_var = "sex")
 interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, group_colors = NULL,
                              save_plot = TRUE, filename = NULL, height = 4, width = 4, xlab = predictor,
                              group_title = group_var, ...) {
-  analysis_type <- ifelse(is.null(time), "logistic", "cox")
+  if (!is.null(time)) {
+    analysis_type <- "cox"
+    ylab <- "HR (95% CI)"
+    pred_fun <- exp
+  } else if (length(levels(as.factor(data[[y]]))) == 2) {
+    analysis_type <- "logistic"
+    ylab <- "OR (95% CI)"
+    pred_fun <- exp
+  } else {
+    analysis_type <- "linear"
+    ylab <- "Predicted value (95% CI)"
+    pred_fun <- NULL
+  }
   if (is.null(group_colors)) {
     group_colors <- emp_colors
   }
@@ -126,10 +146,13 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
     stop("Conflict of model variables!")
   }
   if (is.null(filename)) {
-    filename <- paste0(paste0(c("interaction", predictor, "by", group_var, paste0("with_", length(covs), "covs")),
-      collapse = "_"
-    ), ".png")
+    filename <- paste0(
+      paste0(c(analysis_type, "interaction", predictor, "by", group_var, "with", length(covs), "covs"),
+        collapse = "_"
+      ), ".png"
+    )
   }
+  default_expansion <- c(0.1, 0, 0.1, 0)
 
   dat <- dplyr::select(data, all_of(c(y, predictor, group_var, time, covs)))
   if (".predictor" %in% c(y, time, covs)) stop("Colname '.predictor' is reserved!")
@@ -148,15 +171,15 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
     prefix <- "lin_"
   }
   dd <- rms::datadist(dat)
+  .dd_out <<- dd
   old_datadist <- getOption("datadist")
-  options(datadist = "dd")
   on.exit(
     {
       options(datadist = old_datadist)
-      rm(dd)
     },
     add = TRUE
   )
+  options(datadist = ".dd_out")
 
   plt1 <- NULL
   plt2 <- NULL
@@ -164,14 +187,11 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
   tryCatch(
     {
       formula <- create_formula(y, ".predictor", group_var = ".group_var", time = time, covs = covs, interaction = TRUE)
-      if (analysis_type == "cox") {
-        model <- rms::cph(formula, data = dat)
-      } else {
-        model <- rms::Glm(formula, data = dat, family = binomial(link = "logit"))
-      }
+      model <- fit_model(formula, data = dat, analysis_type = analysis_type, rms = TRUE)
       p_value <- interaction_p_value(dat, y, ".predictor", ".group_var", time = time, covs = covs)
       y1 <- as.data.frame(Predict(model, .predictor, .group_var,
-        fun = exp, type = "predictions", conf.int = 0.95, digits = 2
+        fun = pred_fun, type = "predictions", conf.int = 0.95, digits = 2,
+        ref.zero = analysis_type %in% c("cox", "logistic")
       ))
 
       plt1 <- ggplot(data = y1, aes(
@@ -187,27 +207,39 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
           geom_ribbon(lty = 2, alpha = 0.2, linewidth = 1) +
           geom_line(linewidth = 1)
       }
+
       plt1 <- plt1 +
-        scale_y_log10() +
         scale_color_manual(values = group_colors) +
         scale_fill_manual(values = group_colors) +
         labs(
-          x = xlab, y = ifelse(analysis_type == "cox", "HR (95% CI)", "OR (95% CI)"),
+          x = xlab, y = ylab,
           color = group_title, fill = group_title,
           title = paste0(
             "p interaction : ",
             format_pval(p_value)
           )
         )
+
+      n_x <- mean(ggplot_build(plt1)$layout$panel_params[[1]]$x.range)
+      if (analysis_type %in% c("cox", "logistic")) {
+        plt1 <- plt1 +
+          scale_y_log10(expand = default_expansion) +
+          geom_hline(yintercept = 1, linetype = 3, color = "black", linewidth = 1)
+        n_y <- 10^(max(ggplot_build(plt1)$layout$panel_params[[1]]$y.range))
+      } else {
+        plt1 <- plt1 +
+          scale_y_continuous(expand = default_expansion)
+        n_y <- max(ggplot_build(plt1)$layout$panel_params[[1]]$y.range)
+      }
       plt1 <- plt1 +
         annotate("text",
           label = paste0("N = ", nrow(dat)), size = 5,
-          x = mean(ggplot_build(plt1)$layout$panel_params[[1]]$x.range),
-          y = 10^(max(ggplot_build(plt1)$layout$panel_params[[1]]$y.range) * 0.9),
+          x = n_x,
+          y = n_y,
           hjust = 0.5, vjust = 0.5
         ) +
         theme_classic() +
-        geom_hline(yintercept = 1, linetype = 3, color = "black", linewidth = 1) +
+
         theme(
           legend.position = c(0.05, 0.95),
           legend.justification = c(0, 1),
@@ -232,17 +264,14 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
           group_var = ".group_var", time = time, covs = covs, rcs_knots = 4,
           interaction = TRUE
         )
-        if (analysis_type == "cox") {
-          model2 <- rms::cph(formula2, data = dat)
-        } else {
-          model2 <- rms::Glm(formula2, data = dat, family = binomial(link = "logit"))
-        }
+        model2 <- fit_model(formula2, data = dat, analysis_type = analysis_type, rms = TRUE)
         rcs_p_value <- interaction_p_value(dat, y, ".predictor", ".group_var",
           time = time, covs = covs,
           rcs_knots = 4
         )
         y2 <- as.data.frame(Predict(model2, .predictor, .group_var,
-          fun = exp, type = "predictions", conf.int = 0.95, digits = 2
+          fun = pred_fun, type = "predictions", conf.int = 0.95, digits = 2,
+          ref.zero = analysis_type %in% c("cox", "logistic")
         ))
         plt2 <- ggplot(data = y2, aes(
           x = .predictor, y = yhat, ymin = lower, ymax = upper,
@@ -250,28 +279,39 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
         )) +
           geom_line(linewidth = 1) +
           geom_ribbon(lty = 2, alpha = 0.2, linewidth = 1) +
-          scale_y_log10() +
           scale_color_manual(values = group_colors) +
           scale_fill_manual(values = group_colors) +
           labs(
-            x = xlab, y = ifelse(analysis_type == "cox", "HR (95% CI)", "OR (95% CI)"),
+            x = xlab, y = ylab,
             color = group_title, fill = group_title,
             title = paste0(
               "p interaction : ",
               format_pval(rcs_p_value)
             )
           )
+        n_x <- mean(ggplot_build(plt2)$layout$panel_params[[1]]$x.range)
+        if (analysis_type %in% c("cox", "logistic")) {
+          plt2 <- plt2 +
+            scale_y_log10(expand = default_expansion) +
+            geom_hline(yintercept = 1, linetype = 3, color = "black", linewidth = 1)
+          n_y <- 10^(max(ggplot_build(plt2)$layout$panel_params[[1]]$y.range))
+        } else {
+          plt2 <- plt2 +
+            scale_y_continuous(expand = default_expansion)
+          n_y <- max(ggplot_build(plt2)$layout$panel_params[[1]]$y.range)
+        }
+
         plt2 <- plt2 +
           annotate("text",
             label = paste0("N = ", nrow(dat)), size = 5,
-            x = mean(ggplot_build(plt2)$layout$panel_params[[1]]$x.range),
-            y = 10^(max(ggplot_build(plt2)$layout$panel_params[[1]]$y.range) * 0.9),
+            x = n_x,
+            y = n_y,
             hjust = 0.5, vjust = 0.5
           ) +
           theme_classic() +
-          geom_hline(yintercept = 1, linetype = 3, color = "black", linewidth = 1) +
           theme(
-            legend.position = c(0.05, 0.95),
+            legend.position = "inside",
+            legend.position.inside = c(0.05, 0.95),
             legend.justification = c(0, 1),
             legend.box.margin = margin(6, 6, 6, 6),
             legend.background = element_blank(),
@@ -335,17 +375,8 @@ interaction_p_value <- function(data, y, predictor, group_var, time = NULL, covs
     interaction = TRUE
   )
 
-  if (analysis_type == "cox") {
-    model1 <- coxph(formula1, data = data)
-    model2 <- coxph(formula2, data = data)
-  } else if (analysis_type == "logistic") {
-    model1 <- glm(formula1, data = data, family = binomial())
-    model2 <- glm(formula2, data = data, family = binomial())
-  } else if (analysis_type == "linear") {
-    model1 <- lm(formula1, data = data)
-    model2 <- lm(formula2, data = data)
-  } else {
-    stop("Invalid analysis type")
-  }
+  model1 <- fit_model(formula1, data = data, analysis_type = analysis_type)
+  model2 <- fit_model(formula2, data = data, analysis_type = analysis_type)
+
   return(broom::tidy(anova(model1, model2, test = "LRT"))$p.value[2])
 }

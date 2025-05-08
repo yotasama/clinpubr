@@ -154,7 +154,7 @@ add_lists <- function(l1, l2) {
 replace_elements <- function(x, from, to) {
   y <- x
   if (length(from) != length(to)) {
-    stop("from and to should have the same length!")
+    stop("`from` and `to` should have the same length!")
   }
   for (i in seq_along(from)) {
     y[y %in% from[i]] <- to[i]
@@ -194,7 +194,7 @@ fill_with_last <- function(x) {
 #' x <- c("v1.v2", "v3.yy", "v4")
 #' str_match_replace(x, modified_names, ori_names)
 str_match_replace <- function(x, to_match, to_replace) {
-  if (length(to_match) != length(to_replace)) stop("to_match and to_replace must have the same length!")
+  if (length(to_match) != length(to_replace)) stop("`to_match` and `to_replace` must have the same length!")
 
   len <- nchar(to_match)
   ord <- order(len, decreasing = TRUE)
@@ -240,7 +240,7 @@ unmake_names <- function(x, ori_names, wrap_backtick = FALSE) {
 #' @examples
 #' formula_add_covs("y ~ a + b", c("c", "d"))
 formula_add_covs <- function(formula, covs) {
-  if (!class(formula) %in% c("formula", "character")) stop("formula should be a formula or a character string")
+  if (!class(formula) %in% c("formula", "character")) stop("`formula` should be a formula or a character string")
   if (is.null(covs)) {
     res <- formula
   } else {

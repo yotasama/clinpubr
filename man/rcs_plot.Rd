@@ -24,7 +24,7 @@ rcs_plot(
   trans = "identity",
   save_plot = TRUE,
   filename = NULL,
-  ratio_max = NULL,
+  y_max = NULL,
   hist_max = NULL,
   xlim = NULL,
   return_details = FALSE
@@ -77,7 +77,7 @@ Passed to \code{ggplot2::scale_y_continuous(transform = trans)}.}
 
 \item{filename}{A character string specifying the filename for the plot. If \code{NULL}, a default filename is used.}
 
-\item{ratio_max}{The maximum ratio of the plot. If \code{NULL}, the maximum ratio is determined automatically.}
+\item{y_max}{The maximum y value of the plot. If \code{NULL}, the number is determined automatically.}
 
 \item{hist_max}{The maximum value for the histogram. If \code{NULL}, the maximum value is determined automatically.}
 

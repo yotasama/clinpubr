@@ -17,14 +17,16 @@ interaction_p_value(
 \arguments{
 \item{data}{A data frame.}
 
-\item{y}{A character string of the outcome variable.}
+\item{y}{A character string of the outcome variable. The variable should be binary or numeric and determines
+the type of model to be used. If the variable is binary, logistic or Cox regression is used. If the variable is
+numeric, linear regression is used.}
 
 \item{predictor}{A character string of the predictor variable.}
 
 \item{group_var}{A character string of the group variable. The variable should be categorical. If a
 numeric variable is provided, it will be split by the median value.}
 
-\item{time}{A character string of the time variable. If \code{NULL}, logistic regression is used.
+\item{time}{A character string of the time variable. If \code{NULL}, linear or logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}
 
 \item{covs}{A character vector of covariate names.}
@@ -36,7 +38,7 @@ The interaction p-value
 }
 \description{
 This function calculates the interaction p-value between a predictor and a group variable in a
-logistic or Cox proportional hazards model.
+linear, logistic, or Cox proportional hazards model.
 }
 \examples{
 data(cancer, package = "survival")

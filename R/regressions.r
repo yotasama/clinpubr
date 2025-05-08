@@ -63,14 +63,18 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
     colors <- emp_colors
   }
 
-  if (is.null(time)) {
+  if (!is.null(time)) {
+    analysis_type <- "cox"
+    coef_type <- "HR"
+    new_time_var <- "time"
+  } else if (length(levels(as.factor(data[[y]]))) == 2) {
     analysis_type <- "logistic"
-    ratio_type <- "OR"
+    coef_type <- "OR"
     new_time_var <- NULL
   } else {
-    analysis_type <- "cox"
-    ratio_type <- "HR"
-    new_time_var <- "time"
+    analysis_type <- "linear"
+    coef_type <- "Coefficient"
+    new_time_var <- NULL
   }
 
   label_type <- ifelse(label_with_range, "combined", "LMH")
@@ -80,7 +84,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
   } else if (is.vector(model_covs, mode = "character")) {
     model_covs <- list(Crude = model_covs)
   } else if (!is.list(model_covs)) {
-    stop("model_covs should be a character vector of covariates or a named list of covariates of multiple models.")
+    stop("`model_covs` should be a character vector of covariates or a named list of covariates of multiple models.")
   }
 
   ref_levels <- str_replace_all(ref_levels, c("\\[" = "\\\\[", "\\(" = "\\\\(", "\\]" = "\\\\]", "\\)" = "\\\\)"))
@@ -282,7 +286,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
   for (j in seq_along(model_covs)) {
     col1 <- 2 * j + 1
     col2 <- 2 * j + 2
-    res_table[1, col1:col2] <- c(ratio_type, "P")
+    res_table[1, col1:col2] <- c(coef_type, "P")
     i <- 2
     tmp_covs <- covs[match(model_covs[[j]], ori_covs)]
     for (var in vars) {
@@ -299,9 +303,9 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
         ratio = paste0(model_res$estimate, "(", model_res$conf.low, ",", model_res$conf.high, ")"),
         P = format_pval(model_res$p.value, nsmall = p_nsmall, eps = pval_eps)
       )
-      colnames(tmp)[2] <- ratio_type
+      colnames(tmp)[2] <- coef_type
       if (is.numeric(dat[[var]])) {
-        res_table[i, col1] <- tmp[[ratio_type]]
+        res_table[i, col1] <- tmp[[coef_type]]
         res_table[i, col2] <- tmp$P
         i <- i + 1
       } else {
@@ -355,25 +359,32 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
 #' )
 #'
 #' regression_forest(cancer,
-#'   model_vars = list(M0=c("age"), 
-#'                     M1=c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal"),
-#'                     M2=c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal", "pat.karno")),
+#'   model_vars = list(
+#'     M0 = c("age"),
+#'     M1 = c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal"),
+#'     M2 = c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal", "pat.karno")
+#'   ),
 #'   y = "status", time = "time",
 #'   show_vars = c("age", "sex", "ph.ecog_cat", "meal.cal")
 #' )
 regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = FALSE, est_precision = 3,
                               p_nsmall = 3, show_vars = NULL, save_plot = TRUE, filename = NULL, ...) {
-  if (is.null(time)) {
+  if (!is.null(time)) {
+    analysis_type <- "cox"
+    effect_label <- "HR (95% CI)"
+    new_time_var <- "time"
+  } else if (length(levels(as.factor(data[[y]]))) == 2) {
     analysis_type <- "logistic"
     effect_label <- "OR (95% CI)"
     new_time_var <- NULL
   } else {
-    analysis_type <- "cox"
-    effect_label <- "HR (95% CI)"
-    new_time_var <- "time"
+    analysis_type <- "linear"
+    effect_label <- "Coefficient (95% CI)"
+    new_time_var <- NULL
   }
   ref_val <- ifelse(analysis_type %in% c("cox", "logistic"), 1, 0)
-
+  x_trans <- ifelse(analysis_type %in% c("cox", "logistic"), "log10", "none")
+  
   show_model_names <- TRUE
   if (is.vector(model_vars, mode = "character")) {
     if (as_univariate) {
@@ -383,9 +394,9 @@ regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = 
       model_vars <- list(M = model_vars)
     }
     show_model_names <- FALSE
-  }else if (as_univariate) {
+  } else if (as_univariate) {
     stop("`as_univariate` should not be `TRUE` when you have multiple models")
-  }else if (!is.list(model_vars)) {
+  } else if (!is.list(model_vars)) {
     stop("`model_vars` should be a character vector or named list of variables")
   }
 
@@ -482,7 +493,7 @@ regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = 
     upper = plot_df$Upper,
     ci_column = ci_column,
     ref_line = ref_val,
-    x_trans = "log10",
+    x_trans = x_trans,
     ...
   )
   if (save_plot) {
@@ -554,26 +565,33 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
     factor = c("original"),
     other = c()
   )
-  if (is.null(time)) {
-    analysis_type <- "logistic"
-    ratio_type <- "OR"
-  } else {
+  if (!is.null(time)) {
     analysis_type <- "cox"
-    ratio_type <- "HR"
+    coef_type <- "HR"
+  } else if (length(levels(as.factor(data[[y]]))) == 2) {
+    analysis_type <- "logistic"
+    coef_type <- "OR"
+  } else {
+    analysis_type <- "linear"
+    coef_type <- "Coefficient"
   }
   if (is.null(predictors)) {
     predictors <- setdiff(colnames(data), c(y, time))
     message("Taking all variables as interaction predictors")
   }
   if (any(!predictors %in% colnames(data))) {
-    stop("Some predictors are not in the data")
+    stop(paste0(
+      "predictors: ",
+      paste(setdiff(predictors, colnames(data)), sep = ", "),
+      " are not in the data"
+    ))
   }
 
   res_df <- data.frame(matrix(NA, nrow = length(predictors), ncol = 16))
   colnames(res_df) <- c(
     "predictor", "nvalid",
     paste(rep(c("original", "logarithm", "categorized"), each = 3),
-      c(ratio_type, "pval", "padj"),
+      c(coef_type, "pval", "padj"),
       sep = "."
     ),
     paste("rcs", rep(c("overall", "nonlinear"), each = 2), c("pval", "padj"), sep = "."),
@@ -633,7 +651,7 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
             res_df$rcs.overall.pval[i] <- model_res$p_overall
             res_df$rcs.nonlinear.pval[i] <- model_res$p_nonlinear
           } else {
-            res_df[[paste(var_trans, ratio_type, sep = ".")]][i] <- model_res$estimate
+            res_df[[paste(var_trans, coef_type, sep = ".")]][i] <- model_res$estimate
             res_df[[paste(var_trans, "pval", sep = ".")]][i] <- model_res$p.value
           }
         },
@@ -678,7 +696,7 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
 #' @param covs A character vector of covariate names.
 #' @param rcs_knots The number of rcs knots. If `NULL`, a linear model would be fitted instead.
 #' @param returned The return mode of this function.
-#'   - `"full"`: return the full regression model.
+#'   - `"full"`: return the full regression result.
 #'   - `"predictor_split"`: return the regression parameter of the predictor, could have multiple lines.
 #'   - `"predictor_combined"`: return the regression parameter of the predictor, test the predictor as a whole and
 #'     takes only one line.
@@ -711,16 +729,8 @@ regression_fit <- function(data, y, predictor, time = NULL, covs = NULL, rcs_kno
   formula <- create_formula(y, predictor, time = time, covs = covs, rcs_knots = rcs_knots)
   environment(formula) <- environment()
 
-  if (analysis_type == "cox") {
-    model <- survival::coxph(formula, data = data)
-  } else if (analysis_type == "logistic") {
-    model <- stats::glm(formula, data = data, family = stats::binomial())
-  } else if (analysis_type == "linear") {
-    model <- stats::lm(formula, data = data)
-  } else {
-    stop("Invalid analysis type")
-  }
-  full_res <- broom::tidy(model, conf.int = TRUE, exponentiate = TRUE)
+  model <- fit_model(formula, data = data, analysis_type = analysis_type)
+  full_res <- broom::tidy(model, conf.int = TRUE, exponentiate = analysis_type %in% c("logistic", "cox"))
   if (analysis_type %in% c("linear", "logistic")) full_res <- full_res[-1, ]
 
   if (returned == "full") {
@@ -737,15 +747,7 @@ regression_fit <- function(data, y, predictor, time = NULL, covs = NULL, rcs_kno
     return(res)
   } else {
     if (is.numeric(data[[predictor]]) && !is.null(rcs_knots)) {
-      if (analysis_type == "cox") {
-        model <- cph(formula, data = data)
-      }else if (analysis_type == "logistic") {
-        model <- Glm(formula, data = data, family = binomial())
-      }else if (analysis_type == "linear") {
-        model <- ols(formula, data = data)
-      } else {
-        stop("Invalid analysis type")
-      }
+      model <- fit_model(formula, data = data, analysis_type = analysis_type, rms = TRUE)
       ps <- unname(anova(model)[, "P"])
       return(list(estimate = NA, p_overall = ps[1], p_nonlinear = ps[2]))
     } else {
@@ -755,4 +757,27 @@ regression_fit <- function(data, y, predictor, time = NULL, covs = NULL, rcs_kno
       ))
     }
   }
+}
+
+fit_model <- function(formula, data, analysis_type = c("linear", "logistic", "cox"),
+                      rms = FALSE, ...) {
+  analysis_type <- match.arg(analysis_type)
+  if (rms) {
+    if (analysis_type == "cox") {
+      model <- rms::cph(formula, data = data, ...)
+    } else if (analysis_type == "logistic") {
+      model <- rms::Glm(formula, data = data, family = stats::binomial(), ...)
+    } else if (analysis_type == "linear") {
+      model <- rms::ols(formula, data = data, ...)
+    }
+  } else {
+    if (analysis_type == "cox") {
+      model <- survival::coxph(formula, data = data, ...)
+    } else if (analysis_type == "logistic") {
+      model <- stats::glm(formula, data = data, family = stats::binomial(), ...)
+    } else if (analysis_type == "linear") {
+      model <- stats::lm(formula, data = data, ...)
+    }
+  }
+  return(model)
 }

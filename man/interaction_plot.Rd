@@ -63,4 +63,6 @@ spline form.
 \examples{
 data(cancer, package = "survival")
 interaction_plot(cancer, y = "status", time = "time", predictor = "age", group_var = "sex")
+interaction_plot(cancer, y = "status", predictor = "age", group_var = "sex")
+interaction_plot(cancer, y = "wt.loss", predictor = "age", group_var = "sex")
 }

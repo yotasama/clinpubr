@@ -62,9 +62,11 @@ regression_forest(cancer,
 )
 
 regression_forest(cancer,
-  model_vars = list(M0=c("age"), 
-                    M1=c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal"),
-                    M2=c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal", "pat.karno")),
+  model_vars = list(
+    M0 = c("age"),
+    M1 = c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal"),
+    M2 = c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal", "pat.karno")
+  ),
   y = "status", time = "time",
   show_vars = c("age", "sex", "ph.ecog_cat", "meal.cal")
 )

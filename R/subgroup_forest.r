@@ -43,12 +43,22 @@
 subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL, est_precision = 3, p_nsmall = 3,
                             group_cut_quantiles = 0.5, save_plot = TRUE, filename = NULL, ...) {
   x_type <- ifelse(!is.factor(data[[x]]), "number", "factor")
-  analysis_type <- ifelse(is.null(time), "logistic", "cox")
+  if (!is.null(time)) {
+    analysis_type <- "cox"
+    effect_label <- "HR (95% CI)"
+  } else if (length(levels(as.factor(data[[y]]))) == 2) {
+    analysis_type <- "logistic"
+    effect_label <- "OR (95% CI)"
+  } else {
+    analysis_type <- "linear"
+    effect_label <- "Coefficient (95% CI)"
+  }
   ref_val <- ifelse(analysis_type %in% c("cox", "logistic"), 1, 0)
+  x_trans <- ifelse(analysis_type %in% c("cox", "logistic"), "log10", "none")
   covs <- remove_conflict(covs, c(y, x, time))
   ori_covs <- covs
   subgroup_vars <- remove_conflict(subgroup_vars, c(y, x, time))
-  if (length(subgroup_vars) == 0) stop("No valid subgroup_vars specified.")
+  if (length(subgroup_vars) == 0) stop("No valid `subgroup_vars` specified.")
 
   indf <- dplyr::select(data, all_of(c(y, x, time, covs)))
 
@@ -189,7 +199,6 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL,
     )
   }
 
-  effect_label <- ifelse(analysis_type == "cox", "HR (95% CI)", "OR (95% CI)")
   plot_df <- res
   plot_df[[effect_label]] <- ifelse(is.na(plot_df$Estimate), "",
     paste0(
@@ -213,10 +222,12 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL,
   plot_df[na_cols][is.na(plot_df[na_cols])] <- " "
   plot_df$` ` <- paste(rep(" ", 20), collapse = " ")
 
-  plot_columns <- if (x_type == "number") {
-    c("Subgroup", "Count", "Percent", " ", effect_label, "P value", "P int")
+  if (x_type == "number") {
+    plot_columns <- c("Subgroup", "Count", "Percent", " ", effect_label, "P value", "P int")
+    ci_column <- 4
   } else {
-    c("Subgroup", "Count", "Percent", "Level", " ", effect_label, "P value", "P int")
+    plot_columns <- c("Subgroup", "Count", "Percent", "Level", " ", effect_label, "P value", "P int")
+    ci_column <- 5
   }
 
   p <- forestploter::forest(
@@ -224,9 +235,9 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL,
     est = plot_df$Estimate,
     lower = plot_df$Lower,
     upper = plot_df$Upper,
-    ci_column = ifelse(x_type == "number", 4, 5),
+    ci_column = ci_column,
     ref_line = ref_val,
-    x_trans = "log10",
+    x_trans = x_trans,
     ...
   )
   if (save_plot) {

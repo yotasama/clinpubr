@@ -84,10 +84,9 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_f
           next
         } else {
           x <- table(data[[var]], data[[strata]])
-          nr <- as.integer(nrow(x))
-          nc <- as.integer(ncol(x))
-          if (is.na(nr) || is.na(nc) || is.na(nr * nc)) {
-            stop("invalid nrow(x) or ncol(x)", domain = NA)
+          if (sum(x) == 0) {
+            omit_vars <- union(omit_vars, var)
+            next
           }
           sr <- rowSums(x)
           sc <- colSums(x)
@@ -191,7 +190,7 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
   if (!is.null(var_types$omit_vars)) vars <- setdiff(vars, var_types$omit_vars)
   if (is.null(seed)) set.seed(seed)
   if (is.null(filename)) filename <- paste0("baseline_by_", strata, ".csv")
-  if (!endsWith(filename, ".csv")) stop("please save as .csv file")
+  if (!endsWith(filename, ".csv")) stop("please save as `.csv` file")
   factor_vars <- union(factor_vars, exact_vars)
 
   if (is.null(strata)) {
