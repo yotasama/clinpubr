@@ -1,7 +1,9 @@
 #' Calculate index based on conditions
+#' @description Calculate an index based on multiple conditions. Each condition is evaluated and the
+#'   result is weighted and summed to produce the final index.
 #'
 #' @param .df A data frame
-#' @param ... Conditions to evaluate
+#' @param ... Conditions to evaluate. See examples for more details.
 #' @param .weight Weight for each condition, should be of length 1 or equal to the number of conditions.
 #' @param .na_replace Value to replace `NA`, should be of length 1 or equal to the number of conditions.
 #' @return A numeric vector of index scores

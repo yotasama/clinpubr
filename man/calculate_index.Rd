@@ -9,7 +9,7 @@ calculate_index(.df, ..., .weight = 1, .na_replace = 0)
 \arguments{
 \item{.df}{A data frame}
 
-\item{...}{Conditions to evaluate}
+\item{...}{Conditions to evaluate. See examples for more details.}
 
 \item{.weight}{Weight for each condition, should be of length 1 or equal to the number of conditions.}
 
@@ -19,7 +19,8 @@ calculate_index(.df, ..., .weight = 1, .na_replace = 0)
 A numeric vector of index scores
 }
 \description{
-Calculate index based on conditions
+Calculate an index based on multiple conditions. Each condition is evaluated and the
+result is weighted and summed to produce the final index.
 }
 \examples{
 df <- data.frame(x = c(1, 2, 3, 4, 5), y = c(1, 2, NA, 4, NA))
