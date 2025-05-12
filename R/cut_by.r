@@ -42,6 +42,16 @@ cut_by <- function(x, breaks,
   m1 <- min(x, na.rm = TRUE)
   m2 <- max(x, na.rm = TRUE)
   if (breaks_as_quantiles) {
+    if (any(breaks < 0) || any(breaks > 1)) {
+      stop("Some of quantiles are not in the range of 0 to 1!")
+    }
+  } else {
+    if (any(breaks < m1) || any(breaks > m2)) {
+      stop("Some of `breaks` are not in the range of `x`!")
+    }
+  }
+
+  if (breaks_as_quantiles) {
     q <- quantile(x, probs = c(0, breaks, 1), na.rm = TRUE, names = FALSE)
   } else {
     q <- c(min(x, na.rm = TRUE), breaks, max(x, na.rm = TRUE))

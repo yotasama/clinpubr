@@ -1,8 +1,6 @@
 load_all()
-dat <- data.frame(
-  Q1 = c("A", "B", "C"),
-  Q2.A = c(TRUE, TRUE, FALSE),
-  Q2.B = c(TRUE, FALSE, TRUE),
-  Q2.C = c(FALSE, TRUE, FALSE)
-)
-result <- answer_check(dat, c("A", "TFT"), multi_column = TRUE)
+x <- c("1.2(XXX)", "5-8POS", "NS", "FULL", "5.5", "4.2")
+extract_num(x)
+extract_num(x, res_type = "first", multimatch2na = TRUE, zero_regexp = "NEG|NS",
+            max_regexp = "FULL")
+extract_num(x, res_type = "range", allow_neg = FALSE, zero_regexp = "NEG|NS", max_regexp = "FULL")

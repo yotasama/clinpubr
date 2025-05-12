@@ -18,8 +18,10 @@
 #' @examples
 #' x <- c("1.2(XXX)", "5-8POS", "NS", "FULL", "5.5", "4.2")
 #' extract_num(x)
-#' extract_num(x, res_type = "first", multimatch2na = TRUE, zero_regexp = "NEG|NS",
-#'             max_regexp = "FULL")
+#' extract_num(x,
+#'   res_type = "first", multimatch2na = TRUE, zero_regexp = "NEG|NS",
+#'   max_regexp = "FULL"
+#' )
 #' extract_num(x, res_type = "range", allow_neg = FALSE, zero_regexp = "NEG|NS", max_regexp = "FULL")
 extract_num <- function(x, res_type = c("first", "range"), multimatch2na = FALSE, leq_1 = FALSE,
                         allow_neg = TRUE, zero_regexp = NULL, max_regexp = NULL, max_quantile = 0.95) {
@@ -31,6 +33,7 @@ extract_num <- function(x, res_type = c("first", "range"), multimatch2na = FALSE
     flag_max <- grepl(max_regexp, x)
   }
   if (allow_neg) {
+    if (res_type == "range") warn("`allow_neg` is `TRUE`! Make sure you do not use '-' to connect numbers!")
     my_expr <- "-?[0-9]+\\.?[0-9]*|-?\\.[0-9]+"
   } else {
     my_expr <- "[0-9]+\\.?[0-9]*|\\.[0-9]+"
