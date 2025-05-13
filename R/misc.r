@@ -24,7 +24,11 @@ na2false <- function(x) {
 #' @examples
 #' vec2code(colnames(mtcars))
 vec2code <- function(x) {
-  paste0("c('", paste0(x, collapse = "','"), "')")
+  if (length(x) == 0) {
+    "c()"
+  } else {
+    paste0("c('", paste0(x, collapse = "','"), "')")
+  }
 }
 
 
@@ -46,7 +50,7 @@ vec2code <- function(x) {
 format_pval <- function(p, text_ahead = NULL, digits = 1, nsmall = 2, eps = 1e-3, na_empty = TRUE) {
   p_text <- base::format.pval(p, digits = digits, nsmall = nsmall, eps = eps)
   if (!is.null(text_ahead)) {
-    p_text = str_replace(p_text, "<", " < ")
+    p_text <- str_replace(p_text, "<", " < ")
     p_text <- ifelse(
       p < eps,
       paste0(text_ahead, p_text),
@@ -94,10 +98,16 @@ first_mode <- function(x) {
 #' @examples
 #' merge_ordered_vectors(list(c(1, 3, 4, 5, 7, 10), c(2, 5, 6, 7, 8), c(1, 7, 5, 10)))
 merge_ordered_vectors <- function(vectors) {
+  if (length(vectors) == 0) {
+    return(NULL)
+  }
   all_elements <- unique(unlist(vectors))
 
   # bubble sort all_elements based on the order of vectors
   n <- length(all_elements)
+  if (n == 1) {
+    return(all_elements)
+  }
   for (i in 1:(n - 1)) {
     for (j in (i + 1):n) {
       order_result <- .calculate_order(all_elements[i], all_elements[j], vectors)
@@ -171,9 +181,11 @@ replace_elements <- function(x, from, to) {
 #' @examples
 #' fill_with_last(c(1, 2, NA, 4, NA, 6))
 fill_with_last <- function(x) {
-  for (i in 2:length(x)) {
-    if (is.na(x[i])) {
-      x[i] <- x[i - 1]
+  if (length(x) >= 2) {
+    for (i in 2:length(x)) {
+      if (is.na(x[i])) {
+        x[i] <- x[i - 1]
+      }
     }
   }
   x

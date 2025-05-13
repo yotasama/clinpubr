@@ -45,7 +45,7 @@ importance_plot <- function(x, top_n = NULL, color = c("#56B1F7", "#132B43"), sh
     tmp$label <- format(tmp$value, nsmall = label_nsmall, digits = 1)
     tmp$name <- factor(tmp$name,
       levels = rev(tmp$name),
-      labels = rev(tmp$name[1:12])
+      labels = rev(tmp$name)
     )
   }
 
@@ -63,6 +63,6 @@ importance_plot <- function(x, top_n = NULL, color = c("#56B1F7", "#132B43"), sh
     h <- nrow(tmp) - split_at + 0.5
     p <- p + geom_vline(xintercept = h, linetype = 3)
   }
-  ggsave(filename, p, width = 4, height = 4)
+  if (save_plot) ggsave(filename, p, width = 4, height = 4)
   return(p)
 }

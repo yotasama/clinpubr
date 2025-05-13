@@ -94,6 +94,7 @@ get_valid_subset <- function(df, row_na_ratio = 0.5, col_na_ratio = 0.2, row_pri
         best <- tmp_df[order(tmp_df$score, decreasing = T)[seq_len(max(1, round(speedup_ratio * nrow(tmp_df))))], ]
         current_rows <- setdiff(current_rows, best$id[best$type == "row"])
         current_cols <- setdiff(current_cols, best$id[best$type == "col"])
+        if (length(current_rows) == 0 || length(current_cols) == 0) break
       } else {
         best <- tmp_df[which.max(tmp_df$score), ]
         if (best$type == "row") {
