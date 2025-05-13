@@ -51,6 +51,7 @@ Imports:
     rlang,
     rms,
     rstatix,
+    stringi,
     stringr,
     survival,
     survminer,
