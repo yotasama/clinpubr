@@ -524,7 +524,7 @@ regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = 
 #' @param y A character string of the outcome variable.
 #' @param time A character string of the time variable. If `NULL`, logistic regression is used.
 #'   Otherwise, Cox proportional hazards regression is used.
-#' @param predictors The predictor variables to be scanned for interactions. If `NULL`, all variables
+#' @param predictors The predictor variables to be scanned for relationships. If `NULL`, all variables
 #'   except `y` and `time` are taken as predictors.
 #' @param covs A character vector of covariate names.
 #' @param num_to_factor An integer. Numerical variables with number of unique values below or equal
@@ -533,7 +533,7 @@ regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = 
 #'   See `?p.adjust.methods`.
 #' @param save_table A logical value indicating whether to save the results as a table.
 #' @param filename The name of the file to save the results. File will be saved in `.csv` format.
-#' @return A data frame containing the results of the interaction analysis.
+#' @return A data frame containing the results of the regression analysis.
 #' @details The function first determines the type of each predictor variable (`numerical`, `factor`,
 #'   `num_factor` (numerical but with less unique values than or equal to `num_to_factor`), or
 #'   `other`). Then, it performs regression analysis for available transforms of each predictor variable
@@ -577,7 +577,7 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
   }
   if (is.null(predictors)) {
     predictors <- setdiff(colnames(data), c(y, time))
-    message("Taking all variables as interaction predictors")
+    message("Taking all variables as predictors")
   }
   if (any(!predictors %in% colnames(data))) {
     stop(paste0(
