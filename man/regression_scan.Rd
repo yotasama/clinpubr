@@ -24,7 +24,7 @@ regression_scan(
 \item{time}{A character string of the time variable. If \code{NULL}, logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}
 
-\item{predictors}{The predictor variables to be scanned for interactions. If \code{NULL}, all variables
+\item{predictors}{The predictor variables to be scanned for relationships. If \code{NULL}, all variables
 except \code{y} and \code{time} are taken as predictors.}
 
 \item{covs}{A character vector of covariate names.}
@@ -40,7 +40,7 @@ See \code{?p.adjust.methods}.}
 \item{filename}{The name of the file to save the results. File will be saved in \code{.csv} format.}
 }
 \value{
-A data frame containing the results of the interaction analysis.
+A data frame containing the results of the regression analysis.
 }
 \description{
 Scan for significant regression predictors and output results. Both logistic and Cox

@@ -25,6 +25,7 @@ rcs_plot(
   save_plot = TRUE,
   filename = NULL,
   y_max = NULL,
+  y_min = NULL,
   hist_max = NULL,
   xlim = NULL,
   return_details = FALSE
@@ -77,7 +78,7 @@ Passed to \code{ggplot2::scale_y_continuous(transform = trans)}.}
 
 \item{filename}{A character string specifying the filename for the plot. If \code{NULL}, a default filename is used.}
 
-\item{y_max}{The maximum y value of the plot. If \code{NULL}, the number is determined automatically.}
+\item{y_max, y_min}{The range of effect value of the plot. If \code{NULL}, the numbers are determined automatically.}
 
 \item{hist_max}{The maximum value for the histogram. If \code{NULL}, the maximum value is determined automatically.}
 
