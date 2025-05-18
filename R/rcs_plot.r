@@ -50,6 +50,9 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
   if (is.null(group_colors)) {
     group_colors <- emp_colors
   }
+  if (add_hist && trans != "identity") {
+    stop("`trans` must be `identity` when `add_hist` is `TRUE`")
+  }
 
   if (!is.null(time)) {
     analysis_type <- "cox"
@@ -178,13 +181,13 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
 
   ytitle2 <- "Percentage of Population (%)"
   offsetx1 <- (xlim[2] - xlim[1]) * 0.02
-  offsety1 <- (ymax1-ymin) * 0.02
+  offsety1 <- (ymax1 - ymin) * 0.02
   labelx1 <- xlim[1] + (xlim[2] - xlim[1]) * 0.15
-  labely1 <- (ymax1-ymin) * 0.9 +ymin
+  labely1 <- (ymax1 - ymin) * 0.9 + ymin
   label1_1 <- "Estimation"
   label1_2 <- "95% CI"
   labelx2 <- xlim[1] + (xlim[2] - xlim[1]) * 0.95
-  labely2 <- (ymax1-ymin) * 0.9 +ymin
+  labely2 <- (ymax1 - ymin) * 0.9 + ymin
   label2 <- paste0(
     format_pval(pvalue_all, text_ahead = "P-overall"), "\n",
     format_pval(pvalue_nonlin, text_ahead = "P-non-linear")
@@ -204,32 +207,34 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
     xlim_plot <- xlim + c(-offsetx1 * 2, offsetx1 * 2)
     h <- hist(df_hist[[x]], breaks = breaks, right = FALSE, plot = FALSE)
 
-    df_hist_plot <- data.frame(x = h[["mids"]], freq = h[["counts"]], pct = h[["counts"]] / sum(h[["counts"]]))
-
+    df_hist_plot <- data.frame(x = h[["mids"]], freq = h[["counts"]], den = h[["density"]] * 100)
+    ori_widths <- breaks[-1] - breaks[-length(breaks)]
+    relative_width <- 0.9
+    df_hist_plot$xmin <- df_hist_plot$x - ori_widths * relative_width / 2
+    df_hist_plot$xmax <- df_hist_plot$x + ori_widths * relative_width / 2
     if (is.null(hist_max)) {
-      ymax2 <- ceiling(max(df_hist_plot$pct * 1.5) * 20) * 5
+      ymax2 <- ceiling(max(df_hist_plot$den * 1.5) / 5) * 5
     } else {
       ymax2 <- hist_max
     }
-    scale_factor <- ymax2 / (ymax1-ymin)
+    scale_factor <- ymax2 / (ymax1 - ymin)
 
     if (group_by_ref) {
       df_hist_plot$Group <- cut_by(df_hist_plot$x, ref_val, labels = group_labels, label_type = "LMH")
       tmp_group <- cut_by(indf[[x]], ref_val, labels = group_labels, label_type = "LMH")
       levels(df_hist_plot$Group) <- paste0(levels(df_hist_plot$Group), " (n=", table(tmp_group), ")")
       p <- p +
-        geom_bar(
+        geom_rect(
           data = df_hist_plot,
-          aes(x = x, y = pct * 100 / scale_factor, fill = Group),
-          stat = "identity",
+          aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = den / scale_factor + ymin, fill = Group),
         ) +
         scale_fill_manual(values = group_colors, name = group_title)
     } else {
       p <- p +
-        geom_bar(
+        geom_rect(
           data = df_hist_plot,
-          aes(x = x, y = pct * 100 / scale_factor, fill = "1"),
-          stat = "identity", show.legend = FALSE
+          aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = den / scale_factor + ymin, fill = "1"),
+          show.legend = FALSE
         ) +
         scale_fill_manual(values = group_colors)
     }
