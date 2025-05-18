@@ -15,6 +15,8 @@
 #' @param quantile_breaks A numeric vector of the quantile breaks to factorize the `x` variable.
 #' @param quantile_labels A character vector of the labels for the quantile levels.
 #' @param label_with_range A logical value indicating whether to add the range of the levels to the labels.
+#' @param return_results A logical value indicating whether to return the results. If `TRUE`, the results are returned.
+#'   Otherwise, the results are saved to the output directory.
 #' @param output_dir A character string of the directory to save the output files.
 #' @param ref_levels A vector of strings of the reference levels of the factor variable. You can use `"lowest"`
 #'   or `"highest"` to select the lowest or highest level as the reference level. Otherwise, any level that
@@ -55,7 +57,7 @@
 #' )
 regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL, pers = c(0.1, 10, 100),
                                      factor_breaks = NULL, factor_labels = NULL, quantile_breaks = NULL,
-                                     quantile_labels = NULL, label_with_range = FALSE,
+                                     quantile_labels = NULL, label_with_range = FALSE, return_results = FALSE,
                                      output_dir = NULL, ref_levels = "lowest", est_precision = 3, p_nsmall = 3,
                                      pval_eps = 1e-3, median_nsmall = 0, colors = NULL, xlab = NULL, legend_title = x,
                                      legend_pos = c(0.8, 0.8), height = 6, width = 6, pval_pos = NULL, ...) {
@@ -176,6 +178,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
   }
   dat0 <- dat
   vars <- colnames(dat)[grep("x", colnames(dat))]
+  plots_list <- list()
   for (var in vars) {
     if (is.factor(dat[[var]])) {
       formula <- create_formula("y", var, time = new_time_var)
@@ -224,11 +227,14 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
             ) +
             geom_segment(y = 0.5, yend = 0.5, x = 0, xend = max(tmp$x), linetype = 2, show.legend = F)
         }
-        ggsave(
-          paste0(output_dir, "/kmplot_", var, ".png"),
-          plot = survminer::arrange_ggsurvplots(list(p), print = FALSE, ncol = 1),
-          width = width, height = height
-        )
+        if (!return_results) {
+          ggsave(
+            paste0(output_dir, "/kmplot_", var, ".png"),
+            plot = survminer::arrange_ggsurvplots(list(p), print = FALSE, ncol = 1),
+            width = width, height = height
+          )
+        }
+        plots_list[[var]] <- p$plot
       }
     }
   }
@@ -324,7 +330,15 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
       }
     }
   }
-  write.csv(res_table, paste0(output_dir, "/table_", x, ".csv"), row.names = FALSE)
+  if (!return_results) {
+    write.csv(res_table, paste0(output_dir, "/table_", x, ".csv"), row.names = FALSE)
+  }
+  results <- list(table = res_table, plots = plots_list)
+  if (return_results) {
+    return(results)
+  } else {
+    return(invisible(NULL))
+  }
 }
 
 

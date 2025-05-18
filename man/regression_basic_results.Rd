@@ -16,6 +16,7 @@ regression_basic_results(
   quantile_breaks = NULL,
   quantile_labels = NULL,
   label_with_range = FALSE,
+  return_results = FALSE,
   output_dir = NULL,
   ref_levels = "lowest",
   est_precision = 3,
@@ -57,6 +58,9 @@ OR or HR.}
 \item{quantile_labels}{A character vector of the labels for the quantile levels.}
 
 \item{label_with_range}{A logical value indicating whether to add the range of the levels to the labels.}
+
+\item{return_results}{A logical value indicating whether to return the results. If \code{TRUE}, the results are returned.
+Otherwise, the results are saved to the output directory.}
 
 \item{output_dir}{A character string of the directory to save the output files.}
 
