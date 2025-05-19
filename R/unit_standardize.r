@@ -34,7 +34,7 @@
 unit_standardize <- function(df, subject_col, value_col, unit_col, change_list) {
   for (i in seq_along(change_list)) {
     flag <- df[, subject_col] %in% change_list[[i]]$subject
-    df[flag, c(value_col, unit_col)] <- unit_standardize_(df[flag, c(value_col, unit_col)],
+    df[flag, c(value_col, unit_col)] <- .unit_standardize(df[flag, c(value_col, unit_col)],
       target_unit = change_list[[i]]$target_unit,
       units2change = change_list[[i]]$units2change,
       coeffs = change_list[[i]]$coeffs
@@ -43,7 +43,7 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_list) 
   return(df)
 }
 
-unit_standardize_ <- function(df, target_unit = NULL, units2change = NULL, coeffs = NULL) {
+.unit_standardize <- function(df, target_unit = NULL, units2change = NULL, coeffs = NULL) {
   if (is.null(target_unit)) {
     if (length(unique(df[, 2])) > 1) {
       target_unit <- first_mode(df[, 2])

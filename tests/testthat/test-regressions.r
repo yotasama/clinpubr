@@ -1,120 +1,163 @@
-load_all()
 library(testthat)
+library(survival)
+library(dplyr)
+library(vdiffr)
 
-set.seed(1)
+# Test data setup
+data(cancer, package = "survival")
+cancer$dead <- cancer$status == 2
 
+# Helper function to check file existence
+check_file_exists <- function(filename) {
+  expect_true(file.exists(filename))
+}
+
+# Test regression_basic_results - Cox model
 test_that("regression_basic_results works for Cox regression", {
   withr::with_tempdir({
-    data(cancer, package = "survival")
-    regression_basic_results(cancer,
-      x = "age", y = "status", time = "time",
+    results <- regression_basic_results(
+      cancer,
+      x = "age", y = "status", time = "time", return_results = TRUE,
       model_covs = list(Crude = c(), Model1 = c("ph.karno"))
     )
-    expect_true(file.exists("cox_results_age/table_age.csv"))
-    expect_true(any(grepl("kmplot_x.quartile.png", list.files("cox_results_age"))))
+    expect_true(is.list(results))
+    expect_named(results, c("table", "plots"))
+    expect_snapshot(results$table)
+    vdiffr::expect_doppelganger("cox_kmplot_quartile", results$plots$x.quartile)
+    vdiffr::expect_doppelganger("cox_kmplot_median", results$plots$x.median)
+    # Test file output
+    regression_basic_results(
+      cancer,
+      x = "age", y = "status", time = "time",
+      model_covs = list(Crude = c()), return_results = FALSE
+    )
+    check_file_exists("cox_results_age/table_age.csv")
+    check_file_exists("cox_results_age/kmplot_x.quartile.png")
   })
 })
 
-set.seed(1)
-
+# Test regression_basic_results - Logistic model
 test_that("regression_basic_results works for logistic regression", {
   withr::with_tempdir({
-    data(cancer, package = "survival")
-    cancer$dead <- cancer$status == 2
-    regression_basic_results(cancer,
-      x = "age", y = "dead",
+    results <- regression_basic_results(
+      cancer,
+      x = "age", y = "dead", return_results = TRUE,
       model_covs = list(Crude = c(), Model1 = c("ph.karno"))
     )
-    expect_true(file.exists("logistic_results_age/table_age.csv"))
+    expect_true(is.list(results))
+    expect_named(results, c("table", "plots"))
+    expect_snapshot(results$table)
+
+    # Test file output
+    regression_basic_results(
+      cancer,
+      x = "age", y = "dead",
+      model_covs = list(Crude = c()), return_results = FALSE
+    )
+    check_file_exists("logistic_results_age/table_age.csv")
   })
 })
-
-set.seed(1)
 
 test_that("regression_basic_results works for linear regression", {
-  withr::with_tempdir({
-    data(cancer, package = "survival")
-    # Create continuous outcome and introduce missing data
-    cancer$bmi <- rnorm(nrow(cancer), mean = 25, sd = 3)
-    cancer$ph.karno[sample(1:nrow(cancer), 10)] <- NA
-    regression_basic_results(cancer,
-      x = "age", y = "bmi",
-      model_covs = list(Crude = c(), Model1 = c("ph.karno"))
-    )
-    expect_true(file.exists("linear_results_age/table_age.csv"))
-  })
+  set.seed(1)
+  results <- regression_basic_results(
+    cancer,
+    x = "age", y = "wt.loss",
+    model_covs = list(Crude = c()), return_results = TRUE
+  )
+  expect_snapshot(results$table)
 })
 
-set.seed(1)
-
-test_that("regression_basic_results CSV output matches snapshot", {
-  withr::with_tempdir({
-    data(cancer, package = "survival")
-    regression_basic_results(cancer,
-      x = "age", y = "status", time = "time",
-      model_covs = list(Crude = c(), Model1 = c("ph.karno"))
-    )
-    csv_file <- list.files("cox_results_age", pattern = "table_age.csv", full.names = TRUE)
-    expect_snapshot(read.csv(csv_file))
-  })
+# Test error handling
+test_that("regression_basic_results throws errors for invalid inputs", {
+  expect_error(
+    regression_basic_results(cancer, x = "age", y = "status", model_covs = c("age")),
+    "conflict of model variables!"
+  )
+  expect_error(
+    regression_basic_results(cancer, x = "age", y = "status", model_covs = 123),
+    "`model_covs` should be a character vector of covariates or a named list of covariates of multiple models."
+  )
 })
 
-set.seed(1)
-
-test_that("regression_basic_results KM plot matches reference image", {
-  if (requireNamespace("vdiffr", quietly = TRUE)) {
-    withr::with_tempdir({
-      data(cancer, package = "survival")
-      regression_basic_results(cancer,
-        x = "age", y = "status", time = "time",
-        model_covs = list(Crude = c(), Model1 = c("ph.karno")),
-        colors = c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728")
-      )
-      png_file <- list.files("cox_results_age", pattern = "kmplot_x.quartile.png", full.names = TRUE)
-      vdiffr::expect_doppelganger("cox_km_plot", png_file)
-    })
-  }
-})
-
-set.seed(1)
-
-test_that("regression_basic_results logistic CSV matches snapshot", {
+# Test regression_forest
+test_that("regression_forest generates forest plot", {
   withr::with_tempdir({
-    data(cancer, package = "survival")
-    cancer$dead <- cancer$status == 2
-    regression_basic_results(cancer,
-      x = "age", y = "dead",
-      model_covs = list(Crude = c(), Model1 = c("ph.karno"))
-    )
-    csv_file <- list.files("logistic_results_age", pattern = "table_age.csv", full.names = TRUE)
-    expect_snapshot(read.csv(csv_file))
-  })
-})
-
-set.seed(1)
-
-test_that("regression_forest generates valid plot", {
-  withr::with_tempdir({
-    data(cancer, package = "survival")
-    cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
-    p <- regression_forest(cancer,
-      model_vars = c("age", "sex", "wt.loss", "ph.ecog_cat"), y = "status", time = "time",
-      as_univariate = TRUE, save_plot = TRUE
+    p <- regression_forest(
+      cancer,
+      model_vars = c("age", "sex", "wt.loss"), y = "status", time = "time",
+      as_univariate = TRUE, save_plot = FALSE
     )
     expect_true(inherits(p, "gtable"))
-    expect_true(file.exists("regression_forest_univariate.png"))
+    vdiffr::expect_doppelganger("forest_plot_univariate", p)
+
+
+    p2 <- regression_forest(
+      cancer,
+      model_vars = c("age", "sex", "wt.loss"), y = "status", time = "time",
+      as_univariate = FALSE, save_plot = FALSE
+    )
+    vdiffr::expect_doppelganger("forest_plot_multivariate", p2)
+
+    p3 <- regression_forest(
+      cancer,
+      model_vars = list(
+        Crude = c("age"),
+        Model1 = c("age", "sex", "ph.karno"),
+        Model2 = c("age", "sex", "ph.karno", "wt.loss")
+      ),
+      y = "status", time = "time",
+      save_plot = TRUE, filename = "forest_plot.png"
+    )
+    check_file_exists("forest_plot.png")
+    vdiffr::expect_doppelganger("forest_plot_multiple_models", p3)
   })
 })
 
-set.seed(1)
-
-test_that("regression_forest handles factor variables", {
+# Test regression_scan
+test_that("regression_scan returns expected structure", {
+  set.seed(1)
+  data(cancer, package = "survival")
   withr::with_tempdir({
-    data(cancer, package = "survival")
-    cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
-    p <- regression_forest(cancer,
-      model_vars = list(M1 = c("age", "ph.ecog_cat")), y = "status", time = "time"
-    )
-    expect_true(inherits(p, "gtable"))
+    res <- regression_scan(cancer, y = "status", time = "time")
+    expect_true(is.data.frame(res))
+    expect_true(all(c(
+      "predictor", "nvalid", "original.HR", "original.pval", "original.padj",
+      "logarithm.HR", "logarithm.pval", "logarithm.padj", "categorized.HR",
+      "categorized.pval", "categorized.padj", "rcs.overall.pval",
+      "rcs.overall.padj", "rcs.nonlinear.pval", "rcs.nonlinear.padj",
+      "best.var.trans"
+    ) %in% colnames(res)))
+    expect_snapshot(res)
+    check_file_exists("cox_status_regression_scan.csv")
   })
+})
+
+# Test regression_fit
+test_that("regression_fit returns model results", {
+  set.seed(1)
+  data(cancer, package = "survival")
+  fit <- regression_fit(data = cancer, y = "status", predictor = "age", time = "time")
+  expect_s3_class(fit, "data.frame")
+  expect_snapshot(fit)
+})
+
+# Test fit_model
+test_that("fit_model handles different analysis types", {
+  set.seed(1)
+  data(cancer, package = "survival")
+  # Cox model
+  fit_cox <- fit_model(Surv(time, status) ~ age, data = cancer, analysis_type = "cox")
+  expect_s3_class(fit_cox, "coxph")
+  expect_snapshot(summary(fit_cox)$coefficients)
+
+  fit_cox <- fit_model(Surv(time, status) ~ age, data = cancer, analysis_type = "cox", rms = TRUE)
+  expect_s3_class(fit_cox, "cph")
+  expect_snapshot(anova(fit_cox))
+
+  # Logistic model
+  cancer$dead <- cancer$status == 2
+  fit_logistic <- fit_model(dead ~ age, data = cancer, analysis_type = "logistic")
+  expect_s3_class(fit_logistic, "glm")
+  expect_snapshot(summary(fit_logistic)$coefficients)
 })

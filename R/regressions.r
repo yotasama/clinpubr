@@ -125,7 +125,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
   if (is.null(output_dir)) {
     output_dir <- paste(analysis_type, "results", x, sep = "_")
   }
-  if (!file.exists(output_dir)) {
+  if (!return_results && !file.exists(output_dir)) {
     dir.create(output_dir, recursive = T)
   }
   if (is.null(xlab)) {
@@ -398,7 +398,7 @@ regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = 
   }
   ref_val <- ifelse(analysis_type %in% c("cox", "logistic"), 1, 0)
   x_trans <- ifelse(analysis_type %in% c("cox", "logistic"), "log10", "none")
-  
+
   show_model_names <- TRUE
   if (is.vector(model_vars, mode = "character")) {
     if (as_univariate) {
