@@ -1,6 +1,10 @@
 load_all()
-results <- regression_basic_results(
-  cancer,
-  x = "age", y = "status", time = "time", return_results = TRUE,
-  model_covs = list(Crude = c(), Model1 = c("ph.karno"))
+set.seed(1)
+data(cancer, package = "survival")
+res <- regression_scan(cancer, y = "status", time = "time")
+dat=cancer
+dat$ph.ecog=as.factor(dat$ph.ecog)
+model_res <- regression_fit(
+  data = dat, y = "status", time = "time", predictor = "ph.ecog",
+  covs = NULL, rcs_knots = NULL, returned = "predictor_combined"
 )

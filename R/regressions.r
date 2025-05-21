@@ -623,16 +623,16 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
     if (nvalid < 10) {
       next
     }
-    if (is.factor(dat[[predictor]]) || is.logical(dat[[predictor]])) {
-      predictor_type <- "factor"
+    predictor_type <- if (is.factor(dat[[predictor]]) || is.logical(dat[[predictor]])) {
+      "factor"
     } else if (is.numeric(dat[[predictor]])) {
       if (length(unique(dat[[predictor]])) <= num_to_factor) {
-        predictor_type <- "num_factor"
+        "num_factor"
       } else {
-        predictor_type <- "numerical"
+        "numerical"
       }
     } else {
-      predictor_type <- "other"
+      "other"
     }
     for (var_trans in supported_var_trans[[predictor_type]]) {
       tmp_dat <- dat
@@ -643,15 +643,7 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
         }
         tmp_dat[[predictor]] <- log(tmp_dat[[predictor]])
       } else if (var_trans == "categorized") {
-        if (predictor_type == "num_factor") {
-          tmp_dat[[predictor]] <- as.factor(tmp_dat[[predictor]])
-        } else {
-          tmp_dat[[predictor]] <- cut_by(
-            tmp_dat[[predictor]],
-            breaks = 0.5,
-            breaks_as_quantiles = TRUE
-          )
-        }
+        tmp_dat[[predictor]] <- to_factor(tmp_dat[[predictor]], max_numerical_groups = num_to_factor)
       } else if (var_trans == "rcs") {
         rcs_knots <- 4
       }
@@ -741,7 +733,6 @@ regression_fit <- function(data, y, predictor, time = NULL, covs = NULL, rcs_kno
   }
 
   formula <- create_formula(y, predictor, time = time, covs = covs, rcs_knots = rcs_knots)
-  environment(formula) <- environment()
 
   model <- fit_model(formula, data = data, analysis_type = analysis_type)
   full_res <- broom::tidy(model, conf.int = TRUE, exponentiate = analysis_type %in% c("logistic", "cox"))
@@ -776,22 +767,24 @@ regression_fit <- function(data, y, predictor, time = NULL, covs = NULL, rcs_kno
 fit_model <- function(formula, data, analysis_type = c("linear", "logistic", "cox"),
                       rms = FALSE, ...) {
   analysis_type <- match.arg(analysis_type)
-  if (rms) {
-    if (analysis_type == "cox") {
-      model <- rms::cph(formula, data = data, ...)
-    } else if (analysis_type == "logistic") {
-      model <- rms::Glm(formula, data = data, family = stats::binomial(), ...)
-    } else if (analysis_type == "linear") {
-      model <- rms::ols(formula, data = data, ...)
+  model <- suppressWarnings(
+    if (rms) {
+      if (analysis_type == "cox") {
+        rms::cph(formula, data = data, ...)
+      } else if (analysis_type == "logistic") {
+        rms::Glm(formula, data = data, family = stats::binomial(), ...)
+      } else if (analysis_type == "linear") {
+        rms::ols(formula, data = data, ...)
+      }
+    } else {
+      if (analysis_type == "cox") {
+        survival::coxph(formula, data = data, ...)
+      } else if (analysis_type == "logistic") {
+        stats::glm(formula, data = data, family = stats::binomial(), ...)
+      } else if (analysis_type == "linear") {
+        stats::lm(formula, data = data, ...)
+      }
     }
-  } else {
-    if (analysis_type == "cox") {
-      model <- survival::coxph(formula, data = data, ...)
-    } else if (analysis_type == "logistic") {
-      model <- stats::glm(formula, data = data, family = stats::binomial(), ...)
-    } else if (analysis_type == "linear") {
-      model <- stats::lm(formula, data = data, ...)
-    }
-  }
+  )
   return(model)
 }

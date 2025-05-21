@@ -50,7 +50,7 @@ with_tempdir({
   test_that("Different reader functions", {
     write.csv(data.frame(a = 1), "test.csv", row.names = FALSE)
 
-    res <- combine_files(reader_fun = readr::read_csv)
+    res <- combine_files(reader_fun = read.csv)
     expect_equal(class(res$a), "numeric")
   })
 })

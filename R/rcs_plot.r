@@ -100,7 +100,6 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
   }
 
   formula <- create_formula(y, x, time = time, covs = covs, rcs_knots = knot)
-  environment(formula) <- environment()
   model <- fit_model(formula, data = indf, analysis_type = analysis_type, rms = TRUE)
 
   phassump <- NULL

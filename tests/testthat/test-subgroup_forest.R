@@ -1,7 +1,6 @@
 library(testthat)
 library(vdiffr)
 library(withr)
-devtools::load_all()
 
 # Set seed for reproducibility
 set.seed(1)

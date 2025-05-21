@@ -255,15 +255,8 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
         }
         pt <- pairwise.table(compare_levels, levels(g), p_adjust_method)
       } else if (var %in% nonnormal_vars) {
-        # compare_levels <- function(i, j) {
-        #   xi <- data[as.integer(g) == i, var]
-        #   xj <- data[as.integer(g) == j, var]
-        #   wilcox_test_pval(xi, xj)
-        # }
-        # pt <- pairwise.table(compare_levels, levels(g), p_adjust_method)
         pt <- rstatix::dunn_test(data, as.formula(paste0(var, "~", strata)), p.adjust.method = p_adjust_method)
       } else {
-        # pt <- pairwise.t.test(data[[var]], g, p.adjust.method = p_adjust_method)$p.value
         pt <- rstatix::games_howell_test(data, as.formula(paste0(var, "~", strata)))
       }
 

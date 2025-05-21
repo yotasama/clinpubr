@@ -47,7 +47,7 @@ create_formula <- function(y, predictor, group_var = NULL, time = NULL, covs = N
     }
   }
 
-  formula_add_covs(paste0(outcome, "~", predictor), covs)
+  as.formula(formula_add_covs(paste0(outcome, "~", predictor), covs), env = parent.frame(n = 2))
 }
 
 # Convert a numeric vector to a factor
@@ -72,16 +72,6 @@ remove_conflict <- function(x, y, silent = FALSE) {
   }
   if (length(x) == 0) x <- NULL
   x
-}
-
-# Get wilcox test p-value
-wilcox_test_pval <- function(...) {
-  tryCatch(
-    wilcox.test(...)$p.value,
-    error = function(e) {
-      NA
-    }
-  )
 }
 
 # Compare the order of two elements in a list of vectors
