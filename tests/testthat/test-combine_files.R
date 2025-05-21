@@ -51,6 +51,6 @@ with_tempdir({
     write.csv(data.frame(a = 1), "test.csv", row.names = FALSE)
 
     res <- combine_files(reader_fun = read.csv)
-    expect_equal(class(res$a), "numeric")
+    expect_equal(class(res$a), "integer")
   })
 })

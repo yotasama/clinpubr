@@ -2,11 +2,10 @@ Package: ezmedpub
 Title: Tools that Make Medical Publication Easier
 Version: 0.0.0.9000
 Authors@R: 
-    person("Yue", "Niu", email = "niuyuesam@163.com", role = c("aut", "cre"))
-Description: 'easypubr' provides some easy-to-use functions for creating various 
-    types of figures and tables commonly used in medical publication, along with 
-    some convenient data cleaning tools. This package makes it possible to create 
-    figures and tables with only a few lines of code.
+    person("Yue", "Niu", email = "niuyuesam@163.com", role = c("aut", "cre", "cph"))
+Description: 'easypubr' provides a collection of tools to accelerate the process from
+    clinical data to medical publication, including clinical data cleaning, significant
+    result screening, and the generation of publish-ready tables and figures.
 Maintainer: Yue Niu <niuyuesam@163.com>
 URL: https://github.com/yotasama/ezmedpub
 BugReports: https://github.com/yotasama/ezmedpub/issues
