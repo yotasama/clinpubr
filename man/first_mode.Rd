@@ -4,10 +4,12 @@
 \alias{first_mode}
 \title{Calculate the first mode}
 \usage{
-first_mode(x)
+first_mode(x, empty_return = NA)
 }
 \arguments{
 \item{x}{A vector.}
+
+\item{empty_return}{The value to return if the vector is empty.}
 }
 \value{
 The first mode of the vector.

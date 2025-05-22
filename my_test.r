@@ -1,60 +1,49 @@
 load_all()
-x=data.frame(subject=sample(c("a","b"),1000,replace = T),value=runif(1000))
-x$unit=NA
-x$unit[x$subject=='a']=sample(c("mg/L","g/l","g/L"),sum(x$subject=='a'),replace = T)
-x$value[x$subject=='a' & x$unit=="mg/L"]=x$value[x$subject=='a' & x$unit=="mg/L"]*1000
-x$unit[x$subject=='b']=sample(c(NA,"g","mg"),sum(x$subject=='b'),replace = T)
-x$value[x$subject=='b' & x$unit%in%"mg"]=x$value[x$subject=='b' & x$unit%in%"mg"]*1000
-x$value[x$subject=='b' & is.na(x$unit)]=x$value[x$subject=='b' & is.na(x$unit)]*
-  sample(c(1,1000),size=sum(x$subject=='b' & is.na(x$unit)),replace = T)
+# Example 1: Using the list as change_rules is more convenient for small datasets.
+df <- data.frame(
+  subject = c("a", "a", "b", "b", "b", "c", "c"), value = c(1, 2, 3, 4, 5, 6, 7),
+  unit = c(NA, "x", "x", "x", "y", "a", "b")
+)
+change_rules <- list(
+  list(subject = "a", target_unit = "x", units2change = c(NA), coeffs = c(20)),
+  list(subject = "b"),
+  list(subject = "c", target_unit = "b")
+)
+unit_standardize(df,
+  subject_col = "subject", value_col = "value", unit_col = "unit",
+  change_rules = change_rules
+)
 
-df=x
-subject_col="subject"
-value_col="value"
-unit_col="unit"
-quantiles=c(0.025,0.975)
-unit_view <- function(df, subject_col, value_col, unit_col, quantiles = c(0.025, 0.975), save_table = TRUE,
-                      filename = NULL) {
-  res <- df %>%
-    group_by(!!as.symbol(subject_col), !!as.symbol(unit_col)) %>%
-    reframe(
-      label = NA, count = n(), nvalid = sum(!is.na(!!as.symbol(value_col))),
-      mean = mean(!!as.symbol(value_col), na.rm = TRUE), sd = sd(!!as.symbol(value_col), na.rm = TRUE),
-      median = median(!!as.symbol(value_col), na.rm = TRUE),
-      data.frame(quant_val = quantile(!!as.symbol(value_col), quantiles, na.rm = TRUE), quant = quantiles)
-    ) %>%
-    pivot_wider(names_from = quant, values_from = quant_val, names_prefix = "q_") %>%
-    group_by(!!as.symbol(subject_col)) %>%
-    filter(n() > 1) %>%
-    as.data.frame()
-  if (save_table) {
-    if (is.null(filename)) {
-      filename <- "unit_view.csv"
-    }
-    write.csv(res, file = filename, na = "")
-    invisible(res)
-  } else {
-    return(res)
-  }
-}
-y=unit_view(df=x, subject_col="subject", value_col="value", unit_col="unit",save_table = F)
-y$label=c('t',NA,1e-3,1000,NA,'r')
+# Example 2: Using the labeled result from `unit_view()` as the input is more robust for large datasets.
+df <- data.frame(subject = sample(c("a", "b"), 1000, replace = T), value = runif(1000))
+df$unit <- NA
+df$unit[df$subject == "a"] <- sample(c("mg/L", "g/l", "g/L"), sum(df$subject == "a"), replace = T)
+df$value[df$subject == "a" & df$unit == "mg/L"] <- df$value[df$subject == "a" & df$unit == "mg/L"] * 1000
+df$unit[df$subject == "b"] <- sample(c(NA, "m.g", "mg"), sum(df$subject == "b"),prob = c(0.3,0.05,0.65), replace = T)
+df$value[df$subject == "b" & df$unit %in% "mg"] <- df$value[df$subject == "b" & df$unit %in% "mg"] * 1000
+df$value[df$subject == "b" & is.na(df$unit)] <- df$value[df$subject == "b" & is.na(df$unit)] *
+  sample(c(1, 1000), size = sum(df$subject == "b" & is.na(df$unit)), replace = T)
 
-z=unit_standardize(df=x, subject_col="subject", value_col="value", unit_col="unit",change_rules = y)
-tmp=unit_view(df=z, subject_col="subject", value_col="value", unit_col="unit",save_table = F)
-change_rules=y
-change_rules <- change_rules[!is.na(change_rules$label), ]
-subjects <- unique(df[[subject_col]])
-change_rules <- lapply(seq_along(subjects), function(i) {
-  tmp <- filter(change_rules, subject == subjects[i])
-  target_unit <- tmp$unit[which(tmp$label %in% "t")]
-  coeffs <- suppressWarnings(as.numeric(tmp$label))
-  units2change <- c(tmp$unit[!is.na(coeffs)], tmp$unit[which(tmp$label %in% "r")])
-  coeffs <- c(coeffs[!is.na(coeffs)], rep(NA, sum(tmp$label %in% "r")))
-  list(
-    subject = subjects[i],
-    target_unit = target_unit,
-    units2change = units2change,
-    coeffs = coeffs
-  )
-})
+unit_table <- unit_view(df = df, subject_col = "subject", value_col = "value", unit_col = "unit", save_table = FALSE)
+unit_table$label <- c("t", NA, 1e-3, NA, NA, "r") # labeling the units
+
+df_standardized <- unit_standardize(df = df, subject_col = "subject", value_col = "value",
+                                    unit_col = "unit", change_rules = unit_table)
+unit_view(df = df_standardized, subject_col = "subject", value_col = "value", unit_col = "unit",
+          save_table = FALSE, conflicts_only = FALSE)
+
+
+df <- data.frame(subject = "a", value = 1, unit = "x")
+change_rules <- list(list(subject = "a", target_unit = c("x", "y")))
+expect_error(unit_standardize(df, "subject", "value", "unit", change_rules), "too many targets!")
+# Mismatched coeffs and units2change
+change_rules <- list(list(subject = "a", target_unit = "x", units2change = c("z", "y"), coeffs = 1))
+expect_error(unit_standardize(df, "subject", "value", "unit", change_rules), "`coeffs` should have the same length as `units2change`!")
+# Remove units (set to NA)
+df <- data.frame(subject = "a", value = 1, unit = "bad")
+change_rules <- list(list(subject = "a", units2remove = "bad"))
+result <- unit_standardize(df, "subject", "value", "unit", change_rules)
+expect_true(all(is.na(result$value[result$unit == "bad"])))
+
+df <- data.frame(subject = "a", value = 1, unit = "bad")
+change_rules <- list(list(subject = "a", units2remove = "bad"))

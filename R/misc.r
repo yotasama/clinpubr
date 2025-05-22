@@ -68,16 +68,17 @@ format_pval <- function(p, text_ahead = NULL, digits = 1, nsmall = 2, eps = 1e-3
 #' @description  Calculate the first mode of a vector. Ignore NA values.
 #'   Can be used if any mode is acceptable.
 #' @param x A vector.
+#' @param empty_return The value to return if the vector is empty.
 #'
 #' @returns The first mode of the vector.
 #' @export
 #' @examples
 #' first_mode(c(1, 1, 2, 2, 3, 3, 3, NA, NA, NA))
-first_mode <- function(x) {
+first_mode <- function(x, empty_return = NA) {
   x <- na.omit(x)
   l <- length(unique(x))
   if (l == 0) {
-    NA
+    empty_return
   } else if (l == 1 || l == length(x)) {
     x[1]
   } else {
