@@ -60,19 +60,19 @@ data(cancer, package = "survival")
 # coxph model with time assigned
 subgroup_forest(cancer,
   subgroup_vars = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "status",
-  time = "time", covs = "ph.karno", ticks_at = c(1, 2)
+  time = "time", covs = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
 )
 
 # logistic model with time not assigned
 cancer$dead <- cancer$status == 2
 subgroup_forest(cancer,
   subgroup_vars = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "dead",
-  covs = "ph.karno", ticks_at = c(1, 2)
+  covs = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
 )
 
 cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
 subgroup_forest(cancer,
   subgroup_vars = c("sex", "wt.loss"), x = "ph.ecog_cat", y = "dead",
-  covs = "ph.karno", ticks_at = c(1, 2)
+  covs = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
 )
 }

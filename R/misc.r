@@ -257,7 +257,7 @@ formula_add_covs <- function(formula, covs) {
   if (is.null(covs)) {
     res <- formula
   } else {
-    if (class(formula) == "formula") {
+    if (inherits(formula, "formula")) {
       res <- paste0(c(deparse(formula), covs), collapse = "+")
     } else {
       res <- paste0(c(formula, covs), collapse = "+")

@@ -31,7 +31,7 @@ answer_check <- function(dat, seq, multi_column = FALSE) {
     if (multi_column) {
       l <- str_length(string)
       tmp <- data.frame(dat[, 1:l + icol])
-      if (class(tmp[, 1]) == "logical") {
+      if (inherits(tmp[, 1], "logical")) {
         for (j in 1:l) {
           x <- tmp[, j]
           tmp[which(x), j] <- "T"

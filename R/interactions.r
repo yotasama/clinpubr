@@ -21,7 +21,7 @@
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
-#' interaction_scan(cancer, y = "status", time = "time")
+#' interaction_scan(cancer, y = "status", time = "time", save_table = FALSE)
 interaction_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL, covs = NULL,
                              try_rcs = TRUE, p_adjust_method = "BH", save_table = TRUE, filename = NULL) {
   analysis_type <- if (!is.null(time)) {
@@ -120,9 +120,18 @@ interaction_scan <- function(data, y, time = NULL, predictors = NULL, group_vars
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
-#' interaction_plot(cancer, y = "status", time = "time", predictor = "age", group_var = "sex")
-#' interaction_plot(cancer, y = "status", predictor = "age", group_var = "sex")
-#' interaction_plot(cancer, y = "wt.loss", predictor = "age", group_var = "sex")
+#' interaction_plot(cancer,
+#'   y = "status", time = "time", predictor = "age", group_var = "sex",
+#'   save_plot = FALSE
+#' )
+#' interaction_plot(cancer,
+#'   y = "status", predictor = "age", group_var = "sex",
+#'   save_plot = FALSE
+#' )
+#' interaction_plot(cancer,
+#'   y = "wt.loss", predictor = "age", group_var = "sex",
+#'   save_plot = FALSE
+#' )
 interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, group_colors = NULL,
                              save_plot = TRUE, filename = NULL, height = 4, width = 4, xlab = predictor,
                              group_title = group_var, ...) {

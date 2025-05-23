@@ -53,5 +53,5 @@ used both in linear form or in restricted cubic spline form.
 }
 \examples{
 data(cancer, package = "survival")
-interaction_scan(cancer, y = "status", time = "time")
+interaction_scan(cancer, y = "status", time = "time", save_table = FALSE)
 }

@@ -95,9 +95,9 @@ Plot restricted cubic spline based on package \code{rms}. Support both logistic 
 \examples{
 data(cancer, package = "survival")
 # coxph model with time assigned
-rcs_plot(cancer, x = "age", y = "status", time = "time", covs = "ph.karno")
+rcs_plot(cancer, x = "age", y = "status", time = "time", covs = "ph.karno", save_plot = FALSE)
 
 # logistic model with time not assigned
 cancer$dead <- cancer$status == 2
-rcs_plot(cancer, x = "age", y = "dead", covs = "ph.karno")
+rcs_plot(cancer, x = "age", y = "dead", covs = "ph.karno", save_plot = FALSE)
 }

@@ -37,11 +37,11 @@
 #' @examples
 #' data(cancer, package = "survival")
 #' # coxph model with time assigned
-#' rcs_plot(cancer, x = "age", y = "status", time = "time", covs = "ph.karno")
+#' rcs_plot(cancer, x = "age", y = "status", time = "time", covs = "ph.karno", save_plot = FALSE)
 #'
 #' # logistic model with time not assigned
 #' cancer$dead <- cancer$status == 2
-#' rcs_plot(cancer, x = "age", y = "dead", covs = "ph.karno")
+#' rcs_plot(cancer, x = "age", y = "dead", covs = "ph.karno", save_plot = FALSE)
 rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = TRUE, ref = "x_median", ref_digits = 3,
                      group_by_ref = TRUE, group_title = NULL, group_labels = NULL, group_colors = NULL, breaks = 20,
                      rcs_color = "#e23e57", print_p_ph = TRUE, trans = "identity", save_plot = TRUE, filename = NULL,
@@ -204,7 +204,7 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
       breaks <- break_at(xlim, breaks, ref_val)
     }
     xlim_plot <- xlim + c(-offsetx1 * 2, offsetx1 * 2)
-    h <- hist(df_hist[[x]], breaks = breaks, right = FALSE, plot = FALSE)
+    h <- graphics::hist(df_hist[[x]], breaks = breaks, right = FALSE, plot = FALSE)
 
     df_hist_plot <- data.frame(x = h[["mids"]], freq = h[["counts"]], den = h[["density"]] * 100)
     ori_widths <- breaks[-1] - breaks[-length(breaks)]

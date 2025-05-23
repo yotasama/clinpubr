@@ -46,7 +46,7 @@
 #' model <- glm(dead ~ ., family = binomial(), data = df)
 #' df$full_pred <- predict(model, type = "response")
 #'
-#' classif_model_compare(df, "dead", c("base_pred", "full_pred"))
+#' classif_model_compare(df, "dead", c("base_pred", "full_pred"), output_files = FALSE)
 classif_model_compare <- function(data, target_var, model_names, colors = NULL, output_files = TRUE,
                                   output_prefix = "model_compare", as_probability = FALSE,
                                   return_results = !output_files) {
@@ -103,7 +103,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
     }
     metric_table$Brier[i] <- DescTools::BrierScore(as.numeric(target) - 1, data[[model_name]])
     metric_table$Youden[i] <- metric_table$Sensitivity[i] + metric_table$Specificity[i] - 1
-    metric_table$HosLem[i] <- hoslem.test(as.numeric(target) - 1, data[[model_name]])$p.value
+    metric_table$HosLem[i] <- ResourceSelection::hoslem.test(as.numeric(target) - 1, data[[model_name]])$p.value
   }
   for (i in 3:ncol(metric_table)) {
     metric_table[, i] <- round(metric_table[, i], digits = 3)

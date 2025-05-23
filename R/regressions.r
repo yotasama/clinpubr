@@ -46,14 +46,16 @@
 #' # coxph model with time assigned
 #' regression_basic_results(cancer,
 #'   x = "age", y = "status", time = "time",
-#'   model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex"))
+#'   model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex")),
+#'   return_results = TRUE
 #' )
 #'
 #' # logistic model with time not assigned
 #' cancer$dead <- cancer$status == 2
 #' regression_basic_results(cancer,
 #'   x = "age", y = "dead", ref_levels = c("Q3", "High"),
-#'   model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex"))
+#'   model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex")),
+#'   return_results = TRUE
 #' )
 regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL, pers = c(0.1, 10, 100),
                                      factor_breaks = NULL, factor_labels = NULL, quantile_breaks = NULL,
@@ -364,12 +366,12 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
 #' cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
 #' regression_forest(cancer,
 #'   model_vars = c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal"), y = "status", time = "time",
-#'   as_univariate = TRUE
+#'   as_univariate = TRUE, save_plot = FALSE
 #' )
 #'
 #' regression_forest(cancer,
 #'   model_vars = c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal"), y = "status", time = "time",
-#'   show_vars = c("age", "sex", "ph.ecog_cat", "meal.cal")
+#'   show_vars = c("age", "sex", "ph.ecog_cat", "meal.cal"), save_plot = FALSE
 #' )
 #'
 #' regression_forest(cancer,
@@ -379,7 +381,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
 #'     M2 = c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal", "pat.karno")
 #'   ),
 #'   y = "status", time = "time",
-#'   show_vars = c("age", "sex", "ph.ecog_cat", "meal.cal")
+#'   show_vars = c("age", "sex", "ph.ecog_cat", "meal.cal"), save_plot = FALSE
 #' )
 regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = FALSE, est_precision = 3,
                               p_nsmall = 3, show_vars = NULL, save_plot = TRUE, filename = NULL, ...) {
@@ -570,7 +572,7 @@ regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = 
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
-#' regression_scan(cancer, y = "status", time = "time")
+#' regression_scan(cancer, y = "status", time = "time", save_table = FALSE)
 regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL, num_to_factor = 5,
                             p_adjust_method = "BH", save_table = TRUE, filename = NULL) {
   supported_var_trans <- list(

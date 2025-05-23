@@ -57,9 +57,9 @@ used one.
 }
 \examples{
 data(cancer, package = "survival")
-get_var_types(cancer, strata = "sex")
+get_var_types(cancer, strata = "sex") # set save_qqplots = TRUE to check the QQ plots
 
-var_types <- get_var_types(cancer, strata = "sex", save_qqplots = TRUE)
+var_types <- get_var_types(cancer, strata = "sex")
 # for some reason we want the variable "pat.karno" ro be considered normal.
 var_types$nonnormal_vars <- setdiff(var_types$nonnormal_vars, "pat.karno")
 }

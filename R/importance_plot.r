@@ -24,7 +24,7 @@
 #' set.seed(1)
 #' dummy_importance <- runif(20)^5
 #' names(dummy_importance) <- paste0("var", 1:20)
-#' importance_plot(dummy_importance, top_n = 15, split_at = 10)
+#' importance_plot(dummy_importance, top_n = 15, split_at = 10, save_plot = FALSE)
 importance_plot <- function(x, top_n = NULL, color = c("#56B1F7", "#132B43"), show_legend = FALSE, split_at = NULL,
                             show_labels = TRUE, label_nsmall = 3, label_color = "black", label_size = 3,
                             label_hjust = 0.1, save_plot = TRUE, filename = "importance.png") {

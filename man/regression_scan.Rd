@@ -80,5 +80,5 @@ are provided in results. These p-vals are calculated by \code{anova()} of \code{
 
 \examples{
 data(cancer, package = "survival")
-regression_scan(cancer, y = "status", time = "time")
+regression_scan(cancer, y = "status", time = "time", save_table = FALSE)
 }

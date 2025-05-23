@@ -80,5 +80,5 @@ df$base_pred <- predict(model0, type = "response")
 model <- glm(dead ~ ., family = binomial(), data = df)
 df$full_pred <- predict(model, type = "response")
 
-classif_model_compare(df, "dead", c("base_pred", "full_pred"))
+classif_model_compare(df, "dead", c("base_pred", "full_pred"), output_files = FALSE)
 }

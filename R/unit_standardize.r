@@ -87,7 +87,7 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules)
     change_rules <- change_rules[!is.na(change_rules$label), ]
     subjects <- unique(df[[subject_col]])
     change_rules <- lapply(seq_along(subjects), function(i) {
-      tmp <- filter(change_rules, subject == subjects[i])
+      tmp <- dplyr::filter(change_rules, subject == subjects[i])
       if (anyDuplicated(tmp$unit) > 0) {
         stop(paste0("`change_rules` has duplicated units in subject: ", subjects[i]))
       }
@@ -197,7 +197,7 @@ unit_view <- function(df, subject_col, value_col, unit_col, quantiles = c(0.025,
   if (conflicts_only) {
     res <- res %>%
       group_by(!!as.symbol(subject_col)) %>%
-      filter(n() > 1)
+      dplyr::filter(n() > 1)
   }
   res <- as.data.frame(res)
   if (save_table) {

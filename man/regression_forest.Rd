@@ -53,12 +53,12 @@ data(cancer, package = "survival")
 cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
 regression_forest(cancer,
   model_vars = c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal"), y = "status", time = "time",
-  as_univariate = TRUE
+  as_univariate = TRUE, save_plot = FALSE
 )
 
 regression_forest(cancer,
   model_vars = c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal"), y = "status", time = "time",
-  show_vars = c("age", "sex", "ph.ecog_cat", "meal.cal")
+  show_vars = c("age", "sex", "ph.ecog_cat", "meal.cal"), save_plot = FALSE
 )
 
 regression_forest(cancer,
@@ -68,6 +68,6 @@ regression_forest(cancer,
     M2 = c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal", "pat.karno")
   ),
   y = "status", time = "time",
-  show_vars = c("age", "sex", "ph.ecog_cat", "meal.cal")
+  show_vars = c("age", "sex", "ph.ecog_cat", "meal.cal"), save_plot = FALSE
 )
 }

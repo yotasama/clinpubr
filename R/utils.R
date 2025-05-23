@@ -1,28 +1,37 @@
-#' @import survival
+
+
 #' @import rms
 #' @import ggplot2
-#' @import dplyr
+#' @import stats
 #' @import stringr
 #' @import rlang
-#' @import tableone
-#' @import ResourceSelection
-#' @importFrom caret confusionMatrix
-#' @importFrom broom tidy
+#' @import survival
+#' @importFrom utils read.csv write.csv
 #' @importFrom tidyr pivot_wider pivot_longer
-#' @importFrom forestploter forest
+#' @importFrom dplyr select mutate all_of group_by summarise ungroup reframe ntile n
 #' @importFrom fBasics shapiroTest lillieTest adTest jarqueberaTest sfTest
 NULL
 
+utils::globalVariables(c(
+  "Var1", "Var2", "Freq", "comparison", "p.adj", "group1", "group2",
+  "name", "value", "decile", "obsRate", "predRate", "label",
+  ".predictor", ".group_var", "yhat", "lower", "upper",
+  "xmin", "xmax", "den", "Group", "text", "level", "subject",
+  "quant", "quant_val"
+))
+
 #' default color palette for `ezmedpub` plots
 #' @export
-emp_colors <- c("#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854",
-                "#FFD92F", "#E5C494", "#B3B3B3", "#ad4c5e", "#474747")
+emp_colors <- c(
+  "#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854",
+  "#FFD92F", "#E5C494", "#B3B3B3", "#ad4c5e", "#474747"
+)
 
 # Load packages, install if necessary
 load_packages <- function(pkgs) {
   for (pkg in pkgs) {
     if (!require(pkg, character.only = TRUE, quietly = TRUE)) {
-      install.packages(pkg, character.only = TRUE)
+      utils::install.packages(pkg, character.only = TRUE)
       require(pkg, character.only = TRUE, quietly = TRUE)
     }
   }

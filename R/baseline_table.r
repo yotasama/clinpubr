@@ -30,9 +30,9 @@
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
-#' get_var_types(cancer, strata = "sex")
+#' get_var_types(cancer, strata = "sex") # set save_qqplots = TRUE to check the QQ plots
 #'
-#' var_types <- get_var_types(cancer, strata = "sex", save_qqplots = TRUE)
+#' var_types <- get_var_types(cancer, strata = "sex")
 #' # for some reason we want the variable "pat.karno" ro be considered normal.
 #' var_types$nonnormal_vars <- setdiff(var_types$nonnormal_vars, "pat.karno")
 get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_factor_above = 20,
@@ -58,7 +58,7 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_f
     }
     groups <- na.omit(unique(tmp))
     for (i in seq_along(groups)) {
-      dat_list[[i]] <- filter(data, tmp == groups[i])
+      dat_list[[i]] <- dplyr::filter(data, tmp == groups[i])
     }
   }
   alphas <- sapply(sapply(dat_list, nrow), alpha_by_n)
@@ -167,14 +167,17 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_f
 #' @return `NULL`. The tables are saved to files.
 #' @export
 #' @examples
-#' data(cancer, package = "survival")
-#' var_types <- get_var_types(cancer, strata = "sex")
-#' baseline_table(cancer, var_types = var_types)
+#' withr::with_tempdir({
+#'   data(cancer, package = "survival")
+#'   var_types <- get_var_types(cancer, strata = "sex")
+#'   baseline_table(cancer, var_types = var_types, filename = "baseline.csv")
 #'
-#' # baseline table with pairwise comparison
-#' cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
-#' var_types <- get_var_types(cancer, strata = "ph.ecog_cat")
-#' baseline_table(cancer, var_types = var_types)
+#'   # baseline table with pairwise comparison
+#'   cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
+#'   var_types <- get_var_types(cancer, strata = "ph.ecog_cat")
+#'   baseline_table(cancer, var_types = var_types, filename = "baselineV2.csv")
+#'   print(paste0("files saved to: ", getwd()))
+#' },clean=FALSE)
 baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, factor_vars = NULL, exact_vars = NULL,
                            nonnormal_vars = NULL, seed = NULL, omit_missing_strata = FALSE, filename = NULL,
                            multiple_comparison_test = TRUE, p_adjust_method = "BH", ...) {
@@ -194,13 +197,13 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
   factor_vars <- union(factor_vars, exact_vars)
 
   if (is.null(strata)) {
-    tab1 <- CreateTableOne(
+    tab1 <- tableone::CreateTableOne(
       vars = vars, argsNormal = list(var.equal = FALSE),
       argsExact = list(workspace = 2 * 10^5, simulate.p.value = TRUE, B = 1e4),
       data = data, factorVars = factor_vars, addOverall = TRUE
     )
   } else {
-    tab1 <- CreateTableOne(
+    tab1 <- tableone::CreateTableOne(
       vars = vars, strata = strata, argsNormal = list(var.equal = FALSE),
       argsExact = list(workspace = 2 * 10^5, simulate.p.value = TRUE, B = 1e4),
       data = data, factorVars = factor_vars, addOverall = TRUE
@@ -217,13 +220,13 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
     missing_df[, i] <- factor(missing_df[, i], levels = c(FALSE, TRUE))
   }
   if (is.null(strata)) {
-    tab2 <- CreateTableOne(
+    tab2 <- tableone::CreateTableOne(
       vars = vars,
       data = missing_df, addOverall = TRUE
     )
   } else {
     missing_df[[strata]] <- data[[strata]]
-    tab2 <- CreateTableOne(
+    tab2 <- tableone::CreateTableOne(
       vars = vars, strata = strata,
       data = missing_df, addOverall = TRUE
     )
@@ -265,7 +268,7 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
         tmp$Var1 <- factor(tmp$Var1, levels = levels(g))
         tmp$Var2 <- factor(tmp$Var2, levels = levels(g))
         p_values_long <- tmp %>%
-          filter(as.numeric(Var1) > as.numeric(Var2)) %>%
+          dplyr::filter(as.numeric(Var1) > as.numeric(Var2)) %>%
           mutate(comparison = paste(Var2, Var1, sep = "_"), p.adj = Freq) %>%
           select(comparison, p.adj)
       } else {
