@@ -3,7 +3,7 @@
 \docType{data}
 \name{emp_colors}
 \alias{emp_colors}
-\title{default color palette for \code{ezmedpub} plots}
+\title{default color palette for \code{clinpubr} plots}
 \format{
 An object of class \code{character} of length 10.
 }
@@ -11,6 +11,6 @@ An object of class \code{character} of length 10.
 emp_colors
 }
 \description{
-default color palette for \code{ezmedpub} plots
+default color palette for \code{clinpubr} plots
 }
 \keyword{datasets}

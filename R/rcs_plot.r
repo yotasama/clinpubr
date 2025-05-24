@@ -78,7 +78,6 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
   indf <- indf[complete.cases(indf), ]
 
   dd <- rms::datadist(indf)
-  .dd_out <<- dd
   old_datadist <- getOption("datadist")
   on.exit(
     {
@@ -86,7 +85,7 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
     },
     add = TRUE
   )
-  options(datadist = ".dd_out")
+  options(datadist = dd)
 
   aics <- NULL
   if (is.null(knot)) {
@@ -136,7 +135,7 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
   } else {
     xlim <- dd[["limits"]][c("Low:prediction", "High:prediction"), x]
   }
-  .dd_out <<- dd
+  options(datadist = dd)
   model <- update(model)
   df_pred <- rms::Predict(model,
     name = x, fun = pred_fun, type = "predictions", conf.int = 0.95, digits = 2,

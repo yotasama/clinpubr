@@ -180,7 +180,6 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
     prefix <- "lin_"
   }
   dd <- rms::datadist(dat)
-  .dd_out <<- dd
   old_datadist <- getOption("datadist")
   on.exit(
     {
@@ -188,7 +187,7 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
     },
     add = TRUE
   )
-  options(datadist = ".dd_out")
+  options(datadist = dd)
 
   plt1 <- NULL
   plt2 <- NULL

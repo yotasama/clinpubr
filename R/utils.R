@@ -20,7 +20,7 @@ utils::globalVariables(c(
   "quant", "quant_val"
 ))
 
-#' default color palette for `ezmedpub` plots
+#' default color palette for `clinpubr` plots
 #' @export
 emp_colors <- c(
   "#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854",

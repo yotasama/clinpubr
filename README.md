@@ -1,11 +1,11 @@
-# ezmedpub: Tools for Accelerating Medical Publication
+# clinpubr: Tools for Accelerating Medical Publication
 
 ## Overview
-`ezmedpub` (Easy Medical Publication) is an R package designed to streamline the workflow from clinical data processing to publication-ready outputs. It provides tools for clinical data cleaning, significant result screening, and generating tables/figures suitable for medical journals.
+`clinpubr` (Clinical Publication with R) is an R package designed to streamline the workflow from clinical data processing to publication-ready outputs. It provides tools for clinical data cleaning, significant result screening, and generating tables/figures suitable for medical journals.
 
 ## Key Features
 - **Clinical Data Cleaning**: Functions to handle missing values, standardize units, convert dates, and clean numerical/categorical variables.
-- **Significant Result Screening**: Tools for interaction analysis, model comparison, and regression result extraction to identify key findings.
+- **Significant Result Screening**: Tools for interaction analysis, model comparison, and regression result with common variable transformations to identify key findings.
 - **Publication-Ready Outputs**: Generate baseline characteristic tables, forest plots, RCS curves, and other visualizations formatted for medical publications.
 
 ## Installation
@@ -17,13 +17,13 @@ if (!requireNamespace("devtools", quietly = TRUE)) {
   install.packages("devtools")
 }
 
-devtools::install_github("yotasama/ezmedpub")
+devtools::install_github("yotasama/clinpubr")
 ```
 
 ## Basic Usage
 ### Example 1: Clean Numerical Data
 ```r
-library(ezmedpub)
+library(clinpubr)
 
 # Sample messy numerical data
 messy_data <- data.frame(values = c("123", "45.6 kg", "78.9", "NA"))
@@ -40,10 +40,10 @@ baseline_table(data = example_clinical_data,
 ```
 
 ## Documentation
-For detailed usage, refer to the package vignettes (coming soon) or the [GitHub repository](https://github.com/yotasama/ezmedpub).
+For detailed usage, refer to the package vignettes (coming soon) or the [GitHub repository](https://github.com/yotasama/clinpubr).
 
 ## Contributing
-Bug reports and feature requests are welcome via the [issue tracker](https://github.com/yotasama/ezmedpub/issues).
+Bug reports and feature requests are welcome via the [issue tracker](https://github.com/yotasama/clinpubr/issues).
 
 ## License
-`ezmedpub` is licensed under GPL (>= 3).
+`clinpubr` is licensed under GPL (>= 3).

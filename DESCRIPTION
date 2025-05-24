@@ -1,4 +1,4 @@
-Package: ezmedpub
+Package: clinpubr
 Title: Tools that Make Medical Publication Easier
 Version: 0.0.0.9000
 Authors@R: 
@@ -7,8 +7,8 @@ Description: 'easypubr' provides a collection of tools to accelerate the process
     clinical data to medical publication, including clinical data cleaning, significant
     result screening, and the generation of publish-ready tables and figures.
 Maintainer: Yue Niu <niuyuesam@163.com>
-URL: https://github.com/yotasama/ezmedpub
-BugReports: https://github.com/yotasama/ezmedpub/issues
+URL: https://github.com/yotasama/clinpubr
+BugReports: https://github.com/yotasama/clinpubr/issues
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
