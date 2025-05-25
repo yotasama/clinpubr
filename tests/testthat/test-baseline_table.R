@@ -23,15 +23,15 @@ test_that("baseline_table generates correct output files", {
   with_tempdir({
     var_types <- get_var_types(cancer, strata = "ph.ecog_cat")
     set.seed(1)
-    baseline_table(cancer, var_types = var_types, filename = "test_output.csv")
+    baseline_table(cancer, var_types = var_types, contDigits = 1, filename = "test_output.csv")
 
     expect_true(file.exists("test_output.csv"))
     expect_true(file.exists("test_output_missing.csv"))
     expect_true(file.exists("test_output_pairwise.csv"))
 
-    expect_snapshot(read.csv("test_output.csv"))
-    expect_snapshot(read.csv("test_output_missing.csv"))
-    expect_snapshot(read.csv("test_output_pairwise.csv"))
+    expect_snapshot(read.csv("test_output.csv", check.names = FALSE))
+    expect_snapshot(read.csv("test_output_missing.csv", check.names = FALSE))
+    expect_snapshot(read.csv("test_output_pairwise.csv", check.names = FALSE))
   })
 })
 
