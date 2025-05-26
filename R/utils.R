@@ -1,5 +1,3 @@
-
-
 #' @import rms
 #' @import ggplot2
 #' @import stats
@@ -37,9 +35,23 @@ load_packages <- function(pkgs) {
   }
 }
 
+wrap_backticks <- function(x) {
+  if (is.null(x)) {
+    return(NULL)
+  }
+  ifelse(!grepl("^`", x) & !grepl("`$", x), paste0("`", x, "`"), x)
+}
+
 # Create a formula for coxph or glm
 create_formula <- function(y, predictor, group_var = NULL, time = NULL, covs = NULL, rcs_knots = NULL,
-                           interaction = FALSE) {
+                           interaction = FALSE, wrap_backtick = TRUE) {
+  if (wrap_backtick) {
+    y <- wrap_backticks(y)
+    predictor <- wrap_backticks(predictor)
+    group_var <- wrap_backticks(group_var)
+    time <- wrap_backticks(time)
+    covs <- wrap_backticks(covs)
+  }
   if (!is.null(time)) {
     outcome <- paste0("Surv(", time, ",", y, ")")
   } else {

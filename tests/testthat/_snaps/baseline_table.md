@@ -21,6 +21,66 @@
       attr(,"class")
       [1] "var_types"
 
+# baseline_table generates correct output files 2
+
+    Code
+      read.csv("baseline.csv", check.names = FALSE)
+    Output
+                                    Overall          vs: 0          vs: 1      p
+      1                    n             32             18             14       
+      2      mpg (mean (SD))     20.1 (6.0)     16.6 (3.9)     24.6 (5.4) <0.001
+      3              cyl (%)                                              <0.001
+      4                    4      11 (34.4)        1 (5.6)      10 (71.4)       
+      5                    6       7 (21.9)       3 (16.7)       4 (28.6)       
+      6                    8      14 (43.8)      14 (77.8)        0 (0.0)       
+      7     disp (mean (SD))  230.7 (123.9)  307.1 (106.8)   132.5 (56.9) <0.001
+      8       hp (mean (SD))   146.7 (68.6)   189.7 (60.3)    91.4 (24.4) <0.001
+      9  drat (median [IQR]) 3.7 [3.1, 3.9] 3.2 [3.1, 3.7] 3.9 [3.7, 4.1]  0.013
+      10      wt (mean (SD))      3.2 (1.0)      3.7 (0.9)      2.6 (0.7)  0.001
+      11    qsec (mean (SD))     17.8 (1.8)     16.7 (1.1)     19.3 (1.4) <0.001
+      12          am = 1 (%)      13 (40.6)       6 (33.3)       7 (50.0)  0.556
+      13            gear (%)                                               0.001
+      14                   3      15 (46.9)      12 (66.7)       3 (21.4)       
+      15                   4      12 (37.5)       2 (11.1)      10 (71.4)       
+      16                   5       5 (15.6)       4 (22.2)        1 (7.1)       
+      17 carb (median [IQR]) 2.0 [2.0, 4.0] 4.0 [2.2, 4.0] 1.5 [1.0, 2.0] <0.001
+            test
+      1         
+      2         
+      3    exact
+      4         
+      5         
+      6         
+      7         
+      8         
+      9  nonnorm
+      10        
+      11        
+      12        
+      13   exact
+      14        
+      15        
+      16        
+      17 nonnorm
+
+---
+
+    Code
+      read.csv("baseline_missing.csv", check.names = FALSE)
+    Output
+                         Overall   vs: 0   vs: 1   p test
+      1                n      32      18      14  NA   NA
+      2   mpg = TRUE (%) 0 (0.0) 0 (0.0) 0 (0.0) NaN   NA
+      3   cyl = TRUE (%) 0 (0.0) 0 (0.0) 0 (0.0) NaN   NA
+      4  disp = TRUE (%) 0 (0.0) 0 (0.0) 0 (0.0) NaN   NA
+      5    hp = TRUE (%) 0 (0.0) 0 (0.0) 0 (0.0) NaN   NA
+      6  drat = TRUE (%) 0 (0.0) 0 (0.0) 0 (0.0) NaN   NA
+      7    wt = TRUE (%) 0 (0.0) 0 (0.0) 0 (0.0) NaN   NA
+      8  qsec = TRUE (%) 0 (0.0) 0 (0.0) 0 (0.0) NaN   NA
+      9    am = TRUE (%) 0 (0.0) 0 (0.0) 0 (0.0) NaN   NA
+      10 gear = TRUE (%) 0 (0.0) 0 (0.0) 0 (0.0) NaN   NA
+      11 carb = TRUE (%) 0 (0.0) 0 (0.0) 0 (0.0) NaN   NA
+
 # baseline_table generates correct output files
 
     Code

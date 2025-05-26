@@ -72,7 +72,6 @@ test_that("unmake_names reverses make.names", {
   made <- make.names(ori)
   expect_equal(unmake_names(made, ori), ori)
   expect_equal(unmake_names(c(made, "aa"), ori), c(ori, NA)) # Non-matching
-  expect_equal(unmake_names(made, ori, wrap_backtick = TRUE), paste0("`", ori, "`")) # Wrapped
 })
 
 # Test formula_add_covs
