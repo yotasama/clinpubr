@@ -167,17 +167,20 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_f
 #' @return `NULL`. The tables are saved to files.
 #' @export
 #' @examples
-#' withr::with_tempdir({
-#'   data(cancer, package = "survival")
-#'   var_types <- get_var_types(cancer, strata = "sex")
-#'   baseline_table(cancer, var_types = var_types, filename = "baseline.csv")
+#' withr::with_tempdir(
+#'   {
+#'     data(cancer, package = "survival")
+#'     var_types <- get_var_types(cancer, strata = "sex")
+#'     baseline_table(cancer, var_types = var_types, filename = "baseline.csv")
 #'
-#'   # baseline table with pairwise comparison
-#'   cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
-#'   var_types <- get_var_types(cancer, strata = "ph.ecog_cat")
-#'   baseline_table(cancer, var_types = var_types, filename = "baselineV2.csv")
-#'   print(paste0("files saved to: ", getwd()))
-#' },clean=FALSE)
+#'     # baseline table with pairwise comparison
+#'     cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
+#'     var_types <- get_var_types(cancer, strata = "ph.ecog_cat")
+#'     baseline_table(cancer, var_types = var_types, filename = "baselineV2.csv")
+#'     print(paste0("files saved to: ", getwd()))
+#'   },
+#'   clean = FALSE
+#' )
 baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, factor_vars = NULL, exact_vars = NULL,
                            nonnormal_vars = NULL, seed = NULL, omit_missing_strata = FALSE, filename = NULL,
                            multiple_comparison_test = TRUE, p_adjust_method = "BH", ...) {
@@ -185,7 +188,15 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
     stop("Invalid 'var_types' arguement! Please use result from get_var_types function.")
   }
   if (is.null(strata) && !is.null(var_types)) strata <- var_types$strata
-  if (!is.null(strata) && omit_missing_strata) data <- data[!is.na(data[[strata]]), ]
+  if (!is.null(strata)) {
+    data[[strata]] <- as.factor(data[[strata]])
+    data[[strata]] <- droplevels(data[[strata]])
+    levels(data[[strata]]) <- paste0(strata, ": ", levels(data[[strata]]))
+
+    if (omit_missing_strata) {
+      data <- data[!is.na(data[[strata]]), ]
+    }
+  }
   if (is.null(factor_vars) && !is.null(var_types)) factor_vars <- var_types$factor_vars
   if (is.null(exact_vars) && !is.null(var_types)) exact_vars <- var_types$exact_vars
   if (is.null(nonnormal_vars) && !is.null(var_types)) nonnormal_vars <- var_types$nonnormal_vars

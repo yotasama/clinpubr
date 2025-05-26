@@ -79,7 +79,7 @@ test_that("interaction_plot generates plots and saves files", {
     )
     vdiffr::expect_doppelganger("Logistic interaction plot", plt_logistic)
     # Check plot files
-    expect_true(any(grepl("interaction_age_by_sex", list.files())))
+    expect_true(any(grepl("interaction_status_with_age_by_sex", list.files())))
   })
 })
 

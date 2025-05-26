@@ -4,3 +4,4 @@
 ^\.lintr$
 ^\.VSCodeCounter$
 ^sample_plots$
+^my_test.r$

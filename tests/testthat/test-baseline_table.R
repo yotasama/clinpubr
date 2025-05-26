@@ -16,6 +16,17 @@ test_that("get_var_types correctly classifies variables", {
   })
 })
 
+test_that("baseline_table generates correct output files 2", {
+  with_tempdir({
+    set.seed(1)
+    var_types <- get_var_types(mtcars, strata = "vs") # Automatically infer variable types
+    baseline_table(mtcars, var_types = var_types, contDigits = 1, filename = "baseline.csv")
+    
+    expect_snapshot(read.csv("baseline.csv", check.names = FALSE))
+    expect_snapshot(read.csv("baseline_missing.csv", check.names = FALSE))
+  })
+})
+
 test_that("baseline_table generates correct output files", {
   data(cancer, package = "survival")
   cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))

@@ -156,7 +156,7 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
   }
   if (is.null(filename)) {
     filename <- paste0(
-      paste0(c(analysis_type, "interaction", predictor, "by", group_var, "with", length(covs), "covs"),
+      paste0(c(analysis_type, "interaction", y, "with", predictor, "by", group_var, "with", length(covs), "covs"),
         collapse = "_"
       ), ".png"
     )

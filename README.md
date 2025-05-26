@@ -26,20 +26,21 @@ devtools::install_github("yotasama/clinpubr")
 library(clinpubr)
 
 # Sample messy data
-cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
-var_types <- get_var_types(cancer, strata = "ph.ecog_cat")
-baseline_table(cancer, var_types = var_types, contDigits = 1)
+messy_data <- data.frame(values = c("１２．３", "0..45", "  67 ", "", "ａｂａｎｄｏｎ"))
+clean_data <- num_simple_cleaning(messy_data$values)
+print(clean_data)
+
 # "12.3"    "0.45"     "67"      NA        "abandon"
 ```
 
 ### Example 2: Generate Baseline Table
 ```r
 # Using example data
-var_types <- get_var_types(mtcars, strata = "vs") # automatically infer variable types
+var_types <- get_var_types(mtcars, strata = "vs") # Automatically infer variable types
 baseline_table(mtcars, var_types = var_types, contDigits = 1, filename = "baseline.csv")
 ```
 #### The generated table: baseline.csv
-|X                   |Overall        |0              |1              |p      |test    |
+|                    |Overall        |vs: 0          |vs: 1          |p      |test    |
 |:-------------------|:--------------|:--------------|:--------------|:------|:-------|
 |n                   |32             |18             |14             |       |        |
 |mpg (mean (SD))     |20.1 (6.0)     |16.6 (3.9)     |24.6 (5.4)     |<0.001 |        |
