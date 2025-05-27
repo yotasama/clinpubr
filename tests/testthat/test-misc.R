@@ -78,7 +78,7 @@ test_that("unmake_names reverses make.names", {
 test_that("formula_add_covs adds covariates", {
   expect_equal(deparse(formula_add_covs(y ~ a + b, c("c", "d"))), "y ~ a + b + c + d")
   expect_equal(deparse(formula_add_covs("y ~ a", c("b"))), "y ~ a + b")
-  expect_equal(formula_add_covs(y ~ x, NULL), y ~ x) # NULL covs
+  expect_equal(formula_add_covs(y ~ x, NULL), y ~ x) # NULL covars
 })
 
 # Test qq_show (using vdiffr for image comparison)

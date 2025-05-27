@@ -4,12 +4,12 @@
 \alias{formula_add_covs}
 \title{Add covariates to a formula}
 \usage{
-formula_add_covs(formula, covs)
+formula_add_covs(formula, covars)
 }
 \arguments{
 \item{formula}{A formula. Should be a formula or a character string of formula.}
 
-\item{covs}{A vector of covariates.}
+\item{covars}{A vector of covariates.}
 }
 \value{
 A formula.

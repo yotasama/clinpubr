@@ -27,7 +27,7 @@ test_that("interaction_scan returns valid data frame and saves table", {
   withr::with_tempdir({
     data(cancer, package = "survival")
     # Recode status to 0/1 for logistic regression
-    cancer$status <- ifelse(cancer$status == 1, 1, 0) # 1=dead, 0=alive
+    cancer$status <- ifelse(cancer$status == 2, 1, 0) # 1=dead, 0=alive
     # Cox analysis
     res_cox <- interaction_scan(cancer,
       y = "status", time = "time", predictors = c("age", "sex"),
@@ -60,7 +60,7 @@ test_that("interaction_plot generates plots and saves files", {
   withr::with_tempdir({
     data(cancer, package = "survival")
     # Recode status to 0/1 for logistic regression
-    cancer$status <- ifelse(cancer$status == 1, 1, 0) # 1=dead, 0=alive
+    cancer$status <- ifelse(cancer$status == 2, 1, 0) # 1=dead, 0=alive
     # Cox plot
     plt_cox <- interaction_plot(cancer,
       y = "status", time = "time", predictor = "age",

@@ -33,9 +33,9 @@ print(clean_data)
 # "12.3"    "0.45"     "67"      NA        "abandon"
 ```
 
-### Example 2: Generate Baseline Table
+### Example 2: Automatic Type Infer and Baseline Table Generation
 ```r
-# Using example data
+# Using example data `mtcars`
 var_types <- get_var_types(mtcars, strata = "vs") # Automatically infer variable types
 baseline_table(mtcars, var_types = var_types, contDigits = 1, filename = "baseline.csv")
 ```
@@ -60,6 +60,63 @@ baseline_table(mtcars, var_types = var_types, contDigits = 1, filename = "baseli
 |5                   |5 (15.6)       |4 (22.2)       |1 (7.1)        |       |        |
 |carb (median [IQR]) |2.0 [2.0, 4.0] |4.0 [2.2, 4.0] |1.5 [1.0, 2.0] |<0.001 |nonnorm |
 
+
+### Example 3: Publish-ready Figure Generation
+#### Example 3.1: RCS Plot
+```r
+# Using example data `cancer` from the `survival` package
+data(cancer, package = "survival")
+
+# Performing cox regression, which is inferred by `y` and `time`
+rcs_plot(cancer, x = "age", y = "status", time = "time", covars = c("sex", "ph.karno"), save_plot = TRUE)
+```
+The generated figure: cox_rcs_status_with_age_4_knots_with_2_covars.png
+![rcs plot](sample_plots/cox_rcs_status_with_age_4_knots_with_2_covars.png)
+
+#### Example 3.2: Regression Forest Plot
+```r
+data(cancer, package = "survival")
+cancer$dead <- cancer$status == 2 # Preparing a binary variable for logistic regression
+
+# Performing multivairate logistic regression
+regression_forest(cancer, model_vars = c("age", "sex", "wt.loss"), y = "dead",
+  as_univariate = FALSE, save_plot = TRUE
+)
+
+# Comparing multiple models
+regression_forest(
+  cancer,
+  model_vars = list(
+    Crude = c("age"),
+    Model1 = c("age", "sex"),
+    Model2 = c("age", "sex", "wt.loss")
+  ),
+  y = "dead",
+  save_plot = TRUE
+)
+```
+The generated figure: logistic_regression_forest_with_1_models.png
+![regression_forest plot 1](sample_plots/logistic_regression_forest_with_1_models.png)
+
+The generated figure: logistic_regression_forest_with_3_models.png
+![regression_forest plot 2](sample_plots/logistic_regression_forest_with_3_models.png)
+
+
+#### Example 3.3: Interaction Plot
+```r
+data(cancer, package = "survival")
+
+# Generating interaction plot of both linear and RCS models
+interaction_plot(cancer,
+  y = "status", time = "time", predictor = "age",
+  group_var = "sex", save_plot = TRUE
+)
+```
+The generated figure: lin_cox_interaction_status_with_age_by_sex_with_0_covars.png
+![interaction plot 1](sample_plots/lin_cox_interaction_status_with_age_by_sex_with_0_covars.png)
+
+The generated figure: rcs_cox_interaction_status_with_age_by_sex_with_0_covars.png
+![interaction plot 2](sample_plots/rcs_cox_interaction_status_with_age_by_sex_with_0_covars.png)
 
 ## Documentation
 For detailed usage, refer to the package vignettes (coming soon) or the [GitHub repository](https://github.com/yotasama/clinpubr).

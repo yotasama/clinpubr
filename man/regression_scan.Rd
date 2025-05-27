@@ -9,7 +9,7 @@ regression_scan(
   y,
   time = NULL,
   predictors = NULL,
-  covs = NULL,
+  covars = NULL,
   num_to_factor = 5,
   p_adjust_method = "BH",
   save_table = TRUE,
@@ -27,7 +27,7 @@ Otherwise, Cox proportional hazards regression is used.}
 \item{predictors}{The predictor variables to be scanned for relationships. If \code{NULL}, all variables
 except \code{y} and \code{time} are taken as predictors.}
 
-\item{covs}{A character vector of covariate names.}
+\item{covars}{A character vector of covariate names.}
 
 \item{num_to_factor}{An integer. Numerical variables with number of unique values below or equal
 to this value would be considered a factor.}

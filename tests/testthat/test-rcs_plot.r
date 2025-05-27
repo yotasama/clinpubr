@@ -12,7 +12,7 @@ set.seed(1) # For reproducibility
 
 test_that("rcs_plot works for Cox model", {
   withr::with_tempdir({
-    result <- rcs_plot(cancer, x = "age", y = "status", time = "time", covs = "ph.karno", save_plot = TRUE)
+    result <- rcs_plot(cancer, x = "age", y = "status", time = "time", covars = "ph.karno", save_plot = TRUE)
     expect_s3_class(result, "gg")
     vdiffr::expect_doppelganger("Cox model RCS plot", result)
     expect_true(file.exists(list.files(pattern = ".png")))
@@ -21,12 +21,12 @@ test_that("rcs_plot works for Cox model", {
 
 test_that("rcs_plot works for linear model", {
   withr::with_tempdir({
-    result <- rcs_plot(cancer, x = "age", y = "wt.loss", covs = "ph.karno")
+    result <- rcs_plot(cancer, x = "age", y = "wt.loss", covars = "ph.karno")
     expect_s3_class(result, "gg")
     vdiffr::expect_doppelganger("Linear model RCS plot", result)
 
     # Test with return_details
-    details <- rcs_plot(cancer, x = "age", y = "wt.loss", covs = "ph.karno", save_plot = FALSE, return_details = TRUE)
+    details <- rcs_plot(cancer, x = "age", y = "wt.loss", covars = "ph.karno", save_plot = FALSE, return_details = TRUE)
     expect_named(details, c(
       "aics", "knot", "n.valid", "n.plot", "phassump", "phresidual",
       "pvalue_all", "pvalue_nonlin", "ref", "plot"
@@ -36,7 +36,7 @@ test_that("rcs_plot works for linear model", {
 
 test_that("rcs_plot works for logistic model", {
   withr::with_tempdir({
-    result <- rcs_plot(cancer, x = "age", y = "dead", covs = "ph.karno", save_plot = FALSE)
+    result <- rcs_plot(cancer, x = "age", y = "dead", covars = "ph.karno", save_plot = FALSE)
     vdiffr::expect_doppelganger("Logistic model RCS plot", result)
     expect_s3_class(result, "gg")
     expect_false(any(grepl(".png", list.files())))

@@ -132,7 +132,7 @@ test_that("regression_scan returns expected structure", {
       "best.var.trans"
     ) %in% colnames(res)))
     expect_snapshot(res)
-    check_file_exists("cox_status_regression_scan.csv")
+    check_file_exists("cox_regression_scan_status.csv")
   })
 })
 

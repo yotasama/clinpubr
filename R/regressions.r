@@ -93,12 +93,12 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
 
   ref_levels <- str_replace_all(ref_levels, c("\\[" = "\\\\[", "\\(" = "\\\\(", "\\]" = "\\\\]", "\\)" = "\\\\)"))
 
-  covs <- unique(unlist(model_covs))
-  if (any(c(y, time, x) %in% covs)) {
+  covars <- unique(unlist(model_covs))
+  if (any(c(y, time, x) %in% covars)) {
     stop("conflict of model variables!")
   }
 
-  dat <- dplyr::select(data, all_of(c(y, x, time, covs)))
+  dat <- dplyr::select(data, all_of(c(y, x, time, covars)))
   if (length(model_covs) > 1) {
     model_complete_cases <- sapply(model_covs, function(tmp_covs) {
       complete.cases(dat[, tmp_covs])
@@ -119,10 +119,10 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
   } else {
     start_col <- 3
   }
-  ori_covs <- covs
-  if (!is.null(covs)) {
-    covs <- paste0(".cov", seq_along(covs))
-    colnames(dat)[start_col:(start_col + length(covs) - 1)] <- covs
+  ori_covs <- covars
+  if (!is.null(covars)) {
+    covars <- paste0(".cov", seq_along(covars))
+    colnames(dat)[start_col:(start_col + length(covars) - 1)] <- covars
   }
   if (is.null(output_dir)) {
     output_dir <- paste(analysis_type, "results", x, sep = "_")
@@ -296,11 +296,11 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
     col2 <- 2 * j + 2
     res_table[1, col1:col2] <- c(coef_type, "P")
     i <- 2
-    tmp_covs <- covs[match(model_covs[[j]], ori_covs)]
+    tmp_covs <- covars[match(model_covs[[j]], ori_covs)]
     for (var in vars) {
       model_res <- regression_fit(
         data = dat, y = "y", predictor = var, time = new_time_var,
-        covs = tmp_covs, returned = "full"
+        covars = tmp_covs, returned = "full"
       )
       model_res <- data.frame(model_res[grepl("x", model_res$term), ])
       for (col in c("estimate", "conf.low", "conf.high")) {
@@ -324,7 +324,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
           dat$tmp <- as.numeric(dat0[[var]])
           model_res <- regression_fit(
             data = dat, y = "y", predictor = "tmp", time = new_time_var,
-            covs = tmp_covs, returned = "predictor_combined"
+            covars = tmp_covs, returned = "predictor_combined"
           )
           res_table[i, col2] <- format_pval(model_res$p.value, nsmall = p_nsmall, eps = pval_eps)
           i <- i + 1
@@ -436,7 +436,7 @@ regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = 
       y = "y",
       predictor = new_vars[tmp_var_ids[1]],
       time = new_time_var,
-      covs = new_vars[tmp_var_ids[-1]],
+      covars = new_vars[tmp_var_ids[-1]],
       returned = "full"
     )
 
@@ -493,7 +493,7 @@ regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = 
 
   plot_columns <- c("Model", "Variable", "Level", " ", effect_label, "P value")
   ci_column <- 4
-  if (all(is.na(plot_df$Level))) {
+  if (all(plot_df$Level == " ")) {
     plot_columns <- setdiff(plot_columns, "Level")
     ci_column <- ci_column - 1
   }
@@ -516,6 +516,7 @@ regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = 
     if (is.null(filename)) {
       filename <- paste0(paste0(
         c(
+          analysis_type,
           "regression_forest",
           ifelse(as_univariate,
             "univariate",
@@ -542,7 +543,7 @@ regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = 
 #'   Otherwise, Cox proportional hazards regression is used.
 #' @param predictors The predictor variables to be scanned for relationships. If `NULL`, all variables
 #'   except `y` and `time` are taken as predictors.
-#' @param covs A character vector of covariate names.
+#' @param covars A character vector of covariate names.
 #' @param num_to_factor An integer. Numerical variables with number of unique values below or equal
 #'   to this value would be considered a factor.
 #' @param p_adjust_method The method to use for p-value adjustment for pairwise comparison. Default is "BH".
@@ -573,7 +574,7 @@ regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = 
 #' @examples
 #' data(cancer, package = "survival")
 #' regression_scan(cancer, y = "status", time = "time", save_table = FALSE)
-regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL, num_to_factor = 5,
+regression_scan <- function(data, y, time = NULL, predictors = NULL, covars = NULL, num_to_factor = 5,
                             p_adjust_method = "BH", save_table = TRUE, filename = NULL) {
   supported_var_trans <- list(
     numerical = c("original", "logarithm", "categorized", "rcs"),
@@ -617,8 +618,8 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
   res_df$predictor <- predictors
   for (i in seq_along(predictors)) {
     predictor <- predictors[i]
-    covs <- remove_conflict(covs, c(y, predictor, time), silent = TRUE)
-    dat <- dplyr::select(data, all_of(c(y, predictor, time, covs)))
+    covars <- remove_conflict(covars, c(y, predictor, time), silent = TRUE)
+    dat <- dplyr::select(data, all_of(c(y, predictor, time, covars)))
     dat <- na.omit(dat)
     nvalid <- nrow(dat)
     res_df$nvalid[i] <- nvalid
@@ -653,7 +654,7 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
         {
           model_res <- regression_fit(
             data = tmp_dat, y = y, predictor = predictor, time = time,
-            covs = covs, rcs_knots = rcs_knots, returned = "predictor_combined"
+            covars = covars, rcs_knots = rcs_knots, returned = "predictor_combined"
           )
           if (var_trans == "rcs") {
             res_df$rcs.overall.pval[i] <- model_res$p_overall
@@ -684,7 +685,7 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
   }
   if (save_table) {
     if (is.null(filename)) {
-      filename <- paste(analysis_type, y, "regression_scan.csv", sep = "_")
+      filename <- paste0(paste(analysis_type, "regression_scan", y, sep = "_"), ".csv")
     }
     write.csv(res_df, filename, row.names = FALSE)
   }
@@ -701,7 +702,7 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
 #' @param predictor A character string of the predictor variable.
 #' @param time A character string of the time variable. If `NULL`, linear or logistic regression is used.
 #'   Otherwise, Cox proportional hazards regression is used.
-#' @param covs A character vector of covariate names.
+#' @param covars A character vector of covariate names.
 #' @param rcs_knots The number of rcs knots. If `NULL`, a linear model would be fitted instead.
 #' @param returned The return mode of this function.
 #'   - `"full"`: return the full regression result.
@@ -715,7 +716,7 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covs = NULL
 #' @examples
 #' data(cancer, package = "survival")
 #' regression_fit(data = cancer, y = "status", predictor = "age", time = "time", rcs_knots = 4)
-regression_fit <- function(data, y, predictor, time = NULL, covs = NULL, rcs_knots = NULL,
+regression_fit <- function(data, y, predictor, time = NULL, covars = NULL, rcs_knots = NULL,
                            returned = c("full", "predictor_split", "predictor_combined")) {
   returned <- match.arg(returned)
   if (!is.null(rcs_knots) && rcs_knots == 0) rcs_knots <- NULL
@@ -726,7 +727,7 @@ regression_fit <- function(data, y, predictor, time = NULL, covs = NULL, rcs_kno
   } else {
     "linear"
   }
-  covs <- remove_conflict(covs, c(y, predictor, time))
+  covars <- remove_conflict(covars, c(y, predictor, time))
 
   predictor_type <- if (is.factor(data[[predictor]]) && length(levels(data[[predictor]])) > 2) {
     "multi_factor"
@@ -734,7 +735,7 @@ regression_fit <- function(data, y, predictor, time = NULL, covs = NULL, rcs_kno
     "num_or_binary"
   }
 
-  formula <- create_formula(y, predictor, time = time, covs = covs, rcs_knots = rcs_knots)
+  formula <- create_formula(y, predictor, time = time, covars = covars, rcs_knots = rcs_knots)
 
   model <- fit_model(formula, data = data, analysis_type = analysis_type)
   full_res <- broom::tidy(model, conf.int = TRUE, exponentiate = analysis_type %in% c("logistic", "cox"))

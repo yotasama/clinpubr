@@ -9,7 +9,7 @@ rcs_plot(
   x,
   y,
   time = NULL,
-  covs = NULL,
+  covars = NULL,
   knot = 4,
   add_hist = TRUE,
   ref = "x_median",
@@ -41,7 +41,7 @@ rcs_plot(
 \item{time}{A character string of the time variable. If \code{NULL}, logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}
 
-\item{covs}{A character vector of covariate names.}
+\item{covars}{A character vector of covariate names.}
 
 \item{knot}{The number of knots. If \code{NULL}, the number of knots is determined by AIC minimum.}
 
@@ -95,9 +95,9 @@ Plot restricted cubic spline based on package \code{rms}. Support both logistic 
 \examples{
 data(cancer, package = "survival")
 # coxph model with time assigned
-rcs_plot(cancer, x = "age", y = "status", time = "time", covs = "ph.karno", save_plot = FALSE)
+rcs_plot(cancer, x = "age", y = "status", time = "time", covars = "ph.karno", save_plot = FALSE)
 
 # logistic model with time not assigned
 cancer$dead <- cancer$status == 2
-rcs_plot(cancer, x = "age", y = "dead", covs = "ph.karno", save_plot = FALSE)
+rcs_plot(cancer, x = "age", y = "dead", covars = "ph.karno", save_plot = FALSE)
 }

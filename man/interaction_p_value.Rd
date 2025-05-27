@@ -10,7 +10,7 @@ interaction_p_value(
   predictor,
   group_var,
   time = NULL,
-  covs = NULL,
+  covars = NULL,
   rcs_knots = NULL
 )
 }
@@ -29,7 +29,7 @@ numeric variable is provided, it will be split by the median value.}
 \item{time}{A character string of the time variable. If \code{NULL}, linear or logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}
 
-\item{covs}{A character vector of covariate names.}
+\item{covars}{A character vector of covariate names.}
 
 \item{rcs_knots}{The number of rcs knots. If \code{NULL}, a linear model would be fitted instead.}
 }

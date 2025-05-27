@@ -11,7 +11,7 @@
 #' @param group_vars The group variables to be scanned for interactions. If `NULL`, all variables
 #'   except `y` and `time` are taken as group variables. The group variables should be categorical. If a
 #'   numeric variable is included, it will be split by the median value.
-#' @param covs A character vector of covariate names.
+#' @param covars A character vector of covariate names.
 #' @param try_rcs A logical value indicating whether to perform restricted cubic spline interaction analysis.
 #' @param p_adjust_method The method to use for p-value adjustment for pairwise comparison. Default is "BH".
 #'   See `?p.adjust.methods`.
@@ -22,7 +22,7 @@
 #' @examples
 #' data(cancer, package = "survival")
 #' interaction_scan(cancer, y = "status", time = "time", save_table = FALSE)
-interaction_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL, covs = NULL,
+interaction_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL, covars = NULL,
                              try_rcs = TRUE, p_adjust_method = "BH", save_table = TRUE, filename = NULL) {
   analysis_type <- if (!is.null(time)) {
     "cox"
@@ -53,15 +53,15 @@ interaction_scan <- function(data, y, time = NULL, predictors = NULL, group_vars
   for (predictor in predictors) {
     for (group_var in group_vars) {
       if (group_var != predictor) {
-        nvalid <- sum(complete.cases(data[, c(time, y, predictor, group_var, covs)]))
+        nvalid <- sum(complete.cases(data[, c(time, y, predictor, group_var, covars)]))
         if (nvalid < 10) {
           next
         }
 
-        p1 <- interaction_p_value(data, y, predictor, group_var, time = time, covs = covs)
+        p1 <- interaction_p_value(data, y, predictor, group_var, time = time, covars = covars)
         if (try_rcs && length(unique(data[, predictor])) > 10) {
           p2 <- tryCatch(
-            interaction_p_value(data, y, predictor, group_var, time = time, covs = covs, rcs_knots = 4),
+            interaction_p_value(data, y, predictor, group_var, time = time, covars = covars, rcs_knots = 4),
             error = function(e) {
               NA
             }
@@ -88,7 +88,7 @@ interaction_scan <- function(data, y, time = NULL, predictors = NULL, group_vars
   }
   if (save_table) {
     if (is.null(filename)) {
-      filename <- paste(analysis_type, y, "interaction_scan.csv", sep = "_")
+      filename <- paste0(paste(analysis_type, "interaction_scan", y, sep = "_"), ".csv")
     }
     write.csv(res_df, filename, row.names = FALSE)
   }
@@ -107,13 +107,15 @@ interaction_scan <- function(data, y, time = NULL, predictors = NULL, group_vars
 #'   numeric variable is provided, it will be split by the median value.
 #' @param time A character string of the time variable. If `NULL`, logistic regression is used.
 #'   Otherwise, Cox proportional hazards regression is used.
-#' @param covs A character vector of covariate names.
+#' @param covars A character vector of covariate names.
 #' @param group_colors A character vector of colors for the plot. If `NULL`, the default colors are used.
 #' @param save_plot A logical value indicating whether to save the plot.
 #' @param filename The name of the file to save the plot. Support both `.png` and `.pdf` formats.
 #' @param height The height of the plot.
 #' @param width The width of the plot.
 #' @param xlab The label of the x-axis.
+#' @param ylab The label of the y-axis.
+#' @param show_n A logical value indicating whether to show the number of observations in the plot.
 #' @param group_title The title of the group variable.
 #' @param ... Additional arguments passed to the `ggplot` function.
 #' @return A `ggplot` object.
@@ -132,40 +134,46 @@ interaction_scan <- function(data, y, time = NULL, predictors = NULL, group_vars
 #'   y = "wt.loss", predictor = "age", group_var = "sex",
 #'   save_plot = FALSE
 #' )
-interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = NULL, group_colors = NULL,
+interaction_plot <- function(data, y, predictor, group_var, time = NULL, covars = NULL, group_colors = NULL,
                              save_plot = TRUE, filename = NULL, height = 4, width = 4, xlab = predictor,
-                             group_title = group_var, ...) {
+                             ylab = NULL, show_n = TRUE, group_title = group_var, ...) {
   if (!is.null(time)) {
     analysis_type <- "cox"
-    ylab <- "HR (95% CI)"
+    if (is.null(ylab)) {
+      ylab <- "HR (95% CI)"
+    }
     pred_fun <- exp
   } else if (length(levels(as.factor(data[[y]]))) == 2) {
     analysis_type <- "logistic"
-    ylab <- "OR (95% CI)"
+    if (is.null(ylab)) {
+      ylab <- "OR (95% CI)"
+    }
     pred_fun <- exp
   } else {
     analysis_type <- "linear"
-    ylab <- "Predicted value (95% CI)"
+    if (is.null(ylab)) {
+      ylab <- paste0("Predicted ", y, " (95% CI)")
+    }
     pred_fun <- NULL
   }
   if (is.null(group_colors)) {
     group_colors <- emp_colors
   }
-  if (any(c(y, time, predictor, group_var) %in% covs)) {
+  if (any(c(y, time, predictor, group_var) %in% covars)) {
     stop("Conflict of model variables!")
   }
   if (is.null(filename)) {
     filename <- paste0(
-      paste0(c(analysis_type, "interaction", y, "with", predictor, "by", group_var, "with", length(covs), "covs"),
+      paste0(c(analysis_type, "interaction", y, "with", predictor, "by", group_var, "with", length(covars), "covars"),
         collapse = "_"
       ), ".png"
     )
   }
-  default_expansion <- c(0.1, 0, 0.1, 0)
+  default_expansion <- c(0.1, 0, 0.5, 0)
 
-  dat <- dplyr::select(data, all_of(c(y, predictor, group_var, time, covs)))
-  if (".predictor" %in% c(y, time, covs)) stop("Colname '.predictor' is reserved!")
-  if (".group_var" %in% c(y, time, covs)) stop("Colname '.group_var' is reserved!")
+  dat <- dplyr::select(data, all_of(c(y, predictor, group_var, time, covars)))
+  if (".predictor" %in% c(y, time, covars)) stop("Colname '.predictor' is reserved!")
+  if (".group_var" %in% c(y, time, covars)) stop("Colname '.group_var' is reserved!")
   colnames(dat)[c(2, 3)] <- c(".predictor", ".group_var")
   dat <- na.omit(dat)
   dat$.group_var <- to_factor(dat$.group_var)
@@ -194,9 +202,9 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
 
   tryCatch(
     {
-      formula <- create_formula(y, ".predictor", group_var = ".group_var", time = time, covs = covs, interaction = TRUE)
+      formula <- create_formula(y, ".predictor", group_var = ".group_var", time = time, covars = covars, interaction = TRUE)
       model <- fit_model(formula, data = dat, analysis_type = analysis_type, rms = TRUE)
-      p_value <- interaction_p_value(dat, y, ".predictor", ".group_var", time = time, covs = covs)
+      p_value <- interaction_p_value(dat, y, ".predictor", ".group_var", time = time, covars = covars)
       y1 <- as.data.frame(Predict(model, .predictor, .group_var,
         fun = pred_fun, type = "predictions", conf.int = 0.95, digits = 2,
         ref.zero = analysis_type %in% c("cox", "logistic")
@@ -239,15 +247,17 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
           scale_y_continuous(expand = default_expansion)
         n_y <- max(ggplot_build(plt1)$layout$panel_params[[1]]$y.range)
       }
+      if (show_n) {
+        plt1 <- plt1 +
+          annotate("text",
+            label = paste0("N = ", nrow(dat)), size = 5,
+            x = n_x,
+            y = n_y,
+            hjust = 0.5, vjust = 0.5
+          )
+      }
       plt1 <- plt1 +
-        annotate("text",
-          label = paste0("N = ", nrow(dat)), size = 5,
-          x = n_x,
-          y = n_y,
-          hjust = 0.5, vjust = 0.5
-        ) +
         theme_classic() +
-
         theme(
           legend.position = c(0.05, 0.95),
           legend.justification = c(0, 1),
@@ -269,12 +279,12 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
     tryCatch(
       {
         formula2 <- create_formula(y, ".predictor",
-          group_var = ".group_var", time = time, covs = covs, rcs_knots = 4,
+          group_var = ".group_var", time = time, covars = covars, rcs_knots = 4,
           interaction = TRUE
         )
         model2 <- fit_model(formula2, data = dat, analysis_type = analysis_type, rms = TRUE)
         rcs_p_value <- interaction_p_value(dat, y, ".predictor", ".group_var",
-          time = time, covs = covs,
+          time = time, covars = covars,
           rcs_knots = 4
         )
         y2 <- as.data.frame(Predict(model2, .predictor, .group_var,
@@ -309,13 +319,17 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
           n_y <- max(ggplot_build(plt2)$layout$panel_params[[1]]$y.range)
         }
 
+        if (show_n) {
+          plt2 <- plt2 +
+            annotate("text",
+              label = paste0("N = ", nrow(dat)), size = 5,
+              x = n_x,
+              y = n_y,
+              hjust = 0.5, vjust = 0.5
+            )
+        }
+
         plt2 <- plt2 +
-          annotate("text",
-            label = paste0("N = ", nrow(dat)), size = 5,
-            x = n_x,
-            y = n_y,
-            hjust = 0.5, vjust = 0.5
-          ) +
           theme_classic() +
           theme(
             legend.position = "inside",
@@ -353,7 +367,7 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
 #'   numeric variable is provided, it will be split by the median value.
 #' @param time A character string of the time variable. If `NULL`, linear or logistic regression is used.
 #'   Otherwise, Cox proportional hazards regression is used.
-#' @param covs A character vector of covariate names.
+#' @param covars A character vector of covariate names.
 #' @param rcs_knots The number of rcs knots. If `NULL`, a linear model would be fitted instead.
 #' @return The interaction p-value
 #' @export
@@ -363,7 +377,7 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covs = 
 #'   data = cancer, y = "status", predictor = "age", group_var = "sex",
 #'   time = "time", rcs_knots = 4
 #' )
-interaction_p_value <- function(data, y, predictor, group_var, time = NULL, covs = NULL, rcs_knots = NULL) {
+interaction_p_value <- function(data, y, predictor, group_var, time = NULL, covars = NULL, rcs_knots = NULL) {
   analysis_type <- if (!is.null(time)) {
     "cox"
   } else if (length(levels(as.factor(data[[y]]))) == 2) {
@@ -372,14 +386,14 @@ interaction_p_value <- function(data, y, predictor, group_var, time = NULL, covs
     "linear"
   }
   data[[group_var]] <- to_factor(data[[group_var]])
-  covs <- remove_conflict(covs, c(y, predictor, group_var, time))
+  covars <- remove_conflict(covars, c(y, predictor, group_var, time))
 
   formula1 <- create_formula(y, predictor, group_var,
-    time = time, covs = covs, rcs_knots = rcs_knots,
+    time = time, covars = covars, rcs_knots = rcs_knots,
     interaction = FALSE
   )
   formula2 <- create_formula(y, predictor, group_var,
-    time = time, covs = covs, rcs_knots = rcs_knots,
+    time = time, covars = covars, rcs_knots = rcs_knots,
     interaction = TRUE
   )
 

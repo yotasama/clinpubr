@@ -5,7 +5,7 @@
 #' @param y A character string of the outcome variable.
 #' @param time A character string of the time variable. If `NULL`, logistic regression is used.
 #'   Otherwise, Cox proportional hazards regression is used.
-#' @param covs A character vector of covariate names.
+#' @param covars A character vector of covariate names.
 #' @param knot The number of knots. If `NULL`, the number of knots is determined by AIC minimum.
 #' @param add_hist A logical value. If `TRUE`, add histogram to the plot.
 #' @param ref The reference value for the plot. Could be `"x_median"`, `"x_mean"`, `"ratio_min"`, or a numeric value.
@@ -37,12 +37,12 @@
 #' @examples
 #' data(cancer, package = "survival")
 #' # coxph model with time assigned
-#' rcs_plot(cancer, x = "age", y = "status", time = "time", covs = "ph.karno", save_plot = FALSE)
+#' rcs_plot(cancer, x = "age", y = "status", time = "time", covars = "ph.karno", save_plot = FALSE)
 #'
 #' # logistic model with time not assigned
 #' cancer$dead <- cancer$status == 2
-#' rcs_plot(cancer, x = "age", y = "dead", covs = "ph.karno", save_plot = FALSE)
-rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = TRUE, ref = "x_median", ref_digits = 3,
+#' rcs_plot(cancer, x = "age", y = "dead", covars = "ph.karno", save_plot = FALSE)
+rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist = TRUE, ref = "x_median", ref_digits = 3,
                      group_by_ref = TRUE, group_title = NULL, group_labels = NULL, group_colors = NULL, breaks = 20,
                      rcs_color = "#e23e57", print_p_ph = TRUE, trans = "identity", save_plot = TRUE, filename = NULL,
                      y_max = NULL, y_min = NULL, hist_max = NULL, xlim = NULL, return_details = FALSE) {
@@ -68,8 +68,8 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
     pred_fun <- NULL
   }
 
-  covs <- remove_conflict(covs, c(y, x, time))
-  indf <- dplyr::select(data, all_of(c(y, x, time, covs)))
+  covars <- remove_conflict(covars, c(y, x, time))
+  indf <- dplyr::select(data, all_of(c(y, x, time, covars)))
 
   nmissing <- sum(!complete.cases(indf))
   if (nmissing > 0) {
@@ -90,7 +90,7 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
   aics <- NULL
   if (is.null(knot)) {
     for (i in 3:7) {
-      formula <- create_formula(y, x, time = time, covs = covs, rcs_knots = i)
+      formula <- create_formula(y, x, time = time, covars = covars, rcs_knots = i)
       model <- fit_model(formula, data = indf, analysis_type = analysis_type)
       aics <- c(aics, AIC(model))
       kn <- seq(3, 7)[which.min(aics)]
@@ -98,7 +98,7 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
     knot <- kn
   }
 
-  formula <- create_formula(y, x, time = time, covs = covs, rcs_knots = knot)
+  formula <- create_formula(y, x, time = time, covars = covars, rcs_knots = knot)
   model <- fit_model(formula, data = indf, analysis_type = analysis_type, rms = TRUE)
 
   phassump <- NULL
@@ -175,7 +175,7 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
   df_rcs$lower[df_rcs$lower < ymin] <- ymin
 
   xtitle <- x
-  ylab <- paste0(ifelse(is.null(covs), "Unadjusted", "Adjusted"), " ", ylab)
+  ylab <- paste0(ifelse(is.null(covars), "Unadjusted", "Adjusted"), " ", ylab)
 
   ytitle2 <- "Percentage of Population (%)"
   offsetx1 <- (xlim[2] - xlim[1]) * 0.02
@@ -305,9 +305,11 @@ rcs_plot <- function(data, x, y, time = NULL, covs = NULL, knot = 4, add_hist = 
 
   if (save_plot) {
     if (is.null(filename)) {
-      filename <- paste0(paste0(c(x, paste0(knot, "knot"), paste0("with_", length(covs), "covs")),
-        collapse = "_"
-      ), ".png")
+      filename <- paste0(
+        paste0(c(analysis_type, "rcs", y, "with", x, knot, "knots", "with", length(covars), "covars"),
+          collapse = "_"
+        ), ".png"
+      )
     }
     ggsave(filename, p, width = 6, height = 6)
   }

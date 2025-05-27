@@ -9,7 +9,7 @@ regression_fit(
   y,
   predictor,
   time = NULL,
-  covs = NULL,
+  covars = NULL,
   rcs_knots = NULL,
   returned = c("full", "predictor_split", "predictor_combined")
 )
@@ -26,7 +26,7 @@ numeric, linear regression is used.}
 \item{time}{A character string of the time variable. If \code{NULL}, linear or logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}
 
-\item{covs}{A character vector of covariate names.}
+\item{covars}{A character vector of covariate names.}
 
 \item{rcs_knots}{The number of rcs knots. If \code{NULL}, a linear model would be fitted instead.}
 

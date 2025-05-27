@@ -8,7 +8,7 @@
 #' @param y A character string of the outcome variable.
 #' @param time A character string of the time variable. If `NULL`, logistic regression is used.
 #'   Otherwise, Cox proportional hazards regression is used.
-#' @param covs A character vector of covariate names. If duplicated with `subgroup_vars`, the duplicated
+#' @param covars A character vector of covariate names. If duplicated with `subgroup_vars`, the duplicated
 #'   covariates will be temporarily removed during the corresponding subgroup analysis.
 #' @param est_precision An integer specifying the precision for the estimates in the plot.
 #' @param p_nsmall An integer specifying the number of decimal places for the p-values.
@@ -25,22 +25,22 @@
 #' # coxph model with time assigned
 #' subgroup_forest(cancer,
 #'   subgroup_vars = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "status",
-#'   time = "time", covs = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
+#'   time = "time", covars = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
 #' )
 #'
 #' # logistic model with time not assigned
 #' cancer$dead <- cancer$status == 2
 #' subgroup_forest(cancer,
 #'   subgroup_vars = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "dead",
-#'   covs = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
+#'   covars = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
 #' )
 #'
 #' cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
 #' subgroup_forest(cancer,
 #'   subgroup_vars = c("sex", "wt.loss"), x = "ph.ecog_cat", y = "dead",
-#'   covs = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
+#'   covars = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
 #' )
-subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL, est_precision = 3, p_nsmall = 3,
+subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covars = NULL, est_precision = 3, p_nsmall = 3,
                             group_cut_quantiles = 0.5, save_plot = TRUE, filename = NULL, ...) {
   x_type <- ifelse(!is.factor(data[[x]]), "number", "factor")
   if (!is.null(time)) {
@@ -55,22 +55,22 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL,
   }
   ref_val <- ifelse(analysis_type %in% c("cox", "logistic"), 1, 0)
   x_trans <- ifelse(analysis_type %in% c("cox", "logistic"), "log10", "none")
-  covs <- remove_conflict(covs, c(y, x, time))
-  ori_covs <- covs
+  covars <- remove_conflict(covars, c(y, x, time))
+  ori_covs <- covars
   subgroup_vars <- remove_conflict(subgroup_vars, c(y, x, time))
   if (length(subgroup_vars) == 0) stop("No valid `subgroup_vars` specified.")
 
-  indf <- dplyr::select(data, all_of(c(y, x, time, covs)))
+  indf <- dplyr::select(data, all_of(c(y, x, time, covars)))
 
-  if (!is.null(covs)) {
-    covs <- paste0("tmp_cov", seq_along(covs))
-    if (any(covs %in% colnames(data))) stop("Colnames start with 'tmp_cov' are reserved.")
+  if (!is.null(covars)) {
+    covars <- paste0("tmp_cov", seq_along(covars))
+    if (any(covars %in% colnames(data))) stop("Colnames start with 'tmp_cov' are reserved.")
     start_col <- ifelse(analysis_type == "cox", 4, 3)
-    colnames(indf)[start_col:(start_col + length(covs) - 1)] <- covs
+    colnames(indf)[start_col:(start_col + length(covars) - 1)] <- covars
   }
 
   indf <- cbind(indf, dplyr::select(data, all_of(subgroup_vars)))
-  indf <- indf[complete.cases(indf[, c(y, x, time, covs)]), ]
+  indf <- indf[complete.cases(indf[, c(y, x, time, covars)]), ]
   if (x_type == "factor") {
     n_plot_levels <- length(levels(indf[[x]])) - 1
   } else {
@@ -82,7 +82,7 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL,
   }
 
   overall_res <- regression_fit(
-    data = indf, y = y, predictor = x, time = time, covs = covs, returned = "predictor_split"
+    data = indf, y = y, predictor = x, time = time, covars = covars, returned = "predictor_split"
   )
   if (x_type == "number") {
     res <- data.frame(
@@ -126,10 +126,10 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL,
   }
 
   for (var in subgroup_vars) {
-    tmp_covs <- covs[ori_covs != var]
+    tmp_covs <- covars[ori_covs != var]
     if (length(tmp_covs) == 0) tmp_covs <- NULL
 
-    p_int <- interaction_p_value(indf, y, x, var, time = time, covs = tmp_covs)
+    p_int <- interaction_p_value(indf, y, x, var, time = time, covars = tmp_covs)
 
     res <- rbind(
       res,
@@ -165,7 +165,7 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL,
     tmp_res <- NULL
     for (lvl in lvls) {
       subset_data <- indf[which(indf[[var]] == lvl), ]
-      lvl_res <- regression_fit(subset_data, y, x, time = time, covs = tmp_covs, returned = "predictor_split")
+      lvl_res <- regression_fit(subset_data, y, x, time = time, covars = tmp_covs, returned = "predictor_split")
 
       if (x_type == "number") {
         lvl_res <- data.frame(
@@ -243,10 +243,10 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covs = NULL,
   if (save_plot) {
     if (is.null(filename)) {
       filename <- paste0(paste0(
-        c("subgroup_forest", x, paste0(
-          "with_", length(subgroup_vars),
-          "subgroups_and_", length(covs), "covs"
-        )),
+        c(
+          analysis_type, "subgroup_forest", y, "with", x, "by", length(subgroup_vars),
+          "subgroups_and", length(covars), "covars"
+        ),
         collapse = "_"
       ), ".png")
     }

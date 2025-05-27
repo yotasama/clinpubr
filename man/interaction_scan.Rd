@@ -10,7 +10,7 @@ interaction_scan(
   time = NULL,
   predictors = NULL,
   group_vars = NULL,
-  covs = NULL,
+  covars = NULL,
   try_rcs = TRUE,
   p_adjust_method = "BH",
   save_table = TRUE,
@@ -32,7 +32,7 @@ except \code{y} and \code{time} are taken as predictors.}
 except \code{y} and \code{time} are taken as group variables. The group variables should be categorical. If a
 numeric variable is included, it will be split by the median value.}
 
-\item{covs}{A character vector of covariate names.}
+\item{covars}{A character vector of covariate names.}
 
 \item{try_rcs}{A logical value indicating whether to perform restricted cubic spline interaction analysis.}
 

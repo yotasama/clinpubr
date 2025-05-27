@@ -10,13 +10,15 @@ interaction_plot(
   predictor,
   group_var,
   time = NULL,
-  covs = NULL,
+  covars = NULL,
   group_colors = NULL,
   save_plot = TRUE,
   filename = NULL,
   height = 4,
   width = 4,
   xlab = predictor,
+  ylab = NULL,
+  show_n = TRUE,
   group_title = group_var,
   ...
 )
@@ -34,7 +36,7 @@ numeric variable is provided, it will be split by the median value.}
 \item{time}{A character string of the time variable. If \code{NULL}, logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}
 
-\item{covs}{A character vector of covariate names.}
+\item{covars}{A character vector of covariate names.}
 
 \item{group_colors}{A character vector of colors for the plot. If \code{NULL}, the default colors are used.}
 
@@ -47,6 +49,10 @@ Otherwise, Cox proportional hazards regression is used.}
 \item{width}{The width of the plot.}
 
 \item{xlab}{The label of the x-axis.}
+
+\item{ylab}{The label of the y-axis.}
+
+\item{show_n}{A logical value indicating whether to show the number of observations in the plot.}
 
 \item{group_title}{The title of the group variable.}
 

@@ -10,7 +10,7 @@ subgroup_forest(
   x,
   y,
   time = NULL,
-  covs = NULL,
+  covars = NULL,
   est_precision = 3,
   p_nsmall = 3,
   group_cut_quantiles = 0.5,
@@ -32,7 +32,7 @@ the variables are categorical. If the variables are continuous, they will be cut
 \item{time}{A character string of the time variable. If \code{NULL}, logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}
 
-\item{covs}{A character vector of covariate names. If duplicated with \code{subgroup_vars}, the duplicated
+\item{covars}{A character vector of covariate names. If duplicated with \code{subgroup_vars}, the duplicated
 covariates will be temporarily removed during the corresponding subgroup analysis.}
 
 \item{est_precision}{An integer specifying the precision for the estimates in the plot.}
@@ -60,19 +60,19 @@ data(cancer, package = "survival")
 # coxph model with time assigned
 subgroup_forest(cancer,
   subgroup_vars = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "status",
-  time = "time", covs = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
+  time = "time", covars = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
 )
 
 # logistic model with time not assigned
 cancer$dead <- cancer$status == 2
 subgroup_forest(cancer,
   subgroup_vars = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "dead",
-  covs = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
+  covars = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
 )
 
 cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
 subgroup_forest(cancer,
   subgroup_vars = c("sex", "wt.loss"), x = "ph.ecog_cat", y = "dead",
-  covs = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
+  covars = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
 )
 }

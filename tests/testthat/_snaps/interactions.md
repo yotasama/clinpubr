@@ -4,9 +4,9 @@
       res_cox
     Output
         predictor group.by nvalid linear.p.int  rcs.p.int linear.p.adj  rcs.p.adj
-      3       sex  ph.ecog    227   0.01706363         NA   0.05119089         NA
-      2       age  ph.ecog    227   0.04202135 0.24748763   0.06303202 0.24748763
-      1       age      sex    228   0.96353080 0.03957737   0.96353080 0.07915475
+      2       age  ph.ecog    227    0.0349543 0.03808796    0.1048629 0.07617591
+      1       age      sex    228    0.6183372 0.83647048    0.7552521 0.83647048
+      3       sex  ph.ecog    227    0.7552521         NA    0.7552521         NA
 
 ---
 
