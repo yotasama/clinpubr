@@ -187,13 +187,21 @@ unit_view <- function(df, subject_col, value_col, unit_col, quantiles = c(0.025,
                       filename = NULL, conflicts_only = TRUE) {
   res <- df %>%
     group_by(!!as.symbol(subject_col), !!as.symbol(unit_col)) %>%
-    reframe(
-      label = NA, count = n(), nvalid = sum(!is.na(!!as.symbol(value_col))),
-      mean = mean(!!as.symbol(value_col), na.rm = TRUE), sd = sd(!!as.symbol(value_col), na.rm = TRUE),
+    summarise(
+      label = NA,
+      count = n(),
+      nvalid = sum(!is.na(!!as.symbol(value_col))),
+      mean = mean(!!as.symbol(value_col), na.rm = TRUE),
+      sd = sd(!!as.symbol(value_col), na.rm = TRUE),
       median = median(!!as.symbol(value_col), na.rm = TRUE),
-      data.frame(quant_val = quantile(!!as.symbol(value_col), quantiles, na.rm = TRUE), quant = quantiles)
-    ) %>%
-    pivot_wider(names_from = quant, values_from = quant_val, names_prefix = "q_")
+      across(
+        .cols = !!as.symbol(value_col),
+        .fns = list(!!!setNames(lapply(quantiles, function(q) {
+          function(x) quantile(x, probs = q, na.rm = TRUE)
+        }), paste0("q_", quantiles)[seq_along(quantiles)])),
+        .names = "{fn}"
+      )
+    )
   if (conflicts_only) {
     res <- res %>%
       group_by(!!as.symbol(subject_col)) %>%

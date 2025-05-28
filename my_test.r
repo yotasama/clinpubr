@@ -1,6 +1,7 @@
 set.seed(1)
 load_all()
 library(knitr)
+library(dtplyr)
 var_types <- get_var_types(mtcars, strata = "vs") # Automatically infer variable types
 baseline_table(mtcars, var_types = var_types, contDigits = 1, filename = "baseline.csv")
 
@@ -33,7 +34,7 @@ results <- regression_basic_results(
 )
 
 library(tictoc)
-n=1e7
+n=1e8
 df <- data.frame(subject = sample(c("a", "b"), n, replace = TRUE), value = runif(n))
 df$unit <- NA
 df$unit[df$subject == "a"] <- sample(c("mg/L", "g/l", "g/L"),
@@ -51,11 +52,23 @@ df$value[df$subject == "b" & is.na(df$unit)] <- df$value[df$subject == "b" & is.
 df2=lazy_dt(df)
 tic()
 x=unit_view(
-  df = df, subject_col = "subject",
+  df = df, subject_col = "subject", quantiles = NULL,
   value_col = "value", unit_col = "unit", save_table = FALSE
 )
-quantile_map <- lapply(quantiles, function(p) {
-  substitute(quantile(!!as.symbol(value_col), probs = q, na.rm = TRUE), list(q = p))
-})
-names(quantile_map) <- paste0("q_", quantiles * 100)
-!!quantile_map
+toc()
+tic()
+unit_table=unit_view(
+  df = df2, subject_col = "subject",quantiles = NULL,
+  value_col = "value", unit_col = "unit", save_table = FALSE
+)
+toc()
+
+unit_table$label <- c("t", NA, 1e-3, NA, NA, "r") # labeling the units
+
+tic()
+df_standardized <- unit_standardize(
+  df = df2, subject_col = "subject", value_col = "value",
+  unit_col = "unit", change_rules = unit_table
+)
+df_standardized=as.data.frame(df_standardized)
+toc()

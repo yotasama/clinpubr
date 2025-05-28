@@ -6,7 +6,7 @@
 #' @import survival
 #' @importFrom utils read.csv write.csv
 #' @importFrom tidyr pivot_wider pivot_longer
-#' @importFrom dplyr select mutate all_of group_by summarise ungroup reframe ntile n
+#' @importFrom dplyr select mutate all_of group_by summarise ungroup reframe ntile n across
 #' @importFrom fBasics shapiroTest lillieTest adTest jarqueberaTest sfTest
 NULL
 
