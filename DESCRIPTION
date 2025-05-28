@@ -57,6 +57,7 @@ Imports:
     tableone,
     tidyr
 Suggests: 
+    dtplyr,
     testthat (>= 3.0.0),
     vdiffr,
     withr

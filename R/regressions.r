@@ -236,7 +236,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
             width = width, height = height
           )
         }
-        plots_list[[var]] <- p$plot
+        plots_list[[var]] <- p
       }
     }
   }
