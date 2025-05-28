@@ -11,10 +11,12 @@ importance_plot(
   show_legend = FALSE,
   split_at = NULL,
   show_labels = TRUE,
-  label_nsmall = 3,
+  digits = 2,
+  nsmall = 3,
+  scientific = TRUE,
   label_color = "black",
   label_size = 3,
-  label_hjust = 0.1,
+  label_hjust = max(x)/10,
   save_plot = TRUE,
   filename = "importance.png"
 )
@@ -33,7 +35,7 @@ variable selection. If NULL, no split is made.}
 
 \item{show_labels}{A logical value indicating whether to show the labels on the bars.}
 
-\item{label_nsmall}{The number of decimal places to show in the labels.}
+\item{digits, nsmall, scientific}{Controls the formatting of labels. Passed to \code{format()}.}
 
 \item{label_color}{The color of the labels.}
 

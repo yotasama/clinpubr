@@ -7,7 +7,7 @@
 #' @param split_at The index at which to split the plot into two halves, usually used to illustrate
 #'   variable selection. If NULL, no split is made.
 #' @param show_labels A logical value indicating whether to show the labels on the bars.
-#' @param label_nsmall The number of decimal places to show in the labels.
+#' @param digits,nsmall,scientific Controls the formatting of labels. Passed to `format()`.
 #' @param label_color The color of the labels.
 #' @param label_size The size of the labels.
 #' @param label_hjust The horizontal justification of the labels.
@@ -26,15 +26,16 @@
 #' names(dummy_importance) <- paste0("var", 1:20)
 #' importance_plot(dummy_importance, top_n = 15, split_at = 10, save_plot = FALSE)
 importance_plot <- function(x, top_n = NULL, color = c("#56B1F7", "#132B43"), show_legend = FALSE, split_at = NULL,
-                            show_labels = TRUE, label_nsmall = 3, label_color = "black", label_size = 3,
-                            label_hjust = 0.1, save_plot = TRUE, filename = "importance.png") {
+                            show_labels = TRUE, digits = 2, nsmall = 3, scientific = TRUE, label_color = "black",
+                            label_size = 3, label_hjust = max(x) / 10, save_plot = TRUE, filename = "importance.png") {
   x <- sort(x, decreasing = TRUE)
   tmp <- data.frame(name = names(x), value = x)
   if (length(color) == 1) color <- rep(color, 2)
+  tmp$label <- format(tmp$value, nsmall = nsmall, digits = digits, scientific = scientific)
+
   if (!is.null(top_n) && top_n < length(x)) {
     tmp <- tmp[1:(top_n + 1), ]
     tmp$name[top_n + 1] <- "..."
-    tmp$label <- format(tmp$value, nsmall = label_nsmall, digits = 1)
     tmp$label[top_n + 1] <- "..."
     tmp$name <- factor(tmp$name,
       levels = rev(tmp$name),
@@ -42,7 +43,6 @@ importance_plot <- function(x, top_n = NULL, color = c("#56B1F7", "#132B43"), sh
     )
     tmp$value[top_n + 1] <- 0
   } else {
-    tmp$label <- format(tmp$value, nsmall = label_nsmall, digits = 1)
     tmp$name <- factor(tmp$name,
       levels = rev(tmp$name),
       labels = rev(tmp$name)

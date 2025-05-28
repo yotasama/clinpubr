@@ -6,29 +6,23 @@ baseline_table(mtcars, var_types = var_types, contDigits = 1, filename = "baseli
 
 t1=read.csv("baseline.csv", check.names = FALSE)
 kable(t1)
-data(cancer, package = "survival")
-regression_fit(data = cancer, y = "status", predictor = "age", time = "time", covars = c("sex", "ph.ecog"))
+
 
 data(cancer, package = "survival")
+df <- kidney
+df$dead <- ifelse(df$time <= 100 & df$status == 0, NA, df$time <= 100)
+df <- na.omit(df[, -c(1:3)])
 
-# Performing cox regression, which is inferred by `y` and `time`
-rcs_plot(cancer, x = "age", y = "status", time = "time", covars = c("sex", "ph.karno"), save_plot = TRUE)
+model0 <- glm(dead ~ age + frail, family = binomial(), data = df)
+df$base_pred <- predict(model0, type = "response")
+model <- glm(dead ~ ., family = binomial(), data = df)
+df$full_pred <- predict(model, type = "response")
 
-data(cancer, package = "survival")
-cancer$dead <- cancer$status == 2
-regression_forest(cancer, model_vars = c("age", "sex", "wt.loss"), y = "dead",
-  as_univariate = FALSE, save_plot = TRUE
-)
+x=classif_model_compare(df, target_var ="dead", model_names =c("base_pred", "full_pred"),return_results = T)
+kable(x$metric_table)
 
-regression_forest(
-  cancer,
-  model_vars = list(
-    Crude = c("age"),
-    Model1 = c("age", "sex"),
-    Model2 = c("age", "sex", "wt.loss")
-  ),
-  y = "dead",
-  save_plot = TRUE
-)
+set.seed(5)
+dummy_importance <- runif(20,0.2,0.6)^5
+names(dummy_importance) <- paste0("var", 1:20)
+importance_plot(dummy_importance, top_n = 15, split_at = 10)
 
-res <- regression_scan(cancer, y = "status", time = "time")

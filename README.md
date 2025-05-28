@@ -39,7 +39,7 @@ print(clean_data)
 var_types <- get_var_types(mtcars, strata = "vs") # Automatically infer variable types
 baseline_table(mtcars, var_types = var_types, contDigits = 1, filename = "baseline.csv")
 ```
-#### The generated table: baseline.csv
+The generated table: baseline.csv
 |                    |Overall        |vs: 0          |vs: 1          |p      |test    |
 |:-------------------|:--------------|:--------------|:--------------|:------|:-------|
 |n                   |32             |18             |14             |       |        |
@@ -117,6 +117,54 @@ The generated figure: lin_cox_interaction_status_with_age_by_sex_with_0_covars.p
 
 The generated figure: rcs_cox_interaction_status_with_age_by_sex_with_0_covars.png
 ![interaction plot 2](sample_plots/rcs_cox_interaction_status_with_age_by_sex_with_0_covars.png)
+
+
+#### Example 3.4: Classification model comparison
+```r
+# Preparing sample data
+data(cancer, package = "survival")
+df <- kidney
+df$dead <- ifelse(df$time <= 100 & df$status == 0, NA, df$time <= 100)
+df <- na.omit(df[, -c(1:3)])
+
+# Building classification models
+model0 <- glm(dead ~ age + frail, family = binomial(), data = df)
+df$base_pred <- predict(model0, type = "response")
+model <- glm(dead ~ ., family = binomial(), data = df)
+df$full_pred <- predict(model, type = "response")
+
+# Generating comparison results
+classif_model_compare(df, target_var ="dead", model_names =c("base_pred", "full_pred"))
+```
+The generated table: model_compare_table.csv
+|Model     |AUC                  | Accuracy| Sensitivity| Specificity| Pos Pred Value| Neg Pred Value|    F1| Kappa| Brier| cutoff| Youden| HosLem|
+|:---------|:--------------------|--------:|-----------:|-----------:|--------------:|--------------:|-----:|-----:|-----:|------:|------:|------:|
+|base_pred |0.822 (0.711, 0.933) |    0.806|         0.8|       0.815|          0.848|          0.759| 0.824| 0.610| 0.171|   0.49|  0.615|  0.405|
+|full_pred |0.931 (0.869, 0.994) |    0.855|         0.8|       0.926|          0.933|          0.781| 0.862| 0.711| 0.102|   0.63|  0.726|  0.577|
+
+The generated figure: model_compare_roc.png
+![model_compare_roc](sample_plots/model_compare_roc.png)
+
+The generated figure: model_compare_calibration.png
+![model_compare_calibration](sample_plots/model_compare_calibration.png)
+
+The generated figure: model_compare_dca.png
+![model_compare_dca](sample_plots/model_compare_dca.png)
+
+#### Example 3.5: Variable Importance Plot
+```r
+# Generating dummy importance data
+set.seed(5)
+dummy_importance <- runif(20, 0.2, 0.6) ^ 5
+names(dummy_importance) <- paste0("var", 1:20)
+
+# Plotting variable importance, keeping only top 15 and splitting at 10
+importance_plot(dummy_importance, top_n = 15, split_at = 10)
+```
+The generated figure: importance.png
+![importance plot](sample_plots/importance.png)
+
+
 
 ## Documentation
 For detailed usage, refer to the package vignettes (coming soon) or the [GitHub repository](https://github.com/yotasama/clinpubr).

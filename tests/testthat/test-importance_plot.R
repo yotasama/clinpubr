@@ -33,7 +33,7 @@ test_that("labels are formatted correctly", {
   dummy_labels <- runif(3)^5
   names(dummy_labels) <- c("A", "B", "C")
 
-  p <- importance_plot(dummy_labels, show_labels = TRUE, label_nsmall = 2, save_plot = FALSE)
+  p <- importance_plot(dummy_labels, show_labels = TRUE, nsmall = 2, save_plot = FALSE)
   label_text <- p$layers[[2]]$data$label
   expect_true(all(grepl("\\.\\d{2}", label_text)))
 })
