@@ -14,9 +14,11 @@ baseline_table(
   nonnormal_vars = NULL,
   seed = NULL,
   omit_missing_strata = FALSE,
+  save_table = TRUE,
   filename = NULL,
   multiple_comparison_test = TRUE,
   p_adjust_method = "BH",
+  smd = FALSE,
   ...
 )
 }
@@ -40,6 +42,8 @@ performing fisher exact tests.}
 
 \item{omit_missing_strata}{A logical value indicating whether to omit missing values in the strata variable.}
 
+\item{save_table}{A logical value indicating whether to save the result tables.}
+
 \item{filename}{The name of the file to save the table. The file names for accompanying tables will
 be the same as the main table, but with "_missing" and "_pairwise" appended.}
 
@@ -50,10 +54,12 @@ tested with \code{rstatix::dunn_test} or \code{rstatix::games_howell_test}.}
 \item{p_adjust_method}{The method to use for p-value adjustment for pairwise comparison. Default is "BH".
 See \code{?p.adjust.methods}.}
 
+\item{smd}{A logical value indicating whether to include SMD in the table. Passed to \code{tableone::print.TableOne}.}
+
 \item{...}{Additional arguments passed to \code{tableone::print.TableOne}.}
 }
 \value{
-\code{NULL}. The tables are saved to files.
+A list containing the baseline table and accompanying tables.
 }
 \description{
 Create a baseline table and a table of missing values. If the strata variable has more

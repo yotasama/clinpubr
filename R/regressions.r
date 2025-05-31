@@ -40,6 +40,8 @@
 #'   variables, and the factorization of the variable including split by median, by quartiles, and by `factor_breaks`
 #'   and `quantile_breaks`. The setting of the covariates includes different models with different covariates.
 #' @note For factor variables with more than 2 levels, p value for trend is also calculated.
+#' @return If `return_results` is `TRUE`, the function returns a list of results. Otherwise, the function saves the
+#'   results to the output directory.
 #' @export
 #' @examples
 #' data(cancer, package = "survival")

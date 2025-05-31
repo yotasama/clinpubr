@@ -5,3 +5,6 @@
 ^\.VSCodeCounter$
 ^sample_plots$
 ^my_test.r$
+^README\.Rmd$
+^codecov\.yml$
+^\.github$

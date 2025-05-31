@@ -34,7 +34,7 @@ Otherwise, Cox proportional hazards regression is used.}
 \item{rcs_knots}{The number of rcs knots. If \code{NULL}, a linear model would be fitted instead.}
 }
 \value{
-The interaction p-value
+A numerical, the interaction p-value
 }
 \description{
 This function calculates the interaction p-value between a predictor and a group variable in a

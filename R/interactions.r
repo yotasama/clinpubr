@@ -349,7 +349,7 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covars 
       error = function(e) {
       }
     )
-    return(list(plt1 = plt1, plt2 = plt2))
+    return(list(lin = plt1, rcs = plt2))
   } else {
     return(plt1)
   }
@@ -369,7 +369,7 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covars 
 #'   Otherwise, Cox proportional hazards regression is used.
 #' @param covars A character vector of covariate names.
 #' @param rcs_knots The number of rcs knots. If `NULL`, a linear model would be fitted instead.
-#' @return The interaction p-value
+#' @return A numerical, the interaction p-value
 #' @export
 #' @examples
 #' data(cancer, package = "survival")

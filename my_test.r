@@ -72,3 +72,36 @@ df_standardized <- unit_standardize(
 )
 df_standardized=as.data.frame(df_standardized)
 toc()
+
+
+library(tableone)
+
+## Load Mayo Clinic Primary Biliary Cirrhosis Data
+library(survival)
+data(pbc)
+## Check variables
+head(pbc)
+
+## Make categorical variables factors
+varsToFactor <- c("status","trt","ascites","hepato","spiders","edema","stage")
+pbc[varsToFactor] <- lapply(pbc[varsToFactor], factor)
+
+## Create a variable list
+dput(names(pbc))
+vars <- c("time","status","age","sex","ascites","hepato",
+          "spiders","edema","bili","chol","albumin",
+          "copper","alk.phos","ast","trig","platelet",
+          "protime","stage")
+
+## Create Table 1 stratified by trt
+tableOne <- CreateTableOne(vars = vars, strata = c("trt"), data = pbc)
+
+## Just typing the object name will invoke the print.TableOne method
+tableOne
+
+## Specifying nonnormal variables will show the variables appropriately,
+## and show nonparametric test p-values. Specify variables in the exact
+## argument to obtain the exact test p-values. cramVars can be used to
+## show both levels for a 2-level categorical variables.
+x=print(tableOne, nonnormal = c("bili","chol","copper","alk.phos","trig"),
+      exact = c("status","stage"), cramVars = "hepato", smd = TRUE)

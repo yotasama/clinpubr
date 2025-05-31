@@ -1,25 +1,25 @@
-test_that("num_simple_cleaning correctly cleans numerical strings", {
+test_that("value_initial_cleaning correctly cleans numerical strings", {
   # Test case 1: Fullwidth to halfwidth conversion
   expect_equal(
-    num_simple_cleaning("\uFF11\uFF12\uFF13"),
+    value_initial_cleaning("\uFF11\uFF12\uFF13"),
     "123"
   )
 
   # Test case 2: Multiple dots to single dot
   expect_equal(
-    num_simple_cleaning("11..23"),
+    value_initial_cleaning("11..23"),
     "11.23"
   )
 
   # Test case 4: Mixed cases (actual fullwidth characters)
   expect_equal(
-    num_simple_cleaning(c("１２..３", "..45", "  67  ")),
+    value_initial_cleaning(c("１２..３", "..45", "  67  ")),
     c("12.3", ".45", "67")
   )
 
   # Test case 5: Empty string to NA
   expect_equal(
-    num_simple_cleaning(""),
+    value_initial_cleaning(""),
     NA_character_
   )
 })

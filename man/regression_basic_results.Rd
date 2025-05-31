@@ -92,6 +92,10 @@ matches the provided strings will be used as the reference level.}
 
 \item{...}{Additional arguments passed to the \code{survminer::ggsurvplot} function for KM curve.}
 }
+\value{
+If \code{return_results} is \code{TRUE}, the function returns a list of results. Otherwise, the function saves the
+results to the output directory.
+}
 \description{
 Generate the result table of logistic or Cox regression with different settings of the predictor
 variable and covariates. Also generate KM curves for Cox regression.

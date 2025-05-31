@@ -153,9 +153,11 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_f
 #' @param factor_vars A vector of factor variables. Overwrites the factor variables in `var_types`.
 #' @param exact_vars A vector of variables to test for exactness. Overwrites the exact variables in `var_types`.
 #' @param nonnormal_vars A vector of variables to test for normality. Overwrites the nonnormal variables in `var_types`.
+#' @param smd A logical value indicating whether to include SMD in the table. Passed to `tableone::print.TableOne`.
 #' @param seed A seed for the random number generator. This seed can be set for consistent simulation when
 #'   performing fisher exact tests.
 #' @param omit_missing_strata A logical value indicating whether to omit missing values in the strata variable.
+#' @param save_table A logical value indicating whether to save the result tables.
 #' @param filename The name of the file to save the table. The file names for accompanying tables will
 #'   be the same as the main table, but with "_missing" and "_pairwise" appended.
 #' @param multiple_comparison_test A logical value indicating whether to perform multiple comparison tests. Variables in
@@ -164,7 +166,7 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_f
 #' @param p_adjust_method The method to use for p-value adjustment for pairwise comparison. Default is "BH".
 #'   See `?p.adjust.methods`.
 #' @param ... Additional arguments passed to `tableone::print.TableOne`.
-#' @return `NULL`. The tables are saved to files.
+#' @return A list containing the baseline table and accompanying tables.
 #' @export
 #' @examples
 #' withr::with_tempdir(
@@ -182,8 +184,8 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_f
 #'   clean = FALSE
 #' )
 baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, factor_vars = NULL, exact_vars = NULL,
-                           nonnormal_vars = NULL, seed = NULL, omit_missing_strata = FALSE, filename = NULL,
-                           multiple_comparison_test = TRUE, p_adjust_method = "BH", ...) {
+                           nonnormal_vars = NULL, seed = NULL, omit_missing_strata = FALSE, save_table = TRUE,
+                           filename = NULL, multiple_comparison_test = TRUE, p_adjust_method = "BH", smd = FALSE, ...) {
   if (!is.null(var_types) && !"var_types" %in% class(var_types)) {
     stop("Invalid 'var_types' arguement! Please use result from get_var_types function.")
   }
@@ -211,20 +213,22 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
     tab1 <- tableone::CreateTableOne(
       vars = vars, argsNormal = list(var.equal = FALSE),
       argsExact = list(workspace = 2 * 10^5, simulate.p.value = TRUE, B = 1e4),
-      data = data, factorVars = factor_vars, addOverall = TRUE
+      data = data, factorVars = factor_vars, smd = smd, addOverall = TRUE
     )
   } else {
     tab1 <- tableone::CreateTableOne(
       vars = vars, strata = strata, argsNormal = list(var.equal = FALSE),
       argsExact = list(workspace = 2 * 10^5, simulate.p.value = TRUE, B = 1e4),
-      data = data, factorVars = factor_vars, addOverall = TRUE
+      data = data, factorVars = factor_vars, smd = smd, addOverall = TRUE
     )
   }
   printed_table <- print(tab1,
-    nonnormal = nonnormal_vars, exact = exact_vars,
+    nonnormal = nonnormal_vars, exact = exact_vars, smd = smd,
     quote = FALSE, noSpaces = TRUE, printToggle = FALSE, ...
   )
-  write.csv(printed_table, file = filename)
+  if (save_table) {
+    write.csv(printed_table, file = filename)
+  }
 
   missing_df <- as.data.frame(is.na(data))
   for (i in seq_len(ncol(missing_df))) {
@@ -242,9 +246,10 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
       data = missing_df, addOverall = TRUE
     )
   }
-  printed_table <- print(tab2, quote = FALSE, noSpaces = TRUE, printToggle = FALSE, ...)
-  write.csv(printed_table, file = str_replace(filename, ".csv", "_missing.csv"))
-
+  missing_table <- print(tab2, quote = FALSE, noSpaces = TRUE, printToggle = FALSE, smd = smd, ...)
+  if (save_table) {
+    write.csv(missing_table, file = str_replace(filename, ".csv", "_missing.csv"))
+  }
   if (!is.null(strata) && length(na.omit(unique(data[[strata]]))) > 2) {
     g <- factor(data[[strata]])
     pairwise_result <- data.frame()
@@ -290,9 +295,13 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
       pairwise_result <- rbind(pairwise_result, p_values_wide)
     }
     rownames(pairwise_result) <- vars
-    write.csv(pairwise_result, file = str_replace(filename, ".csv", "_pairwise.csv"))
+    if (save_table) {
+      write.csv(pairwise_result, file = str_replace(filename, ".csv", "_pairwise.csv"))
+    }
+    invisible(list(baseline = printed_table, missing = missing_table, pairwise = pairwise_result))
+  } else {
+    invisible(list(baseline = printed_table, missing = missing_table))
   }
-  invisible(NULL)
 }
 
 # Calculate alpha by sample size with an experience formula
