@@ -10,8 +10,9 @@ subgroup_forest(
   x,
   y,
   time = NULL,
+  standardize_x = FALSE,
   covars = NULL,
-  est_precision = 3,
+  est_nsmall = 2,
   p_nsmall = 3,
   group_cut_quantiles = 0.5,
   save_plot = TRUE,
@@ -32,10 +33,12 @@ the variables are categorical. If the variables are continuous, they will be cut
 \item{time}{A character string of the time variable. If \code{NULL}, logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}
 
+\item{standardize_x}{A logical value. If \code{TRUE}, the predictor variable will be standardized.}
+
 \item{covars}{A character vector of covariate names. If duplicated with \code{subgroup_vars}, the duplicated
 covariates will be temporarily removed during the corresponding subgroup analysis.}
 
-\item{est_precision}{An integer specifying the precision for the estimates in the plot.}
+\item{est_nsmall}{An integer specifying the precision for the estimates in the plot.}
 
 \item{p_nsmall}{An integer specifying the number of decimal places for the p-values.}
 

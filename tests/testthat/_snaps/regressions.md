@@ -3,63 +3,46 @@
     Code
       results$table
     Output
-                           Terms Count            Crude Crude            Model1
-      1                age (All)   227               HR     P                HR
-      2               Continuous    NA  1.02(1.00,1.04) 0.041  1.01(0.995,1.03)
-      3      Continuous, per 0.1    NA  1.00(1.00,1.00) 0.041  1.00(0.999,1.00)
-      4       Continuous, per 10    NA  1.21(1.01,1.45) 0.041  1.14(0.949,1.38)
-      5      Continuous, per 100    NA  6.56(1.08,40.0) 0.041  3.80(0.595,24.2)
-      6     Continuous, per 1 SD    NA  1.19(1.01,1.40) 0.041  1.13(0.954,1.34)
-      7    Continuous, logarithm    NA  3.03(1.02,9.06) 0.047  2.20(0.723,6.72)
-      8     Grouped by Quartiles    NA             <NA>  <NA>              <NA>
-      9                       Q1    49    1 (Reference)  <NA>     1 (Reference)
-      10                      Q2    56 1.08(0.676,1.72) 0.754  1.11(0.697,1.77)
-      11                      Q3    55 1.02(0.638,1.63) 0.929 0.937(0.582,1.51)
-      12                      Q4    67 1.39(0.893,2.15) 0.145  1.25(0.800,1.96)
-      13             P for trend    NA             <NA> 0.160              <NA>
-      14 Grouped by Median Value    NA             <NA>  <NA>              <NA>
-      15                     Low   105    1 (Reference)  <NA>     1 (Reference)
-      16                    High   122 1.16(0.850,1.58) 0.354  1.04(0.750,1.43)
-         Model1
-      1       P
-      2   0.158
-      3   0.158
-      4   0.158
-      5   0.158
-      6   0.158
-      7   0.165
-      8    <NA>
-      9    <NA>
-      10  0.658
-      11  0.787
-      12  0.325
-      13  0.426
-      14   <NA>
-      15   <NA>
-      16  0.833
+                           Terms Count            Crude Crude           Model1 Model1
+      1                age (All)   227               HR     P               HR      P
+      2               Continuous    NA  1.02(1.00,1.04) 0.041  1.01(0.99,1.03)  0.158
+      3      Continuous, per 0.1    NA  1.00(1.00,1.00) 0.041  1.00(1.00,1.00)  0.158
+      4       Continuous, per 10    NA  1.21(1.01,1.45) 0.041  1.14(0.95,1.38)  0.158
+      5      Continuous, per 100    NA 6.56(1.08,40.03) 0.041 3.80(0.60,24.23)  0.158
+      6     Continuous, per 1 SD    NA  1.19(1.01,1.40) 0.041  1.13(0.95,1.34)  0.158
+      7    Continuous, logarithm    NA  3.03(1.02,9.06) 0.047  2.20(0.72,6.72)  0.165
+      8     Grouped by Quartiles    NA             <NA>  <NA>             <NA>   <NA>
+      9                       Q1    49    1 (Reference)  <NA>    1 (Reference)   <NA>
+      10                      Q2    56  1.08(0.68,1.72) 0.754  1.11(0.70,1.77)  0.658
+      11                      Q3    55  1.02(0.64,1.63) 0.929  0.94(0.58,1.51)  0.787
+      12                      Q4    67  1.39(0.89,2.15) 0.145  1.25(0.80,1.96)  0.325
+      13             P for trend    NA             <NA> 0.160             <NA>  0.426
+      14 Grouped by Median Value    NA             <NA>  <NA>             <NA>   <NA>
+      15                     Low   105    1 (Reference)  <NA>    1 (Reference)   <NA>
+      16                    High   122  1.16(0.85,1.58) 0.354  1.04(0.75,1.43)  0.833
 
 # regression_basic_results works for logistic regression
 
     Code
       results$table
     Output
-                           Terms Count               Crude Crude              Model1
-      1                age (All)   227                  OR     P                  OR
-      2               Continuous    NA     1.04(1.00,1.07) 0.025    1.03(0.996,1.06)
-      3      Continuous, per 0.1    NA     1.00(1.00,1.01) 0.025     1.00(1.00,1.01)
-      4       Continuous, per 10    NA     1.44(1.05,2.00) 0.025    1.34(0.964,1.87)
-      5      Continuous, per 100    NA 39.3(1.61,1.03e+03) 0.025 18.7(0.695,   533.)
-      6     Continuous, per 1 SD    NA     1.40(1.04,1.88) 0.025    1.31(0.967,1.77)
-      7    Continuous, logarithm    NA     9.14(1.41,61.1) 0.021    5.96(0.870,41.8)
-      8     Grouped by Quartiles    NA                <NA>  <NA>                <NA>
-      9                       Q1    49       1 (Reference)  <NA>       1 (Reference)
-      10                      Q2    56    1.33(0.581,3.05) 0.501    1.28(0.551,2.97)
-      11                      Q3    55    1.29(0.565,2.98) 0.540    1.23(0.529,2.85)
-      12                      Q4    67    2.01(0.878,4.68) 0.100    1.68(0.716,3.98)
-      13             P for trend    NA                <NA> 0.119                <NA>
-      14 Grouped by Median Value    NA                <NA>  <NA>                <NA>
-      15                     Low   105       1 (Reference)  <NA>       1 (Reference)
-      16                    High   122    1.41(0.785,2.53) 0.252    1.26(0.695,2.30)
+                           Terms Count               Crude Crude             Model1
+      1                age (All)   227                  OR     P                 OR
+      2               Continuous    NA     1.04(1.00,1.07) 0.025    1.03(1.00,1.06)
+      3      Continuous, per 0.1    NA     1.00(1.00,1.01) 0.025    1.00(1.00,1.01)
+      4       Continuous, per 10    NA     1.44(1.05,2.00) 0.025    1.34(0.96,1.87)
+      5      Continuous, per 100    NA 39.29(1.61,1034.37) 0.025 18.70(0.69,532.68)
+      6     Continuous, per 1 SD    NA     1.40(1.04,1.88) 0.025    1.31(0.97,1.77)
+      7    Continuous, logarithm    NA    9.14(1.41,61.13) 0.021   5.96(0.87,41.79)
+      8     Grouped by Quartiles    NA                <NA>  <NA>               <NA>
+      9                       Q1    49       1 (Reference)  <NA>      1 (Reference)
+      10                      Q2    56     1.33(0.58,3.05) 0.501    1.28(0.55,2.97)
+      11                      Q3    55     1.29(0.57,2.98) 0.540    1.23(0.53,2.85)
+      12                      Q4    67     2.01(0.88,4.68) 0.100    1.68(0.72,3.98)
+      13             P for trend    NA                <NA> 0.119               <NA>
+      14 Grouped by Median Value    NA                <NA>  <NA>               <NA>
+      15                     Low   105       1 (Reference)  <NA>      1 (Reference)
+      16                    High   122     1.41(0.79,2.53) 0.252    1.26(0.70,2.30)
          Model1
       1       P
       2   0.083
@@ -83,23 +66,23 @@
     Code
       results$table
     Output
-                           Terms Count                   Crude Crude
-      1                age (All)   214             Coefficient     P
-      2               Continuous    NA    0.0546(-0.139,0.248) 0.579
-      3      Continuous, per 0.1    NA 0.00546(-0.0139,0.0248) 0.579
-      4       Continuous, per 10    NA       0.546(-1.39,2.48) 0.579
-      5      Continuous, per 100    NA        5.46(-13.9,24.8) 0.579
-      6     Continuous, per 1 SD    NA       0.501(-1.28,2.28) 0.579
-      7    Continuous, logarithm    NA        4.01(-7.45,15.5) 0.491
-      8     Grouped by Quartiles    NA                    <NA>  <NA>
-      9                       Q1    54           1 (Reference)  <NA>
-      10                      Q2    43        3.28(-2.03,8.59) 0.224
-      11                      Q3    63       0.817(-4.00,5.64) 0.738
-      12                      Q4    54       0.389(-4.61,5.39) 0.878
-      13             P for trend    NA                    <NA> 0.914
-      14 Grouped by Median Value    NA                    <NA>  <NA>
-      15                     Low    97           1 (Reference)  <NA>
-      16                    High   117      -0.836(-4.40,2.73) 0.644
+                           Terms Count              Crude Crude
+      1                age (All)   214        Coefficient     P
+      2               Continuous    NA   0.05(-0.14,0.25) 0.579
+      3      Continuous, per 0.1    NA  0.005(-0.01,0.02) 0.579
+      4       Continuous, per 10    NA   0.55(-1.39,2.48) 0.579
+      5      Continuous, per 100    NA 5.46(-13.90,24.81) 0.579
+      6     Continuous, per 1 SD    NA   0.50(-1.28,2.28) 0.579
+      7    Continuous, logarithm    NA  4.01(-7.45,15.46) 0.491
+      8     Grouped by Quartiles    NA               <NA>  <NA>
+      9                       Q1    54      1 (Reference)  <NA>
+      10                      Q2    43   3.28(-2.03,8.59) 0.224
+      11                      Q3    63   0.82(-4.00,5.64) 0.738
+      12                      Q4    54   0.39(-4.61,5.39) 0.878
+      13             P for trend    NA               <NA> 0.914
+      14 Grouped by Median Value    NA               <NA>  <NA>
+      15                     Low    97      1 (Reference)  <NA>
+      16                    High   117  -0.84(-4.40,2.73) 0.644
 
 # regression_scan returns expected structure
 

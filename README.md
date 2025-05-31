@@ -142,7 +142,7 @@ knitr::kable(tables$baseline) # Display the table
 | wt (mean (SD)) | 3.2 (1.0) | 3.7 (0.9) | 2.6 (0.7) | 0.001 |  |
 | qsec (mean (SD)) | 17.8 (1.8) | 16.7 (1.1) | 19.3 (1.4) | \<0.001 |  |
 | am = 1 (%) | 13 (40.6) | 6 (33.3) | 7 (50.0) | 0.556 |  |
-| gear (%) |  |  |  | 0.002 | exact |
+| gear (%) |  |  |  | 0.001 | exact |
 | 3 | 15 (46.9) | 12 (66.7) | 3 (21.4) |  |  |
 | 4 | 12 (37.5) | 2 (11.1) | 10 (71.4) |  |  |
 | 5 | 5 (15.6) | 4 (22.2) | 1 (7.1) |  |  |
@@ -188,10 +188,11 @@ plot(p$rcs)
 ``` r
 data(cancer, package = "survival")
 cancer$dead <- cancer$status == 2 # Preparing a binary variable for logistic regression
+cancer$`age per 1 sd` <- c(scale(cancer$age)) # Standardizing age
 
 # Performing multivairate logistic regression
 p1 <- regression_forest(cancer,
-  model_vars = c("age", "sex", "wt.loss"), y = "dead",
+  model_vars = c("age per 1 sd", "sex", "wt.loss"), y = "dead",
   as_univariate = FALSE, save_plot = FALSE
 )
 plot(p1)
@@ -204,9 +205,9 @@ plot(p1)
 p2 <- regression_forest(
   cancer,
   model_vars = list(
-    Crude = c("age"),
-    Model1 = c("age", "sex"),
-    Model2 = c("age", "sex", "wt.loss")
+    Crude = c("age per 1 sd"),
+    Model1 = c("age per 1 sd", "sex"),
+    Model2 = c("age per 1 sd", "sex", "wt.loss")
   ),
   y = "dead",
   save_plot = FALSE

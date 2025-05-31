@@ -120,10 +120,11 @@ plot(p$rcs)
 ```{r example_3.4, fig.height=3}
 data(cancer, package = "survival")
 cancer$dead <- cancer$status == 2 # Preparing a binary variable for logistic regression
+cancer$`age per 1 sd` <- c(scale(cancer$age)) # Standardizing age
 
 # Performing multivairate logistic regression
 p1 <- regression_forest(cancer,
-  model_vars = c("age", "sex", "wt.loss"), y = "dead",
+  model_vars = c("age per 1 sd", "sex", "wt.loss"), y = "dead",
   as_univariate = FALSE, save_plot = FALSE
 )
 plot(p1)
@@ -131,9 +132,9 @@ plot(p1)
 p2 <- regression_forest(
   cancer,
   model_vars = list(
-    Crude = c("age"),
-    Model1 = c("age", "sex"),
-    Model2 = c("age", "sex", "wt.loss")
+    Crude = c("age per 1 sd"),
+    Model1 = c("age per 1 sd", "sex"),
+    Model2 = c("age per 1 sd", "sex", "wt.loss")
   ),
   y = "dead",
   save_plot = FALSE

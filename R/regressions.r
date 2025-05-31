@@ -21,7 +21,7 @@
 #' @param ref_levels A vector of strings of the reference levels of the factor variable. You can use `"lowest"`
 #'   or `"highest"` to select the lowest or highest level as the reference level. Otherwise, any level that
 #'   matches the provided strings will be used as the reference level.
-#' @param est_precision An integer specifying the precision for the estimates in the plot.
+#' @param est_nsmall An integer specifying the precision for the estimates in the plot.
 #' @param p_nsmall An integer specifying the number of decimal places for the p-values.
 #' @param pval_eps The threshold for rounding p values to 0.
 #' @param median_nsmall The minimum number of digits to the right of the decimal point for the median survival time.
@@ -62,7 +62,7 @@
 regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL, pers = c(0.1, 10, 100),
                                      factor_breaks = NULL, factor_labels = NULL, quantile_breaks = NULL,
                                      quantile_labels = NULL, label_with_range = FALSE, return_results = FALSE,
-                                     output_dir = NULL, ref_levels = "lowest", est_precision = 3, p_nsmall = 3,
+                                     output_dir = NULL, ref_levels = "lowest", est_nsmall = 2, p_nsmall = 3,
                                      pval_eps = 1e-3, median_nsmall = 0, colors = NULL, xlab = NULL, legend_title = x,
                                      legend_pos = c(0.8, 0.8), height = 6, width = 6, pval_pos = NULL, ...) {
   if (is.null(colors)) {
@@ -306,7 +306,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
       )
       model_res <- data.frame(model_res[grepl("x", model_res$term), ])
       for (col in c("estimate", "conf.low", "conf.high")) {
-        model_res[, col] <- formatC(model_res[, col], format = "g", digits = est_precision, flag = "#")
+        model_res[, col] <- format(model_res[, col], digits = 1, nsmall = est_nsmall)
       }
       tmp <- data.frame(
         term = model_res$term,
@@ -354,7 +354,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
 #' @param time A character string of the time variable. If `NULL`, logistic regression is used.
 #'   Otherwise, Cox proportional hazards regression is used.
 #' @param as_univariate A logical value indicating whether to treat the model_vars as univariate.
-#' @param est_precision An integer specifying the precision for the estimates in the plot.
+#' @param est_nsmall An integer specifying the precision for the estimates in the plot.
 #' @param p_nsmall An integer specifying the number of decimal places for the p-values.
 #' @param show_vars A character vector of variable names to be shown in the plot. If `NULL`, all variables are shown.
 #' @param save_plot A logical value indicating whether to save the plot.
@@ -385,7 +385,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
 #'   y = "status", time = "time",
 #'   show_vars = c("age", "sex", "ph.ecog_cat", "meal.cal"), save_plot = FALSE
 #' )
-regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = FALSE, est_precision = 3,
+regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = FALSE, est_nsmall = 2,
                               p_nsmall = 3, show_vars = NULL, save_plot = TRUE, filename = NULL, ...) {
   if (!is.null(time)) {
     analysis_type <- "cox"
@@ -479,11 +479,11 @@ regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = 
   plot_df[[effect_label]] <- ifelse(!is.na(plot_df$Variable) & !is.na(plot_df$Level),
     "Reference",
     paste0(
-      formatC(plot_df$Estimate, format = "g", digits = est_precision, flag = "#"),
+      format(plot_df$Estimate, digits = 1, nsmall = est_nsmall),
       " (",
-      formatC(plot_df$Lower, format = "g", digits = est_precision, flag = "#"),
+      format(plot_df$Lower, digits = 1, nsmall = est_nsmall),
       " to ",
-      formatC(plot_df$Upper, format = "g", digits = est_precision, flag = "#"),
+      format(plot_df$Upper, digits = 1, nsmall = est_nsmall),
       ")"
     )
   )

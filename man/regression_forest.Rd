@@ -10,7 +10,7 @@ regression_forest(
   y,
   time = NULL,
   as_univariate = FALSE,
-  est_precision = 3,
+  est_nsmall = 2,
   p_nsmall = 3,
   show_vars = NULL,
   save_plot = TRUE,
@@ -30,7 +30,7 @@ Otherwise, Cox proportional hazards regression is used.}
 
 \item{as_univariate}{A logical value indicating whether to treat the model_vars as univariate.}
 
-\item{est_precision}{An integer specifying the precision for the estimates in the plot.}
+\item{est_nsmall}{An integer specifying the precision for the estimates in the plot.}
 
 \item{p_nsmall}{An integer specifying the number of decimal places for the p-values.}
 

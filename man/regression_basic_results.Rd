@@ -19,7 +19,7 @@ regression_basic_results(
   return_results = FALSE,
   output_dir = NULL,
   ref_levels = "lowest",
-  est_precision = 3,
+  est_nsmall = 2,
   p_nsmall = 3,
   pval_eps = 0.001,
   median_nsmall = 0,
@@ -68,7 +68,7 @@ Otherwise, the results are saved to the output directory.}
 or \code{"highest"} to select the lowest or highest level as the reference level. Otherwise, any level that
 matches the provided strings will be used as the reference level.}
 
-\item{est_precision}{An integer specifying the precision for the estimates in the plot.}
+\item{est_nsmall}{An integer specifying the precision for the estimates in the plot.}
 
 \item{p_nsmall}{An integer specifying the number of decimal places for the p-values.}
 

@@ -10,7 +10,8 @@
 #'   Otherwise, Cox proportional hazards regression is used.
 #' @param covars A character vector of covariate names. If duplicated with `subgroup_vars`, the duplicated
 #'   covariates will be temporarily removed during the corresponding subgroup analysis.
-#' @param est_precision An integer specifying the precision for the estimates in the plot.
+#' @param standardize_x A logical value. If `TRUE`, the predictor variable will be standardized.
+#' @param est_nsmall An integer specifying the precision for the estimates in the plot.
 #' @param p_nsmall An integer specifying the number of decimal places for the p-values.
 #' @param group_cut_quantiles A vector of numerical values between 0 and 1, specifying the quantile to use
 #'   for cutting continuous subgroup variables.
@@ -40,19 +41,29 @@
 #'   subgroup_vars = c("sex", "wt.loss"), x = "ph.ecog_cat", y = "dead",
 #'   covars = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
 #' )
-subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covars = NULL, est_precision = 3, p_nsmall = 3,
-                            group_cut_quantiles = 0.5, save_plot = TRUE, filename = NULL, ...) {
+subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, standardize_x = FALSE, covars = NULL,
+                            est_nsmall = 2, p_nsmall = 3, group_cut_quantiles = 0.5, save_plot = TRUE,
+                            filename = NULL, ...) {
   x_type <- ifelse(!is.factor(data[[x]]), "number", "factor")
+  if (x_type == "factor") {
+    if (standardize_x) {
+      warning("`standardize_x` is set to `TRUE` for a factor variable. It will be ignored.")
+    }
+    label_add <- " per 1 SD "
+  }else {
+    label_add <- " "
+  }
   if (!is.null(time)) {
     analysis_type <- "cox"
-    effect_label <- "HR (95% CI)"
+    effect_label <- "HR"
   } else if (length(levels(as.factor(data[[y]]))) == 2) {
     analysis_type <- "logistic"
-    effect_label <- "OR (95% CI)"
+    effect_label <- "OR"
   } else {
     analysis_type <- "linear"
-    effect_label <- "Coefficient (95% CI)"
+    effect_label <- "Coefficient"
   }
+  effect_label <- paste0(effect_label, label_add, "(95% CI)")
   ref_val <- ifelse(analysis_type %in% c("cox", "logistic"), 1, 0)
   x_trans <- ifelse(analysis_type %in% c("cox", "logistic"), "log10", "none")
   covars <- remove_conflict(covars, c(y, x, time))
@@ -202,11 +213,11 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, covars = NUL
   plot_df <- res
   plot_df[[effect_label]] <- ifelse(is.na(plot_df$Estimate), "",
     paste0(
-      formatC(plot_df$Estimate, format = "g", digits = est_precision, flag = "#"),
+      format(plot_df$Estimate, digits = 1, nsmall = est_nsmall),
       " (",
-      formatC(plot_df$Lower, format = "g", digits = est_precision, flag = "#"),
+      format(plot_df$Lower, digits = 1, nsmall = est_nsmall),
       " to ",
-      formatC(plot_df$Upper, format = "g", digits = est_precision, flag = "#"),
+      format(plot_df$Upper, digits = 1, nsmall = est_nsmall),
       ")"
     )
   )
