@@ -228,7 +228,7 @@ p <- subgroup_forest(cancer,
 plot(p)
 ```
 
-<img src="man/figures/README-example_3.5-1.png" width="110%" />
+<img src="man/figures/README-example_3.5-1.png" width="100%" />
 
 ## Documentation
 
