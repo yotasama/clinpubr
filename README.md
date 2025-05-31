@@ -23,10 +23,10 @@ tables/figures suitable for medical journals.
 
 - **Clinical Data Cleaning**: Functions to handle missing values,
   standardize units, convert dates, and clean numerical/categorical
-  variables.
+  variables.  
 - **Significant Result Screening**: Tools for interaction analysis,
   model comparison, and regression result with common variable
-  transformations to identify key findings.
+  transformations to identify key findings.  
 - **Publication-Ready Outputs**: Generate baseline characteristic
   tables, forest plots, RCS curves, and other visualizations formatted
   for medical publications.
@@ -89,12 +89,12 @@ print(extract_num(x,
 
 #### Other Cleaning Functions
 
-There are other cleaning functions in `clinpubr` that you can use: -
-`to_date()`: Convert text to date, can handle mixed format. -
-`unit_view()` and `unit_standardize()`: Provide a pipeline to
-standardize conflicting units. - `cut_by()`: Split numerics into
-factors, offers a variety of splitting options and auto labeling. - And
-more…
+- *`to_date()`*: Convert text to date, can handle mixed format.
+- *`unit_view()`* and *`unit_standardize()`*: Provide a pipeline to
+  standardize conflicting units.  
+- *`cut_by()`*: Split numerics into factors, offers a variety of
+  splitting options and auto labeling.  
+- And more…
 
 ### Generating Publication-Ready Tables and Figures
 
@@ -142,7 +142,7 @@ knitr::kable(tables$baseline) # Display the table
 | wt (mean (SD)) | 3.2 (1.0) | 3.7 (0.9) | 2.6 (0.7) | 0.001 |  |
 | qsec (mean (SD)) | 17.8 (1.8) | 16.7 (1.1) | 19.3 (1.4) | \<0.001 |  |
 | am = 1 (%) | 13 (40.6) | 6 (33.3) | 7 (50.0) | 0.556 |  |
-| gear (%) |  |  |  | 0.001 | exact |
+| gear (%) |  |  |  | 0.002 | exact |
 | 3 | 15 (46.9) | 12 (66.7) | 3 (21.4) |  |  |
 | 4 | 12 (37.5) | 2 (11.1) | 10 (71.4) |  |  |
 | 5 | 5 (15.6) | 4 (22.2) | 1 (7.1) |  |  |
@@ -160,9 +160,30 @@ p <- rcs_plot(cancer, x = "age", y = "status", time = "time", covars = c("sex", 
 plot(p)
 ```
 
-<img src="man/figures/README-example_3.2-1.png" width="100%" />
+<img src="man/figures/README-example_3.2-1.png" width="60%" />
 
-#### Example 3.3: Regression Forest Plot
+#### Example 3.3: Interaction Plot
+
+``` r
+data(cancer, package = "survival")
+
+# Generating interaction plot of both linear and RCS models
+p <- interaction_plot(cancer,
+  y = "status", time = "time", predictor = "age",
+  group_var = "sex", save_plot = FALSE
+)
+plot(p$lin)
+```
+
+<img src="man/figures/README-example_3.3-1.png" width="60%" />
+
+``` r
+plot(p$rcs)
+```
+
+<img src="man/figures/README-example_3.3-2.png" width="60%" />
+
+#### Example 3.4: Regression Forest Plot
 
 ``` r
 data(cancer, package = "survival")
@@ -176,7 +197,7 @@ p1 <- regression_forest(cancer,
 plot(p1)
 ```
 
-<img src="man/figures/README-example_3.3-1.png" width="100%" />
+<img src="man/figures/README-example_3.4-1.png" width="60%" />
 
 ``` r
 
@@ -193,28 +214,21 @@ p2 <- regression_forest(
 plot(p2)
 ```
 
-<img src="man/figures/README-example_3.3-2.png" width="100%" />
+<img src="man/figures/README-example_3.4-2.png" width="60%" />
 
-#### Example 3.4: Interaction Plot
+#### Example 3.5: Subgroup Forest Plot
 
 ``` r
 data(cancer, package = "survival")
-
-# Generating interaction plot of both linear and RCS models
-p <- interaction_plot(cancer,
-  y = "status", time = "time", predictor = "age",
-  group_var = "sex", save_plot = FALSE
+# coxph model with time assigned
+p <- subgroup_forest(cancer,
+  subgroup_vars = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "status",
+  time = "time", covars = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
 )
-plot(p$lin)
+plot(p)
 ```
 
-<img src="man/figures/README-example_3.4-1.png" width="100%" />
-
-``` r
-plot(p$rcs)
-```
-
-<img src="man/figures/README-example_3.4-2.png" width="100%" />
+<img src="man/figures/README-example_3.5-1.png" width="110%" />
 
 ## Documentation
 

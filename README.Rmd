@@ -10,7 +10,7 @@ knitr::opts_chunk$set(
   comment = "#>",
   dpi = 300,
   fig.path = "man/figures/README-",
-  out.width = "100%"
+  out.width = "60%"
 )
 ```
 
@@ -26,9 +26,9 @@ knitr::opts_chunk$set(
 `clinpubr` is an R package designed to streamline the workflow from clinical data processing to publication-ready outputs. It provides tools for clinical data cleaning, significant result screening, and generating tables/figures suitable for medical journals.
 
 ## Key Features
-- **Clinical Data Cleaning**: Functions to handle missing values, standardize units, convert dates, and clean numerical/categorical variables.
-- **Significant Result Screening**: Tools for interaction analysis, model comparison, and regression result with common variable transformations to identify key findings.
-- **Publication-Ready Outputs**: Generate baseline characteristic tables, forest plots, RCS curves, and other visualizations formatted for medical publications.
+- **Clinical Data Cleaning**: Functions to handle missing values, standardize units, convert dates, and clean numerical/categorical variables.  
+- **Significant Result Screening**: Tools for interaction analysis, model comparison, and regression result with common variable transformations to identify key findings.  
+- **Publication-Ready Outputs**: Generate baseline characteristic tables, forest plots, RCS curves, and other visualizations formatted for medical publications.  
 
 ## Installation
 
@@ -76,11 +76,10 @@ print(extract_num(x,
 ```
 
 #### Other Cleaning Functions
-There are other cleaning functions in `clinpubr` that you can use:
-- `to_date()`: Convert text to date, can handle mixed format.
-- `unit_view()` and `unit_standardize()`: Provide a pipeline to standardize conflicting units.
-- `cut_by()`: Split numerics into factors, offers a variety of splitting options and auto labeling.
-- And more...
+- *`to_date()`*: Convert text to date, can handle mixed format. 
+- *`unit_view()`* and *`unit_standardize()`*: Provide a pipeline to standardize conflicting units.  
+- *`cut_by()`*: Split numerics into factors, offers a variety of splitting options and auto labeling.  
+- And more...  
 
 ### Generating Publication-Ready Tables and Figures
 #### Example 3.1: Automatic Type Infer and Baseline Table Generation
@@ -104,8 +103,21 @@ p <- rcs_plot(cancer, x = "age", y = "status", time = "time", covars = c("sex", 
 plot(p)
 ```
 
-#### Example 3.3: Regression Forest Plot
+#### Example 3.3: Interaction Plot
 ```{r example_3.3}
+data(cancer, package = "survival")
+
+# Generating interaction plot of both linear and RCS models
+p <- interaction_plot(cancer,
+  y = "status", time = "time", predictor = "age",
+  group_var = "sex", save_plot = FALSE
+)
+plot(p$lin)
+plot(p$rcs)
+```
+
+#### Example 3.4: Regression Forest Plot
+```{r example_3.4}
 data(cancer, package = "survival")
 cancer$dead <- cancer$status == 2 # Preparing a binary variable for logistic regression
 
@@ -129,17 +141,15 @@ p2 <- regression_forest(
 plot(p2)
 ```
 
-#### Example 3.4: Interaction Plot
-```{r example_3.4}
+#### Example 3.5: Subgroup Forest Plot
+```{r example_3.5, out.width = "110%"}
 data(cancer, package = "survival")
-
-# Generating interaction plot of both linear and RCS models
-p <- interaction_plot(cancer,
-  y = "status", time = "time", predictor = "age",
-  group_var = "sex", save_plot = FALSE
+# coxph model with time assigned
+p <- subgroup_forest(cancer,
+  subgroup_vars = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "status",
+  time = "time", covars = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
 )
-plot(p$lin)
-plot(p$rcs)
+plot(p)
 ```
 
 ## Documentation
