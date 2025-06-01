@@ -23,7 +23,7 @@ test_that("classif_model_compare outputs correct files", {
   })
 })
 
-test_that("output_files=FALSE suppresses file generation", {
+test_that("save_output=FALSE suppresses file generation", {
   with_tempdir({
     set.seed(123)
     data <- data.frame(
@@ -31,7 +31,7 @@ test_that("output_files=FALSE suppresses file generation", {
       model = runif(100)
     )
 
-    res <- classif_model_compare(data, "target", "model", output_files = FALSE)
+    res <- classif_model_compare(data, "target", "model", save_output = FALSE)
 
     expect_false(file.exists("model_compare_table.csv"))
     expect_false(file.exists("model_compare_dca.png"))
@@ -54,7 +54,7 @@ test_that("as_probability handles value conversion", {
   with_tempdir({
     res1 <- classif_model_compare(df, "target", "modelA",
       as_probability = TRUE,
-      return_results = TRUE
+      save_output = FALSE
     )
     expect_true(all(res1$metric_table$Brier <= 1))
 

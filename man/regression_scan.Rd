@@ -33,7 +33,8 @@ except \code{y} and \code{time} are taken as predictors.}
 to this value would be considered a factor.}
 
 \item{p_adjust_method}{The method to use for p-value adjustment for pairwise comparison. Default is "BH".
-See \code{?p.adjust.methods}.}
+See \code{?p.adjust.methods}. Note that the p-value adjustment is only applied column wise, not applied among
+all available p-values in the table.}
 
 \item{save_table}{A logical value indicating whether to save the results as a table.}
 

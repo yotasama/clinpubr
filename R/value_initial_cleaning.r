@@ -2,9 +2,9 @@
 #' @description Cleaning illegal characters in string vectors that store numerical values.
 #'   The function is useful for cleaning electrical health records in Chinese.
 #' @param x A string vector that stores numerical values.
-#' @return A string vector that stores cleaner numerical values.
 #' @details The function will convert full-width characters to half-width characters, remove
 #'   spaces and extra dots, and replace empty strings with `NA`.
+#' @returns A string vector that stores cleaner numerical values.
 #' @export
 #' @examples
 #' # x = c("１２３", "11..23", "ａｂａｎｄｏｎ")

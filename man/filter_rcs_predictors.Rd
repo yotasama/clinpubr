@@ -17,3 +17,6 @@ A vector of predictor names. These variables are numeric and have more than 5 un
 \description{
 Filter predictors that can be used to fit for RCS models.
 }
+\examples{
+filter_rcs_predictors(mtcars)
+}

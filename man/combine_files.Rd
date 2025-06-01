@@ -33,3 +33,12 @@ A data frame. If no data files found, return \code{NULL}.
 \description{
 combine multiple data files into a single data frame
 }
+\examples{
+library(withr)
+with_tempdir({
+  write.csv(data.frame(x = 1:3, y = 4:6), "file1.csv", row.names = FALSE)
+  write.csv(data.frame(x = 7:9, y = 10:12), "file2.csv", row.names = FALSE)
+  dat <- combine_files(pattern = "file")
+})
+print(dat)
+}

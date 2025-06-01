@@ -7,7 +7,7 @@
 #' @param dat A data frame of answers.
 #' @param seq A vector of correct answers, one element for each question.
 #' @param multi_column Logical, whether the multi-answers are in multiple columns.
-#' @return A data frame of boolean values, with ncol equals the number of questions.
+#' @returns A data frame of boolean values, with ncol equals the number of questions.
 #' @export
 #' @examples
 #' dat <- data.frame(Q1 = c("A", "B", "C"), Q2 = c("AD", "AE", "ABF"))

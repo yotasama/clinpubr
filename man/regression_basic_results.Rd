@@ -16,7 +16,7 @@ regression_basic_results(
   quantile_breaks = NULL,
   quantile_labels = NULL,
   label_with_range = FALSE,
-  return_results = FALSE,
+  save_output = TRUE,
   output_dir = NULL,
   ref_levels = "lowest",
   est_nsmall = 2,
@@ -59,8 +59,7 @@ OR or HR.}
 
 \item{label_with_range}{A logical value indicating whether to add the range of the levels to the labels.}
 
-\item{return_results}{A logical value indicating whether to return the results. If \code{TRUE}, the results are returned.
-Otherwise, the results are saved to the output directory.}
+\item{save_output}{A logical value indicating whether to save the results.}
 
 \item{output_dir}{A character string of the directory to save the output files.}
 
@@ -93,8 +92,7 @@ matches the provided strings will be used as the reference level.}
 \item{...}{Additional arguments passed to the \code{survminer::ggsurvplot} function for KM curve.}
 }
 \value{
-If \code{return_results} is \code{TRUE}, the function returns a list of results. Otherwise, the function saves the
-results to the output directory.
+A list of results, including the regression table and the KM curve plots.
 }
 \description{
 Generate the result table of logistic or Cox regression with different settings of the predictor
@@ -116,7 +114,7 @@ data(cancer, package = "survival")
 regression_basic_results(cancer,
   x = "age", y = "status", time = "time",
   model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex")),
-  return_results = TRUE
+  save_output = FALSE
 )
 
 # logistic model with time not assigned
@@ -124,6 +122,6 @@ cancer$dead <- cancer$status == 2
 regression_basic_results(cancer,
   x = "age", y = "dead", ref_levels = c("Q3", "High"),
   model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex")),
-  return_results = TRUE
+  save_output = FALSE
 )
 }

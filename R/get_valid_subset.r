@@ -7,12 +7,12 @@
 #'   with `1` indicating equal priority for rows and columns.
 #' @param speedup_ratio A positive numerical, the ratio of speedup. The higher the value, the greedier the algorithm.
 #' @param return_index A logical, whether to return only the row and column indices of the subset.
-#' @return The subset data frame, or a list that contains the row and column indices of the subset.
 #' @details The function is based on a greedy algorithm. It iteratively removes the row or column with
 #'   the highest excessive missing rate weighted by the inverse of `row_priority` until the missing rates
 #'   of all rows and columns are below the specified threshold. Then it reversely tries to add rows and columns that
 #'   do not break the conditions back and finalize the subset. The result depends on the `row_priority` parameter
 #'   drastically, so it's recommended to try different `row_priority` values to find the most satisfying one.
+#' @returns The subset data frame, or a list that contains the row and column indices of the subset.
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
@@ -117,7 +117,7 @@ get_valid_subset <- function(df, row_na_ratio = 0.5, col_na_ratio = 0.2, row_pri
 #' Get the maximum missing rate of rows and columns.
 #' @description Get the maximum missing rate of rows and columns.
 #' @param df A data frame.
-#' @return A list that contains the maximum missing rate of rows and columns.
+#' @returns A list that contains the maximum missing rate of rows and columns.
 #' @export
 #' @examples
 #' data(cancer, package = "survival")

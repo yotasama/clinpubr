@@ -27,7 +27,7 @@ knitr::opts_chunk$set(
 
 ## Key Features
 - **Clinical Data Cleaning**: Functions to handle missing values, standardize units, convert dates, and clean numerical/categorical variables.  
-- **Significant Result Screening**: Tools for interaction analysis, model comparison, and regression result with common variable transformations to identify key findings.  
+- **Result Screening**: Screening results of regression and interaction analysis with common variable transformations to identify key findings.  
 - **Publication-Ready Outputs**: Generate baseline characteristic tables, forest plots, RCS curves, and other visualizations formatted for medical publications.  
 
 ## Installation
@@ -80,6 +80,15 @@ print(extract_num(x,
 - *`unit_view()`* and *`unit_standardize()`*: Provide a pipeline to standardize conflicting units.  
 - *`cut_by()`*: Split numerics into factors, offers a variety of splitting options and auto labeling.  
 - And more...  
+
+### Screening Results to Identify Potential Findings
+```{r example_2}
+data(cancer, package = "survival")
+
+# Screening for potential findings with regression models in the cancer dataset
+scan_result <- regression_scan(cancer, y = "status", time = "time", save_table = FALSE)
+knitr::kable(scan_result)
+```
 
 ### Generating Publication-Ready Tables and Figures
 #### Example 3.1: Automatic Type Infer and Baseline Table Generation
@@ -143,13 +152,47 @@ plot(p2)
 ```
 
 #### Example 3.5: Subgroup Forest Plot
-```{r example_3.5, out.width = "100%", fig.width = 8, fig.height=4}
+```{r example_3.5, out.width = "70%", fig.width = 8, fig.height=4}
 data(cancer, package = "survival")
 # coxph model with time assigned
 p <- subgroup_forest(cancer,
   subgroup_vars = c("age", "sex", "wt.loss"), x = "ph.ecog", y = "status",
   time = "time", covars = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
 )
+plot(p)
+```
+
+#### Example 3.6: Classification Model Performance
+```{r example_3.6}
+# Building models with example data
+data(cancer, package = "survival")
+df <- kidney
+df$dead <- ifelse(df$time <= 100 & df$status == 0, NA, df$time <= 100)
+df <- na.omit(df[, -c(1:3)])
+
+model0 <- glm(dead ~ age + frail, family = binomial(), data = df)
+df$base_pred <- predict(model0, type = "response")
+model1 <- glm(dead ~ ., family = binomial(), data = df)
+df$full_pred <- predict(model1, type = "response")
+
+# Generating most of the useful plots and metrics for model comparison
+results <- classif_model_compare(df, "dead", c("base_pred", "full_pred"), save_output = FALSE)
+
+knitr::kable(results$metric_table)
+plot(results$roc_plot)
+plot(results$calibration_plot)
+plot(results$dca_plot)
+```
+
+#### Example 3.7: Importance Plot
+```{r example_3.7}
+# Generating a dummy importance vector
+set.seed(5)
+dummy_importance <- runif(20, 0.2, 0.6)^5
+names(dummy_importance) <- paste0("var", 1:20)
+
+# Plotting variable importance, keeping only top 15 and splitting at 10
+p <- importance_plot(dummy_importance, top_n = 15, split_at = 10, save_plot = FALSE)
 plot(p)
 ```
 

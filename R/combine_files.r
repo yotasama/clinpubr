@@ -10,7 +10,14 @@
 #'
 #' @returns A data frame. If no data files found, return `NULL`.
 #' @export
-
+#' @examples
+#' library(withr)
+#' with_tempdir({
+#'   write.csv(data.frame(x = 1:3, y = 4:6), "file1.csv", row.names = FALSE)
+#'   write.csv(data.frame(x = 7:9, y = 10:12), "file2.csv", row.names = FALSE)
+#'   dat <- combine_files(pattern = "file")
+#' })
+#' print(dat)
 combine_files <- function(path = ".", pattern = NULL, add_file_name = FALSE, unique_only = TRUE,
                           reader_fun = read.csv, ...) {
   files <- list.files(path = path, pattern = pattern, full.names = TRUE)

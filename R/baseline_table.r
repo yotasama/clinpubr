@@ -166,7 +166,7 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_f
 #' @param p_adjust_method The method to use for p-value adjustment for pairwise comparison. Default is "BH".
 #'   See `?p.adjust.methods`.
 #' @param ... Additional arguments passed to `tableone::print.TableOne`.
-#' @return A list containing the baseline table and accompanying tables.
+#' @returns A list containing the baseline table and accompanying tables.
 #' @export
 #' @examples
 #' withr::with_tempdir(
@@ -298,9 +298,9 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
     if (save_table) {
       write.csv(pairwise_result, file = str_replace(filename, ".csv", "_pairwise.csv"))
     }
-    invisible(list(baseline = printed_table, missing = missing_table, pairwise = pairwise_result))
+    return(list(baseline = printed_table, missing = missing_table, pairwise = pairwise_result))
   } else {
-    invisible(list(baseline = printed_table, missing = missing_table))
+    return(list(baseline = printed_table, missing = missing_table))
   }
 }
 

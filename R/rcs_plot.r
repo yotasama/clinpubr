@@ -359,6 +359,8 @@ break_at <- function(xlim, breaks, ref_val) {
 #'
 #' @returns A vector of predictor names. These variables are numeric and have more than 5 unique values.
 #' @export
+#' @examples
+#' filter_rcs_predictors(mtcars)
 filter_rcs_predictors <- function(data, predictors = NULL) {
   if (is.null(predictors)) {
     predictors <- colnames(data)

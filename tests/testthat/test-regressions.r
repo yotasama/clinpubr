@@ -17,7 +17,7 @@ test_that("regression_basic_results works for Cox regression", {
   withr::with_tempdir({
     results <- regression_basic_results(
       cancer,
-      x = "age", y = "status", time = "time", return_results = TRUE,
+      x = "age", y = "status", time = "time", save_outputs = FALSE,
       model_covs = list(Crude = c(), Model1 = c("ph.karno"))
     )
     expect_true(is.list(results))
@@ -29,7 +29,7 @@ test_that("regression_basic_results works for Cox regression", {
     regression_basic_results(
       cancer,
       x = "age", y = "status", time = "time",
-      model_covs = list(Crude = c()), return_results = FALSE
+      model_covs = list(Crude = c()), save_outputs = TRUE
     )
     check_file_exists("cox_results_age/table_age.csv")
     check_file_exists("cox_results_age/kmplot_x.quartile.png")
@@ -41,7 +41,7 @@ test_that("regression_basic_results works for logistic regression", {
   withr::with_tempdir({
     results <- regression_basic_results(
       cancer,
-      x = "age", y = "dead", return_results = TRUE,
+      x = "age", y = "dead", save_outputs = FALSE,
       model_covs = list(Crude = c(), Model1 = c("ph.karno"))
     )
     expect_true(is.list(results))
@@ -52,7 +52,7 @@ test_that("regression_basic_results works for logistic regression", {
     regression_basic_results(
       cancer,
       x = "age", y = "dead",
-      model_covs = list(Crude = c()), return_results = FALSE
+      model_covs = list(Crude = c()), save_outputs = TRUE
     )
     check_file_exists("logistic_results_age/table_age.csv")
   })
@@ -63,7 +63,7 @@ test_that("regression_basic_results works for linear regression", {
   results <- regression_basic_results(
     cancer,
     x = "age", y = "wt.loss",
-    model_covs = list(Crude = c()), return_results = TRUE
+    model_covs = list(Crude = c()), save_outputs = FALSE
   )
   expect_snapshot(results$table)
 })
@@ -71,11 +71,11 @@ test_that("regression_basic_results works for linear regression", {
 # Test error handling
 test_that("regression_basic_results throws errors for invalid inputs", {
   expect_error(
-    regression_basic_results(cancer, x = "age", y = "status", model_covs = c("age")),
+    regression_basic_results(cancer, x = "age", y = "status", model_covs = c("age"), save_outputs = FALSE),
     "conflict of model variables!"
   )
   expect_error(
-    regression_basic_results(cancer, x = "age", y = "status", model_covs = 123),
+    regression_basic_results(cancer, x = "age", y = "status", model_covs = 123, save_outputs = FALSE),
     "`model_covs` should be a character vector of covariates or a named list of covariates of multiple models."
   )
 })

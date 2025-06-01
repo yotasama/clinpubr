@@ -6,7 +6,7 @@
 #' @param ... Conditions to evaluate. See examples for more details.
 #' @param .weight Weight for each condition, should be of length 1 or equal to the number of conditions.
 #' @param .na_replace Value to replace `NA`, should be of length 1 or equal to the number of conditions.
-#' @return A numeric vector of index scores
+#' @returns A numeric vector of index scores
 #' @export
 #' @examples
 #' df <- data.frame(x = c(1, 2, 3, 4, 5), y = c(1, 2, NA, 4, NA))

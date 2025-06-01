@@ -17,7 +17,7 @@
 #'   See `?p.adjust.methods`.
 #' @param save_table A logical value indicating whether to save the results as a table.
 #' @param filename The name of the file to save the results. File will be saved in `.csv` format.
-#' @return A data frame containing the results of the interaction analysis.
+#' @returns A data frame containing the results of the interaction analysis.
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
@@ -118,7 +118,7 @@ interaction_scan <- function(data, y, time = NULL, predictors = NULL, group_vars
 #' @param show_n A logical value indicating whether to show the number of observations in the plot.
 #' @param group_title The title of the group variable.
 #' @param ... Additional arguments passed to the `ggplot` function.
-#' @return A `ggplot` object.
+#' @returns A `ggplot` object.
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
@@ -369,7 +369,7 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covars 
 #'   Otherwise, Cox proportional hazards regression is used.
 #' @param covars A character vector of covariate names.
 #' @param rcs_knots The number of rcs knots. If `NULL`, a linear model would be fitted instead.
-#' @return A numerical, the interaction p-value
+#' @returns A numerical, the interaction p-value
 #' @export
 #' @examples
 #' data(cancer, package = "survival")

@@ -1,4 +1,4 @@
-# output_files=FALSE suppresses file generation
+# save_output=FALSE suppresses file generation
 
     Code
       res$metric_table

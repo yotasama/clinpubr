@@ -7,7 +7,7 @@
 #'   Omitted if `return_idx` is `TRUE`.
 #' @details The function uses the `as.numeric()` function to try to convert the elements to numeric.
 #'   If the conversion fails, the element is considered non-numeric.
-#' @return The (unique) elements that cannot be converted to numeric, and their indexes if `return_idx` is `TRUE`.
+#' @returns The (unique) elements that cannot be converted to numeric, and their indexes if `return_idx` is `TRUE`.
 #' @export
 #' @examples
 #' check_nonnum(c("\uFF11\uFF12\uFF13", # "１２３"

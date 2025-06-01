@@ -7,12 +7,11 @@
 #' @param model_names A vector of strings specifying the names of the models to compare.
 #' @param colors A vector of colors to use for the plots. The last 2 colors are used for the
 #'   "Treat all" and "Treat none" lines in the DCA plot.
-#' @param output_files A logical value indicating whether to output the results to files.
+#' @param save_output A logical value indicating whether to output the results to files.
 #' @param output_prefix A string specifying the prefix for the output files.
 #' @param as_probability A logical or a vector of variable names. The logical value indicates
 #'   whether to convert variables not in range 0 to 1 into this range.
 #'   The vector of variable names means to convert these variables to the range of 0 to 1.
-#' @param return_results A logical value indicating whether to return the results.
 #' @section Metrics:
 #'   - AUC: Area Under the Receiver Operating Characteristic Curve
 #'   - Accuracy: Overall accuracy
@@ -30,10 +29,10 @@
 #'
 #' @returns A list of various results. If the output files are not in desired format,
 #'   these results can be modified for further use.
-#'   - model_metrics: A data frame containing the performance metrics for each model.
-#'   - roc_plots: A `ggplot` object of ROC curves.
-#'   - dca_plots: A `ggplot` object of decision curve analysis plots.
-#'   - calibration_plots: A `ggplot` object of calibration plots.
+#'   - metric_table: A data frame containing the performance metrics for each model.
+#'   - roc_plot: A `ggplot` object of ROC curves.
+#'   - dca_plot: A `ggplot` object of decision curve analysis plots.
+#'   - calibration_plot: A `ggplot` object of calibration plots.
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
@@ -46,11 +45,9 @@
 #' model <- glm(dead ~ ., family = binomial(), data = df)
 #' df$full_pred <- predict(model, type = "response")
 #'
-#' classif_model_compare(df, "dead", c("base_pred", "full_pred"), output_files = FALSE)
-classif_model_compare <- function(data, target_var, model_names, colors = NULL, output_files = TRUE,
-                                  output_prefix = "model_compare", as_probability = FALSE,
-                                  return_results = !output_files) {
-  if (!output_files && !return_results) stop("Results are neither saved or returned!")
+#' classif_model_compare(df, "dead", c("base_pred", "full_pred"), save_output = FALSE)
+classif_model_compare <- function(data, target_var, model_names, colors = NULL, save_output = TRUE,
+                                  output_prefix = "model_compare", as_probability = FALSE) {
   if (isTRUE(as_probability)) {
     vars_to_prob <- model_names[apply(data[, model_names, drop = FALSE], 2, function(x) any(x < 0 | x > 1))]
   } else if (is.character(as_probability)) {
@@ -108,7 +105,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   for (i in 3:ncol(metric_table)) {
     metric_table[, i] <- round(metric_table[, i], digits = 3)
   }
-  if (output_files) {
+  if (save_output) {
     write.csv(metric_table, file = paste0(output_prefix, "_table.csv"), row.names = FALSE)
   }
 
@@ -141,7 +138,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
       legend.position = "inside",
       legend.position.inside = legend_pos,
     )
-  if (output_files) {
+  if (save_output) {
     ggplot2::ggsave(dca_plot, file = paste0(output_prefix, "_dca.png"), width = 4, height = 4)
   }
 
@@ -166,7 +163,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
       legend.position = "inside",
       legend.position.inside = c(0.7, 0.25),
     )
-  if (output_files) {
+  if (save_output) {
     ggplot2::ggsave(roc_plot, file = paste0(output_prefix, "_roc.png"), width = 4, height = 4)
   }
 
@@ -202,15 +199,13 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
       legend.position = "inside",
       legend.position.inside = c(0.7, 0.25),
     )
-  if (output_files) {
+  if (save_output) {
     ggplot2::ggsave(calibration_plot, file = paste0(output_prefix, "_calibration.png"), width = 4, height = 4)
   }
-  if (return_results) {
-    return(list(
-      metric_table = metric_table,
-      dca_plot = dca_plot,
-      roc_plot = roc_plot,
-      calibration_plot = calibration_plot
-    ))
-  }
+  return(list(
+    metric_table = metric_table,
+    dca_plot = dca_plot,
+    roc_plot = roc_plot,
+    calibration_plot = calibration_plot
+  ))
 }

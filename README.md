@@ -24,9 +24,9 @@ tables/figures suitable for medical journals.
 - **Clinical Data Cleaning**: Functions to handle missing values,
   standardize units, convert dates, and clean numerical/categorical
   variables.  
-- **Significant Result Screening**: Tools for interaction analysis,
-  model comparison, and regression result with common variable
-  transformations to identify key findings.  
+- **Result Screening**: Screening results of regression and interaction
+  analysis with common variable transformations to identify key
+  findings.  
 - **Publication-Ready Outputs**: Generate baseline characteristic
   tables, forest plots, RCS curves, and other visualizations formatted
   for medical publications.
@@ -95,6 +95,28 @@ print(extract_num(x,
 - *`cut_by()`*: Split numerics into factors, offers a variety of
   splitting options and auto labeling.  
 - And more…
+
+### Screening Results to Identify Potential Findings
+
+``` r
+data(cancer, package = "survival")
+
+# Screening for potential findings with regression models in the cancer dataset
+scan_result <- regression_scan(cancer, y = "status", time = "time", save_table = FALSE)
+#> Taking all variables as predictors
+knitr::kable(scan_result)
+```
+
+|  | predictor | nvalid | original.HR | original.pval | original.padj | logarithm.HR | logarithm.pval | logarithm.padj | categorized.HR | categorized.pval | categorized.padj | rcs.overall.pval | rcs.overall.padj | rcs.nonlinear.pval | rcs.nonlinear.padj | best.var.trans |
+|:---|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|:---|
+| 4 | ph.ecog | 227 | 1.6095320 | 0.0000269 | 0.0002154 | NA | NA | NA | NA | 0.0001530 | 0.0012237 | NA | NA | NA | NA | original |
+| 6 | pat.karno | 225 | 0.9803456 | 0.0002824 | 0.0011296 | 0.2709544 | 0.0003071 | 0.0015356 | 0.5755627 | 0.0006608 | 0.0026431 | 0.0025848 | 0.0155086 | 0.5908952 | 0.8863427 | original |
+| 3 | sex | 228 | 0.5880028 | 0.0014912 | 0.0039766 | NA | NA | NA | 0.5880028 | 0.0014912 | 0.0039766 | NA | NA | NA | NA | categorized |
+| 5 | ph.karno | 227 | 0.9836863 | 0.0049579 | 0.0099157 | 0.3184168 | 0.0079468 | 0.0198669 | 0.6352465 | 0.0077670 | 0.0155339 | 0.0128462 | 0.0385385 | 0.2307961 | 0.6848245 | original |
+| 2 | age | 228 | 1.0188965 | 0.0418531 | 0.0669650 | 3.0256773 | 0.0466926 | 0.0778209 | 1.1440790 | 0.3910647 | 0.3957558 | 0.0825447 | 0.1650894 | 0.3424123 | 0.6848245 | original |
+| 1 | inst | 227 | 0.9903692 | 0.3459838 | 0.4613117 | 0.9292046 | 0.3181432 | 0.3976790 | 0.8384047 | 0.2600040 | 0.3466720 | 0.8175277 | 0.8707131 | 0.9839705 | 0.9839705 | categorized |
+| 7 | meal.cal | 181 | 0.9998762 | 0.5929402 | 0.6776459 | 0.9141580 | 0.6128095 | 0.6128095 | 0.8620604 | 0.3957558 | 0.3957558 | 0.8707131 | 0.8707131 | 0.8227256 | 0.9839705 | categorized |
+| 8 | wt.loss | 214 | 1.0013201 | 0.8281974 | 0.8281974 | NA | NA | NA | 1.3190185 | 0.0909098 | 0.1454557 | 0.1128907 | 0.1693361 | 0.0514936 | 0.3089618 | rcs.nonlinear |
 
 ### Generating Publication-Ready Tables and Figures
 
@@ -229,7 +251,68 @@ p <- subgroup_forest(cancer,
 plot(p)
 ```
 
-<img src="man/figures/README-example_3.5-1.png" width="100%" />
+<img src="man/figures/README-example_3.5-1.png" width="70%" />
+
+#### Example 3.6: Classification Model Performance
+
+``` r
+# Building models with example data
+data(cancer, package = "survival")
+df <- kidney
+df$dead <- ifelse(df$time <= 100 & df$status == 0, NA, df$time <= 100)
+df <- na.omit(df[, -c(1:3)])
+
+model0 <- glm(dead ~ age + frail, family = binomial(), data = df)
+df$base_pred <- predict(model0, type = "response")
+model1 <- glm(dead ~ ., family = binomial(), data = df)
+df$full_pred <- predict(model1, type = "response")
+
+# Generating most of the useful plots and metrics for model comparison
+results <- classif_model_compare(df, "dead", c("base_pred", "full_pred"), save_output = FALSE)
+#> Assuming 'TRUE' is [Event] and 'FALSE' is [non-Event]
+
+knitr::kable(results$metric_table)
+```
+
+| Model | AUC | Accuracy | Sensitivity | Specificity | Pos Pred Value | Neg Pred Value | F1 | Kappa | Brier | cutoff | Youden | HosLem |
+|:---|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| base_pred | 0.822 (0.711, 0.933) | 0.806 | 0.8 | 0.815 | 0.848 | 0.759 | 0.824 | 0.610 | 0.171 | 0.49 | 0.615 | 0.405 |
+| full_pred | 0.931 (0.869, 0.994) | 0.855 | 0.8 | 0.926 | 0.933 | 0.781 | 0.862 | 0.711 | 0.102 | 0.63 | 0.726 | 0.577 |
+
+``` r
+plot(results$roc_plot)
+```
+
+<img src="man/figures/README-example_3.6-1.png" width="60%" />
+
+``` r
+plot(results$calibration_plot)
+#> Warning: Removed 1 row containing missing values or values outside the scale range
+#> (`geom_smooth()`).
+```
+
+<img src="man/figures/README-example_3.6-2.png" width="60%" />
+
+``` r
+plot(results$dca_plot)
+```
+
+<img src="man/figures/README-example_3.6-3.png" width="60%" />
+
+#### Example 3.7: Importance Plot
+
+``` r
+# Generating a dummy importance vector
+set.seed(5)
+dummy_importance <- runif(20, 0.2, 0.6)^5
+names(dummy_importance) <- paste0("var", 1:20)
+
+# Plotting variable importance, keeping only top 15 and splitting at 10
+p <- importance_plot(dummy_importance, top_n = 15, split_at = 10, save_plot = FALSE)
+plot(p)
+```
+
+<img src="man/figures/README-example_3.7-1.png" width="60%" />
 
 ## Documentation
 

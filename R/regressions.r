@@ -15,8 +15,7 @@
 #' @param quantile_breaks A numeric vector of the quantile breaks to factorize the `x` variable.
 #' @param quantile_labels A character vector of the labels for the quantile levels.
 #' @param label_with_range A logical value indicating whether to add the range of the levels to the labels.
-#' @param return_results A logical value indicating whether to return the results. If `TRUE`, the results are returned.
-#'   Otherwise, the results are saved to the output directory.
+#' @param save_output A logical value indicating whether to save the results.
 #' @param output_dir A character string of the directory to save the output files.
 #' @param ref_levels A vector of strings of the reference levels of the factor variable. You can use `"lowest"`
 #'   or `"highest"` to select the lowest or highest level as the reference level. Otherwise, any level that
@@ -40,8 +39,7 @@
 #'   variables, and the factorization of the variable including split by median, by quartiles, and by `factor_breaks`
 #'   and `quantile_breaks`. The setting of the covariates includes different models with different covariates.
 #' @note For factor variables with more than 2 levels, p value for trend is also calculated.
-#' @return If `return_results` is `TRUE`, the function returns a list of results. Otherwise, the function saves the
-#'   results to the output directory.
+#' @returns A list of results, including the regression table and the KM curve plots.
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
@@ -49,7 +47,7 @@
 #' regression_basic_results(cancer,
 #'   x = "age", y = "status", time = "time",
 #'   model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex")),
-#'   return_results = TRUE
+#'   save_output = FALSE
 #' )
 #'
 #' # logistic model with time not assigned
@@ -57,11 +55,11 @@
 #' regression_basic_results(cancer,
 #'   x = "age", y = "dead", ref_levels = c("Q3", "High"),
 #'   model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex")),
-#'   return_results = TRUE
+#'   save_output = FALSE
 #' )
 regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL, pers = c(0.1, 10, 100),
                                      factor_breaks = NULL, factor_labels = NULL, quantile_breaks = NULL,
-                                     quantile_labels = NULL, label_with_range = FALSE, return_results = FALSE,
+                                     quantile_labels = NULL, label_with_range = FALSE, save_output = TRUE,
                                      output_dir = NULL, ref_levels = "lowest", est_nsmall = 2, p_nsmall = 3,
                                      pval_eps = 1e-3, median_nsmall = 0, colors = NULL, xlab = NULL, legend_title = x,
                                      legend_pos = c(0.8, 0.8), height = 6, width = 6, pval_pos = NULL, ...) {
@@ -129,7 +127,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
   if (is.null(output_dir)) {
     output_dir <- paste(analysis_type, "results", x, sep = "_")
   }
-  if (!return_results && !file.exists(output_dir)) {
+  if (save_output && !file.exists(output_dir)) {
     dir.create(output_dir, recursive = T)
   }
   if (is.null(xlab)) {
@@ -231,7 +229,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
             ) +
             geom_segment(y = 0.5, yend = 0.5, x = 0, xend = max(tmp$x), linetype = 2, show.legend = F)
         }
-        if (!return_results) {
+        if (save_output) {
           ggsave(
             paste0(output_dir, "/kmplot_", var, ".png"),
             plot = survminer::arrange_ggsurvplots(list(p), print = FALSE, ncol = 1),
@@ -334,15 +332,10 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
       }
     }
   }
-  if (!return_results) {
+  if (save_output) {
     write.csv(res_table, paste0(output_dir, "/table_", x, ".csv"), row.names = FALSE)
   }
-  results <- list(table = res_table, plots = plots_list)
-  if (return_results) {
-    return(results)
-  } else {
-    return(invisible(NULL))
-  }
+  return(list(table = res_table, plots = plots_list))
 }
 
 
@@ -531,7 +524,7 @@ regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = 
     p_wh <- forestploter::get_wh(p)
     ggplot2::ggsave(filename, p, width = p_wh[1], height = p_wh[2])
   }
-  p
+  return(p)
 }
 
 
@@ -549,10 +542,10 @@ regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = 
 #' @param num_to_factor An integer. Numerical variables with number of unique values below or equal
 #'   to this value would be considered a factor.
 #' @param p_adjust_method The method to use for p-value adjustment for pairwise comparison. Default is "BH".
-#'   See `?p.adjust.methods`.
+#'   See `?p.adjust.methods`. Note that the p-value adjustment is only applied column wise, not applied among
+#'   all available p-values in the table.
 #' @param save_table A logical value indicating whether to save the results as a table.
 #' @param filename The name of the file to save the results. File will be saved in `.csv` format.
-#' @return A data frame containing the results of the regression analysis.
 #' @details The function first determines the type of each predictor variable (`numerical`, `factor`,
 #'   `num_factor` (numerical but with less unique values than or equal to `num_to_factor`), or
 #'   `other`). Then, it performs regression analysis for available transforms of each predictor variable
@@ -572,6 +565,7 @@ regression_forest <- function(data, model_vars, y, time = NULL, as_univariate = 
 #'   but the p-value of the overall test can be provided with TYPE-2 ANOVA from `car::Anova()`.
 #'   - `rcs`: Fit the regression model with the restricted cubic spline variable. The overall and nonlinear p-values
 #'   are provided in results. These p-vals are calculated by `anova()` of `rms::cph()` or `rms::Glm`.
+#' @returns A data frame containing the results of the regression analysis.
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
@@ -711,7 +705,7 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covars = NU
 #'   - `"predictor_split"`: return the regression parameter of the predictor, could have multiple lines.
 #'   - `"predictor_combined"`: return the regression parameter of the predictor, test the predictor as a whole and
 #'     takes only one line.
-#' @return A list containing the regression ratio and p-value of the predictor. If `rcs_knots` is not `NULL`,
+#' @returns A list containing the regression ratio and p-value of the predictor. If `rcs_knots` is not `NULL`,
 #'   the list contains the overall p-value and the nonlinear p-value of the rcs model. If `return_full_result`
 #'   is `TRUE`, the complete result of the regression model is returned.
 #' @export

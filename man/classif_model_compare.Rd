@@ -9,10 +9,9 @@ classif_model_compare(
   target_var,
   model_names,
   colors = NULL,
-  output_files = TRUE,
+  save_output = TRUE,
   output_prefix = "model_compare",
-  as_probability = FALSE,
-  return_results = !output_files
+  as_probability = FALSE
 )
 }
 \arguments{
@@ -25,24 +24,22 @@ classif_model_compare(
 \item{colors}{A vector of colors to use for the plots. The last 2 colors are used for the
 "Treat all" and "Treat none" lines in the DCA plot.}
 
-\item{output_files}{A logical value indicating whether to output the results to files.}
+\item{save_output}{A logical value indicating whether to output the results to files.}
 
 \item{output_prefix}{A string specifying the prefix for the output files.}
 
 \item{as_probability}{A logical or a vector of variable names. The logical value indicates
 whether to convert variables not in range 0 to 1 into this range.
 The vector of variable names means to convert these variables to the range of 0 to 1.}
-
-\item{return_results}{A logical value indicating whether to return the results.}
 }
 \value{
 A list of various results. If the output files are not in desired format,
 these results can be modified for further use.
 \itemize{
-\item model_metrics: A data frame containing the performance metrics for each model.
-\item roc_plots: A \code{ggplot} object of ROC curves.
-\item dca_plots: A \code{ggplot} object of decision curve analysis plots.
-\item calibration_plots: A \code{ggplot} object of calibration plots.
+\item metric_table: A data frame containing the performance metrics for each model.
+\item roc_plot: A \code{ggplot} object of ROC curves.
+\item dca_plot: A \code{ggplot} object of decision curve analysis plots.
+\item calibration_plot: A \code{ggplot} object of calibration plots.
 }
 }
 \description{
@@ -80,5 +77,5 @@ df$base_pred <- predict(model0, type = "response")
 model <- glm(dead ~ ., family = binomial(), data = df)
 df$full_pred <- predict(model, type = "response")
 
-classif_model_compare(df, "dead", c("base_pred", "full_pred"), output_files = FALSE)
+classif_model_compare(df, "dead", c("base_pred", "full_pred"), save_output = FALSE)
 }

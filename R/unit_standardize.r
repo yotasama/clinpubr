@@ -213,8 +213,6 @@ unit_view <- function(df, subject_col, value_col, unit_col, quantiles = c(0.025,
       filename <- "unit_view.csv"
     }
     write.csv(res, file = filename, na = "")
-    invisible(res)
-  } else {
-    return(res)
   }
+  return(res)
 }
