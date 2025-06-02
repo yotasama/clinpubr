@@ -1,6 +1,6 @@
 Package: clinpubr
 Title: Clinical Publication with 'R'
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: 
     person("Yue", "Niu", email = "niuyuesam@163.com", role = c("aut", "cre", "cph"),
            comment = c(ORCID = "0000-0001-6843-3548"))

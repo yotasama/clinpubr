@@ -1,4 +1,4 @@
-# clinpubr (development version)
+# clinpubr 0.1.0
 
 * Initial CRAN submission.
 
