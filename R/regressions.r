@@ -358,7 +358,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
-#' cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
+#' cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", ">=2", ">=2"))
 #' regression_forest(cancer,
 #'   model_vars = c("age", "sex", "wt.loss", "ph.ecog_cat", "meal.cal"), y = "status", time = "time",
 #'   as_univariate = TRUE, save_plot = FALSE

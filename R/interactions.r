@@ -259,7 +259,8 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covars 
       plt1 <- plt1 +
         theme_classic() +
         theme(
-          legend.position = c(0.05, 0.95),
+          legend.position = "inside",
+          legend.position.inside = c(0.05, 0.95),
           legend.justification = c(0, 1),
           legend.box.margin = margin(6, 6, 6, 6),
           legend.background = element_blank(),

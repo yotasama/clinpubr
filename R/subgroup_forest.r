@@ -36,7 +36,7 @@
 #'   covars = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
 #' )
 #'
-#' cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
+#' cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", ">=2", ">=2"))
 #' subgroup_forest(cancer,
 #'   subgroup_vars = c("sex", "wt.loss"), x = "ph.ecog_cat", y = "dead",
 #'   covars = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE

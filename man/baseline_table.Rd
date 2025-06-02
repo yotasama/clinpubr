@@ -73,7 +73,10 @@ withr::with_tempdir(
     baseline_table(cancer, var_types = var_types, filename = "baseline.csv")
 
     # baseline table with pairwise comparison
-    cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
+    cancer$ph.ecog_cat <- factor(cancer$ph.ecog,
+      levels = c(0:3),
+      labels = c("0", "1", ">=2", ">=2")
+    )
     var_types <- get_var_types(cancer, strata = "ph.ecog_cat")
     baseline_table(cancer, var_types = var_types, filename = "baselineV2.csv")
     print(paste0("files saved to: ", getwd()))

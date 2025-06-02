@@ -13,7 +13,7 @@ test_that("value_initial_cleaning correctly cleans numerical strings", {
 
   # Test case 4: Mixed cases (actual fullwidth characters)
   expect_equal(
-    value_initial_cleaning(c("１２..３", "..45", "  67  ")),
+    value_initial_cleaning(c("\uFF11\uFF12..\uFF13", "..45", "  67  ")),
     c("12.3", ".45", "67")
   )
 

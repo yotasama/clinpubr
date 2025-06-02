@@ -26,6 +26,5 @@ The function uses the \code{as.numeric()} function to try to convert the element
 If the conversion fails, the element is considered non-numeric.
 }
 \examples{
-check_nonnum(c("\uFF11\uFF12\uFF13", # "１２３"
-               "11..23", "3.14", "2.131", "35.2."))
+check_nonnum(c("\uFF11\uFF12\uFF13", "11..23", "3.14", "2.131", "35.2."))
 }

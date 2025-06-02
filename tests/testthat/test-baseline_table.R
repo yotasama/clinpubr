@@ -30,7 +30,7 @@ test_that("baseline_table generates correct output files 2", {
 
 test_that("baseline_table generates correct output files", {
   data(cancer, package = "survival")
-  cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", "≥2", "≥2"))
+  cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", ">=2", ">=2"))
 
   with_tempdir({
     set.seed(1)

@@ -21,7 +21,6 @@ The function will convert full-width characters to half-width characters, remove
 spaces and extra dots, and replace empty strings with \code{NA}.
 }
 \examples{
-# x = c("１２３", "11..23", "ａｂａｎｄｏｎ")
 x <- c("\uFF11\uFF12\uFF13", "11..23", "\uff41\uff42\uff41\uff4e\uff44\uff4f\uff4e")
 value_initial_cleaning(x)
 }

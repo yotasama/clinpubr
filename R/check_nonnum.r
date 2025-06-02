@@ -10,8 +10,7 @@
 #' @returns The (unique) elements that cannot be converted to numeric, and their indexes if `return_idx` is `TRUE`.
 #' @export
 #' @examples
-#' check_nonnum(c("\uFF11\uFF12\uFF13", # "１２３"
-#'                "11..23", "3.14", "2.131", "35.2."))
+#' check_nonnum(c("\uFF11\uFF12\uFF13", "11..23", "3.14", "2.131", "35.2."))
 check_nonnum <- function(x, return_idx = FALSE, show_unique = TRUE) {
   x2 <- suppressWarnings(as.numeric(x))
   idx <- which(!is.na(x) & is.na(x2))
