@@ -344,7 +344,7 @@
 <text x='382.13' y='423.12' text-anchor='middle' style='font-size: 14.00px; font-family: sans;' textLength='26.45px' lengthAdjust='spacingAndGlyphs'>time</text>
 <text transform='translate(15.61,200.17) rotate(-90)' text-anchor='middle' style='font-size: 14.00px; font-family: sans;' textLength='117.51px' lengthAdjust='spacingAndGlyphs'>Survival probability</text>
 <rect x='553.38' y='52.93' width='55.78' height='61.45' style='stroke-width: 1.16; stroke: none; fill: #FFFFFF;' />
-<text x='559.35' y='66.83' style='font-size: 10.00px; font-family: sans;' textLength='26.68px' lengthAdjust='spacingAndGlyphs'>Strata</text>
+<text x='559.35' y='66.83' style='font-size: 10.00px; font-family: sans;' textLength='16.69px' lengthAdjust='spacingAndGlyphs'>age</text>
 <rect x='559.35' y='73.84' width='17.28' height='17.28' style='stroke-width: 1.16; stroke: none; fill: #FFFFFF;' />
 <line x1='561.08' y1='82.48' x2='574.91' y2='82.48' style='stroke-width: 2.13; stroke: #66C2A5; stroke-linecap: butt;' />
 <text x='567.99' y='87.06' text-anchor='middle' style='font-size: 13.75px; fill: #66C2A5; font-family: sans;' textLength='8.03px' lengthAdjust='spacingAndGlyphs'>+</text>
@@ -400,7 +400,7 @@
 <text x='533.35' y='552.00' text-anchor='middle' style='font-size: 12.00px; font-family: sans;' textLength='20.02px' lengthAdjust='spacingAndGlyphs'>750</text>
 <text x='683.91' y='552.00' text-anchor='middle' style='font-size: 12.00px; font-family: sans;' textLength='26.70px' lengthAdjust='spacingAndGlyphs'>1000</text>
 <text x='382.80' y='567.12' text-anchor='middle' style='font-size: 14.00px; font-family: sans;' textLength='26.45px' lengthAdjust='spacingAndGlyphs'>time</text>
-<text transform='translate(15.61,498.33) rotate(-90)' text-anchor='middle' style='font-size: 14.00px; font-family: sans;' textLength='37.35px' lengthAdjust='spacingAndGlyphs'>Strata</text>
+<text transform='translate(15.61,498.33) rotate(-90)' text-anchor='middle' style='font-size: 14.00px; font-family: sans;' textLength='23.36px' lengthAdjust='spacingAndGlyphs'>age</text>
 <text x='51.57' y='448.99' style='font-size: 16.00px; font-family: sans;' textLength='104.04px' lengthAdjust='spacingAndGlyphs'>Number at risk</text>
 </g>
 </svg>
