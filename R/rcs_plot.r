@@ -29,7 +29,7 @@
 #' @param filename A character string specifying the filename for the plot. If `NULL`, a default filename is used.
 #' @param y_max,y_min The range of effect value of the plot. If `NULL`, the numbers are determined automatically.
 #' @param hist_max The maximum value for the histogram. If `NULL`, the maximum value is determined automatically.
-#' @param xlim The x-axis limits for the plot. If `NULL`, the limits are determined automatically.
+#' @param xlim The x-axis limits for the plot. If `NULL`, the limits are the `0.025` and `0.975` quantiles.
 #' @param return_details A logical value indicating whether to return the details of the plot.
 #'
 #' @returns A `ggplot` object, or a list containing the `ggplot` object and other details if `return_details` is `TRUE`.
@@ -77,7 +77,7 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
   }
   indf <- indf[complete.cases(indf), ]
 
-  dd <- rms::datadist(indf)
+  dd <- rms::datadist(indf, q.display = c(0.025, 0.975))
   old_datadist <- getOption("datadist")
   on.exit(
     {
@@ -151,7 +151,7 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
     } else {
       0.5 * pred_ymax
     }
-    ymax1 <- min(max(df_rcs[, "upper"], na.rm = TRUE), plot_ymax)
+    ymax1 <- plot_ymax # min(max(df_rcs[, "upper"], na.rm = TRUE), plot_ymax)
   } else {
     ymax1 <- y_max
   }
@@ -165,7 +165,7 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
       } else {
         1.5 * pred_ymax
       }
-      ymin <- max(min(df_rcs[, "lower"], na.rm = TRUE), plot_ymin)
+      ymin <- plot_ymin # max(min(df_rcs[, "lower"], na.rm = TRUE), plot_ymin)
     } else {
       ymin <- 0
     }
@@ -196,16 +196,15 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
 
   p <- ggplot2::ggplot()
 
-  xlim_plot <- xlim
   if (add_hist) {
-    df_hist <- indf[indf[[x]] >= xlim[1] & indf[[x]] <= xlim[2], ]
     if (length(breaks) == 1) {
       breaks <- break_at(xlim, breaks, ref_val)
+      xlim = breaks[c(1, length(breaks))]
     }
-    xlim_plot <- xlim + c(-offsetx1 * 2, offsetx1 * 2)
+    df_hist <- indf[indf[[x]] >= xlim[1] & indf[[x]] <= xlim[2], ]
     h <- graphics::hist(df_hist[[x]], breaks = breaks, right = FALSE, plot = FALSE)
 
-    df_hist_plot <- data.frame(x = h[["mids"]], freq = h[["counts"]], den = h[["density"]] * 100)
+    df_hist_plot <- data.frame(x = h[["mids"]], freq = h[["counts"]], den = h[["counts"]] / nrow(indf) * 100)
     ori_widths <- breaks[-1] - breaks[-length(breaks)]
     relative_width <- 0.9
     df_hist_plot$xmin <- df_hist_plot$x - ori_widths * relative_width / 2
@@ -240,17 +239,21 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
   if (analysis_type %in% c("cox", "logistic")) {
     p <- p +
       geom_hline(yintercept = 1, linewidth = 1, linetype = 2, color = "grey") +
-      geom_point(aes(x = ref_val, y = 1), color = rcs_color, size = 2) +
+      geom_point(aes(x = ref_val, y = 1), color = rcs_color, size = 2)
+  }
+  p <- p +
+    geom_ribbon(
+      data = df_rcs, aes(x = x, ymin = lower, ymax = upper),
+      fill = rcs_color, alpha = 0.1
+    )
+  if (analysis_type %in% c("cox", "logistic")) {
+    p <- p +
       geom_text(aes(
         x = ref_val, y = 0.9,
         label = paste0("Ref=", format(ref_val, digits = ref_digits))
       ))
   }
   p <- p +
-    geom_ribbon(
-      data = df_rcs, aes(x = x, ymin = lower, ymax = upper),
-      fill = rcs_color, alpha = 0.1
-    ) +
     geom_line(data = df_rcs, aes(x = x, y = y), color = rcs_color, linewidth = 1) +
     geom_segment(
       aes(
@@ -267,7 +270,7 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
     geom_text(aes(x = labelx1, y = labely1 + offsety1, label = label1_1), hjust = 0) +
     geom_text(aes(x = labelx1, y = labely1 - offsety1, label = label1_2), hjust = 0) +
     geom_text(aes(x = labelx2, y = labely2, label = label2), hjust = 1) +
-    scale_x_continuous(xtitle, limits = xlim_plot, expand = c(0.01, 0.01))
+    scale_x_continuous(xtitle, limits = xlim, expand = c(0.01, 0))
   if (add_hist) {
     p <- p +
       scale_y_continuous(

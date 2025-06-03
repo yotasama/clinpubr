@@ -82,7 +82,7 @@ Passed to \code{ggplot2::scale_y_continuous(transform = trans)}.}
 
 \item{hist_max}{The maximum value for the histogram. If \code{NULL}, the maximum value is determined automatically.}
 
-\item{xlim}{The x-axis limits for the plot. If \code{NULL}, the limits are determined automatically.}
+\item{xlim}{The x-axis limits for the plot. If \code{NULL}, the limits are the \code{0.025} and \code{0.975} quantiles.}
 
 \item{return_details}{A logical value indicating whether to return the details of the plot.}
 }

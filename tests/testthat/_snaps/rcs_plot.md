@@ -13,7 +13,7 @@
       [1] 228
       
       $n.plot
-      [1] 216
+      [1] 217
       
       $phassump
       NULL

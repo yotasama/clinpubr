@@ -187,7 +187,7 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covars 
     predictor_lvl <- seq(min(dat$.predictor), max(dat$.predictor), length.out = 100)
     prefix <- "lin_"
   }
-  dd <- rms::datadist(dat)
+  dd <- rms::datadist(dat, q.display = c(0.025, 0.975))
   old_datadist <- getOption("datadist")
   on.exit(
     {

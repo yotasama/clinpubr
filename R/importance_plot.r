@@ -1,12 +1,13 @@
 #' Importance plot
 #' @description Creates an importance plot from a named vector of values.
 #' @param x A named vector of values, typically importance scores from models.
+#' @param x_lab A character string for the x-axis label.
 #' @param top_n The number of top values to show. If NULL, all values are shown.
 #' @param color A length-2 vector of low and high colors, or a single color for the bars.
 #' @param show_legend A logical value indicating whether to show the legend.
 #' @param split_at The index at which to split the plot into two halves, usually used to illustrate
 #'   variable selection. If NULL, no split is made.
-#' @param show_labels A logical value indicating whether to show the labels on the bars.
+#' @param show_labels A logical value indicating whether to show the value labels on the bars.
 #' @param digits,nsmall,scientific Controls the formatting of labels. Passed to `format()`.
 #' @param label_color The color of the labels.
 #' @param label_size The size of the labels.
@@ -25,24 +26,26 @@
 #' dummy_importance <- runif(20)^5
 #' names(dummy_importance) <- paste0("var", 1:20)
 #' importance_plot(dummy_importance, top_n = 15, split_at = 10, save_plot = FALSE)
-importance_plot <- function(x, top_n = NULL, color = c("#56B1F7", "#132B43"), show_legend = FALSE, split_at = NULL,
-                            show_labels = TRUE, digits = 2, nsmall = 3, scientific = TRUE, label_color = "black",
-                            label_size = 3, label_hjust = max(x) / 10, save_plot = TRUE, filename = "importance.png") {
+importance_plot <- function(x, x_lab = "Importance", top_n = NULL, color = c("#56B1F7", "#132B43"), show_legend = FALSE,
+                            split_at = NULL, show_labels = TRUE, digits = 2, nsmall = 3, scientific = TRUE,
+                            label_color = "black", label_size = 3, label_hjust = max(x) / 10, save_plot = TRUE,
+                            filename = "importance.png") {
   x <- sort(x, decreasing = TRUE)
   tmp <- data.frame(name = names(x), value = x)
   if (length(color) == 1) color <- rep(color, 2)
-  tmp$label <- format(tmp$value, nsmall = nsmall, digits = digits, scientific = scientific)
 
   if (!is.null(top_n) && top_n < length(x)) {
     tmp <- tmp[1:(top_n + 1), ]
+    tmp$label <- format(tmp$value, nsmall = nsmall, digits = digits, scientific = scientific)
     tmp$name[top_n + 1] <- "..."
     tmp$label[top_n + 1] <- "..."
     tmp$name <- factor(tmp$name,
       levels = rev(tmp$name),
       labels = rev(c(tmp$name[1:top_n], "..."))
     )
-    tmp$value[top_n + 1] <- 0
+    tmp$value[top_n + 1] <- NA
   } else {
+    tmp$label <- format(tmp$value, nsmall = nsmall, digits = digits, scientific = scientific)
     tmp$name <- factor(tmp$name,
       levels = rev(tmp$name),
       labels = rev(tmp$name)
@@ -52,17 +55,19 @@ importance_plot <- function(x, top_n = NULL, color = c("#56B1F7", "#132B43"), sh
   p <- ggplot(data = tmp, mapping = aes(x = name, y = value)) +
     geom_bar(aes(fill = value), stat = "identity", alpha = 1, show.legend = show_legend) +
     scale_fill_gradient(low = color[1], high = color[2]) +
-    labs(x = "", y = "Importance", fill = "Importance") +
-    scale_y_continuous(expand = c(0.1, 0)) +
+    labs(x = "", y = x_lab, fill = x_lab) +
+    scale_y_continuous(expand = c(0.1, 0, 0.3, 0)) +
     coord_flip() +
     theme_classic()
   if (show_labels) {
-    p <- p + geom_text(aes(label = label), color = label_color, nudge_y = label_hjust, size = 3)
+    p <- p + geom_text(aes(y = replace_elements(value, NA, 0), label = label),
+      color = label_color, nudge_y = label_hjust, size = 3
+    )
   }
   if (!is.null(split_at)) {
     h <- nrow(tmp) - split_at + 0.5
     p <- p + geom_vline(xintercept = h, linetype = 3)
   }
-  if (save_plot) ggsave(filename, p, width = 4, height = 4)
+  if (save_plot) suppressWarnings((ggsave(filename, p, width = 4, height = 4)))
   return(p)
 }

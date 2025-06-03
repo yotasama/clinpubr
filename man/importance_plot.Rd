@@ -6,6 +6,7 @@
 \usage{
 importance_plot(
   x,
+  x_lab = "Importance",
   top_n = NULL,
   color = c("#56B1F7", "#132B43"),
   show_legend = FALSE,
@@ -24,6 +25,8 @@ importance_plot(
 \arguments{
 \item{x}{A named vector of values, typically importance scores from models.}
 
+\item{x_lab}{A character string for the x-axis label.}
+
 \item{top_n}{The number of top values to show. If NULL, all values are shown.}
 
 \item{color}{A length-2 vector of low and high colors, or a single color for the bars.}
@@ -33,7 +36,7 @@ importance_plot(
 \item{split_at}{The index at which to split the plot into two halves, usually used to illustrate
 variable selection. If NULL, no split is made.}
 
-\item{show_labels}{A logical value indicating whether to show the labels on the bars.}
+\item{show_labels}{A logical value indicating whether to show the value labels on the bars.}
 
 \item{digits, nsmall, scientific}{Controls the formatting of labels. Passed to \code{format()}.}
 
