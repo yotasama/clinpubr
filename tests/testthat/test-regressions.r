@@ -26,7 +26,7 @@ test_that("regression_basic_results works for Cox regression", {
     vdiffr::expect_doppelganger("cox_kmplot_quartile", results$plots$x.quartile)
     vdiffr::expect_doppelganger("cox_kmplot_median", results$plots$x.median)
     # Test file output
-    regression_basic_results(
+    p <- regression_basic_results(
       cancer,
       x = "age", y = "status", time = "time",
       model_covs = list(Crude = c()), save_outputs = TRUE
@@ -49,7 +49,7 @@ test_that("regression_basic_results works for logistic regression", {
     expect_snapshot(results$table)
 
     # Test file output
-    regression_basic_results(
+    p <- regression_basic_results(
       cancer,
       x = "age", y = "dead",
       model_covs = list(Crude = c()), save_outputs = TRUE

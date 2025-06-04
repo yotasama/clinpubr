@@ -30,6 +30,7 @@
 #' @param y_max,y_min The range of effect value of the plot. If `NULL`, the numbers are determined automatically.
 #' @param hist_max The maximum value for the histogram. If `NULL`, the maximum value is determined automatically.
 #' @param xlim The x-axis limits for the plot. If `NULL`, the limits are the `0.025` and `0.975` quantiles.
+#'   The actual plot range might be slightly larger than this range to fit the histogram.
 #' @param return_details A logical value indicating whether to return the details of the plot.
 #'
 #' @returns A `ggplot` object, or a list containing the `ggplot` object and other details if `return_details` is `TRUE`.
@@ -128,13 +129,16 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
     ref_val <- ref
   }
 
-  dd[["limits"]]["Adjust to", x] <- ref_val
-
-  if (!is.null(xlim)) {
-    dd[["limits"]][c("Low:prediction", "High:prediction"), x] <- xlim
-  } else {
+  if (is.null(xlim)) {
     xlim <- dd[["limits"]][c("Low:prediction", "High:prediction"), x]
   }
+  if (add_hist && length(breaks) == 1) {
+    breaks <- break_at(xlim, breaks, ref_val)
+    xlim <- breaks[c(1, length(breaks))]
+  }
+
+  dd[["limits"]]["Adjust to", x] <- ref_val
+  dd[["limits"]][c("Low:prediction", "High:prediction"), x] <- xlim
   options(datadist = dd)
   model <- update(model)
   df_pred <- rms::Predict(model,
@@ -176,16 +180,7 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
 
   xtitle <- x
   ylab <- paste0(ifelse(is.null(covars), "Unadjusted", "Adjusted"), " ", ylab)
-
   ytitle2 <- "Percentage of Population (%)"
-  offsetx1 <- (xlim[2] - xlim[1]) * 0.02
-  offsety1 <- (ymax1 - ymin) * 0.02
-  labelx1 <- xlim[1] + (xlim[2] - xlim[1]) * 0.15
-  labely1 <- (ymax1 - ymin) * 0.9 + ymin
-  label1_1 <- "Estimation"
-  label1_2 <- "95% CI"
-  labelx2 <- xlim[1] + (xlim[2] - xlim[1]) * 0.95
-  labely2 <- (ymax1 - ymin) * 0.9 + ymin
   label2 <- paste0(
     format_pval(pvalue_all, text_ahead = "P-overall"), "\n",
     format_pval(pvalue_nonlin, text_ahead = "P-non-linear")
@@ -197,10 +192,6 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
   p <- ggplot2::ggplot()
 
   if (add_hist) {
-    if (length(breaks) == 1) {
-      breaks <- break_at(xlim, breaks, ref_val)
-      xlim = breaks[c(1, length(breaks))]
-    }
     df_hist <- indf[indf[[x]] >= xlim[1] & indf[[x]] <= xlim[2], ]
     h <- graphics::hist(df_hist[[x]], breaks = breaks, right = FALSE, plot = FALSE)
 
@@ -236,6 +227,16 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
         scale_fill_manual(values = group_colors)
     }
   }
+
+  offsetx1 <- (xlim[2] - xlim[1]) * 0.02
+  offsety1 <- (ymax1 - ymin) * 0.02
+  labelx1 <- xlim[1] + (xlim[2] - xlim[1]) * 0.15
+  labely1 <- (ymax1 - ymin) * 0.9 + ymin
+  label1_1 <- "Estimation"
+  label1_2 <- "95% CI"
+  labelx2 <- xlim[1] + (xlim[2] - xlim[1]) * 0.95
+  labely2 <- (ymax1 - ymin) * 0.9 + ymin
+
   if (analysis_type %in% c("cox", "logistic")) {
     p <- p +
       geom_hline(yintercept = 1, linewidth = 1, linetype = 2, color = "grey") +
@@ -291,11 +292,12 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
         transform = trans
       )
   }
+  p_panel_params <- ggplot_build(p)$layout$panel_params[[1]]
   p <- p +
     annotate("text",
       label = paste0("N = ", nrow(indf)), size = 5,
-      x = mean(ggplot_build(p)$layout$panel_params[[1]]$x.range),
-      y = max(ggplot_build(p)$layout$panel_params[[1]]$y.range) * 0.9,
+      x = mean(p_panel_params$x.range),
+      y = max(p_panel_params$y.range) * 0.9,
       hjust = 0.5, vjust = 0.5
     ) +
     theme_bw() +

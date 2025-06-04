@@ -17,6 +17,8 @@
 #' @param label_with_range A logical value indicating whether to add the range of the levels to the labels.
 #' @param save_output A logical value indicating whether to save the results.
 #' @param output_dir A character string of the directory to save the output files.
+#' @param figure_type A character string of the figure type. Can be `"png"`, `"pdf"`, and other types that
+#'   `ggplot2::ggsave()` support.
 #' @param ref_levels A vector of strings of the reference levels of the factor variable. You can use `"lowest"`
 #'   or `"highest"` to select the lowest or highest level as the reference level. Otherwise, any level that
 #'   matches the provided strings will be used as the reference level.
@@ -28,9 +30,10 @@
 #' @param xlab A character string of the x-axis label.
 #' @param legend_title A character string of the title of the legend.
 #' @param legend_pos A numeric vector of the position of the legend.
+#' @param pval_pos A numeric vector of the position of the p-value.
+#' @param n_y_pos A numerical of range 0 to 1 to assign the y position of total sample count. `NULL` to hide.
 #' @param height The height of the plot.
 #' @param width The width of the plot.
-#' @param pval_pos A numeric vector of the position of the p-value.
 #' @param ... Additional arguments passed to the `survminer::ggsurvplot` function for KM curve.
 #'
 #' @details The function `regression_basic_results` generates the result table of logistic or Cox regression with
@@ -47,7 +50,8 @@
 #' regression_basic_results(cancer,
 #'   x = "age", y = "status", time = "time",
 #'   model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex")),
-#'   save_output = FALSE
+#'   save_output = FALSE,
+#'   ggtheme = survminer::theme_survminer(font.legend = c(14, "plain", "black")) # theme for KM
 #' )
 #'
 #' # logistic model with time not assigned
@@ -60,9 +64,10 @@
 regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL, pers = c(0.1, 10, 100),
                                      factor_breaks = NULL, factor_labels = NULL, quantile_breaks = NULL,
                                      quantile_labels = NULL, label_with_range = FALSE, save_output = TRUE,
-                                     output_dir = NULL, ref_levels = "lowest", est_nsmall = 2, p_nsmall = 3,
-                                     pval_eps = 1e-3, median_nsmall = 0, colors = NULL, xlab = NULL, legend_title = x,
-                                     legend_pos = c(0.8, 0.8), height = 6, width = 6, pval_pos = NULL, ...) {
+                                     output_dir = NULL, figure_type = "png", ref_levels = "lowest", est_nsmall = 2,
+                                     p_nsmall = 3, pval_eps = 1e-3, median_nsmall = 0, colors = NULL, xlab = NULL,
+                                     legend_title = x, legend_pos = c(0.8, 0.8), pval_pos = NULL, n_y_pos = 0.9,
+                                     height = 6, width = 6, ...) {
   if (is.null(colors)) {
     colors <- emp_colors
   }
@@ -212,13 +217,17 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
         tmp <- data.frame(level = levels(dat[[var]]), x = xline, text = paste0("t=", xline))
         if (nrow(tmp) > 0) {
           tmp$y <- c((1:10) / 20)[seq_len(nrow(tmp))]
+          if (!is.null(n_y_pos)) {
+            p_panel_params <- ggplot_build(p$plot)$layout$panel_params[[1]]
+            p$plot <- p$plot +
+              annotate("text",
+                label = paste0("N = ", sum(p$data.survtable$n.risk[p$data.survtable$time == 0])), size = 5,
+                x = mean(p_panel_params$x.range),
+                y = max(p_panel_params$y.range) * n_y_pos,
+                hjust = 0.5, vjust = 0.5
+              )
+          }
           p$plot <- p$plot +
-            annotate("text",
-              label = paste0("N = ", sum(p$data.survtable$n.risk[p$data.survtable$time == 0])), size = 5,
-              x = mean(ggplot_build(p$plot)$layout$panel_params[[1]]$x.range),
-              y = max(ggplot_build(p$plot)$layout$panel_params[[1]]$y.range) * 0.9,
-              hjust = 0.5, vjust = 0.5
-            ) +
             geom_text(data = tmp, aes(x, y, label = text, color = level), hjust = 1, show.legend = F) +
             geom_segment(
               data = tmp, aes(
@@ -231,7 +240,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
         }
         if (save_output) {
           ggsave(
-            paste0(output_dir, "/kmplot_", var, ".png"),
+            paste0(output_dir, "/kmplot_", var, ".", figure_type),
             plot = survminer::arrange_ggsurvplots(list(p), print = FALSE, ncol = 1),
             width = width, height = height
           )

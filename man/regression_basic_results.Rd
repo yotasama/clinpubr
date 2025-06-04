@@ -18,6 +18,7 @@ regression_basic_results(
   label_with_range = FALSE,
   save_output = TRUE,
   output_dir = NULL,
+  figure_type = "png",
   ref_levels = "lowest",
   est_nsmall = 2,
   p_nsmall = 3,
@@ -27,9 +28,10 @@ regression_basic_results(
   xlab = NULL,
   legend_title = x,
   legend_pos = c(0.8, 0.8),
+  pval_pos = NULL,
+  n_y_pos = 0.9,
   height = 6,
   width = 6,
-  pval_pos = NULL,
   ...
 )
 }
@@ -63,6 +65,9 @@ OR or HR.}
 
 \item{output_dir}{A character string of the directory to save the output files.}
 
+\item{figure_type}{A character string of the figure type. Can be \code{"png"}, \code{"pdf"}, and other types that
+\code{ggplot2::ggsave()} support.}
+
 \item{ref_levels}{A vector of strings of the reference levels of the factor variable. You can use \code{"lowest"}
 or \code{"highest"} to select the lowest or highest level as the reference level. Otherwise, any level that
 matches the provided strings will be used as the reference level.}
@@ -83,11 +88,13 @@ matches the provided strings will be used as the reference level.}
 
 \item{legend_pos}{A numeric vector of the position of the legend.}
 
+\item{pval_pos}{A numeric vector of the position of the p-value.}
+
+\item{n_y_pos}{A numerical of range 0 to 1 to assign the y position of total sample count. \code{NULL} to hide.}
+
 \item{height}{The height of the plot.}
 
 \item{width}{The width of the plot.}
-
-\item{pval_pos}{A numeric vector of the position of the p-value.}
 
 \item{...}{Additional arguments passed to the \code{survminer::ggsurvplot} function for KM curve.}
 }

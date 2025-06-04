@@ -29,282 +29,301 @@ model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "s
 save_output = T
 data=cancer
 
-regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL, pers = c(0.1, 10, 100),
-                                     factor_breaks = NULL, factor_labels = NULL, quantile_breaks = NULL,
-                                     quantile_labels = NULL, label_with_range = FALSE, save_output = TRUE,
-                                     output_dir = NULL, ref_levels = "lowest", est_nsmall = 2, p_nsmall = 3,
-                                     pval_eps = 1e-3, median_nsmall = 0, colors = NULL, xlab = NULL, legend_title = x,
-                                     legend_pos = c(0.8, 0.8), height = 6, width = 6, pval_pos = NULL, ...) {
-  if (is.null(colors)) {
-    colors <- emp_colors
+rcs_plot(cancer, x = "age", y = "status", time = "time", covars = "ph.karno", save_plot = FALSE)
+
+time = NULL; covars = NULL; knot = 4; add_hist = TRUE; ref = "x_median"; ref_digits = 3;
+group_by_ref = TRUE; group_title = NULL; group_labels = NULL; group_colors = NULL; breaks = 20;
+rcs_color = "#e23e57"; print_p_ph = TRUE; trans = "identity"; save_plot = TRUE; filename = NULL;
+y_max = NULL; y_min = NULL; hist_max = NULL; xlim = NULL; return_details = FALSE
+data=cancer; x = "age"; y = "status"; time = "time"; covars = "ph.karno"; save_plot = FALSE
+rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist = TRUE, ref = "x_median", ref_digits = 3,
+                     group_by_ref = TRUE, group_title = NULL, group_labels = NULL, group_colors = NULL, breaks = 20,
+                     rcs_color = "#e23e57", print_p_ph = TRUE, trans = "identity", save_plot = TRUE, filename = NULL,
+                     y_max = NULL, y_min = NULL, hist_max = NULL, xlim = NULL, return_details = FALSE) {
+  if (!is.null(xlim) && length(xlim) != 2) stop("`xlim` must be a vector of length 2")
+  if (is.null(group_colors)) {
+    group_colors <- emp_colors
+  }
+  if (add_hist && trans != "identity") {
+    stop("`trans` must be `identity` when `add_hist` is `TRUE`")
   }
   
   if (!is.null(time)) {
     analysis_type <- "cox"
-    coef_type <- "HR"
-    new_time_var <- "time"
+    ylab <- "HR (95% CI)"
+    pred_fun <- exp
   } else if (length(levels(as.factor(data[[y]]))) == 2) {
     analysis_type <- "logistic"
-    coef_type <- "OR"
-    new_time_var <- NULL
+    ylab <- "OR (95% CI)"
+    pred_fun <- exp
   } else {
     analysis_type <- "linear"
-    coef_type <- "Coefficient"
-    new_time_var <- NULL
+    ylab <- "predicted value (95% CI)"
+    pred_fun <- NULL
   }
   
-  label_type <- ifelse(label_with_range, "combined", "LMH")
+  covars <- remove_conflict(covars, c(y, x, time))
+  indf <- dplyr::select(data, all_of(c(y, x, time, covars)))
   
-  if (is.null(model_covs)) {
-    model_covs <- list(Crude = c())
-  } else if (is.vector(model_covs, mode = "character")) {
-    model_covs <- list(Crude = model_covs)
-  } else if (!is.list(model_covs)) {
-    stop("`model_covs` should be a character vector of covariates or a named list of covariates of multiple models.")
+  nmissing <- sum(!complete.cases(indf))
+  if (nmissing > 0) {
+    warning(paste0(nmissing, " incomplete cases excluded."))
   }
+  indf <- indf[complete.cases(indf), ]
   
-  ref_levels <- str_replace_all(ref_levels, c("\\[" = "\\\\[", "\\(" = "\\\\(", "\\]" = "\\\\]", "\\)" = "\\\\)"))
+  dd <- rms::datadist(indf, q.display = c(0.025, 0.975))
+  old_datadist <- getOption("datadist")
+  on.exit(
+    {
+      options(datadist = old_datadist)
+    },
+    add = TRUE
+  )
+  options(datadist = dd)
   
-  covars <- unique(unlist(model_covs))
-  if (any(c(y, time, x) %in% covars)) {
-    stop("conflict of model variables!")
-  }
-  
-  dat <- dplyr::select(data, all_of(c(y, x, time, covars)))
-  if (length(model_covs) > 1) {
-    model_complete_cases <- sapply(model_covs, function(tmp_covs) {
-      complete.cases(dat[, tmp_covs])
-    })
-    if (any(!rowSums(model_complete_cases) %in% c(0, length(model_covs)))) {
-      warn(paste0(
-        "The missing values are present differently across models.\n",
-        "The analysis will be performed with the complete cases only.\n",
-        "Consider imputing the data before doing this analysis."
-      ))
+  aics <- NULL
+  if (is.null(knot)) {
+    for (i in 3:7) {
+      formula <- create_formula(y, x, time = time, covars = covars, rcs_knots = i)
+      model <- fit_model(formula, data = indf, analysis_type = analysis_type)
+      aics <- c(aics, AIC(model))
+      kn <- seq(3, 7)[which.min(aics)]
     }
+    knot <- kn
   }
-  dat <- na.omit(dat)
-  colnames(dat)[c(1:2)] <- c("y", "x")
+  
+  formula <- create_formula(y, x, time = time, covars = covars, rcs_knots = knot)
+  model <- fit_model(formula, data = indf, analysis_type = analysis_type, rms = TRUE)
+  
+  phassump <- NULL
+  phresidual <- NULL
   if (analysis_type == "cox") {
-    start_col <- 4
-    colnames(dat)[3] <- new_time_var
-  } else {
-    start_col <- 3
-  }
-  ori_covs <- covars
-  if (!is.null(covars)) {
-    covars <- paste0(".cov", seq_along(covars))
-    colnames(dat)[start_col:(start_col + length(covars) - 1)] <- covars
-  }
-  if (is.null(output_dir)) {
-    output_dir <- paste(analysis_type, "results", x, sep = "_")
-  }
-  if (save_output && !file.exists(output_dir)) {
-    dir.create(output_dir, recursive = T)
-  }
-  if (is.null(xlab)) {
-    xlab <- time
+    phassump <- survival::cox.zph(model, transform = "km")
+    phresidual <- survminer::ggcoxzph(phassump)
+    pvalue_ph <- phassump$table[1, 3]
   }
   
-  ncol_res <- length(model_covs) * 2 + 2
-  nrow_res <- 0
-  if (is.numeric(dat$x) && (length(na.omit(unique(dat$x))) > 5)) {
-    nrow_res <- 12 + length(pers)
-    for (per in pers) {
-      dat[[paste0("x.", per)]] <- dat$x / per
+  anova_fit <- anova(model)
+  pvalue_all <- anova_fit[1, "P"]
+  pvalue_nonlin <- anova_fit[2, "P"]
+  df_pred <- rms::Predict(model,
+                          name = x, fun = pred_fun, type = "predictions", conf.int = 0.95, digits = 2,
+                          ref.zero = analysis_type %in% c("cox", "logistic")
+  )
+  
+  df_pred <- data.frame(df_pred)
+  if (ref == "ratio_min") {
+    ref_val <- df_pred[[x]][which.min(df_pred$yhat)]
+  } else if (ref == "x_median") {
+    ref_val <- median(indf[[x]])
+  } else if (ref == "x_mean") {
+    ref_val <- mean(indf[[x]])
+  } else {
+    ref_val <- ref
+  }
+  
+  dd[["limits"]]["Adjust to", x] <- ref_val
+  
+  if (!is.null(xlim)) {
+    dd[["limits"]][c("Low:prediction", "High:prediction"), x] <- xlim
+  } else {
+    xlim <- dd[["limits"]][c("Low:prediction", "High:prediction"), x]
+  }
+  options(datadist = dd)
+  model <- update(model)
+  df_pred <- rms::Predict(model,
+                          name = x, fun = pred_fun, type = "predictions", conf.int = 0.95, digits = 2,
+                          ref.zero = analysis_type %in% c("cox", "logistic")
+  )
+  df_rcs <- as.data.frame(dplyr::select(df_pred, all_of(c(x, "yhat", "lower", "upper"))))
+  
+  colnames(df_rcs) <- c("x", "y", "lower", "upper")
+  if (is.null(y_max)) {
+    pred_ymax <- max(df_rcs[, "y"], na.rm = TRUE)
+    plot_ymax <- if (pred_ymax > 0) {
+      1.5 * pred_ymax
+    } else {
+      0.5 * pred_ymax
     }
-    dat$x.std <- c(scale(dat$x))
-    if (all(dat$x > 0)) {
-      dat$x.log <- log(dat$x)
-      nrow_res <- nrow_res + 1
+    ymax1 <- plot_ymax # min(max(df_rcs[, "upper"], na.rm = TRUE), plot_ymax)
+  } else {
+    ymax1 <- y_max
+  }
+  df_rcs$upper[df_rcs$upper > ymax1] <- ymax1
+  
+  if (is.null(y_min)) {
+    if (analysis_type == "linear") {
+      pred_ymin <- min(df_rcs[, "y"], na.rm = TRUE)
+      plot_ymin <- if (pred_ymin > 0) {
+        0.5 * pred_ymax
+      } else {
+        1.5 * pred_ymax
+      }
+      ymin <- plot_ymin # max(min(df_rcs[, "lower"], na.rm = TRUE), plot_ymin)
+    } else {
+      ymin <- 0
     }
-    dat$x.quartile <- cut_by(dat$x, c(1:3) / 4,
-                             breaks_as_quantiles = TRUE, labels = paste0("Q", 1:4),
-                             label_type = label_type
+  } else {
+    ymin <- y_min
+  }
+  df_rcs$lower[df_rcs$lower < ymin] <- ymin
+  
+  xtitle <- x
+  ylab <- paste0(ifelse(is.null(covars), "Unadjusted", "Adjusted"), " ", ylab)
+  ytitle2 <- "Percentage of Population (%)"
+  label2 <- paste0(
+    format_pval(pvalue_all, text_ahead = "P-overall"), "\n",
+    format_pval(pvalue_nonlin, text_ahead = "P-non-linear")
+  )
+  if (analysis_type == "cox" && print_p_ph) {
+    label2 <- paste0(label2, "\n", format_pval(pvalue_ph, text_ahead = "P-proportional"))
+  }
+  
+  p <- ggplot2::ggplot()
+  
+  if (add_hist) {
+    if (length(breaks) == 1) {
+      breaks <- break_at(xlim, breaks, ref_val)
+      xlim <- breaks[c(1, length(breaks))]
+    }
+    df_hist <- indf[indf[[x]] >= xlim[1] & indf[[x]] <= xlim[2], ]
+    h <- graphics::hist(df_hist[[x]], breaks = breaks, right = FALSE, plot = FALSE)
+    
+    df_hist_plot <- data.frame(x = h[["mids"]], freq = h[["counts"]], den = h[["counts"]] / nrow(indf) * 100)
+    ori_widths <- breaks[-1] - breaks[-length(breaks)]
+    relative_width <- 0.9
+    df_hist_plot$xmin <- df_hist_plot$x - ori_widths * relative_width / 2
+    df_hist_plot$xmax <- df_hist_plot$x + ori_widths * relative_width / 2
+    if (is.null(hist_max)) {
+      ymax2 <- ceiling(max(df_hist_plot$den * 1.5) / 5) * 5
+    } else {
+      ymax2 <- hist_max
+    }
+    scale_factor <- ymax2 / (ymax1 - ymin)
+    
+    if (group_by_ref) {
+      df_hist_plot$Group <- cut_by(df_hist_plot$x, ref_val, labels = group_labels, label_type = "LMH")
+      tmp_group <- cut_by(indf[[x]], ref_val, labels = group_labels, label_type = "LMH")
+      levels(df_hist_plot$Group) <- paste0(levels(df_hist_plot$Group), " (n=", table(tmp_group), ")")
+      p <- p +
+        geom_rect(
+          data = df_hist_plot,
+          aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = den / scale_factor + ymin, fill = Group),
+        ) +
+        scale_fill_manual(values = group_colors, name = group_title)
+    } else {
+      p <- p +
+        geom_rect(
+          data = df_hist_plot,
+          aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = den / scale_factor + ymin, fill = "1"),
+          show.legend = FALSE
+        ) +
+        scale_fill_manual(values = group_colors)
+    }
+  }
+  
+  offsetx1 <- (xlim[2] - xlim[1]) * 0.02
+  offsety1 <- (ymax1 - ymin) * 0.02
+  labelx1 <- xlim[1] + (xlim[2] - xlim[1]) * 0.15
+  labely1 <- (ymax1 - ymin) * 0.9 + ymin
+  label1_1 <- "Estimation"
+  label1_2 <- "95% CI"
+  labelx2 <- xlim[1] + (xlim[2] - xlim[1]) * 0.95
+  labely2 <- (ymax1 - ymin) * 0.9 + ymin
+  df_rcs <- filter(df_rcs, x >= xlim[1], x <= xlim[2]) %>% as.data.frame()
+  
+  if (analysis_type %in% c("cox", "logistic")) {
+    p <- p +
+      geom_hline(yintercept = 1, linewidth = 1, linetype = 2, color = "grey") +
+      geom_point(aes(x = ref_val, y = 1), color = rcs_color, size = 2)
+  }
+  p <- p +
+    geom_ribbon(
+      data = df_rcs, aes(x = x, ymin = lower, ymax = upper),
+      fill = rcs_color, alpha = 0.1
     )
-    dat$x.median <- cut_by(dat$x, 1 / 2, breaks_as_quantiles = TRUE, label_type = label_type)
-    if (!is.null(factor_breaks)) {
-      dat$x.clin <- cut_by(dat$x, factor_breaks, labels = factor_labels, label_type = label_type)
-      if (length(factor_breaks) == 1) {
-        nrow_res <- nrow_res + 3
-      } else {
-        nrow_res <- nrow_res + length(factor_breaks) + 3
-      }
-    }
-    if (!is.null(quantile_breaks)) {
-      dat$x.quantile <- cut_by(dat$x, quantile_breaks,
-                               breaks_as_quantiles = T, labels = quantile_labels,
-                               label_type = label_type
+  if (analysis_type %in% c("cox", "logistic")) {
+    p <- p +
+      geom_text(aes(
+        x = ref_val, y = 0.9,
+        label = paste0("Ref=", format(ref_val, digits = ref_digits))
+      ))
+  }
+  p <- p +
+    geom_line(data = df_rcs, aes(x = x, y = y), color = rcs_color, linewidth = 1) +
+    geom_segment(
+      aes(
+        x = c(labelx1 - offsetx1 * 5, labelx1 - offsetx1 * 5),
+        xend = c(labelx1 - offsetx1, labelx1 - offsetx1),
+        y = c(labely1 + offsety1, labely1 - offsety1),
+        yend = c(labely1 + offsety1, labely1 - offsety1)
+      ),
+      linetype = 1,
+      color = rcs_color,
+      linewidth = 1,
+      alpha = c(1, 0.1)
+    ) +
+    geom_text(aes(x = labelx1, y = labely1 + offsety1, label = label1_1), hjust = 0) +
+    geom_text(aes(x = labelx1, y = labely1 - offsety1, label = label1_2), hjust = 0) +
+    geom_text(aes(x = labelx2, y = labely2, label = label2), hjust = 1) +
+    scale_x_continuous(xtitle, limits = xlim, expand = c(0.01, 0))
+  if (add_hist) {
+    p <- p +
+      scale_y_continuous(
+        ylab,
+        expand = c(0, 0),
+        limits = c(ymin, ymax1),
+        transform = trans,
+        sec.axis = sec_axis(
+          name = ytitle2, transform = ~ (. - ymin) * scale_factor,
+        )
       )
-      if (length(quantile_breaks) == 1) {
-        nrow_res <- nrow_res + 3
-      } else {
-        nrow_res <- nrow_res + length(quantile_breaks) + 3
-      }
-    }
   } else {
-    dat$x <- as.factor(dat$x)
-    if (length(levels(dat$x)) == 2) {
-      nrow_res <- 4
-    } else {
-      nrow_res <- length(levels(dat$x)) + 3
-    }
+    p <- p +
+      scale_y_continuous(
+        ylab,
+        expand = c(0, 0),
+        limits = c(ymin, ymax1),
+        transform = trans
+      )
   }
-  dat0 <- dat
-  vars <- colnames(dat)[grep("x", colnames(dat))]
-  plots_list <- list()
-  for (var in vars) {
-    if (is.factor(dat[[var]])) {
-      formula <- create_formula("y", var, time = new_time_var)
-      if (analysis_type == "cox") {
-        fit <- survminer::surv_fit(formula = formula, data = dat)
-        log_rank_p <- survdiff(formula = formula, data = dat)$pvalue
-        log_rank_p <- format_pval(log_rank_p,
-                                  text_ahead = "Log-rank\np",
-                                  nsmall = p_nsmall, eps = pval_eps
-        )
-        p <- survminer::ggsurvplot(fit,
-                                   pval = log_rank_p,
-                                   pval_pos = pval_pos,
-                                   legend = legend_pos,
-                                   legend.title = legend.title,
-                                   legend.labs = levels(dat[[var]]),
-                                   xlab = xlab,
-                                   risk.table = T,
-                                   palette = colors
-        )
-        if (!is.null(fit$strata) || is.matrix(fit$surv)) {
-          .table <- as.data.frame(summary(fit)$table)
-        } else {
-          .table <- t(as.data.frame(summary(fit)$table))
-          rownames(.table) <- "All"
-        }
-        xline <- round(as.vector(.table[["median"]]), median_nsmall)
-        tmp <- data.frame(level = levels(dat[[var]]), x = xline, text = paste0("t=", xline))
-        if (nrow(tmp) > 0) {
-          tmp$y <- c((1:10) / 20)[seq_len(nrow(tmp))]
-          p$plot <- p$plot +
-            annotate("text",
-                     label = paste0("N = ", sum(p$data.survtable$n.risk[p$data.survtable$time == 0])), size = 5,
-                     x = mean(ggplot_build(p$plot)$layout$panel_params[[1]]$x.range),
-                     y = max(ggplot_build(p$plot)$layout$panel_params[[1]]$y.range) * 0.9,
-                     hjust = 0.5, vjust = 0.5
-            ) +
-            geom_text(data = tmp, aes(x, y, label = text, color = level), hjust = 1, show.legend = F) +
-            geom_segment(
-              data = tmp, aes(
-                x = x, xend = x, y = 0, yend = 0.5,
-                colour = level
-              ),
-              linetype = 2, show.legend = F
-            ) +
-            geom_segment(y = 0.5, yend = 0.5, x = 0, xend = max(tmp$x), linetype = 2, show.legend = F)
-        }
-        if (save_output) {
-          ggsave(
-            paste0(output_dir, "/kmplot_", var, ".png"),
-            plot = survminer::arrange_ggsurvplots(list(p), print = FALSE, ncol = 1),
-            width = width, height = height
-          )
-        }
-        plots_list[[var]] <- p
-      }
+  p_panel_params <- ggplot_build(p)$layout$panel_params[[1]]
+  p <- p +
+    annotate("text",
+             label = paste0("N = ", nrow(indf)), size = 5,
+             x = mean(p_panel_params$x.range),
+             y = max(p_panel_params$y.range) * 0.9,
+             hjust = 0.5, vjust = 0.5
+    ) +
+    theme_bw() +
+    theme(
+      axis.line = element_line(),
+      panel.grid = element_blank(),
+      panel.border = element_blank(),
+      legend.position = "top"
+    )
+  
+  if (save_plot) {
+    if (is.null(filename)) {
+      filename <- paste0(
+        paste0(c(analysis_type, "rcs", y, "with", x, knot, "knots", "with", length(covars), "covars"),
+               collapse = "_"
+        ), ".png"
+      )
     }
-  }
-  for (var in vars) {
-    if (is.factor(dat[[var]])) {
-      if (identical(ref_levels, "highest")) {
-        dat[[var]] <- factor(dat[[var]], levels = rev(levels(dat[[var]])))
-      } else if (!identical(ref_levels, "lowest")) {
-        level_match <- grepl(paste0(ref_levels, collapse = "|"), levels(dat[[var]]))
-        if (any(level_match)) {
-          new_ref <- levels(dat[[var]])[level_match][1]
-          dat[[var]] <- relevel(dat[[var]], ref = new_ref)
-        }
-      }
-    }
+    ggsave(filename, p, width = 6, height = 6)
   }
   
-  res_table <- data.frame(matrix(NA, nrow = nrow_res, ncol = ncol_res))
-  colnames(res_table) <- c("Terms", "Count", rep(names(model_covs), each = 2))
-  res_table$Terms[1] <- paste0(x, " (All)")
-  res_table$Count[1] <- length(na.omit(dat$x))
-  i <- 2
-  for (var in vars) {
-    if (is.numeric(dat[[var]])) {
-      if (var == "x") {
-        res_table$Terms[i] <- "Continuous"
-      } else if (var == "x.std") {
-        res_table$Terms[i] <- "Continuous, per 1 SD"
-      } else if (var == "x.log") {
-        res_table$Terms[i] <- "Continuous, logarithm"
-      } else {
-        res_table$Terms[i] <- paste0("Continuous, per ", str_remove(var, "x\\."))
-      }
-      i <- i + 1
-    } else {
-      n_levels <- length(levels(dat[[var]]))
-      if (var == "x.quartile") {
-        res_table$Terms[i] <- "Grouped by Quartiles"
-      } else if (var == "x.median") {
-        res_table$Terms[i] <- "Grouped by Median Value"
-      } else if (var == "x.clin") {
-        res_table$Terms[i] <- "Grouped by Clinical Value"
-      } else {
-        res_table$Terms[i] <- "Values"
-      }
-      res_table$Terms[i + 1:n_levels] <- paste0("  ", levels(dat[[var]]))
-      res_table$Count[i + 1:n_levels] <- c(table(dat[[var]]))
-      i <- i + n_levels + 1
-      if (n_levels > 2) {
-        res_table$Terms[i] <- "  P for trend"
-        i <- i + 1
-      }
-    }
+  if (return_details) {
+    details <- list(
+      aics = aics, knot = knot, n.valid = nrow(indf), n.plot = nrow(df_hist),
+      phassump = phassump, phresidual = phresidual,
+      pvalue_all = pvalue_all,
+      pvalue_nonlin = pvalue_nonlin,
+      ref = ref_val, plot = p
+    )
+    return(details)
+  } else {
+    return(p)
   }
-  for (j in seq_along(model_covs)) {
-    col1 <- 2 * j + 1
-    col2 <- 2 * j + 2
-    res_table[1, col1:col2] <- c(coef_type, "P")
-    i <- 2
-    tmp_covs <- covars[match(model_covs[[j]], ori_covs)]
-    for (var in vars) {
-      model_res <- regression_fit(
-        data = dat, y = "y", predictor = var, time = new_time_var,
-        covars = tmp_covs, returned = "full"
-      )
-      model_res <- data.frame(model_res[grepl("x", model_res$term), ])
-      for (col in c("estimate", "conf.low", "conf.high")) {
-        model_res[, col] <- format(model_res[, col], digits = 1, nsmall = est_nsmall)
-      }
-      tmp <- data.frame(
-        term = model_res$term,
-        ratio = paste0(model_res$estimate, "(", model_res$conf.low, ",", model_res$conf.high, ")"),
-        P = format_pval(model_res$p.value, nsmall = p_nsmall, eps = pval_eps)
-      )
-      colnames(tmp)[2] <- coef_type
-      if (is.numeric(dat[[var]])) {
-        res_table[i, col1] <- tmp[[coef_type]]
-        res_table[i, col2] <- tmp$P
-        i <- i + 1
-      } else {
-        res_table[i + 2:(nrow(tmp) + 1), col1:col2] <- tmp[, -1]
-        res_table[i + 1, col1] <- "1 (Reference)"
-        i <- i + nrow(tmp) + 2
-        if (nrow(tmp) > 1) {
-          dat$tmp <- as.numeric(dat0[[var]])
-          model_res <- regression_fit(
-            data = dat, y = "y", predictor = "tmp", time = new_time_var,
-            covars = tmp_covs, returned = "predictor_combined"
-          )
-          res_table[i, col2] <- format_pval(model_res$p.value, nsmall = p_nsmall, eps = pval_eps)
-          i <- i + 1
-        }
-      }
-    }
-  }
-  if (save_output) {
-    write.csv(res_table, paste0(output_dir, "/table_", x, ".csv"), row.names = FALSE)
-  }
-  return(list(table = res_table, plots = plots_list))
 }

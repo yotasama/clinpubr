@@ -236,17 +236,19 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covars 
           )
         )
 
-      n_x <- mean(ggplot_build(plt1)$layout$panel_params[[1]]$x.range)
       if (analysis_type %in% c("cox", "logistic")) {
         plt1 <- plt1 +
           scale_y_log10(expand = default_expansion) +
           geom_hline(yintercept = 1, linetype = 3, color = "black", linewidth = 1)
-        n_y <- 10^(max(ggplot_build(plt1)$layout$panel_params[[1]]$y.range))
+        plt1_panel_params <- ggplot_build(plt1)$layout$panel_params[[1]]
+        n_y <- 10^(max(plt1_panel_params$y.range))
       } else {
         plt1 <- plt1 +
           scale_y_continuous(expand = default_expansion)
-        n_y <- max(ggplot_build(plt1)$layout$panel_params[[1]]$y.range)
+        plt1_panel_params <- ggplot_build(plt1)$layout$panel_params[[1]]
+        n_y <- max(plt1_panel_params$y.range)
       }
+      n_x <- mean(plt1_panel_params$x.range)
       if (show_n) {
         plt1 <- plt1 +
           annotate("text",
@@ -308,17 +310,19 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covars 
               format_pval(rcs_p_value)
             )
           )
-        n_x <- mean(ggplot_build(plt2)$layout$panel_params[[1]]$x.range)
         if (analysis_type %in% c("cox", "logistic")) {
           plt2 <- plt2 +
             scale_y_log10(expand = default_expansion) +
             geom_hline(yintercept = 1, linetype = 3, color = "black", linewidth = 1)
-          n_y <- 10^(max(ggplot_build(plt2)$layout$panel_params[[1]]$y.range))
+          plt2_panel_params <- ggplot_build(plt2)$layout$panel_params[[1]]
+          n_y <- 10^(max(plt2_panel_params$y.range))
         } else {
           plt2 <- plt2 +
             scale_y_continuous(expand = default_expansion)
-          n_y <- max(ggplot_build(plt2)$layout$panel_params[[1]]$y.range)
+          plt2_panel_params <- ggplot_build(plt2)$layout$panel_params[[1]]
+          n_y <- max(plt2_panel_params$y.range)
         }
+        n_x <- mean(plt2_panel_params$x.range)
 
         if (show_n) {
           plt2 <- plt2 +
