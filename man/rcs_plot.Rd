@@ -24,8 +24,7 @@ rcs_plot(
   trans = "identity",
   save_plot = TRUE,
   filename = NULL,
-  y_max = NULL,
-  y_min = NULL,
+  y_lim = NULL,
   hist_max = NULL,
   xlim = NULL,
   return_details = FALSE
@@ -78,11 +77,12 @@ Passed to \code{ggplot2::scale_y_continuous(transform = trans)}.}
 
 \item{filename}{A character string specifying the filename for the plot. If \code{NULL}, a default filename is used.}
 
-\item{y_max, y_min}{The range of effect value of the plot. If \code{NULL}, the numbers are determined automatically.}
+\item{y_lim}{The range of effect value of the plot. If \code{NULL}, the numbers are determined automatically.}
 
 \item{hist_max}{The maximum value for the histogram. If \code{NULL}, the maximum value is determined automatically.}
 
-\item{xlim}{The x-axis limits for the plot. If \code{NULL}, the limits are the \code{0.025} and \code{0.975} quantiles.}
+\item{xlim}{The x-axis limits for the plot. If \code{NULL}, the limits are the \code{0.025} and \code{0.975} quantiles.
+The actual plot range might be slightly larger than this range to fit the histogram.}
 
 \item{return_details}{A logical value indicating whether to return the details of the plot.}
 }

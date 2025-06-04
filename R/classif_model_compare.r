@@ -106,7 +106,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
     metric_table[, i] <- round(metric_table[, i], digits = 3)
   }
   if (save_output) {
-    write.csv(metric_table, file = paste0(output_prefix, "_table.csv"), row.names = FALSE)
+    write.csv(metric_table, file = paste0(output_prefix, "_table.csv"), row.names = FALSE, na = "")
   }
 
   plot_formula <- as.formula(paste0(target_var, " ~ ", paste(model_names, collapse = " + ")))

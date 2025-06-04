@@ -121,7 +121,8 @@ data(cancer, package = "survival")
 regression_basic_results(cancer,
   x = "age", y = "status", time = "time",
   model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex")),
-  save_output = FALSE
+  save_output = FALSE,
+  ggtheme = survminer::theme_survminer(font.legend = c(14, "plain", "black")) # theme for KM
 )
 
 # logistic model with time not assigned

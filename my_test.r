@@ -21,10 +21,10 @@ time = NULL; model_covs = NULL; pers = c(0.1, 10, 100);
 factor_breaks = NULL; factor_labels = NULL; quantile_breaks = NULL;
 quantile_labels = NULL; label_with_range = FALSE; save_output = TRUE;
 output_dir = NULL; ref_levels = "lowest"; est_nsmall = 2; p_nsmall = 3;
-pval_eps = 1e-3; median_nsmall = 0; colors = NULL; xlab = NULL; legend_title = x;
+pval_eps = 1e-3; median_nsmall = 0; colors = NULL; xlab = NULL; legend_title = "age";
 legend_pos = c(0.8, 0.8); height = 6; width = 6; pval_pos = NULL
 
-x = "age"; y = "status"; time = "time";
+x = "age"; y = "wt.loss"; covars = "ph.karno"
 model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex"));
 save_output = T
 data=cancer
@@ -230,7 +230,7 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
   label1_2 <- "95% CI"
   labelx2 <- xlim[1] + (xlim[2] - xlim[1]) * 0.95
   labely2 <- (ymax1 - ymin) * 0.9 + ymin
-  df_rcs <- filter(df_rcs, x >= xlim[1], x <= xlim[2]) %>% as.data.frame()
+  df_rcs <- dplyr::filter(df_rcs, x >= xlim[1], x <= xlim[2]) %>% as.data.frame()
   
   if (analysis_type %in% c("cox", "logistic")) {
     p <- p +
@@ -327,3 +327,10 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
     return(p)
   }
 }
+
+
+results <- regression_basic_results(
+  cancer,
+  x = "age", y = "wt.loss",
+  model_covs = list(Crude = c()), save_outputs = FALSE
+)

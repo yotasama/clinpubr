@@ -342,7 +342,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
     }
   }
   if (save_output) {
-    write.csv(res_table, paste0(output_dir, "/table_", x, ".csv"), row.names = FALSE)
+    write.csv(res_table, paste0(output_dir, "/table_", x, ".csv"), row.names = FALSE, na = "")
   }
   return(list(table = res_table, plots = plots_list))
 }
@@ -692,7 +692,7 @@ regression_scan <- function(data, y, time = NULL, predictors = NULL, covars = NU
     if (is.null(filename)) {
       filename <- paste0(paste(analysis_type, "regression_scan", y, sep = "_"), ".csv")
     }
-    write.csv(res_df, filename, row.names = FALSE)
+    write.csv(res_df, filename, row.names = FALSE, na = "")
   }
   return(res_df)
 }

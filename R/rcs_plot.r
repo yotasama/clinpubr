@@ -27,7 +27,7 @@
 #'   Passed to `ggplot2::scale_y_continuous(transform = trans)`.
 #' @param save_plot A logical value indicating whether to save the plot.
 #' @param filename A character string specifying the filename for the plot. If `NULL`, a default filename is used.
-#' @param y_max,y_min The range of effect value of the plot. If `NULL`, the numbers are determined automatically.
+#' @param y_lim The range of effect value of the plot. If `NULL`, the numbers are determined automatically.
 #' @param hist_max The maximum value for the histogram. If `NULL`, the maximum value is determined automatically.
 #' @param xlim The x-axis limits for the plot. If `NULL`, the limits are the `0.025` and `0.975` quantiles.
 #'   The actual plot range might be slightly larger than this range to fit the histogram.
@@ -46,7 +46,7 @@
 rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist = TRUE, ref = "x_median", ref_digits = 3,
                      group_by_ref = TRUE, group_title = NULL, group_labels = NULL, group_colors = NULL, breaks = 20,
                      rcs_color = "#e23e57", print_p_ph = TRUE, trans = "identity", save_plot = TRUE, filename = NULL,
-                     y_max = NULL, y_min = NULL, hist_max = NULL, xlim = NULL, return_details = FALSE) {
+                     y_lim = NULL, hist_max = NULL, xlim = NULL, return_details = FALSE) {
   if (!is.null(xlim) && length(xlim) != 2) stop("`xlim` must be a vector of length 2")
   if (is.null(group_colors)) {
     group_colors <- emp_colors
@@ -148,34 +148,20 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
   df_rcs <- as.data.frame(dplyr::select(df_pred, all_of(c(x, "yhat", "lower", "upper"))))
 
   colnames(df_rcs) <- c("x", "y", "lower", "upper")
-  if (is.null(y_max)) {
+
+  if (is.null(y_lim)) {
+    pred_ymin <- min(df_rcs[, "y"], na.rm = TRUE)
     pred_ymax <- max(df_rcs[, "y"], na.rm = TRUE)
-    plot_ymax <- if (pred_ymax > 0) {
-      1.5 * pred_ymax
-    } else {
-      0.5 * pred_ymax
+    ymin <- pred_ymin * 2 - pred_ymax
+    ymax1 <- pred_ymax * 2 - pred_ymin
+    if (analysis_type %in% c("cox", "logistic")) {
+      ymin <- max(ymin, 0)
     }
-    ymax1 <- plot_ymax # min(max(df_rcs[, "upper"], na.rm = TRUE), plot_ymax)
   } else {
-    ymax1 <- y_max
+    ymin <- y_lim[1]
+    ymax1 <- y_lim[2]
   }
   df_rcs$upper[df_rcs$upper > ymax1] <- ymax1
-
-  if (is.null(y_min)) {
-    if (analysis_type == "linear") {
-      pred_ymin <- min(df_rcs[, "y"], na.rm = TRUE)
-      plot_ymin <- if (pred_ymin > 0) {
-        0.5 * pred_ymax
-      } else {
-        1.5 * pred_ymax
-      }
-      ymin <- plot_ymin # max(min(df_rcs[, "lower"], na.rm = TRUE), plot_ymin)
-    } else {
-      ymin <- 0
-    }
-  } else {
-    ymin <- y_min
-  }
   df_rcs$lower[df_rcs$lower < ymin] <- ymin
 
   xtitle <- x
@@ -228,15 +214,6 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
     }
   }
 
-  offsetx1 <- (xlim[2] - xlim[1]) * 0.02
-  offsety1 <- (ymax1 - ymin) * 0.02
-  labelx1 <- xlim[1] + (xlim[2] - xlim[1]) * 0.15
-  labely1 <- (ymax1 - ymin) * 0.9 + ymin
-  label1_1 <- "Estimation"
-  label1_2 <- "95% CI"
-  labelx2 <- xlim[1] + (xlim[2] - xlim[1]) * 0.95
-  labely2 <- (ymax1 - ymin) * 0.9 + ymin
-
   if (analysis_type %in% c("cox", "logistic")) {
     p <- p +
       geom_hline(yintercept = 1, linewidth = 1, linetype = 2, color = "grey") +
@@ -256,21 +233,6 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
   }
   p <- p +
     geom_line(data = df_rcs, aes(x = x, y = y), color = rcs_color, linewidth = 1) +
-    geom_segment(
-      aes(
-        x = c(labelx1 - offsetx1 * 5, labelx1 - offsetx1 * 5),
-        xend = c(labelx1 - offsetx1, labelx1 - offsetx1),
-        y = c(labely1 + offsety1, labely1 - offsety1),
-        yend = c(labely1 + offsety1, labely1 - offsety1)
-      ),
-      linetype = 1,
-      color = rcs_color,
-      linewidth = 1,
-      alpha = c(1, 0.1)
-    ) +
-    geom_text(aes(x = labelx1, y = labely1 + offsety1, label = label1_1), hjust = 0) +
-    geom_text(aes(x = labelx1, y = labely1 - offsety1, label = label1_2), hjust = 0) +
-    geom_text(aes(x = labelx2, y = labely2, label = label2), hjust = 1) +
     scale_x_continuous(xtitle, limits = xlim, expand = c(0.01, 0))
   if (add_hist) {
     p <- p +
@@ -293,13 +255,38 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
       )
   }
   p_panel_params <- ggplot_build(p)$layout$panel_params[[1]]
+  x1 = p_panel_params$x.range[1]
+  x2 = p_panel_params$x.range[2]
+  y1 = p_panel_params$y.range[1]
+  y2 = p_panel_params$y.range[2]
+  offsetx1 <- (x2 - x1) * 0.02
+  offsety1 <- (y2 - y1) * 0.02
+  labelx1 <- x1 + (x2 - x1) * 0.15
+  labelx2 <- x1 + (x2 - x1) * 0.95
+  labely <- (y2 - y1) * 0.9 + y1
+  label1_1 <- "Estimation"
+  label1_2 <- "95% CI"
   p <- p +
     annotate("text",
       label = paste0("N = ", nrow(indf)), size = 5,
       x = mean(p_panel_params$x.range),
-      y = max(p_panel_params$y.range) * 0.9,
-      hjust = 0.5, vjust = 0.5
+      y = labely
     ) +
+    geom_segment(
+      aes(
+        x = c(labelx1 - offsetx1 * 5, labelx1 - offsetx1 * 5),
+        xend = c(labelx1 - offsetx1, labelx1 - offsetx1),
+        y = c(labely + offsety1, labely - offsety1),
+        yend = c(labely + offsety1, labely - offsety1)
+      ),
+      linetype = 1,
+      color = rcs_color,
+      linewidth = 1,
+      alpha = c(1, 0.1)
+    ) +
+    geom_text(aes(x = labelx1, y = labely + offsety1, label = label1_1), hjust = 0) +
+    geom_text(aes(x = labelx1, y = labely - offsety1, label = label1_2), hjust = 0) +
+    geom_text(aes(x = labelx2, y = labely, label = label2), hjust = 1) +
     theme_bw() +
     theme(
       axis.line = element_line(),

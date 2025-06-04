@@ -90,7 +90,7 @@ interaction_scan <- function(data, y, time = NULL, predictors = NULL, group_vars
     if (is.null(filename)) {
       filename <- paste0(paste(analysis_type, "interaction_scan", y, sep = "_"), ".csv")
     }
-    write.csv(res_df, filename, row.names = FALSE)
+    write.csv(res_df, filename, row.names = FALSE, na = "")
   }
   return(res_df)
 }

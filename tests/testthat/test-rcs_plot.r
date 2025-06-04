@@ -66,7 +66,7 @@ test_that("rcs_plot returns details when requested", {
 
 
 test_that("rcs_plot handles custom y_min and y_max", {
-  result <- rcs_plot(cancer, x = "age", y = "status", time = "time", y_min = 0.5, y_max = 2.5, save_plot = FALSE)
+  result <- rcs_plot(cancer, x = "age", y = "status", time = "time", y_lim = c(0.5, 2.5), save_plot = FALSE)
   expect_s3_class(result, "gg")
   # Verify y limits
   y_limits <- ggplot2::ggplot_build(result)$layout$panel_params[[1]]$y.range

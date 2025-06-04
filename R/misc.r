@@ -281,7 +281,7 @@ qq_show <- function(x,
                     filename = "QQplot.png",
                     width = 2,
                     height = 2) {
-  dat <- data.frame(sample = scale(x))
+  dat <- data.frame(sample = scale(na.omit(x)))
   p <- ggplot(dat, aes(sample = sample)) +
     stat_qq(size = 0.5) +
     geom_abline(slope = 1, intercept = 0, alpha = 0.3, lwd = 0.5) +
