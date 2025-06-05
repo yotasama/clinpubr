@@ -45,12 +45,15 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, standardize_
                             est_nsmall = 2, p_nsmall = 3, group_cut_quantiles = 0.5, save_plot = TRUE,
                             filename = NULL, ...) {
   x_type <- ifelse(!is.factor(data[[x]]), "number", "factor")
-  if (x_type == "factor") {
-    if (standardize_x) {
+  if (standardize_x) {
+    if (x_type == "factor") {
       warning("`standardize_x` is set to `TRUE` for a factor variable. It will be ignored.")
+      label_add <- " "
+    } else {
+      label_add <- " per 1 SD "
+      data[[x]] <- c(scale(data[[x]]))
     }
-    label_add <- " per 1 SD "
-  }else {
+  } else {
     label_add <- " "
   }
   if (!is.null(time)) {

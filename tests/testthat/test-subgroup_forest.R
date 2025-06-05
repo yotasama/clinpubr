@@ -18,7 +18,7 @@ test_that("subgroup_forest generates correct Cox regression plot", {
 })
 
 
-test_that("subgroup_forest generates correct logistic regression plot", {
+test_that("subgroup_forest generates correct linear regression plot", {
   withr::with_tempdir({
     data(cancer, package = "survival")
     p <- subgroup_forest(cancer,
@@ -42,5 +42,17 @@ test_that("subgroup_forest handles factor predictor correctly", {
     )
     expect_s3_class(p, "gtable")
     # vdiffr::expect_doppelganger("factor_predictor_subgroup_forest", p)
+  })
+})
+
+test_that("subgroup_forest standardize x correctly", {
+  withr::with_tempdir({
+    data(cancer, package = "survival")
+    p <- subgroup_forest(cancer,
+      subgroup_vars = c("age", "sex"), x = "ph.ecog", y = "wt.loss",
+      covars = "ph.karno", save_plot = FALSE, standardize_x = TRUE
+    )
+    expect_s3_class(p, "gtable")
+    # vdiffr::expect_doppelganger("standardized_subgroup_forest", p)
   })
 })

@@ -281,8 +281,9 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
       ),
       linetype = 1,
       color = rcs_color,
-      linewidth = 1,
-      alpha = c(1, 0.1)
+      linewidth = c(1, 5),
+      alpha = c(1, 0.1),
+      show.legend = FALSE
     ) +
     geom_text(aes(x = labelx1, y = labely + offsety1, label = label1_1), hjust = 0) +
     geom_text(aes(x = labelx1, y = labely - offsety1, label = label1_2), hjust = 0) +
