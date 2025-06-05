@@ -164,7 +164,7 @@ knitr::kable(tables$baseline) # Display the table
 | wt (mean (SD)) | 3.2 (1.0) | 3.7 (0.9) | 2.6 (0.7) | 0.001 |  |
 | qsec (mean (SD)) | 17.8 (1.8) | 16.7 (1.1) | 19.3 (1.4) | \<0.001 |  |
 | am = 1 (%) | 13 (40.6) | 6 (33.3) | 7 (50.0) | 0.556 |  |
-| gear (%) |  |  |  | 0.001 | exact |
+| gear (%) |  |  |  | 0.002 | exact |
 | 3 | 15 (46.9) | 12 (66.7) | 3 (21.4) |  |  |
 | 4 | 12 (37.5) | 2 (11.1) | 10 (71.4) |  |  |
 | 5 | 5 (15.6) | 4 (22.2) | 1 (7.1) |  |  |
@@ -310,6 +310,8 @@ names(dummy_importance) <- paste0("var", 1:20)
 # Plotting variable importance, keeping only top 15 and splitting at 10
 p <- importance_plot(dummy_importance, top_n = 15, split_at = 10, save_plot = FALSE)
 plot(p)
+#> Warning: Removed 1 row containing missing values or values outside the scale range
+#> (`geom_bar()`).
 ```
 
 <img src="man/figures/README-example_3.7-1.png" width="60%" />

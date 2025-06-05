@@ -169,7 +169,7 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covars 
       ), ".png"
     )
   }
-  default_expansion <- c(0.1, 0, 0.5, 0)
+  default_expansion <- c(0.05, 0, 0.15, 0)
 
   dat <- dplyr::select(data, all_of(c(y, predictor, group_var, time, covars)))
   if (".predictor" %in% c(y, time, covars)) stop("Colname '.predictor' is reserved!")
@@ -202,7 +202,10 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covars 
 
   tryCatch(
     {
-      formula <- create_formula(y, ".predictor", group_var = ".group_var", time = time, covars = covars, interaction = TRUE)
+      formula <- create_formula(y, ".predictor",
+        group_var = ".group_var", time = time,
+        covars = covars, interaction = TRUE
+      )
       model <- fit_model(formula, data = dat, analysis_type = analysis_type, rms = TRUE)
       p_value <- interaction_p_value(dat, y, ".predictor", ".group_var", time = time, covars = covars)
       y1 <- as.data.frame(Predict(model, .predictor, .group_var,
