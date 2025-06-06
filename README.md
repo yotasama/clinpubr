@@ -145,7 +145,7 @@ print(var_types)
 
 tables <- baseline_table(mtcars,
   var_types = var_types, contDigits = 1, save_table = FALSE,
-  filename = "baseline.csv"
+  filename = "baseline.csv", seed = 1 # set seed for simulated fisher exact test
 )
 knitr::kable(tables$baseline) # Display the table
 ```
