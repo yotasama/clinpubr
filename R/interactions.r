@@ -111,8 +111,8 @@ interaction_scan <- function(data, y, time = NULL, predictors = NULL, group_vars
 #' @param group_colors A character vector of colors for the plot. If `NULL`, the default colors are used.
 #' @param save_plot A logical value indicating whether to save the plot.
 #' @param filename The name of the file to save the plot. Support both `.png` and `.pdf` formats.
-#' @param height The height of the plot.
-#' @param width The width of the plot.
+#' @param height The height of the saved plot.
+#' @param width The width of the saved plot.
 #' @param xlab The label of the x-axis.
 #' @param ylab The label of the y-axis.
 #' @param show_n A logical value indicating whether to show the number of observations in the plot.

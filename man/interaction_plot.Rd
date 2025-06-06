@@ -44,9 +44,9 @@ Otherwise, Cox proportional hazards regression is used.}
 
 \item{filename}{The name of the file to save the plot. Support both \code{.png} and \code{.pdf} formats.}
 
-\item{height}{The height of the plot.}
+\item{height}{The height of the saved plot.}
 
-\item{width}{The width of the plot.}
+\item{width}{The width of the saved plot.}
 
 \item{xlab}{The label of the x-axis.}
 

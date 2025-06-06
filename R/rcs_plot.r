@@ -31,6 +31,8 @@
 #' @param hist_max The maximum value for the histogram. If `NULL`, the maximum value is determined automatically.
 #' @param xlim The x-axis limits for the plot. If `NULL`, the limits are the `0.025` and `0.975` quantiles.
 #'   The actual plot range might be slightly larger than this range to fit the histogram.
+#' @param height The height of the saved plot.
+#' @param width The width of the saved plot.
 #' @param return_details A logical value indicating whether to return the details of the plot.
 #'
 #' @returns A `ggplot` object, or a list containing the `ggplot` object and other details if `return_details` is `TRUE`.
@@ -46,7 +48,7 @@
 rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist = TRUE, ref = "x_median", ref_digits = 3,
                      group_by_ref = TRUE, group_title = NULL, group_labels = NULL, group_colors = NULL, breaks = 20,
                      rcs_color = "#e23e57", print_p_ph = TRUE, trans = "identity", save_plot = TRUE, filename = NULL,
-                     y_lim = NULL, hist_max = NULL, xlim = NULL, return_details = FALSE) {
+                     y_lim = NULL, hist_max = NULL, xlim = NULL, height = 6, width = 6, return_details = FALSE) {
   if (!is.null(xlim) && length(xlim) != 2) stop("`xlim` must be a vector of length 2")
   if (is.null(group_colors)) {
     group_colors <- emp_colors
@@ -226,10 +228,13 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
     )
   if (analysis_type %in% c("cox", "logistic")) {
     p <- p +
-      geom_text(aes(
-        x = ref_val, y = 0.9,
-        label = paste0("Ref=", format(ref_val, digits = ref_digits))
-      ))
+      geom_text(
+        aes(
+          x = ref_val, y = 0.9,
+          label = paste0("Ref=", format(ref_val, digits = ref_digits))
+        ),
+        size = 5
+      )
   }
   p <- p +
     geom_line(data = df_rcs, aes(x = x, y = y), color = rcs_color, linewidth = 1) +
@@ -255,10 +260,10 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
       )
   }
   p_panel_params <- ggplot_build(p)$layout$panel_params[[1]]
-  x1 = p_panel_params$x.range[1]
-  x2 = p_panel_params$x.range[2]
-  y1 = p_panel_params$y.range[1]
-  y2 = p_panel_params$y.range[2]
+  x1 <- p_panel_params$x.range[1]
+  x2 <- p_panel_params$x.range[2]
+  y1 <- p_panel_params$y.range[1]
+  y2 <- p_panel_params$y.range[2]
   offsetx1 <- (x2 - x1) * 0.02
   offsety1 <- (y2 - y1) * 0.02
   labelx1 <- x1 + (x2 - x1) * 0.15
@@ -270,7 +275,7 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
     annotate("text",
       label = paste0("N = ", nrow(indf)), size = 5,
       x = mean(p_panel_params$x.range),
-      y = labely
+      y = labely,
     ) +
     geom_segment(
       aes(
@@ -285,11 +290,15 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
       alpha = c(1, 0.1),
       show.legend = FALSE
     ) +
-    geom_text(aes(x = labelx1, y = labely + offsety1, label = label1_1), hjust = 0) +
-    geom_text(aes(x = labelx1, y = labely - offsety1, label = label1_2), hjust = 0) +
-    geom_text(aes(x = labelx2, y = labely, label = label2), hjust = 1) +
+    geom_text(aes(x = labelx1, y = labely + offsety1, label = label1_1), hjust = 0, size = 4) +
+    geom_text(aes(x = labelx1, y = labely - offsety1, label = label1_2), hjust = 0, size = 4) +
+    geom_text(aes(x = labelx2, y = labely, label = label2), hjust = 1, size = 4) +
     theme_bw() +
     theme(
+      text = element_text(size = 15),
+      axis.text = element_text(size = 15),
+      axis.title = element_text(size = 18),
+      legend.text = element_text(size = 15),
       axis.line = element_line(),
       panel.grid = element_blank(),
       panel.border = element_blank(),
@@ -304,7 +313,7 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
         ), ".png"
       )
     }
-    ggsave(filename, p, width = 6, height = 6)
+    ggsave(filename, p, width = width, height = height)
   }
 
   if (return_details) {

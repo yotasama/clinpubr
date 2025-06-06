@@ -27,6 +27,8 @@ rcs_plot(
   y_lim = NULL,
   hist_max = NULL,
   xlim = NULL,
+  height = 6,
+  width = 6,
   return_details = FALSE
 )
 }
@@ -83,6 +85,10 @@ Passed to \code{ggplot2::scale_y_continuous(transform = trans)}.}
 
 \item{xlim}{The x-axis limits for the plot. If \code{NULL}, the limits are the \code{0.025} and \code{0.975} quantiles.
 The actual plot range might be slightly larger than this range to fit the histogram.}
+
+\item{height}{The height of the saved plot.}
+
+\item{width}{The width of the saved plot.}
 
 \item{return_details}{A logical value indicating whether to return the details of the plot.}
 }
