@@ -4,7 +4,7 @@
 \alias{break_at}
 \title{Generate breaks for histogram}
 \usage{
-break_at(xlim, breaks, ref_val)
+break_at(xlim, breaks, ref_val = NULL)
 }
 \arguments{
 \item{xlim}{A vector of length 2.}

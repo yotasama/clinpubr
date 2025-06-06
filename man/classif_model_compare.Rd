@@ -10,8 +10,10 @@ classif_model_compare(
   model_names,
   colors = NULL,
   save_output = TRUE,
+  figure_type = "png",
   output_prefix = "model_compare",
-  as_probability = FALSE
+  as_probability = FALSE,
+  auto_order = TRUE
 )
 }
 \arguments{
@@ -26,11 +28,18 @@ classif_model_compare(
 
 \item{save_output}{A logical value indicating whether to output the results to files.}
 
+\item{figure_type}{A character string of the figure type. Can be \code{"png"}, \code{"pdf"}, and other types that
+\code{ggplot2::ggsave()} support.}
+
 \item{output_prefix}{A string specifying the prefix for the output files.}
 
 \item{as_probability}{A logical or a vector of variable names. The logical value indicates
 whether to convert variables not in range 0 to 1 into this range.
 The vector of variable names means to convert these variables to the range of 0 to 1.}
+
+\item{auto_order}{A logical value indicating whether to automatically order the models by their AUCs.
+If \code{TRUE}, the models will be ordered by their AUCs in descending order. If \code{FALSE}, the order
+in \code{model_names} will be retained.}
 }
 \value{
 A list of various results. If the output files are not in desired format,

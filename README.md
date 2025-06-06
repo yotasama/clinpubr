@@ -164,7 +164,7 @@ knitr::kable(tables$baseline) # Display the table
 | wt (mean (SD)) | 3.2 (1.0) | 3.7 (0.9) | 2.6 (0.7) | 0.001 |  |
 | qsec (mean (SD)) | 17.8 (1.8) | 16.7 (1.1) | 19.3 (1.4) | \<0.001 |  |
 | am = 1 (%) | 13 (40.6) | 6 (33.3) | 7 (50.0) | 0.556 |  |
-| gear (%) |  |  |  | 0.002 | exact |
+| gear (%) |  |  |  | 0.001 | exact |
 | 3 | 15 (46.9) | 12 (66.7) | 3 (21.4) |  |  |
 | 4 | 12 (37.5) | 2 (11.1) | 10 (71.4) |  |  |
 | 5 | 5 (15.6) | 4 (22.2) | 1 (7.1) |  |  |
@@ -274,10 +274,10 @@ results <- classif_model_compare(df, "dead", c("base_pred", "full_pred"), save_o
 knitr::kable(results$metric_table)
 ```
 
-| Model | AUC | Accuracy | Sensitivity | Specificity | Pos Pred Value | Neg Pred Value | F1 | Kappa | Brier | cutoff | Youden | HosLem |
-|:---|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| base_pred | 0.822 (0.711, 0.933) | 0.806 | 0.8 | 0.815 | 0.848 | 0.759 | 0.824 | 0.610 | 0.171 | 0.49 | 0.615 | 0.405 |
-| full_pred | 0.931 (0.869, 0.994) | 0.855 | 0.8 | 0.926 | 0.933 | 0.781 | 0.862 | 0.711 | 0.102 | 0.63 | 0.726 | 0.577 |
+|  | Model | AUC | Accuracy | Sensitivity | Specificity | Pos Pred Value | Neg Pred Value | F1 | Kappa | Brier | cutoff | Youden | HosLem |
+|:---|:---|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 2 | full_pred | 0.931 (0.869, 0.994) | 0.855 | 0.8 | 0.926 | 0.933 | 0.781 | 0.862 | 0.711 | 0.102 | 0.63 | 0.726 | 0.577 |
+| 1 | base_pred | 0.822 (0.711, 0.933) | 0.806 | 0.8 | 0.815 | 0.848 | 0.759 | 0.824 | 0.610 | 0.171 | 0.49 | 0.615 | 0.405 |
 
 ``` r
 plot(results$roc_plot)
@@ -287,8 +287,6 @@ plot(results$roc_plot)
 
 ``` r
 plot(results$calibration_plot)
-#> Warning: Removed 1 row containing missing values or values outside the scale range
-#> (`geom_smooth()`).
 ```
 
 <img src="man/figures/README-example_3.6-2.png" width="60%" />

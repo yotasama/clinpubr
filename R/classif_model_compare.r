@@ -8,10 +8,15 @@
 #' @param colors A vector of colors to use for the plots. The last 2 colors are used for the
 #'   "Treat all" and "Treat none" lines in the DCA plot.
 #' @param save_output A logical value indicating whether to output the results to files.
+#' @param figure_type A character string of the figure type. Can be `"png"`, `"pdf"`, and other types that
+#'   `ggplot2::ggsave()` support.
 #' @param output_prefix A string specifying the prefix for the output files.
 #' @param as_probability A logical or a vector of variable names. The logical value indicates
 #'   whether to convert variables not in range 0 to 1 into this range.
 #'   The vector of variable names means to convert these variables to the range of 0 to 1.
+#' @param auto_order A logical value indicating whether to automatically order the models by their AUCs.
+#'   If `TRUE`, the models will be ordered by their AUCs in descending order. If `FALSE`, the order
+#'   in `model_names` will be retained.
 #' @section Metrics:
 #'   - AUC: Area Under the Receiver Operating Characteristic Curve
 #'   - Accuracy: Overall accuracy
@@ -46,8 +51,8 @@
 #' df$full_pred <- predict(model, type = "response")
 #'
 #' classif_model_compare(df, "dead", c("base_pred", "full_pred"), save_output = FALSE)
-classif_model_compare <- function(data, target_var, model_names, colors = NULL, save_output = TRUE,
-                                  output_prefix = "model_compare", as_probability = FALSE) {
+classif_model_compare <- function(data, target_var, model_names, colors = NULL, save_output = TRUE, figure_type = "png",
+                                  output_prefix = "model_compare", as_probability = FALSE, auto_order = TRUE) {
   if (isTRUE(as_probability)) {
     vars_to_prob <- model_names[apply(data[, model_names, drop = FALSE], 2, function(x) any(x < 0 | x > 1))]
   } else if (is.character(as_probability)) {
@@ -79,6 +84,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
     "Neg Pred Value", "F1"
   )
   acc_metrics <- c("Accuracy", "Kappa")
+  model_aucs <- c()
   for (i in seq_along(model_names)) {
     model_name <- model_names[i]
     tmp <- pROC::coords(pROC::roc(target, data[[model_name]], direction = "<", quiet = TRUE), "best")
@@ -90,6 +96,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
       positive = levels(target)[2]
     )
     aucs <- pROC::ci.auc(target, data[[model_name]], direction = "<", quiet = TRUE)
+    model_aucs[i] <- aucs[2]
     aucs <- format(aucs, digits = 2, nsmall = 3)
     metric_table$AUC[i] <- paste0(aucs[2], " (", aucs[1], ", ", aucs[3], ")")
     for (j in seq_along(sens_metrics)) {
@@ -104,6 +111,10 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   }
   for (i in 3:ncol(metric_table)) {
     metric_table[, i] <- round(metric_table[, i], digits = 3)
+  }
+  if (auto_order) {
+    metric_table <- metric_table[order(model_aucs, decreasing = TRUE), ]
+    model_names <- metric_table$Model
   }
   if (save_output) {
     write.csv(metric_table, file = paste0(output_prefix, "_table.csv"), row.names = FALSE, na = "")
@@ -139,7 +150,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
       legend.position.inside = legend_pos,
     )
   if (save_output) {
-    ggplot2::ggsave(dca_plot, file = paste0(output_prefix, "_dca.png"), width = 4, height = 4)
+    ggplot2::ggsave(dca_plot, file = paste0(output_prefix, "_dca.", figure_type), width = 4, height = 4)
   }
 
   # plot ROC curves
@@ -164,7 +175,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
       legend.position.inside = c(0.7, 0.25),
     )
   if (save_output) {
-    ggplot2::ggsave(roc_plot, file = paste0(output_prefix, "_roc.png"), width = 4, height = 4)
+    ggplot2::ggsave(roc_plot, file = paste0(output_prefix, "_roc.", figure_type), width = 4, height = 4)
   }
 
   # plot calibration curves
@@ -172,7 +183,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   data_calibration <- data %>%
     pivot_longer(all_of(model_names)) %>%
     group_by(name) %>%
-    mutate(decile = ntile(value, n_tiles)) %>%
+    mutate(decile = cut(value, break_at(c(0, 1), n_tiles), right = F, include.lowest = T)) %>%
     group_by(decile, name) %>%
     summarise(
       obsRate = mean(as.numeric(!!sym(target_var)), na.rm = T) - 1,
@@ -200,7 +211,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
       legend.position.inside = c(0.7, 0.25),
     )
   if (save_output) {
-    ggplot2::ggsave(calibration_plot, file = paste0(output_prefix, "_calibration.png"), width = 4, height = 4)
+    ggplot2::ggsave(calibration_plot, file = paste0(output_prefix, "_calibration.", figure_type), width = 4, height = 4)
   }
   return(list(
     metric_table = metric_table,

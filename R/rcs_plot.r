@@ -331,10 +331,10 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
 #' @export
 #' @examples
 #' break_at(xlim = c(0, 10), breaks = 12, ref_val = 3.12)
-break_at <- function(xlim, breaks, ref_val) {
+break_at <- function(xlim, breaks, ref_val = NULL) {
   if (length(xlim) != 2) stop("`xlim` must be a vector of length 2")
   bks <- seq(xlim[1], xlim[2], length.out = breaks + 1)
-  if (!ref_val %in% bks) {
+  if (!is.null(ref_val) && !ref_val %in% bks) {
     bks <- seq(xlim[1], xlim[2], length.out = breaks)
     h <- (xlim[2] - xlim[1]) / (breaks - 1)
     bks <- c(bks[1] - h, bks)

@@ -2,335 +2,181 @@ set.seed(1)
 load_all()
 library(knitr)
 library(dtplyr)
-var_types <- get_var_types(mtcars, strata = "vs") # Automatically infer variable types
-baseline_table(mtcars, var_types = var_types, contDigits = 1, filename = "baseline.csv")
 
-t1=read.csv("baseline.csv", check.names = FALSE)
-kable(t1)
-
-data(cancer, package = "survival")
-# coxph model with time assigned
-regression_basic_results(cancer,
-  x = "age", y = "status", time = "time",
-  model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex")),
-  save_output = T
-)
-
-
-time = NULL; model_covs = NULL; pers = c(0.1, 10, 100);
-factor_breaks = NULL; factor_labels = NULL; quantile_breaks = NULL;
-quantile_labels = NULL; label_with_range = FALSE; save_output = TRUE;
-output_dir = NULL; ref_levels = "lowest"; est_nsmall = 2; p_nsmall = 3;
-pval_eps = 1e-3; median_nsmall = 0; colors = NULL; xlab = NULL; legend_title = "age";
-legend_pos = c(0.8, 0.8); height = 6; width = 6; pval_pos = NULL
-
-x = "age"; y = "wt.loss"; covars = "ph.karno"
-model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex"));
-save_output = T
-data=cancer
-
-rcs_plot(cancer, x = "age", y = "status", time = "time", covars = "ph.karno", save_plot = FALSE)
-
-time = NULL; covars = NULL; knot = 4; add_hist = TRUE; ref = "x_median"; ref_digits = 3;
-group_by_ref = TRUE; group_title = NULL; group_labels = NULL; group_colors = NULL; breaks = 20;
-rcs_color = "#e23e57"; print_p_ph = TRUE; trans = "identity"; save_plot = TRUE; filename = NULL;
-y_max = NULL; y_min = NULL; hist_max = NULL; xlim = NULL; return_details = FALSE
-data=cancer; x = "age"; y = "status"; time = "time"; covars = "ph.karno"; save_plot = FALSE
-rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist = TRUE, ref = "x_median", ref_digits = 3,
-                     group_by_ref = TRUE, group_title = NULL, group_labels = NULL, group_colors = NULL, breaks = 20,
-                     rcs_color = "#e23e57", print_p_ph = TRUE, trans = "identity", save_plot = TRUE, filename = NULL,
-                     y_max = NULL, y_min = NULL, hist_max = NULL, xlim = NULL, return_details = FALSE) {
-  if (!is.null(xlim) && length(xlim) != 2) stop("`xlim` must be a vector of length 2")
-  if (is.null(group_colors)) {
-    group_colors <- emp_colors
-  }
-  if (add_hist && trans != "identity") {
-    stop("`trans` must be `identity` when `add_hist` is `TRUE`")
-  }
-  
-  if (!is.null(time)) {
-    analysis_type <- "cox"
-    ylab <- "HR (95% CI)"
-    pred_fun <- exp
-  } else if (length(levels(as.factor(data[[y]]))) == 2) {
-    analysis_type <- "logistic"
-    ylab <- "OR (95% CI)"
-    pred_fun <- exp
+data=prediction_res;target_var = "target"; model_names = bmr2$learners$learner_id
+colors = NULL; save_output = TRUE;
+output_prefix = "model_compare"; as_probability = FALSE
+classif_model_compare <- function(data, target_var, model_names, colors = NULL, save_output = TRUE,
+                                  output_prefix = "model_compare", as_probability = FALSE) {
+  if (isTRUE(as_probability)) {
+    vars_to_prob <- model_names[apply(data[, model_names, drop = FALSE], 2, function(x) any(x < 0 | x > 1))]
+  } else if (is.character(as_probability)) {
+    vars_to_prob <- as_probability
   } else {
-    analysis_type <- "linear"
-    ylab <- "predicted value (95% CI)"
-    pred_fun <- NULL
+    vars_to_prob <- NULL
   }
-  
-  covars <- remove_conflict(covars, c(y, x, time))
-  indf <- dplyr::select(data, all_of(c(y, x, time, covars)))
-  
-  nmissing <- sum(!complete.cases(indf))
-  if (nmissing > 0) {
-    warning(paste0(nmissing, " incomplete cases excluded."))
+  for (var in vars_to_prob) {
+    data[[var]] <- (data[[var]] - min(data[[var]])) / (max(data[[var]]) - min(data[[var]]))
   }
-  indf <- indf[complete.cases(indf), ]
-  
-  dd <- rms::datadist(indf, q.display = c(0.025, 0.975))
-  old_datadist <- getOption("datadist")
-  on.exit(
-    {
-      options(datadist = old_datadist)
-    },
-    add = TRUE
+  if (max(data[, model_names]) > 1 || min(data[, model_names]) < 0) {
+    stop(paste0(
+      "Only predicted probabilities are allowed, detected values not in range 0 to 1.\n",
+      "Set `as_probability = TRUE` to convert illegal variables to the range of 0 to 1.\n",
+      "You can also pass a vector of variable names to `as_probability` to convert only those variables.\n"
+    ))
+  }
+  if (is.null(colors)) colors <- emp_colors
+  data[[target_var]] <- factor(data[[target_var]])
+  target <- data[[target_var]]
+  metric_table <- data.frame(matrix(NA, nrow = length(model_names), ncol = 13))
+  colnames(metric_table) <- c(
+    "Model", "AUC", "Accuracy", "Sensitivity", "Specificity", "Pos Pred Value",
+    "Neg Pred Value", "F1", "Kappa", "Brier", "cutoff", "Youden", "HosLem"
   )
-  options(datadist = dd)
-  
-  aics <- NULL
-  if (is.null(knot)) {
-    for (i in 3:7) {
-      formula <- create_formula(y, x, time = time, covars = covars, rcs_knots = i)
-      model <- fit_model(formula, data = indf, analysis_type = analysis_type)
-      aics <- c(aics, AIC(model))
-      kn <- seq(3, 7)[which.min(aics)]
-    }
-    knot <- kn
-  }
-  
-  formula <- create_formula(y, x, time = time, covars = covars, rcs_knots = knot)
-  model <- fit_model(formula, data = indf, analysis_type = analysis_type, rms = TRUE)
-  
-  phassump <- NULL
-  phresidual <- NULL
-  if (analysis_type == "cox") {
-    phassump <- survival::cox.zph(model, transform = "km")
-    phresidual <- survminer::ggcoxzph(phassump)
-    pvalue_ph <- phassump$table[1, 3]
-  }
-  
-  anova_fit <- anova(model)
-  pvalue_all <- anova_fit[1, "P"]
-  pvalue_nonlin <- anova_fit[2, "P"]
-  df_pred <- rms::Predict(model,
-                          name = x, fun = pred_fun, type = "predictions", conf.int = 0.95, digits = 2,
-                          ref.zero = analysis_type %in% c("cox", "logistic")
+  metric_table$Model <- model_names
+  sens_metrics <- c(
+    "Sensitivity", "Specificity", "Pos Pred Value",
+    "Neg Pred Value", "F1"
   )
-  
-  df_pred <- data.frame(df_pred)
-  if (ref == "ratio_min") {
-    ref_val <- df_pred[[x]][which.min(df_pred$yhat)]
-  } else if (ref == "x_median") {
-    ref_val <- median(indf[[x]])
-  } else if (ref == "x_mean") {
-    ref_val <- mean(indf[[x]])
-  } else {
-    ref_val <- ref
-  }
-  
-  dd[["limits"]]["Adjust to", x] <- ref_val
-  
-  if (!is.null(xlim)) {
-    dd[["limits"]][c("Low:prediction", "High:prediction"), x] <- xlim
-  } else {
-    xlim <- dd[["limits"]][c("Low:prediction", "High:prediction"), x]
-  }
-  options(datadist = dd)
-  model <- update(model)
-  df_pred <- rms::Predict(model,
-                          name = x, fun = pred_fun, type = "predictions", conf.int = 0.95, digits = 2,
-                          ref.zero = analysis_type %in% c("cox", "logistic")
-  )
-  df_rcs <- as.data.frame(dplyr::select(df_pred, all_of(c(x, "yhat", "lower", "upper"))))
-  
-  colnames(df_rcs) <- c("x", "y", "lower", "upper")
-  if (is.null(y_max)) {
-    pred_ymax <- max(df_rcs[, "y"], na.rm = TRUE)
-    plot_ymax <- if (pred_ymax > 0) {
-      1.5 * pred_ymax
-    } else {
-      0.5 * pred_ymax
-    }
-    ymax1 <- plot_ymax # min(max(df_rcs[, "upper"], na.rm = TRUE), plot_ymax)
-  } else {
-    ymax1 <- y_max
-  }
-  df_rcs$upper[df_rcs$upper > ymax1] <- ymax1
-  
-  if (is.null(y_min)) {
-    if (analysis_type == "linear") {
-      pred_ymin <- min(df_rcs[, "y"], na.rm = TRUE)
-      plot_ymin <- if (pred_ymin > 0) {
-        0.5 * pred_ymax
-      } else {
-        1.5 * pred_ymax
-      }
-      ymin <- plot_ymin # max(min(df_rcs[, "lower"], na.rm = TRUE), plot_ymin)
-    } else {
-      ymin <- 0
-    }
-  } else {
-    ymin <- y_min
-  }
-  df_rcs$lower[df_rcs$lower < ymin] <- ymin
-  
-  xtitle <- x
-  ylab <- paste0(ifelse(is.null(covars), "Unadjusted", "Adjusted"), " ", ylab)
-  ytitle2 <- "Percentage of Population (%)"
-  label2 <- paste0(
-    format_pval(pvalue_all, text_ahead = "P-overall"), "\n",
-    format_pval(pvalue_nonlin, text_ahead = "P-non-linear")
-  )
-  if (analysis_type == "cox" && print_p_ph) {
-    label2 <- paste0(label2, "\n", format_pval(pvalue_ph, text_ahead = "P-proportional"))
-  }
-  
-  p <- ggplot2::ggplot()
-  
-  if (add_hist) {
-    if (length(breaks) == 1) {
-      breaks <- break_at(xlim, breaks, ref_val)
-      xlim <- breaks[c(1, length(breaks))]
-    }
-    df_hist <- indf[indf[[x]] >= xlim[1] & indf[[x]] <= xlim[2], ]
-    h <- graphics::hist(df_hist[[x]], breaks = breaks, right = FALSE, plot = FALSE)
-    
-    df_hist_plot <- data.frame(x = h[["mids"]], freq = h[["counts"]], den = h[["counts"]] / nrow(indf) * 100)
-    ori_widths <- breaks[-1] - breaks[-length(breaks)]
-    relative_width <- 0.9
-    df_hist_plot$xmin <- df_hist_plot$x - ori_widths * relative_width / 2
-    df_hist_plot$xmax <- df_hist_plot$x + ori_widths * relative_width / 2
-    if (is.null(hist_max)) {
-      ymax2 <- ceiling(max(df_hist_plot$den * 1.5) / 5) * 5
-    } else {
-      ymax2 <- hist_max
-    }
-    scale_factor <- ymax2 / (ymax1 - ymin)
-    
-    if (group_by_ref) {
-      df_hist_plot$Group <- cut_by(df_hist_plot$x, ref_val, labels = group_labels, label_type = "LMH")
-      tmp_group <- cut_by(indf[[x]], ref_val, labels = group_labels, label_type = "LMH")
-      levels(df_hist_plot$Group) <- paste0(levels(df_hist_plot$Group), " (n=", table(tmp_group), ")")
-      p <- p +
-        geom_rect(
-          data = df_hist_plot,
-          aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = den / scale_factor + ymin, fill = Group),
-        ) +
-        scale_fill_manual(values = group_colors, name = group_title)
-    } else {
-      p <- p +
-        geom_rect(
-          data = df_hist_plot,
-          aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = den / scale_factor + ymin, fill = "1"),
-          show.legend = FALSE
-        ) +
-        scale_fill_manual(values = group_colors)
-    }
-  }
-  
-  offsetx1 <- (xlim[2] - xlim[1]) * 0.02
-  offsety1 <- (ymax1 - ymin) * 0.02
-  labelx1 <- xlim[1] + (xlim[2] - xlim[1]) * 0.15
-  labely1 <- (ymax1 - ymin) * 0.9 + ymin
-  label1_1 <- "Estimation"
-  label1_2 <- "95% CI"
-  labelx2 <- xlim[1] + (xlim[2] - xlim[1]) * 0.95
-  labely2 <- (ymax1 - ymin) * 0.9 + ymin
-  df_rcs <- dplyr::filter(df_rcs, x >= xlim[1], x <= xlim[2]) %>% as.data.frame()
-  
-  if (analysis_type %in% c("cox", "logistic")) {
-    p <- p +
-      geom_hline(yintercept = 1, linewidth = 1, linetype = 2, color = "grey") +
-      geom_point(aes(x = ref_val, y = 1), color = rcs_color, size = 2)
-  }
-  p <- p +
-    geom_ribbon(
-      data = df_rcs, aes(x = x, ymin = lower, ymax = upper),
-      fill = rcs_color, alpha = 0.1
+  acc_metrics <- c("Accuracy", "Kappa")
+  for (i in seq_along(model_names)) {
+    model_name <- model_names[i]
+    tmp <- pROC::coords(pROC::roc(target, data[[model_name]], direction = "<", quiet = TRUE), "best")
+    metric_table$cutoff[i] <- get_valid(tmp$threshold, mode = "last", disjoint = FALSE)
+    model_predict <- cut(data[[model_name]], c(-Inf, metric_table$cutoff[i], Inf), right = FALSE)
+    levels(model_predict) <- levels(target)
+    cm <- caret::confusionMatrix(model_predict, target,
+                                 mode = "everything",
+                                 positive = levels(target)[2]
     )
-  if (analysis_type %in% c("cox", "logistic")) {
-    p <- p +
-      geom_text(aes(
-        x = ref_val, y = 0.9,
-        label = paste0("Ref=", format(ref_val, digits = ref_digits))
-      ))
-  }
-  p <- p +
-    geom_line(data = df_rcs, aes(x = x, y = y), color = rcs_color, linewidth = 1) +
-    geom_segment(
-      aes(
-        x = c(labelx1 - offsetx1 * 5, labelx1 - offsetx1 * 5),
-        xend = c(labelx1 - offsetx1, labelx1 - offsetx1),
-        y = c(labely1 + offsety1, labely1 - offsety1),
-        yend = c(labely1 + offsety1, labely1 - offsety1)
-      ),
-      linetype = 1,
-      color = rcs_color,
-      linewidth = 1,
-      alpha = c(1, 0.1)
-    ) +
-    geom_text(aes(x = labelx1, y = labely1 + offsety1, label = label1_1), hjust = 0) +
-    geom_text(aes(x = labelx1, y = labely1 - offsety1, label = label1_2), hjust = 0) +
-    geom_text(aes(x = labelx2, y = labely2, label = label2), hjust = 1) +
-    scale_x_continuous(xtitle, limits = xlim, expand = c(0.01, 0))
-  if (add_hist) {
-    p <- p +
-      scale_y_continuous(
-        ylab,
-        expand = c(0, 0),
-        limits = c(ymin, ymax1),
-        transform = trans,
-        sec.axis = sec_axis(
-          name = ytitle2, transform = ~ (. - ymin) * scale_factor,
-        )
-      )
-  } else {
-    p <- p +
-      scale_y_continuous(
-        ylab,
-        expand = c(0, 0),
-        limits = c(ymin, ymax1),
-        transform = trans
-      )
-  }
-  p_panel_params <- ggplot_build(p)$layout$panel_params[[1]]
-  p <- p +
-    annotate("text",
-             label = paste0("N = ", nrow(indf)), size = 5,
-             x = mean(p_panel_params$x.range),
-             y = max(p_panel_params$y.range) * 0.9,
-             hjust = 0.5, vjust = 0.5
-    ) +
-    theme_bw() +
-    theme(
-      axis.line = element_line(),
-      panel.grid = element_blank(),
-      panel.border = element_blank(),
-      legend.position = "top"
-    )
-  
-  if (save_plot) {
-    if (is.null(filename)) {
-      filename <- paste0(
-        paste0(c(analysis_type, "rcs", y, "with", x, knot, "knots", "with", length(covars), "covars"),
-               collapse = "_"
-        ), ".png"
-      )
+    aucs <- pROC::ci.auc(target, data[[model_name]], direction = "<", quiet = TRUE)
+    aucs <- format(aucs, digits = 2, nsmall = 3)
+    metric_table$AUC[i] <- paste0(aucs[2], " (", aucs[1], ", ", aucs[3], ")")
+    for (j in seq_along(sens_metrics)) {
+      metric_table[i, sens_metrics[j]] <- cm$byClass[sens_metrics[j]]
     }
-    ggsave(filename, p, width = 6, height = 6)
+    for (j in seq_along(acc_metrics)) {
+      metric_table[i, acc_metrics[j]] <- cm$overall[acc_metrics[j]]
+    }
+    metric_table$Brier[i] <- DescTools::BrierScore(as.numeric(target) - 1, data[[model_name]])
+    metric_table$Youden[i] <- metric_table$Sensitivity[i] + metric_table$Specificity[i] - 1
+    metric_table$HosLem[i] <- ResourceSelection::hoslem.test(as.numeric(target) - 1, data[[model_name]])$p.value
+  }
+  for (i in 3:ncol(metric_table)) {
+    metric_table[, i] <- round(metric_table[, i], digits = 3)
+  }
+  if (save_output) {
+    write.csv(metric_table, file = paste0(output_prefix, "_table.csv"), row.names = FALSE, na = "")
   }
   
-  if (return_details) {
-    details <- list(
-      aics = aics, knot = knot, n.valid = nrow(indf), n.plot = nrow(df_hist),
-      phassump = phassump, phresidual = phresidual,
-      pvalue_all = pvalue_all,
-      pvalue_nonlin = pvalue_nonlin,
-      ref = ref_val, plot = p
-    )
-    return(details)
+  plot_formula <- as.formula(paste0(target_var, " ~ ", paste(model_names, collapse = " + ")))
+  
+  # Plot DCA curves
+  pos_rate <- mean(as.numeric(as.factor(data[[target_var]]))) - 1
+  if (pos_rate < 0.5) {
+    legend_pos <- c(0.75, 0.75)
   } else {
-    return(p)
+    legend_pos <- c(0.25, 0.4)
   }
+  if (pos_rate < 0.2) {
+    dca_thresholds <- seq(0.005, 0.5, by = 0.005)
+  } else {
+    dca_thresholds <- seq(0.01, 0.99, by = 0.01)
+  }
+  
+  dca_plot <- dcurves::dca(plot_formula, data = data, thresholds = dca_thresholds) %>%
+    plot(smooth = TRUE) +
+    ggplot2::scale_color_manual(values = colors[c(length(colors) - 1:0, seq_along(model_names))]) +
+    ggplot2::labs(x = "Threshold probability") +
+    ggplot2::theme_classic() +
+    ggplot2::theme(
+      axis.text = element_text(size = 12),
+      axis.title = element_text(size = 15),
+      legend.title = element_blank(),
+      legend.background = element_blank(),
+      legend.text = element_text(size = 10),
+      legend.position = "inside",
+      legend.position.inside = legend_pos,
+    )
+  if (save_output) {
+    ggplot2::ggsave(dca_plot, file = paste0(output_prefix, "_dca.png"), width = 4, height = 4)
+  }
+  
+  # plot ROC curves
+  roc_list <- pROC::roc(plot_formula, data = data, direction = "<", quiet = TRUE)
+  if (length(model_names) == 1) {
+    roc_list <- list(roc_list)
+    names(roc_list) <- model_names
+  }
+  names(roc_list) <- paste0(names(roc_list), " (", sapply(roc_list, function(x) sprintf("%.3f", x$auc)), ")")
+  roc_plot <- pROC::ggroc(roc_list, legacy.axes = TRUE, linewidth = 1) +
+    ggplot2::scale_color_manual(values = colors) +
+    ggplot2::geom_abline(slope = 1, intercept = 0, linetype = 2, alpha = 0.5) +
+    ggplot2::theme_classic() +
+    ggplot2::labs(x = "1 - Specificity", y = "Sensitivity") +
+    ggplot2::theme(
+      axis.text = element_text(size = 12),
+      axis.title = element_text(size = 15),
+      legend.title = element_blank(),
+      legend.background = element_blank(),
+      legend.text = element_text(size = 10),
+      legend.position = "inside",
+      legend.position.inside = c(0.7, 0.25),
+    )
+  if (save_output) {
+    ggplot2::ggsave(roc_plot, file = paste0(output_prefix, "_roc.png"), width = 4, height = 4)
+  }
+  
+  # plot calibration curves
+  n_tiles <- min(round(nrow(data) / 10), 20)
+  data_calibration <- data %>%
+    pivot_longer(all_of(model_names)) %>%
+    group_by(name) %>%
+    mutate(decile = ntile(value, n_tiles)) %>%
+    group_by(decile, name) %>%
+    summarise(
+      obsRate = mean(as.numeric(!!sym(target_var)), na.rm = T) - 1,
+      predRate = mean(value, na.rm = T),
+      .groups = "drop"
+    ) %>%
+    as.data.frame()
+  data_calibration$name <- factor(data_calibration$name, levels = model_names)
+  calibration_plot <- ggplot(data = data_calibration, aes(
+    y = obsRate, x = predRate, group = name, color = name
+  )) +
+    geom_smooth(method = "loess", formula = y ~ x, se = FALSE, span = 1) +
+    lims(x = c(0, 1), y = c(0, 1)) +
+    geom_abline(intercept = 0, slope = 1, linetype = 2, alpha = 0.5) +
+    ggplot2::scale_color_manual(values = colors) +
+    ggplot2::theme_classic() +
+    ggplot2::labs(x = "Predicted probability", y = "Observed probability") +
+    ggplot2::theme(
+      axis.text = element_text(size = 12),
+      axis.title = element_text(size = 15),
+      legend.title = element_blank(),
+      legend.background = element_blank(),
+      legend.text = element_text(size = 10),
+      legend.position = "inside",
+      legend.position.inside = c(0.7, 0.25),
+    )
+  if (save_output) {
+    ggplot2::ggsave(calibration_plot, file = paste0(output_prefix, "_calibration.png"), width = 4, height = 4)
+  }
+  return(list(
+    metric_table = metric_table,
+    dca_plot = dca_plot,
+    roc_plot = roc_plot,
+    calibration_plot = calibration_plot
+  ))
 }
 
-
-results <- regression_basic_results(
-  cancer,
-  x = "age", y = "wt.loss",
-  model_covs = list(Crude = c()), save_outputs = FALSE
-)
+x=data.frame(t=sample(c(T,F),1000,replace = T,prob = c(0.2,0.8)),
+             value=runif(1000,0,0.6))
+y=x%>%mutate(decile = cut(value, break_at(c(0, 1), 20), right = F, include.lowest = T)) %>%
+  group_by(decile) %>%
+  summarise(
+    obsRate = mean(t, na.rm = T),
+    predRate = mean(value, na.rm = T),
+    .groups = "drop"
+  ) %>%
+  as.data.frame()
