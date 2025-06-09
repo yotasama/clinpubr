@@ -82,8 +82,8 @@ df$dead <- ifelse(df$time <= 100 & df$status == 0, NA, df$time <= 100)
 df <- na.omit(df[, -c(1:3)])
 
 model0 <- glm(dead ~ age + frail, family = binomial(), data = df)
-df$base_pred <- predict(model0, type = "response")
 model <- glm(dead ~ ., family = binomial(), data = df)
+df$base_pred <- predict(model0, type = "response")
 df$full_pred <- predict(model, type = "response")
 
 classif_model_compare(df, "dead", c("base_pred", "full_pred"), save_output = FALSE)

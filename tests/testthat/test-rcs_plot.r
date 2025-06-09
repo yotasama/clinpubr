@@ -74,6 +74,14 @@ test_that("rcs_plot handles custom y_min and y_max", {
   vdiffr::expect_doppelganger("cox model RCS plot y 0.5 to 2.5", result)
 })
 
+test_that("rcs_plot handles custom transformation", {
+  result <- rcs_plot(cancer,
+    x = "age", y = "dead",
+    covars = "ph.karno", save_plot = FALSE, add_hist = F, trans = "log10"
+  )
+  expect_s3_class(result, "gg")
+  vdiffr::expect_doppelganger("logistic model RCS plot y log10 transformed", result)
+})
 
 test_that("rcs_plot uses different ref values", {
   # Test ref = x_mean

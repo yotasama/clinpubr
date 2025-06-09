@@ -102,7 +102,7 @@
 <text x='697.13' y='360.83' text-anchor='middle' style='font-size: 13.75px; fill: #FC8D62; font-family: sans;' textLength='8.03px' lengthAdjust='spacingAndGlyphs'>+</text>
 <text x='92.75' y='300.75' style='font-size: 14.23px; font-family: sans;' textLength='56.16px' lengthAdjust='spacingAndGlyphs'>Log-rank</text>
 <text x='92.75' y='321.23' style='font-size: 14.23px; font-family: sans;' textLength='59.73px' lengthAdjust='spacingAndGlyphs'>p = 0.353</text>
-<text x='382.13' y='47.95' text-anchor='middle' style='font-size: 14.23px; font-family: sans;' textLength='50.23px' lengthAdjust='spacingAndGlyphs'>N = 227</text>
+<text x='382.13' y='49.98' text-anchor='middle' style='font-size: 15.00px; font-weight: bold; font-family: sans;' textLength='52.97px' lengthAdjust='spacingAndGlyphs'>N = 227</text>
 <text x='285.58' y='362.85' text-anchor='end' style='font-size: 11.04px; fill: #66C2A5; font-family: sans;' textLength='27.94px' lengthAdjust='spacingAndGlyphs'>t=340</text>
 <text x='263.26' y='345.20' text-anchor='end' style='font-size: 11.04px; fill: #FC8D62; font-family: sans;' textLength='27.94px' lengthAdjust='spacingAndGlyphs'>t=303</text>
 <line x1='285.58' y1='376.71' x2='285.58' y2='200.17' style='stroke-width: 1.07; stroke: #66C2A5; stroke-dasharray: 5.69,5.69; stroke-linecap: butt;' />

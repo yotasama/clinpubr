@@ -243,22 +243,18 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covars 
         plt1 <- plt1 +
           scale_y_log10(expand = default_expansion) +
           geom_hline(yintercept = 1, linetype = 3, color = "black", linewidth = 1)
-        plt1_panel_params <- ggplot_build(plt1)$layout$panel_params[[1]]
-        n_y <- 10^(max(plt1_panel_params$y.range))
       } else {
         plt1 <- plt1 +
           scale_y_continuous(expand = default_expansion)
-        plt1_panel_params <- ggplot_build(plt1)$layout$panel_params[[1]]
-        n_y <- max(plt1_panel_params$y.range)
       }
-      n_x <- mean(plt1_panel_params$x.range)
       if (show_n) {
         plt1 <- plt1 +
-          annotate("text",
-            label = paste0("N = ", nrow(dat)), size = 5,
-            x = n_x,
-            y = n_y,
-            hjust = 0.5, vjust = 0.5
+          annotation_custom(
+            grob = grid::textGrob(paste0("N = ", nrow(dat)),
+              x = unit(0.5, "npc"),
+              y = unit(0.9, "npc"),
+              gp = grid::gpar(fontsize = 15, fontface = "bold")
+            )
           )
       }
       plt1 <- plt1 +
@@ -317,23 +313,19 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, covars 
           plt2 <- plt2 +
             scale_y_log10(expand = default_expansion) +
             geom_hline(yintercept = 1, linetype = 3, color = "black", linewidth = 1)
-          plt2_panel_params <- ggplot_build(plt2)$layout$panel_params[[1]]
-          n_y <- 10^(max(plt2_panel_params$y.range))
         } else {
           plt2 <- plt2 +
             scale_y_continuous(expand = default_expansion)
-          plt2_panel_params <- ggplot_build(plt2)$layout$panel_params[[1]]
-          n_y <- max(plt2_panel_params$y.range)
         }
-        n_x <- mean(plt2_panel_params$x.range)
 
         if (show_n) {
           plt2 <- plt2 +
-            annotate("text",
-              label = paste0("N = ", nrow(dat)), size = 5,
-              x = n_x,
-              y = n_y,
-              hjust = 0.5, vjust = 0.5
+            annotation_custom(
+              grob = grid::textGrob(paste0("N = ", nrow(dat)),
+                x = unit(0.5, "npc"),
+                y = unit(0.9, "npc"),
+                gp = grid::gpar(fontsize = 15, fontface = "bold")
+              )
             )
         }
 

@@ -218,13 +218,13 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
         if (nrow(tmp) > 0) {
           tmp$y <- c((1:10) / 20)[seq_len(nrow(tmp))]
           if (!is.null(n_y_pos)) {
-            p_panel_params <- ggplot_build(p$plot)$layout$panel_params[[1]]
             p$plot <- p$plot +
-              annotate("text",
-                label = paste0("N = ", sum(p$data.survtable$n.risk[p$data.survtable$time == 0])), size = 5,
-                x = mean(p_panel_params$x.range),
-                y = max(p_panel_params$y.range) * n_y_pos,
-                hjust = 0.5, vjust = 0.5
+              annotation_custom(
+                grob = grid::textGrob(paste0("N = ", sum(p$data.survtable$n.risk[p$data.survtable$time == 0])),
+                  x = unit(0.5, "npc"),
+                  y = unit(n_y_pos, "npc"),
+                  gp = grid::gpar(fontsize = 15, fontface = "bold")
+                )
               )
           }
           p$plot <- p$plot +

@@ -157,7 +157,12 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
     ymin <- pred_ymin * 2 - pred_ymax
     ymax1 <- pred_ymax * 2 - pred_ymin
     if (analysis_type %in% c("cox", "logistic")) {
-      ymin <- max(ymin, 0)
+      if (trans == "identity") {
+        ymin <- max(ymin, 0)
+      } else {
+        ymin <- min(df_rcs[, "lower"], na.rm = TRUE)
+        ymax1 <- max(df_rcs[, "upper"], na.rm = TRUE)
+      }
     }
   } else {
     ymin <- y_lim[1]
@@ -259,40 +264,56 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
         transform = trans
       )
   }
-  p_panel_params <- ggplot_build(p)$layout$panel_params[[1]]
-  x1 <- p_panel_params$x.range[1]
-  x2 <- p_panel_params$x.range[2]
-  y1 <- p_panel_params$y.range[1]
-  y2 <- p_panel_params$y.range[2]
-  offsetx1 <- (x2 - x1) * 0.02
-  offsety1 <- (y2 - y1) * 0.02
-  labelx1 <- x1 + (x2 - x1) * 0.15
-  labelx2 <- x1 + (x2 - x1) * 0.95
-  labely <- (y2 - y1) * 0.9 + y1
-  label1_1 <- "Estimation"
-  label1_2 <- "95% CI"
+
+  segment1 <- grid::segmentsGrob(
+    x0 = unit(0.05, "npc"),
+    y0 = unit(0.92, "npc"),
+    x1 = unit(0.12, "npc"),
+    y1 = unit(0.92, "npc"),
+    gp = grid::gpar(col = rcs_color, lwd = 3,lineend = "butt")
+  )
+  segment2 <- grid::segmentsGrob(
+    x0 = unit(0.05, "npc"),
+    y0 = unit(0.88, "npc"),
+    x1 = unit(0.12, "npc"),
+    y1 = unit(0.88, "npc"),
+    gp = grid::gpar(col = rcs_color, lwd = 12, alpha = 0.1,lineend = "butt")
+  )
+
   p <- p +
-    annotate("text",
-      label = paste0("N = ", nrow(indf)), size = 5,
-      x = mean(p_panel_params$x.range),
-      y = labely,
+    annotation_custom(
+      grob = grid::textGrob(paste0("N = ", nrow(indf)),
+        x = unit(0.5, "npc"),
+        y = unit(0.9, "npc"),
+        gp = grid::gpar(fontsize = 15, fontface = "bold")
+      )
     ) +
-    geom_segment(
-      aes(
-        x = c(labelx1 - offsetx1 * 5, labelx1 - offsetx1 * 5),
-        xend = c(labelx1 - offsetx1, labelx1 - offsetx1),
-        y = c(labely + offsety1, labely - offsety1),
-        yend = c(labely + offsety1, labely - offsety1)
-      ),
-      linetype = 1,
-      color = rcs_color,
-      linewidth = c(1, 5),
-      alpha = c(1, 0.1),
-      show.legend = FALSE
+    annotation_custom(segment1) +
+    annotation_custom(segment2) +
+    annotation_custom(
+      grob = grid::textGrob("Estimation",
+        x = unit(0.13, "npc"),
+        y = unit(0.92, "npc"),
+        just = "left",
+        gp = grid::gpar(fontsize = 12)
+      )
     ) +
-    geom_text(aes(x = labelx1, y = labely + offsety1, label = label1_1), hjust = 0, size = 4) +
-    geom_text(aes(x = labelx1, y = labely - offsety1, label = label1_2), hjust = 0, size = 4) +
-    geom_text(aes(x = labelx2, y = labely, label = label2), hjust = 1, size = 4) +
+    annotation_custom(
+      grob = grid::textGrob("95% CI",
+        x = unit(0.13, "npc"),
+        y = unit(0.88, "npc"),
+        just = "left",
+        gp = grid::gpar(fontsize = 12)
+      )
+    ) +
+    annotation_custom(
+      grob = grid::textGrob(label2,
+        x = unit(0.95, "npc"),
+        y = unit(0.9, "npc"),
+        just = "right",
+        gp = grid::gpar(fontsize = 12)
+      )
+    ) +
     theme_bw() +
     theme(
       text = element_text(size = 15),
