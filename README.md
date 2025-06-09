@@ -164,7 +164,7 @@ knitr::kable(tables$baseline) # Display the table
 | wt (mean (SD)) | 3.2 (1.0) | 3.7 (0.9) | 2.6 (0.7) | 0.001 |  |
 | qsec (mean (SD)) | 17.8 (1.8) | 16.7 (1.1) | 19.3 (1.4) | \<0.001 |  |
 | am = 1 (%) | 13 (40.6) | 6 (33.3) | 7 (50.0) | 0.556 |  |
-| gear (%) |  |  |  | 0.002 | exact |
+| gear (%) |  |  |  | 0.001 | exact |
 | 3 | 15 (46.9) | 12 (66.7) | 3 (21.4) |  |  |
 | 4 | 12 (37.5) | 2 (11.1) | 10 (71.4) |  |  |
 | 5 | 5 (15.6) | 4 (22.2) | 1 (7.1) |  |  |
@@ -263,8 +263,8 @@ df$dead <- ifelse(df$time <= 100 & df$status == 0, NA, df$time <= 100)
 df <- na.omit(df[, -c(1:3)])
 
 model0 <- glm(dead ~ age + frail, family = binomial(), data = df)
-df$base_pred <- predict(model0, type = "response")
 model1 <- glm(dead ~ ., family = binomial(), data = df)
+df$base_pred <- predict(model0, type = "response")
 df$full_pred <- predict(model1, type = "response")
 
 # Generating most of the useful plots and metrics for model comparison
@@ -276,8 +276,8 @@ knitr::kable(results$metric_table)
 
 |  | Model | AUC | Accuracy | Sensitivity | Specificity | Pos Pred Value | Neg Pred Value | F1 | Kappa | Brier | cutoff | Youden | HosLem |
 |:---|:---|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 2 | full_pred | 0.931 (0.869, 0.994) | 0.855 | 0.8 | 0.926 | 0.933 | 0.781 | 0.862 | 0.711 | 0.102 | 0.63 | 0.726 | 0.577 |
-| 1 | base_pred | 0.822 (0.711, 0.933) | 0.806 | 0.8 | 0.815 | 0.848 | 0.759 | 0.824 | 0.610 | 0.171 | 0.49 | 0.615 | 0.405 |
+| 2 | full_pred | 0.915 (0.847, 0.984) | 0.839 | 0.8 | 0.889 | 0.903 | 0.774 | 0.848 | 0.677 | 0.114 | 0.626 | 0.689 | 0.944 |
+| 1 | base_pred | 0.822 (0.711, 0.933) | 0.806 | 0.8 | 0.815 | 0.848 | 0.759 | 0.824 | 0.610 | 0.171 | 0.490 | 0.615 | 0.405 |
 
 ``` r
 plot(results$roc_plot)
