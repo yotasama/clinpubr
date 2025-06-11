@@ -60,31 +60,34 @@ df_view_nonnum <- function(df, max_count = 20, random_sample = FALSE, long_df = 
     max_count <- nrow(df)
   }
   if (long_df) {
-    if (is.null(subject_col)) {
-      subject_col <- colnames(df)[1]
+    if (inherits(df, "data.frame")) {
+      cols <- colnames(df)
+    } else if (inherits(df, "dtplyr_step")) {
+      cols <- df$vars
     }
-    if (is.null(value_col)) {
-      value_col <- colnames(df)[2]
-    }
-    subjects <- unique(df[, subject_col])
+    if (is.null(subject_col)) subject_col <- cols[1]
+    if (is.null(value_col)) value_col <- cols[2]
+    subjects <- df %>%
+      dplyr::pull(!!rlang::sym(subject_col)) %>%
+      unique() %>%
+      na.omit()
   } else {
     subjects <- colnames(df)
   }
   res <- data.frame(matrix(NA, nrow = max_count, ncol = length(subjects)))
   colnames(res) <- subjects
   for (subject in subjects) {
-    if (long_df) {
-      df_sub <- df[df[, subject_col] == subject, value_col]
+    df_sub <- if (long_df) {
+      df %>%
+        dplyr::filter(!!rlang::sym(subject_col) == !!subject) %>%
+        dplyr::pull(!!rlang::sym(value_col))
     } else {
-      df_sub <- df[, subject]
+      df %>% dplyr::pull(!!rlang::sym(subject))
     }
     x <- check_nonnum(df_sub)
+    # Ensure strict max_count adherence
     if (length(x) > max_count) {
-      if (random_sample) {
-        x <- sample(x, max_count)
-      } else {
-        x <- x[1:max_count]
-      }
+      x <- if (random_sample) sample(x, max_count) else x[1:max_count]
     }
     res[seq_along(x), subject] <- x
   }
