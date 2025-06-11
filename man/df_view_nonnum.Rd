@@ -4,7 +4,14 @@
 \alias{df_view_nonnum}
 \title{Show non-numeric elements in a data frame}
 \usage{
-df_view_nonnum(df, max_count = 20, random_sample = FALSE)
+df_view_nonnum(
+  df,
+  max_count = 20,
+  random_sample = FALSE,
+  long_df = FALSE,
+  subject_col = NULL,
+  value_col = NULL
+)
 }
 \arguments{
 \item{df}{A data frame.}
@@ -13,6 +20,16 @@ df_view_nonnum(df, max_count = 20, random_sample = FALSE)
 If \code{NULL} or \code{0}, show all elements.}
 
 \item{random_sample}{A logical value. If \code{TRUE}, randomly sample the elements to show.}
+
+\item{long_df}{A logical value. If \code{TRUE}, the input \code{df} is provided in a long format.}
+
+\item{subject_col}{A character string. The name of the column that contains the subject
+identifier. Used when \code{long_df} is \code{TRUE}.
+If \code{NULL}, the subject column is assumed to be the first column.}
+
+\item{value_col}{A character string. The name of the column that contains the values.
+Used when \code{long_df} is \code{TRUE}.
+If \code{NULL}, the value column is assumed to be the second column.}
 }
 \value{
 A data frame of the non-numeric elements.
@@ -27,4 +44,5 @@ df <- data.frame(
   y = c("1", "ss", "aa.a", "4", "xx"),
   z = c("1", "2", "3", "4", "6")
 )
+df_view_nonnum(df)
 }
