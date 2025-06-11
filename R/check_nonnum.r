@@ -32,6 +32,13 @@ check_nonnum <- function(x, return_idx = FALSE, show_unique = TRUE) {
 #' @param max_count An integer. The maximum number of elements to show for each column.
 #'   If `NULL` or `0`, show all elements.
 #' @param random_sample A logical value. If `TRUE`, randomly sample the elements to show.
+#' @param long_df A logical value. If `TRUE`, the input `df` is provided in a long format.
+#' @param subject_col A character string. The name of the column that contains the subject
+#'   identifier. Used when `long_df` is `TRUE`.
+#'   If `NULL`, the subject column is assumed to be the first column.
+#' @param value_col A character string. The name of the column that contains the values.
+#'   Used when `long_df` is `TRUE`.
+#'   If `NULL`, the value column is assumed to be the second column.
 #' @returns A data frame of the non-numeric elements.
 #' @export
 #' @examples
@@ -40,15 +47,38 @@ check_nonnum <- function(x, return_idx = FALSE, show_unique = TRUE) {
 #'   y = c("1", "ss", "aa.a", "4", "xx"),
 #'   z = c("1", "2", "3", "4", "6")
 #' )
-df_view_nonnum <- function(df, max_count = 20, random_sample = FALSE) {
-  if (ncol(df) == 0) return(data.frame())  # Handle empty data frame
+#' df_view_nonnum(df)
+df_view_nonnum <- function(df, max_count = 20, random_sample = FALSE, long_df = FALSE,
+                           subject_col = NULL, value_col = NULL) {
+  if (ncol(df) == 0) {
+    return(data.frame())
+  }
+  if (long_df && ncol(df) != 2 && (is.null(subject_col) || is.null(value_col))) {
+    stop("`subject_col` and `value_col` must be specified for long `data.frame` with more than 2 columns.")
+  }
   if (is.null(max_count) || max_count == 0) {
     max_count <- nrow(df)
   }
-  res <- data.frame(matrix(NA, nrow = max_count, ncol = ncol(df)))
-  colnames(res) <- colnames(df)
-  for (i in 1:ncol(df)) {
-    x <- check_nonnum(df[, i])
+  if (long_df) {
+    if (is.null(subject_col)) {
+      subject_col <- colnames(df)[1]
+    }
+    if (is.null(value_col)) {
+      value_col <- colnames(df)[2]
+    }
+    subjects <- unique(df[, subject_col])
+  } else {
+    subjects <- colnames(df)
+  }
+  res <- data.frame(matrix(NA, nrow = max_count, ncol = length(subjects)))
+  colnames(res) <- subjects
+  for (subject in subjects) {
+    if (long_df) {
+      df_sub <- df[df[, subject_col] == subject, value_col]
+    } else {
+      df_sub <- df[, subject]
+    }
+    x <- check_nonnum(df_sub)
     if (length(x) > max_count) {
       if (random_sample) {
         x <- sample(x, max_count)
@@ -56,7 +86,7 @@ df_view_nonnum <- function(df, max_count = 20, random_sample = FALSE) {
         x <- x[1:max_count]
       }
     }
-    res[seq_along(x), i] <- x
+    res[seq_along(x), subject] <- x
   }
   # Remove rows with all NAs
   if (nrow(res) > 0) {
