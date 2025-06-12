@@ -33,6 +33,7 @@ Collate:
     'regressions.r'
     'split_multichoice.r'
     'subgroup_forest.r'
+    'subject_standardize.r'
     'to_date.r'
     'unit_standardize.r'
     'value_initial_cleaning.r'
