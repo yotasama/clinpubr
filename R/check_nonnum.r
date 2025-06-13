@@ -86,32 +86,39 @@ df_view_nonnum <- function(df, max_count = 20, random_sample = FALSE, long_df = 
       na.omit()
   } else {
     subjects <- colnames(df)
+    subject_col <- "subject"
+    value_col <- "value"
   }
-  res <- data.frame(matrix(NA, nrow = max_count, ncol = length(subjects)))
-  colnames(res) <- subjects
-  for (subject in subjects) {
-    df_sub <- if (long_df) {
-      df %>%
-        dplyr::filter(!!rlang::sym(subject_col) == !!subject) %>%
-        dplyr::pull(!!rlang::sym(value_col))
-    } else {
-      df %>% dplyr::pull(!!rlang::sym(subject))
-    }
-    x <- check_nonnum(df_sub, max_count = max_count, random_sample = random_sample, fix_len = TRUE)
-    res[, subject] <- x
-  }
-  # Remove rows with all NAs
-  if (nrow(res) > 0) {
-    res <- res[rowSums(!is.na(res)) > 0, , drop = FALSE]
+  # Reshape to long format and process with dplyr
+  df_long <- if (long_df) {
+    df %>% dplyr::select(!!rlang::sym(subject_col), !!rlang::sym(value_col))
   } else {
-    return(data.frame())
+    df %>%
+      tidyr::pivot_longer(
+        cols = dplyr::all_of(subjects),
+        names_to = subject_col,
+        values_to = value_col
+      )
   }
 
-  # Remove columns with all NAs (handle empty case)
-  if (ncol(res) > 0) {
-    res <- res[, colSums(!is.na(res)) > 0, drop = FALSE]
-  } else {
-    return(data.frame())
-  }
+  res <- df_long %>%
+    dplyr::group_by(!!rlang::sym(subject_col)) %>%
+    dplyr::group_modify(~ {
+      x <- check_nonnum(.x[[value_col]],
+        max_count = max_count,
+        random_sample = random_sample,
+        fix_len = TRUE
+      )
+      dplyr::tibble(row = seq_along(x), value = x)
+    }) %>%
+    tidyr::pivot_wider(
+      names_from = !!rlang::sym(subject_col),
+      values_from = value,
+      values_fill = NA
+    ) %>%
+    dplyr::select(-row) %>%
+    dplyr::filter(dplyr::if_any(dplyr::everything(), ~ !is.na(.x))) %>%
+    dplyr::select(dplyr::where(~ any(!is.na(.x))))
+
   res
 }

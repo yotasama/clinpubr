@@ -4,18 +4,36 @@
 \alias{check_nonnum}
 \title{Check elements that are not numeric}
 \usage{
-check_nonnum(x, return_idx = FALSE, show_unique = TRUE)
+check_nonnum(
+  x,
+  return_idx = FALSE,
+  show_unique = TRUE,
+  max_count = NULL,
+  random_sample = FALSE,
+  fix_len = FALSE
+)
 }
 \arguments{
 \item{x}{A string vector that stores numerical values.}
 
-\item{return_idx}{A logical value. If \code{TRUE}, return the index of the elements that are not numeric.}
+\item{return_idx}{A logical value.
+If \code{TRUE}, return the index of the elements that are not numeric.}
 
 \item{show_unique}{A logical value. If \code{TRUE}, return the unique elements that are not numeric.
 Omitted if \code{return_idx} is \code{TRUE}.}
+
+\item{max_count}{An integer. The maximum number of elements to show.
+If \code{NULL} or \code{0}, show all elements. Omitted if \code{return_idx} is \code{TRUE}.}
+
+\item{random_sample}{A logical value. If \code{TRUE}, randomly sample the elements to show.
+Only works if \code{max_count} is not \code{NULL} or \code{0}.}
+
+\item{fix_len}{A logical value. If \code{TRUE}, fill the vector with \code{NA} to fix the length to
+\code{max_count}.}
 }
 \value{
-The (unique) elements that cannot be converted to numeric, and their indexes if \code{return_idx} is \code{TRUE}.
+The (unique) elements that cannot be converted to numeric,
+and their indexes if \code{return_idx} is \code{TRUE}.
 }
 \description{
 Finds the elements that cannot be converted to numeric in a character vector.
