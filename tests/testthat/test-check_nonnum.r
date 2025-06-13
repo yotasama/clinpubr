@@ -16,13 +16,16 @@ test_that("Basic non-numeric detection", {
 test_that("Parameter combinations", {
   input <- c("a", "a", "b", "c")
 
-  # return_idx优先
+  # return_idx
   res <- check_nonnum(input, return_idx = TRUE, show_unique = FALSE)
   expect_type(res, "list")
   expect_named(res, c("value", "idx"))
 
-  # show_unique生效
+  # show_unique
   expect_length(check_nonnum(input, show_unique = TRUE), 3)
+
+  # random_sample
+  expect_length(check_nonnum(input, show_unique = TRUE, max_count = 2, random_sample = TRUE), 2)
 })
 
 test_that("Edge cases handling", {

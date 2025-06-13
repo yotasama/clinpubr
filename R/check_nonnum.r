@@ -2,26 +2,39 @@
 #' @description Finds the elements that cannot be converted to numeric in a character vector.
 #'   Useful when setting the strategy to clean numeric values.
 #' @param x A string vector that stores numerical values.
-#' @param return_idx A logical value. If `TRUE`, return the index of the elements that are not numeric.
+#' @param return_idx A logical value.
+#'   If `TRUE`, return the index of the elements that are not numeric.
 #' @param show_unique A logical value. If `TRUE`, return the unique elements that are not numeric.
 #'   Omitted if `return_idx` is `TRUE`.
+#' @param max_count An integer. The maximum number of elements to show.
+#'   If `NULL` or `0`, show all elements. Omitted if `return_idx` is `TRUE`.
+#' @param random_sample A logical value. If `TRUE`, randomly sample the elements to show.
+#'   Only works if `max_count` is not `NULL` or `0`.
+#' @param fix_len A logical value. If `TRUE`, fill the vector with `NA` to fix the length to
+#'   `max_count`.
 #' @details The function uses the `as.numeric()` function to try to convert the elements to numeric.
 #'   If the conversion fails, the element is considered non-numeric.
-#' @returns The (unique) elements that cannot be converted to numeric, and their indexes if `return_idx` is `TRUE`.
+#' @returns The (unique) elements that cannot be converted to numeric,
+#'   and their indexes if `return_idx` is `TRUE`.
 #' @export
 #' @examples
 #' check_nonnum(c("\uFF11\uFF12\uFF13", "11..23", "3.14", "2.131", "35.2."))
-check_nonnum <- function(x, return_idx = FALSE, show_unique = TRUE) {
+check_nonnum <- function(x, return_idx = FALSE, show_unique = TRUE, max_count = NULL,
+                         random_sample = FALSE, fix_len = FALSE) {
   x2 <- suppressWarnings(as.numeric(x))
   idx <- which(!is.na(x) & is.na(x2))
   y <- x[idx]
   if (return_idx) {
-    list(value = y, idx = idx)
+    return(list(value = y, idx = idx))
   } else if (show_unique) {
-    unique(y)
-  } else {
-    y
+    y <- unique(y)
   }
+  if (!is.null(max_count) && max_count > 0) {
+    if (length(x) > max_count || fix_len) {
+      y <- if (random_sample) sample(y, max_count) else y[1:max_count]
+    }
+  }
+  y
 }
 
 
@@ -84,12 +97,8 @@ df_view_nonnum <- function(df, max_count = 20, random_sample = FALSE, long_df = 
     } else {
       df %>% dplyr::pull(!!rlang::sym(subject))
     }
-    x <- check_nonnum(df_sub)
-    # Ensure strict max_count adherence
-    if (length(x) > max_count) {
-      x <- if (random_sample) sample(x, max_count) else x[1:max_count]
-    }
-    res[seq_along(x), subject] <- x
+    x <- check_nonnum(df_sub, max_count = max_count, random_sample = random_sample, fix_len = TRUE)
+    res[, subject] <- x
   }
   # Remove rows with all NAs
   if (nrow(res) > 0) {
