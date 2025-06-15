@@ -27,6 +27,7 @@ Collate:
     'get_valid_subset.r'
     'importance_plot.r'
     'interactions.r'
+    'mark_outlier.r'
     'utils.R'
     'misc.r'
     'rcs_plot.r'
