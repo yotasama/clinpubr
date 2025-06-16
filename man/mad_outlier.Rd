@@ -20,7 +20,7 @@ Mark possible outliers using the median absolute deviation (MAD) method.
 \details{
 The function calculates the median absolute deviation of the input vector and uses
 it to identify possible outliers. The default constant multiplier is 1.4826 * 3, which gives
-approximately the \verb{3 sigma} of the normal distribution.
+approximately the \eqn{3\sigma} of the normal distribution.
 }
 \examples{
 x <- c(1, 2, 3, 4, 5, 100)
