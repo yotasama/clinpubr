@@ -95,16 +95,19 @@ df_view_nonnum <- function(df, max_count = 20, random_sample = FALSE, long_df = 
       max()
   }
 
+  tmp_fun <- function(a, b) {
+    x <- check_nonnum(a[[value_col]],
+      max_count = max_count,
+      random_sample = random_sample,
+      fix_len = TRUE
+    )
+    dplyr::tibble(row = seq_along(x), value = x)
+  }
+
   res <- df_long %>%
     dplyr::group_by(!!rlang::sym(subject_col)) %>%
-    dplyr::group_modify(~ {
-      x <- check_nonnum(.x[[value_col]],
-        max_count = max_count,
-        random_sample = random_sample,
-        fix_len = TRUE
-      )
-      dplyr::tibble(row = seq_along(x), value = x)
-    }) %>%
+    dplyr::group_modify(tmp_fun) %>%
+    as_tibble() %>%
     tidyr::pivot_wider(
       names_from = !!rlang::sym(subject_col),
       values_from = value,
