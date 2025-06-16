@@ -1,5 +1,3 @@
-library(testthat)
-
 # Test data setup
 test_data <- data.frame(
   subject = c("a", "a", "a", "b", "b", "b", "c", "c", "c"),

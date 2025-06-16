@@ -1,5 +1,3 @@
-library(testthat)
-
 # Test basic functionality with different modes
 test_that("get_valid returns correct values for different modes", {
   x <- c(NA, 1, 2, NA, 3, NA, 4)

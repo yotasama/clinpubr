@@ -1,4 +1,3 @@
-library(testthat)
 library(rlang)
 library(dplyr)
 

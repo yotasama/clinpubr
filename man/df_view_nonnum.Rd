@@ -17,7 +17,7 @@ df_view_nonnum(
 \item{df}{A data frame.}
 
 \item{max_count}{An integer. The maximum number of elements to show for each column.
-If \code{NULL} or \code{0}, show all elements.}
+If \code{NULL} or \code{0}, show all elements, not recommended due to huge memory waste.}
 
 \item{random_sample}{A logical value. If \code{TRUE}, randomly sample the elements to show.}
 

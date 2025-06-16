@@ -1,4 +1,3 @@
-library(testthat)
 library(ggplot2)
 library(withr)
 

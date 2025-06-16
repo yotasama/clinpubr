@@ -1,4 +1,3 @@
-library(testthat)
 library(dplyr)
 
 # Test get_samples function

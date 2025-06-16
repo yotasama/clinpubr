@@ -1,4 +1,3 @@
-library(testthat)
 library(survival)
 library(dplyr)
 library(vdiffr)

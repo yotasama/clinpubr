@@ -43,7 +43,7 @@ check_nonnum <- function(x, return_idx = FALSE, show_unique = TRUE, max_count = 
 #'   Useful when setting the strategy to clean numeric values.
 #' @param df A data frame.
 #' @param max_count An integer. The maximum number of elements to show for each column.
-#'   If `NULL` or `0`, show all elements.
+#'   If `NULL` or `0`, show all elements, not recommended due to huge memory waste.
 #' @param random_sample A logical value. If `TRUE`, randomly sample the elements to show.
 #' @param long_df A logical value. If `TRUE`, the input `df` is provided in a long format.
 #' @param subject_col A character string. The name of the column that contains the subject
@@ -69,9 +69,6 @@ df_view_nonnum <- function(df, max_count = 20, random_sample = FALSE, long_df = 
   if (long_df && ncol(df) != 2 && (is.null(subject_col) || is.null(value_col))) {
     stop("`subject_col` and `value_col` must be specified for long `data.frame` with more than 2 columns.")
   }
-  if (is.null(max_count) || max_count == 0) {
-    max_count <- nrow(df)
-  }
   if (long_df) {
     if (inherits(df, "data.frame")) {
       cols <- colnames(df)
@@ -80,25 +77,22 @@ df_view_nonnum <- function(df, max_count = 20, random_sample = FALSE, long_df = 
     }
     if (is.null(subject_col)) subject_col <- cols[1]
     if (is.null(value_col)) value_col <- cols[2]
-    subjects <- df %>%
-      dplyr::pull(!!rlang::sym(subject_col)) %>%
-      unique() %>%
-      na.omit()
+    df_long <- df %>% dplyr::select(!!rlang::sym(subject_col), !!rlang::sym(value_col))
   } else {
-    subjects <- colnames(df)
     subject_col <- "subject"
     value_col <- "value"
-  }
-  # Reshape to long format and process with dplyr
-  df_long <- if (long_df) {
-    df %>% dplyr::select(!!rlang::sym(subject_col), !!rlang::sym(value_col))
-  } else {
-    df %>%
+    df_long <- df %>%
       tidyr::pivot_longer(
-        cols = dplyr::all_of(subjects),
+        cols = dplyr::everything(),
         names_to = subject_col,
         values_to = value_col
       )
+  }
+  if (is.null(max_count) || max_count == 0) {
+    max_count <- df_long %>%
+      dplyr::count(!!rlang::sym(subject_col)) %>%
+      dplyr::pull(n) %>%
+      max()
   }
 
   res <- df_long %>%

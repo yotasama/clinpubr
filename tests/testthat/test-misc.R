@@ -1,5 +1,3 @@
-library(testthat)
-
 # Test na2false
 test_that("na2false replaces NAs with FALSE", {
   expect_equal(na2false(c(TRUE, FALSE, NA, TRUE, NA)), c(TRUE, FALSE, FALSE, TRUE, FALSE))

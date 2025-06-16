@@ -1,5 +1,3 @@
-library(testthat)
-
 test_that("multi-column mode works", {
   dat <- data.frame(
     Q1 = c("A", "B", "C"),

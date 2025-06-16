@@ -1,5 +1,3 @@
-library(testthat)
-
 # Test numerical Excel dates
 test_that("numerical Excel dates convert correctly", {
   expect_equal(to_date("44197"), as.Date("2021-01-01"))

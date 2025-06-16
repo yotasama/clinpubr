@@ -1,5 +1,3 @@
-library(testthat)
-
 test_that("Basic non-numeric detection", {
   input <- c("12.3", "45..6", "78a9", NA, "\uFF11\uFF12", "987", "45..6")
 

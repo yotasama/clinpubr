@@ -1,4 +1,3 @@
-library(testthat)
 library(dplyr)
 library(survival)
 library(ggplot2)

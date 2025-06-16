@@ -1,4 +1,3 @@
-library(testthat)
 test_that("Basic condition calculation", {
   df <- data.frame(x = c(1, 3, 5), y = c(2, NA, 4))
   result <- calculate_index(df, x > 2, y < 3)

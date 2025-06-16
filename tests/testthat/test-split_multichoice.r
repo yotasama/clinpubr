@@ -1,7 +1,4 @@
-library(testthat)
-
 set.seed(1)
-
 test_that("split_multichoice handles basic splitting", {
   df <- data.frame(q1 = c("ab", "c da", "b a", NA), q2 = c("a b", "a c", "d", "ab"))
   result <- split_multichoice(df, quest_cols = c("q1", "q2"))
