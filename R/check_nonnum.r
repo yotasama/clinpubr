@@ -105,14 +105,14 @@ df_view_nonnum <- function(df, max_count = 20, random_sample = FALSE, long_df = 
       )
 
       dplyr::tibble(
-        !!rlang::sym(subject_col) := .y[[1]],
-        row = seq_along(x),
-        value = x
+        subject = .y[[1]],
+        row = seq_along(!!x),
+        value = !!x
       )
     }) %>%
     dplyr::bind_rows() %>%
     tidyr::pivot_wider(
-      names_from = !!rlang::sym(subject_col),
+      names_from = subject,
       values_from = value,
       values_fill = NA
     ) %>%
