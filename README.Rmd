@@ -14,8 +14,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# clinpubr: Clinical Publication with R
-
+# clinpubr: Clinical Publication
 <!-- badges: start -->
 [![CRAN status](https://www.r-pkg.org/badges/version/clinpubr)](https://CRAN.R-project.org/package=clinpubr)
 [![Codecov test coverage](https://codecov.io/gh/yotasama/clinpubr/graph/badge.svg)](https://app.codecov.io/gh/yotasama/clinpubr)

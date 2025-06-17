@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# clinpubr: Clinical Publication with R
+# clinpubr: Clinical Publication
 
 <!-- badges: start -->
 

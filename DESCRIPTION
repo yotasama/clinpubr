@@ -1,10 +1,10 @@
 Package: clinpubr
-Title: Clinical Publication with 'R'
+Title: Clinical Publication
 Version: 1.0.0
-Authors@R: 
+Authors@R:
     c(person("Yue", "Niu", email = "niuyuesam@163.com", role = c("aut", "cre", "cph"),
              comment = c(ORCID = "0000-0001-6843-3548")),
-      person("Keyun", "Wang", role = c("aut"))
+      person("Keyun", "Wang", email = "1225616356@qq.com", role = c("aut"))
     )
 Description: Accelerate the process from clinical data to medical publication, 
     including clinical data cleaning, significant result screening, and the
