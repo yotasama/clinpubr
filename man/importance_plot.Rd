@@ -18,7 +18,7 @@ importance_plot(
   label_color = "black",
   label_size = 3,
   label_hjust = max(x)/10,
-  save_plot = TRUE,
+  save_plot = FALSE,
   filename = "importance.png"
 )
 }

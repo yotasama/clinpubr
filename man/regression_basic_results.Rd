@@ -16,7 +16,7 @@ regression_basic_results(
   quantile_breaks = NULL,
   quantile_labels = NULL,
   label_with_range = FALSE,
-  save_output = TRUE,
+  save_output = FALSE,
   output_dir = NULL,
   figure_type = "png",
   ref_levels = "lowest",

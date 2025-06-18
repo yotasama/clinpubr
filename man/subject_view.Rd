@@ -12,7 +12,7 @@ subject_view(
   info_n_samples = 10,
   info_collapse = "\\n",
   info_unique = FALSE,
-  save_table = TRUE,
+  save_table = FALSE,
   filename = NULL
 )
 }

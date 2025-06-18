@@ -25,16 +25,6 @@ emp_colors <- c(
   "#FFD92F", "#E5C494", "#B3B3B3", "#ad4c5e", "#474747"
 )
 
-# Load packages, install if necessary
-load_packages <- function(pkgs) {
-  for (pkg in pkgs) {
-    if (!require(pkg, character.only = TRUE, quietly = TRUE)) {
-      utils::install.packages(pkg, character.only = TRUE)
-      require(pkg, character.only = TRUE, quietly = TRUE)
-    }
-  }
-}
-
 wrap_backticks <- function(x) {
   if (is.null(x)) {
     return(NULL)

@@ -20,7 +20,8 @@ test_that("baseline_table generates correct output files 2", {
   with_tempdir({
     set.seed(1)
     var_types <- get_var_types(mtcars, strata = "vs") # Automatically infer variable types
-    baseline_table(mtcars, var_types = var_types, contDigits = 1, seed = 1, filename = "baseline.csv")
+    baseline_table(mtcars, var_types = var_types, contDigits = 1, seed = 1, save_table = TRUE,
+                   filename = "baseline.csv")
 
     expect_snapshot(read.csv("baseline.csv", check.names = FALSE))
     expect_snapshot(read.csv("baseline_missing.csv", check.names = FALSE))
@@ -34,7 +35,8 @@ test_that("baseline_table generates correct output files", {
   with_tempdir({
     set.seed(1)
     var_types <- get_var_types(cancer, strata = "ph.ecog_cat")
-    baseline_table(cancer, var_types = var_types, contDigits = 1, seed = 1, filename = "test_output.csv")
+    baseline_table(cancer, var_types = var_types, contDigits = 1, seed = 1, save_table = TRUE,
+                   filename = "test_output.csv")
 
     expect_true(file.exists("test_output.csv"))
     expect_true(file.exists("test_output_missing.csv"))

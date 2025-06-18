@@ -26,10 +26,8 @@ test_that("invalid inputs return NA", {
 
 # Test failure reporting
 test_that("fails to process prints messages", {
-  output <- capture.output({
-    to_date(c("invalid_date", "2020-01-01"), print_failure = TRUE)
-  })
-  expect_true(any(grepl("cannot process:invalid_date", output)))
+  expect_message(to_date(c("invalid_date", "2020-01-01"), print_failure = TRUE),
+                 "cannot process:invalid_date")
 })
 
 # Test non-Excel numerical dates

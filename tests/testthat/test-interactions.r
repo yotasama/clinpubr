@@ -30,7 +30,7 @@ test_that("interaction_scan returns valid data frame and saves table", {
     # Cox analysis
     res_cox <- interaction_scan(cancer,
       y = "status", time = "time", predictors = c("age", "sex"),
-      group_vars = c("sex", "ph.ecog")
+      group_vars = c("sex", "ph.ecog"),
     )
     expect_true(is.data.frame(res_cox))
     expect_snapshot(res_cox)
@@ -63,7 +63,7 @@ test_that("interaction_plot generates plots and saves files", {
     # Cox plot
     plt_cox <- interaction_plot(cancer,
       y = "status", time = "time", predictor = "age",
-      group_var = "sex", save_plot = TRUE
+      group_var = "sex", save_plot = FALSE
     )
     expect_true(
       inherits(plt_cox, "gg") ||
@@ -71,7 +71,10 @@ test_that("interaction_plot generates plots and saves files", {
     )
     vdiffr::expect_doppelganger("Cox interaction plot", plt_cox)
     # Logistic plot
-    plt_logistic <- interaction_plot(cancer, y = "status", predictor = "age", group_var = "sex")
+    plt_logistic <- interaction_plot(cancer,
+      y = "status", predictor = "age",
+      group_var = "sex", save_plot = TRUE
+    )
     expect_true(
       inherits(plt_logistic, "gg") ||
         (is.list(plt_logistic) && all(sapply(plt_logistic, function(x) inherits(x, "gg"))))

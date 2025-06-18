@@ -14,7 +14,7 @@ baseline_table(
   nonnormal_vars = NULL,
   seed = NULL,
   omit_missing_strata = FALSE,
-  save_table = TRUE,
+  save_table = FALSE,
   filename = NULL,
   multiple_comparison_test = TRUE,
   p_adjust_method = "BH",

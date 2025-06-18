@@ -183,7 +183,7 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules)
 #'   df = df, subject_col = "subject",
 #'   value_col = "value", unit_col = "unit", save_table = FALSE
 #' )
-unit_view <- function(df, subject_col, value_col, unit_col, quantiles = c(0.025, 0.975), save_table = TRUE,
+unit_view <- function(df, subject_col, value_col, unit_col, quantiles = c(0.025, 0.975), save_table = FALSE,
                       filename = NULL, conflicts_only = TRUE) {
   res <- df %>%
     group_by(!!as.symbol(subject_col), !!as.symbol(unit_col)) %>%

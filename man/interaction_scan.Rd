@@ -13,7 +13,7 @@ interaction_scan(
   covars = NULL,
   try_rcs = TRUE,
   p_adjust_method = "BH",
-  save_table = TRUE,
+  save_table = FALSE,
   filename = NULL
 )
 }

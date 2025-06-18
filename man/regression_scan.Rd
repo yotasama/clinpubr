@@ -12,7 +12,7 @@ regression_scan(
   covars = NULL,
   num_to_factor = 5,
   p_adjust_method = "BH",
-  save_table = TRUE,
+  save_table = FALSE,
   filename = NULL
 )
 }

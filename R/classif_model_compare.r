@@ -51,8 +51,9 @@
 #' df$full_pred <- predict(model, type = "response")
 #'
 #' classif_model_compare(df, "dead", c("base_pred", "full_pred"), save_output = FALSE)
-classif_model_compare <- function(data, target_var, model_names, colors = NULL, save_output = TRUE, figure_type = "png",
-                                  output_prefix = "model_compare", as_probability = FALSE, auto_order = TRUE) {
+classif_model_compare <- function(data, target_var, model_names, colors = NULL, save_output = FALSE,
+                                  figure_type = "png", output_prefix = "model_compare", as_probability = FALSE,
+                                  auto_order = TRUE) {
   if (isTRUE(as_probability)) {
     vars_to_prob <- model_names[apply(data[, model_names, drop = FALSE], 2, function(x) any(x < 0 | x > 1))]
   } else if (is.character(as_probability)) {

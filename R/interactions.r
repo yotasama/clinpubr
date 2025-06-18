@@ -23,7 +23,7 @@
 #' data(cancer, package = "survival")
 #' interaction_scan(cancer, y = "status", time = "time", save_table = FALSE)
 interaction_scan <- function(data, y, time = NULL, predictors = NULL, group_vars = NULL, covars = NULL,
-                             try_rcs = TRUE, p_adjust_method = "BH", save_table = TRUE, filename = NULL) {
+                             try_rcs = TRUE, p_adjust_method = "BH", save_table = FALSE, filename = NULL) {
   analysis_type <- if (!is.null(time)) {
     "cox"
   } else if (length(levels(as.factor(data[[y]]))) == 2) {
@@ -135,7 +135,7 @@ interaction_scan <- function(data, y, time = NULL, predictors = NULL, group_vars
 #'   save_plot = FALSE
 #' )
 interaction_plot <- function(data, y, predictor, group_var, time = NULL, covars = NULL, group_colors = NULL,
-                             save_plot = TRUE, filename = NULL, height = 4, width = 4, xlab = predictor,
+                             save_plot = FALSE, filename = NULL, height = 4, width = 4, xlab = predictor,
                              ylab = NULL, show_n = TRUE, group_title = group_var, ...) {
   if (!is.null(time)) {
     analysis_type <- "cox"

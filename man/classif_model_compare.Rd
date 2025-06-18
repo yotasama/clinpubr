@@ -9,7 +9,7 @@ classif_model_compare(
   target_var,
   model_names,
   colors = NULL,
-  save_output = TRUE,
+  save_output = FALSE,
   figure_type = "png",
   output_prefix = "model_compare",
   as_probability = FALSE,

@@ -12,7 +12,7 @@ interaction_plot(
   time = NULL,
   covars = NULL,
   group_colors = NULL,
-  save_plot = TRUE,
+  save_plot = FALSE,
   filename = NULL,
   height = 4,
   width = 4,

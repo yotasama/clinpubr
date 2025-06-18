@@ -42,7 +42,7 @@
 #'   covars = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
 #' )
 subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, standardize_x = FALSE, covars = NULL,
-                            est_nsmall = 2, p_nsmall = 3, group_cut_quantiles = 0.5, save_plot = TRUE,
+                            est_nsmall = 2, p_nsmall = 3, group_cut_quantiles = 0.5, save_plot = FALSE,
                             filename = NULL, ...) {
   x_type <- ifelse(!is.factor(data[[x]]), "number", "factor")
   if (standardize_x) {

@@ -13,7 +13,7 @@ test_that("importance_plot works with top_n and split_at", {
   vdiffr::expect_doppelganger("test_plot.png", p)
 
   with_tempdir({
-    importance_plot(dummy_importance, filename = "test_plot.png")
+    importance_plot(dummy_importance, filename = "test_plot.png", save_plot = TRUE)
     expect_true(file.exists("test_plot.png"))
   })
 })

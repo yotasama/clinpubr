@@ -38,7 +38,7 @@ to_date <- function(x, from_excel = TRUE, print_failure = TRUE,
       },
       error = function(e) {
         if (print_failure) {
-          print(paste0("cannot process:", as.character(x)))
+          message(paste0("cannot process:", as.character(x)))
         }
         NA
       }

@@ -13,7 +13,7 @@ regression_forest(
   est_nsmall = 2,
   p_nsmall = 3,
   show_vars = NULL,
-  save_plot = TRUE,
+  save_plot = FALSE,
   filename = NULL,
   ...
 )

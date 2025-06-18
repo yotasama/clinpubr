@@ -22,7 +22,7 @@ rcs_plot(
   rcs_color = "#e23e57",
   print_p_ph = TRUE,
   trans = "identity",
-  save_plot = TRUE,
+  save_plot = FALSE,
   filename = NULL,
   y_lim = NULL,
   hist_max = NULL,

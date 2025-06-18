@@ -47,7 +47,7 @@
 #' rcs_plot(cancer, x = "age", y = "dead", covars = "ph.karno", save_plot = FALSE)
 rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist = TRUE, ref = "x_median", ref_digits = 3,
                      group_by_ref = TRUE, group_title = NULL, group_labels = NULL, group_colors = NULL, breaks = 20,
-                     rcs_color = "#e23e57", print_p_ph = TRUE, trans = "identity", save_plot = TRUE, filename = NULL,
+                     rcs_color = "#e23e57", print_p_ph = TRUE, trans = "identity", save_plot = FALSE, filename = NULL,
                      y_lim = NULL, hist_max = NULL, xlim = NULL, height = 6, width = 6, return_details = FALSE) {
   if (!is.null(xlim) && length(xlim) != 2) stop("`xlim` must be a vector of length 2")
   if (is.null(group_colors)) {

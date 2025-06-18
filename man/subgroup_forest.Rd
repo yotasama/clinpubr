@@ -15,7 +15,7 @@ subgroup_forest(
   est_nsmall = 2,
   p_nsmall = 3,
   group_cut_quantiles = 0.5,
-  save_plot = TRUE,
+  save_plot = FALSE,
   filename = NULL,
   ...
 )

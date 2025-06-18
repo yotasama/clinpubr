@@ -9,7 +9,8 @@ test_that("classif_model_compare outputs correct files", {
   df$model2 <- df$model1 * 0.8 + 0.1
 
   with_tempdir({
-    classif_model_compare(df, "status", c("model1", "model2"), output_prefix = "test")
+    classif_model_compare(df, "status", c("model1", "model2"), save_output = TRUE,
+                          output_prefix = "test")
 
     expect_true(file.exists("test_table.csv"))
     expect_true(file.exists("test_dca.png"))

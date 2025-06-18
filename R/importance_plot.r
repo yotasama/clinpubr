@@ -28,7 +28,7 @@
 #' importance_plot(dummy_importance, top_n = 15, split_at = 10, save_plot = FALSE)
 importance_plot <- function(x, x_lab = "Importance", top_n = NULL, color = c("#56B1F7", "#132B43"), show_legend = FALSE,
                             split_at = NULL, show_labels = TRUE, digits = 2, nsmall = 3, scientific = TRUE,
-                            label_color = "black", label_size = 3, label_hjust = max(x) / 10, save_plot = TRUE,
+                            label_color = "black", label_size = 3, label_hjust = max(x) / 10, save_plot = FALSE,
                             filename = "importance.png") {
   x <- sort(x, decreasing = TRUE)
   tmp <- data.frame(name = names(x), value = x)

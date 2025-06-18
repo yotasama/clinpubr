@@ -32,7 +32,7 @@
 #'   save_table = FALSE
 #' )
 subject_view <- function(df, subject_col, info_cols, value_col = NULL, info_n_samples = 10, info_collapse = "\n",
-                         info_unique = FALSE, save_table = TRUE, filename = NULL) {
+                         info_unique = FALSE, save_table = FALSE, filename = NULL) {
   if (!is.null(value_col) && is.numeric(df[[value_col]])) {
     res <- df %>%
       group_by(!!as.symbol(subject_col)) %>%

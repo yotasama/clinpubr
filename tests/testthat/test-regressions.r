@@ -121,7 +121,7 @@ test_that("regression_scan returns expected structure", {
   set.seed(1)
   data(cancer, package = "survival")
   withr::with_tempdir({
-    res <- regression_scan(cancer, y = "status", time = "time")
+    res <- regression_scan(cancer, y = "status", time = "time", save_table = TRUE)
     expect_true(is.data.frame(res))
     expect_true(all(c(
       "predictor", "nvalid", "original.HR", "original.pval", "original.padj",

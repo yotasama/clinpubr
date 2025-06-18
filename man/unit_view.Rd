@@ -10,7 +10,7 @@ unit_view(
   value_col,
   unit_col,
   quantiles = c(0.025, 0.975),
-  save_table = TRUE,
+  save_table = FALSE,
   filename = NULL,
   conflicts_only = TRUE
 )
