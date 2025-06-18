@@ -30,8 +30,8 @@ test_that("regression_basic_results works for Cox regression", {
       x = "age", y = "status", time = "time",
       model_covs = list(Crude = c()), save_output = TRUE
     )
-    check_file_exists("cox_results_age/table_age.csv")
-    check_file_exists("cox_results_age/kmplot_x.quartile.png")
+    check_file_exists("table_cox_status_by_age.csv")
+    check_file_exists("kmplot_cox_status_by_age_group_x.quartile.png")
   })
 })
 
@@ -53,7 +53,7 @@ test_that("regression_basic_results works for logistic regression", {
       x = "age", y = "dead",
       model_covs = list(Crude = c()), save_output = TRUE
     )
-    check_file_exists("logistic_results_age/table_age.csv")
+    check_file_exists("table_logistic_dead_by_age.csv")
   })
 })
 

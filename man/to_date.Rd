@@ -7,7 +7,7 @@
 to_date(
   x,
   from_excel = TRUE,
-  print_failure = TRUE,
+  verbose = TRUE,
   try_formats = c("\%Y-\%m-\%d", "\%Y/\%m/\%d", "\%Y\%m\%d", "\%Y.\%m.\%d")
 )
 }
@@ -16,7 +16,7 @@ to_date(
 
 \item{from_excel}{If TRUE, treat numerical values as Excel dates.}
 
-\item{print_failure}{If TRUE, print the values that cannot be converted.}
+\item{verbose}{If TRUE, print the values that cannot be converted.}
 
 \item{try_formats}{A character vector of date formats to try. Same as \code{tryFormats} in \code{as.Date}.}
 }

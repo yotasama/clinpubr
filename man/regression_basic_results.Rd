@@ -17,7 +17,6 @@ regression_basic_results(
   quantile_labels = NULL,
   label_with_range = FALSE,
   save_output = FALSE,
-  output_dir = NULL,
   figure_type = "png",
   ref_levels = "lowest",
   est_nsmall = 2,
@@ -62,8 +61,6 @@ OR or HR.}
 \item{label_with_range}{A logical value indicating whether to add the range of the levels to the labels.}
 
 \item{save_output}{A logical value indicating whether to save the results.}
-
-\item{output_dir}{A character string of the directory to save the output files.}
 
 \item{figure_type}{A character string of the figure type. Can be \code{"png"}, \code{"pdf"}, and other types that
 \code{ggplot2::ggsave()} support.}

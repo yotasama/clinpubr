@@ -16,7 +16,6 @@
 #' @param quantile_labels A character vector of the labels for the quantile levels.
 #' @param label_with_range A logical value indicating whether to add the range of the levels to the labels.
 #' @param save_output A logical value indicating whether to save the results.
-#' @param output_dir A character string of the directory to save the output files.
 #' @param figure_type A character string of the figure type. Can be `"png"`, `"pdf"`, and other types that
 #'   `ggplot2::ggsave()` support.
 #' @param ref_levels A vector of strings of the reference levels of the factor variable. You can use `"lowest"`
@@ -64,7 +63,7 @@
 regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL, pers = c(0.1, 10, 100),
                                      factor_breaks = NULL, factor_labels = NULL, quantile_breaks = NULL,
                                      quantile_labels = NULL, label_with_range = FALSE, save_output = FALSE,
-                                     output_dir = NULL, figure_type = "png", ref_levels = "lowest", est_nsmall = 2,
+                                     figure_type = "png", ref_levels = "lowest", est_nsmall = 2,
                                      p_nsmall = 3, pval_eps = 1e-3, median_nsmall = 0, colors = NULL, xlab = NULL,
                                      legend_title = x, legend_pos = c(0.8, 0.8), pval_pos = NULL, n_y_pos = 0.9,
                                      height = 6, width = 6, ...) {
@@ -128,12 +127,6 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
   if (!is.null(covars)) {
     covars <- paste0(".cov", seq_along(covars))
     colnames(dat)[start_col:(start_col + length(covars) - 1)] <- covars
-  }
-  if (is.null(output_dir)) {
-    output_dir <- paste(analysis_type, "results", x, sep = "_")
-  }
-  if (save_output && !file.exists(output_dir)) {
-    dir.create(output_dir, recursive = T)
   }
   if (is.null(xlab)) {
     xlab <- time
@@ -240,7 +233,7 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
         }
         if (save_output) {
           ggsave(
-            paste0(output_dir, "/kmplot_", var, ".", figure_type),
+            paste0(paste("kmplot", analysis_type, y, "by", x, "group", var, sep = "_"), ".", figure_type),
             plot = survminer::arrange_ggsurvplots(list(p), print = FALSE, ncol = 1),
             width = width, height = height
           )
@@ -342,7 +335,9 @@ regression_basic_results <- function(data, x, y, time = NULL, model_covs = NULL,
     }
   }
   if (save_output) {
-    write.csv(res_table, paste0(output_dir, "/table_", x, ".csv"), row.names = FALSE, na = "")
+    write.csv(res_table, paste0(paste("table", analysis_type, y, "by", x, sep = "_"), ".csv"),
+      row.names = FALSE, na = ""
+    )
   }
   return(list(table = res_table, plots = plots_list))
 }

@@ -26,7 +26,7 @@ test_that("invalid inputs return NA", {
 
 # Test failure reporting
 test_that("fails to process prints messages", {
-  expect_message(to_date(c("invalid_date", "2020-01-01"), print_failure = TRUE),
+  expect_message(to_date(c("invalid_date", "2020-01-01"), verbose = TRUE),
                  "cannot process:invalid_date")
 })
 
