@@ -7,10 +7,13 @@
 ## Resubmission
 This is a resubmission. In this version I have:
 
-* Removed 1 tailing space in the Description field of DESCRIPTION.
+* Removed the trailing whitespace in the Description field of DESCRIPTION.
 
-* Changed the default options so that the functions do not write by default
-  in the user's home filespace and removed default directories. 
+* Changed the default output options so that the functions do not write
+  by default in the user's home filespace and removed default directories. 
   
-* The non-export function that contains `install.packages` in R/utils.R was
-  removed.
+* Removed the non-export function that contains `install.packages` in R/utils.R.
+
+Clarification: Currently, there are no references describing the methods in
+the package. However, a paper about this package is in preparation, and I 
+will add the reference when it is published.
