@@ -43,3 +43,7 @@ split_multichoice <- function(df, quest_cols, split = "", remove_space = TRUE,
 
   return(df)
 }
+
+
+split_multichoice <- function(df, quest_cols, sep = "", remove_space = TRUE,
+                              link = "_", remove_cols = TRUE)
