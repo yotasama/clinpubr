@@ -33,12 +33,10 @@ tables/figures suitable for medical journals.
 
 ## Installation
 
-You can install the development version of clinpubr from
-[GitHub](https://github.com/) with:
+You can install `clinpubr` from CRAN with:
 
 ``` r
-# install.packages("pak")
-pak::pak("yotasama/clinpubr")
+install.packages("clinpubr")
 ```
 
 ## Basic Usage
