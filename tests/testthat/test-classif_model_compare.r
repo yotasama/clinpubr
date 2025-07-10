@@ -2,6 +2,10 @@ library(withr)
 library(survival)
 
 test_that("classif_model_compare outputs correct files", {
+  skip_if_not_installed("pROC")
+  skip_if_not_installed("caret")
+  skip_if_not_installed("dcurves")
+  skip_if_not_installed("ResourceSelection")
   data(cancer, package = "survival")
   df <- cancer
   df$status <- ifelse(df$status == 1, 0, 1)
@@ -24,6 +28,10 @@ test_that("classif_model_compare outputs correct files", {
 })
 
 test_that("save_output=FALSE suppresses file generation", {
+  skip_if_not_installed("pROC")
+  skip_if_not_installed("caret")
+  skip_if_not_installed("dcurves")
+  skip_if_not_installed("ResourceSelection")
   with_tempdir({
     set.seed(123)
     data <- data.frame(
@@ -45,6 +53,10 @@ test_that("save_output=FALSE suppresses file generation", {
 })
 
 test_that("as_probability handles value conversion", {
+  skip_if_not_installed("pROC")
+  skip_if_not_installed("caret")
+  skip_if_not_installed("dcurves")
+  skip_if_not_installed("ResourceSelection")
   df <- data.frame(
     target = factor(rbinom(100, 1, 0.5)),
     modelA = runif(100),
@@ -66,6 +78,10 @@ test_that("as_probability handles value conversion", {
 })
 
 test_that("parameter validation works", {
+  skip_if_not_installed("pROC")
+  skip_if_not_installed("caret")
+  skip_if_not_installed("dcurves")
+  skip_if_not_installed("ResourceSelection")
   df <- data.frame(y = factor(c(1, 0)), m1 = c(0.5, 0.5))
 
   expect_error(classif_model_compare(df, "y", "invalid_model"))

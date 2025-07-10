@@ -10,6 +10,26 @@
 #' @importFrom fBasics shapiroTest lillieTest adTest jarqueberaTest sfTest
 NULL
 
+#' Check if a package is available and provide helpful error message
+#' @param pkg Package name as character string
+#' @param purpose Purpose of the package for error message
+#' @return Logical, TRUE if package is available
+#' @keywords internal
+check_package <- function(pkg, purpose = NULL) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    if (is.null(purpose)) {
+      purpose <- "this functionality"
+    }
+    stop(
+      "Package '", pkg, "' is required for ", purpose, " but is not installed.\n",
+      "Please install it with: install.packages('", pkg, "'), or install all dependencies with: ",
+      "install.packages('clinpubr', dependencies = TRUE)", 
+      call. = FALSE
+    )
+  }
+  return(TRUE)
+}
+
 utils::globalVariables(c(
   "Var1", "Var2", "Freq", "comparison", "p.adj", "group1", "group2",
   "name", "value", "decile", "obsRate", "predRate", "label",

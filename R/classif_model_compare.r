@@ -54,6 +54,12 @@
 classif_model_compare <- function(data, target_var, model_names, colors = NULL, save_output = FALSE,
                                   figure_type = "png", output_prefix = "model_compare", as_probability = FALSE,
                                   auto_order = TRUE) {
+  # Check required packages
+  check_package("pROC", "ROC analysis and AUC calculations")
+  check_package("caret", "confusion matrix calculations")
+  check_package("ResourceSelection", "Hosmer-Lemeshow test")
+  check_package("dcurves", "decision curve analysis")
+  
   if (isTRUE(as_probability)) {
     vars_to_prob <- model_names[apply(data[, model_names, drop = FALSE], 2, function(x) any(x < 0 | x > 1))]
   } else if (is.character(as_probability)) {

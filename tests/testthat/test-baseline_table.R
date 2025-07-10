@@ -17,6 +17,7 @@ test_that("get_var_types correctly classifies variables", {
 })
 
 test_that("baseline_table generates correct output files 2", {
+  skip_if_not_installed("tableone")
   with_tempdir({
     set.seed(1)
     var_types <- get_var_types(mtcars, strata = "vs") # Automatically infer variable types
@@ -29,6 +30,8 @@ test_that("baseline_table generates correct output files 2", {
 })
 
 test_that("baseline_table generates correct output files", {
+  skip_if_not_installed("tableone")
+  skip_if_not_installed("rstatix")
   data(cancer, package = "survival")
   cancer$ph.ecog_cat <- factor(cancer$ph.ecog, levels = c(0:3), labels = c("0", "1", ">=2", ">=2"))
 

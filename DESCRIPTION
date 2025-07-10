@@ -32,9 +32,9 @@ Collate:
     'mark_outlier.r'
     'utils.R'
     'misc.r'
+    'multichoice.r'
     'rcs_plot.r'
     'regressions.r'
-    'split_multichoice.r'
     'subgroup_forest.r'
     'subject_standardize.r'
     'to_date.r'
@@ -43,26 +43,26 @@ Collate:
 Imports: 
     broom,
     car,
-    caret,
-    dcurves,
     DescTools,
     dplyr,
     fBasics,
     forestploter,
     ggplot2,
-    pROC,
-    ResourceSelection,
     rlang,
     rms,
-    rstatix,
     stringi,
     stringr,
     survival,
     survminer,
-    tableone,
     tidyr
 Suggests: 
+    caret,
+    dcurves,
     dtplyr,
+    pROC,
+    ResourceSelection,
+    rstatix,
+    tableone,
     testthat (>= 3.0.0),
     vdiffr,
     withr

@@ -43,10 +43,32 @@ test_that("add_lists combines element-wise", {
   expect_equal(add_lists(list(x = 10), list()), list(x = 10)) # One empty
 })
 
+test_that("common_prefix extracts correct prefixes", {
+  expect_equal(common_prefix(c("Q1_a", "Q1_b", "Q1_c")), "Q1_")
+  expect_equal(common_prefix(c("apple", "app")), "app")
+  expect_equal(common_prefix(c("test", "testing")), "test")
+
+  expect_equal(common_prefix(c("apple", "banana")), "")
+  expect_equal(common_prefix(c("x", "y")), "")
+
+  expect_equal(common_prefix("single_element"), "single_element")
+
+  expect_equal(common_prefix(c("ID_123", "ID_456")), "ID_")
+  expect_equal(common_prefix(c("var_1", "var_2")), "var_")
+
+  expect_equal(common_prefix(c("", "")), "")
+  expect_equal(common_prefix(c("", "abc")), "")
+
+  expect_equal(common_prefix(c("same", "same")), "same")
+})
+
 # Test replace_elements
 test_that("replace_elements substitutes values", {
-  expect_equal(replace_elements(c("a", "x", "1", NA, "a"), c("a", "b", NA), c("A", "B", "XX")), c("A", "x", "1", "XX", "A"))
-  expect_error(replace_elements(c(1, 2), c(1), c(2, 3)), "`from` and `to` should have the same length!") # Mismatched lengths
+  expect_equal(replace_elements(
+    c("a", "x", "1", NA, "a"), c("a", "b", NA),
+    c("A", "B", "XX")
+  ), c("A", "x", "1", "XX", "A"))
+  expect_error(replace_elements(c(1, 2), c(1), c(2, 3)), "`from` and `to` should have the same length!")
   expect_equal(replace_elements(NA, NA, "X"), "X") # NA replacement
 })
 
@@ -59,7 +81,10 @@ test_that("fill_with_last replaces NAs with last valid", {
 
 # Test str_match_replace
 test_that("str_match_replace partially matches strings", {
-  expect_equal(str_match_replace(c("v1.v2", "v3.yy", "v4"), c("v1", "v2", "v3"), c("A", "B", "C")), c("A.B", "C.yy", "v4"))
+  expect_equal(str_match_replace(
+    c("v1.v2", "v3.yy", "v4"), c("v1", "v2", "v3"),
+    c("A", "B", "C")
+  ), c("A.B", "C.yy", "v4"))
   expect_equal(str_match_replace("test", c("x"), c("y")), "test") # No match
   expect_equal(str_match_replace("aab", c("aa", "a"), c("A", "B")), "Ab") # Longest match first
 })

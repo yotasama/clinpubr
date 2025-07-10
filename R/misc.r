@@ -31,6 +31,30 @@ vec2code <- function(x) {
   }
 }
 
+#' Get common prefix of a string vector
+#'
+#' @param x A string vector.
+#'
+#' @returns A string that is the common prefix of the input vector.
+#' @export
+#' @examples
+#' common_prefix(c("Q1_a", "Q1_b", "Q1_c"))
+common_prefix <- function(x) {
+  if (length(x) == 1) {
+    return(x)
+  }
+  min_len <- min(nchar(x))
+  prefix <- character(0)
+  for (i in 1:min_len) {
+    chars <- substr(x, i, i)
+    if (length(unique(chars)) == 1) {
+      prefix <- c(prefix, chars[1])
+    } else {
+      break
+    }
+  }
+  paste(prefix, collapse = "")
+}
 
 #' Format p-value for publication
 #' @description Format p-value with modified default settings suitable for publication.

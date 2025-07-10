@@ -32,9 +32,17 @@ knitr::opts_chunk$set(
 ## Installation
 
 You can install `clinpubr` from CRAN with:
-
 ``` r
 install.packages("clinpubr")
+```
+
+### Optional Dependencies
+
+Some functions require additional packages for full functionality. 
+The package will automatically prompt you to install missing packages when needed.
+If you want to install the package with all dependencies, you can use:
+``` r
+install.packages("clinpubr", dependencies = TRUE)
 ```
 
 ## Basic Usage

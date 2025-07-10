@@ -189,6 +189,12 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_f
 baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, factor_vars = NULL, exact_vars = NULL,
                            nonnormal_vars = NULL, seed = NULL, omit_missing_strata = FALSE, save_table = FALSE,
                            filename = NULL, multiple_comparison_test = TRUE, p_adjust_method = "BH", smd = FALSE, ...) {
+  # Check required packages
+  check_package("tableone", "baseline table creation")
+  if (multiple_comparison_test) {
+    check_package("rstatix", "multiple comparison tests")
+  }
+  
   if (!is.null(var_types) && !"var_types" %in% class(var_types)) {
     stop("Invalid 'var_types' arguement! Please use result from get_var_types function.")
   }
