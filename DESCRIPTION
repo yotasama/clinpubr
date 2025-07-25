@@ -28,6 +28,7 @@ Collate:
     'get_valid.r'
     'get_valid_subset.r'
     'importance_plot.r'
+    'initial_cleaning.r'
     'interactions.r'
     'mark_outlier.r'
     'utils.R'
@@ -39,7 +40,6 @@ Collate:
     'subject_standardize.r'
     'to_date.r'
     'unit_standardize.r'
-    'value_initial_cleaning.r'
 Imports: 
     broom,
     car,
