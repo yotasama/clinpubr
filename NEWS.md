@@ -6,6 +6,10 @@
 
 * Added `common_prefix()` to find common prefixes in character vectors.
 
+* Added `group` argument to `cut_by()` to cut data by quantiles with groupings.
+
+* Added `char_initial_cleaning()` to clean character vectors.
+
 # clinpubr 1.0.1
 
 * Fixed potential colname conflict in `df_view_nonnum()`
