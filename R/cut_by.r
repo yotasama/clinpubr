@@ -10,10 +10,11 @@
 #' @param label_type If `labels` is `NULL`, this sets the label type. `"ori"` for original labels,
 #'   `"LMH"` for "Low Medium High" style. `"combined"` labels that combine `"LMH"` type or provided `labels`
 #'   with the original range labels. Only `"LMH"` is supported when `group` is specified.
+#' @param verbose If `TRUE`, print the cut points.
 #' @param ... Other arguments passed to `base::cut()`.
 #'
 #' @details `cut_by()` is a wrapper for `base::cut()`. Compared with the argument `breaks` in `base::cut()`,
-#'   `breaks` here automatically sets the minimum and maximum to `-Inf` and `Inf`.
+#'   `breaks` here automatically sets the minimum and maximum. `breaks` outside the range of `x` are not allowed.
 #' @note The argument `right` in `base::cut()` is always set to `FALSE`, which means the levels follow the
 #'   left closed right open convention.
 #' @returns A factor.
@@ -27,6 +28,7 @@ cut_by <- function(x, breaks,
                    group = NULL,
                    labels = NULL,
                    label_type = "ori",
+                   verbose = FALSE,
                    ...) {
   if(breaks_as_quantiles && !is.null(group)){
     if(label_type != "LMH"){
@@ -62,32 +64,23 @@ cut_by <- function(x, breaks,
 
   if (breaks_as_quantiles) {
     if (!is.null(group)) {
-      # Calculate quantiles by group
-      data_df <- data.frame(x = x, group = group, idx = seq_along(x))
-      
-      # Function to calculate quantiles and cut for a single group
-      cut_group <- function(group_data, breaks, ...) {
-        q <- quantile(group_data$x, probs = c(0, breaks, 1), na.rm = TRUE, names = FALSE)
-        
+      groups <- unique(group)
+      res <- vector("character", length(group))
+      for(j in seq_along(groups)){
+        flag <- group %in% groups[j]
+        q <- quantile(x[flag], probs = c(0, breaks, 1), na.rm = TRUE, names = FALSE)
         # Ensure breaks are strictly increasing
         for (i in 2:length(q)) {
           if (q[i] <= q[i - 1]) {
             q[i] <- q[i - 1] + 1e-8
           }
         }
-        
-        # Cut the data and return with original index
-        result <- cut(group_data$x, breaks = q, right = FALSE, include.lowest = TRUE, labels = cut_labels, ...)
-        data.frame(result = result, idx = group_data$idx)
+        if(verbose){
+          message("Quantile breaks for group ", groups[j], ": ", paste(q[-c(1, length(q))], collapse = ", "))
+        }
+        res[flag] <- cut(x[flag], breaks = q, labels = cut_labels, include.lowest = TRUE)
       }
-      
-      # Split data by group, apply cut_group to each, and combine results
-      groups <- split(data_df, data_df$group)
-      cut_results <- lapply(groups, cut_group, breaks = breaks, ...)
-      combined_results <- do.call(rbind, cut_results)
-      
-      # Order results to match original data order
-      res <- combined_results[order(combined_results$idx), "result"]
+      res = factor(res)
     } else {
       q <- quantile(x, probs = c(0, breaks, 1), na.rm = TRUE, names = FALSE)
       
@@ -97,7 +90,9 @@ cut_by <- function(x, breaks,
           q[i] <- q[i - 1] + 1e-8
         }
       }
-      
+      if(verbose){
+        message("Quantiles for group ", groups[i], ": ", paste(q, collapse = ", "))
+      }
       res <- cut(x, breaks = q, right = FALSE, include.lowest = TRUE, ...)
     }
   } else {
@@ -120,4 +115,14 @@ cut_by <- function(x, breaks,
     }
   }
   res
+}
+
+force_increasing <- function(x) {
+  q=x
+  for (i in 2:length(q)) {
+    if (q[i] <= q[i - 1]) {
+      q[i] <- q[i - 1] + 1e-8
+    }
+  }
+  q
 }
