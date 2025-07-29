@@ -10,6 +10,9 @@
 #' @param label_type If `labels` is `NULL`, this sets the label type. `"ori"` for original labels,
 #'   `"LMH"` for "Low Medium High" style. `"combined"` labels that combine `"LMH"` type or provided `labels`
 #'   with the original range labels. Only `"LMH"` is supported when `group` is specified.
+#' @param right logical, indicating if the intervals should be closed on the right (and open on the left) or
+#'   vice versa. Note that the default is `FALSE`, which is different from `base::cut()`.
+#' @param drop_empty If `TRUE`, drop empty levels.
 #' @param verbose If `TRUE`, print the cut points.
 #' @param ... Other arguments passed to `base::cut()`.
 #'
@@ -28,10 +31,12 @@ cut_by <- function(x, breaks,
                    group = NULL,
                    labels = NULL,
                    label_type = "ori",
+                   right = FALSE,
+                   drop_empty = TRUE,
                    verbose = FALSE,
                    ...) {
-  if(breaks_as_quantiles && !is.null(group)){
-    if(label_type != "LMH"){
+  if (breaks_as_quantiles && !is.null(group)) {
+    if (label_type != "LMH") {
       warning("`label_type` is set to `LMH` since `group` is specified")
       label_type <- "LMH"
     }
@@ -66,46 +71,31 @@ cut_by <- function(x, breaks,
     if (!is.null(group)) {
       groups <- unique(group)
       res <- vector("character", length(group))
-      for(j in seq_along(groups)){
+      for (j in seq_along(groups)) {
         flag <- group %in% groups[j]
         q <- quantile(x[flag], probs = c(0, breaks, 1), na.rm = TRUE, names = FALSE)
-        # Ensure breaks are strictly increasing
-        for (i in 2:length(q)) {
-          if (q[i] <= q[i - 1]) {
-            q[i] <- q[i - 1] + 1e-8
-          }
-        }
-        if(verbose){
+        q <- force_increasing(q)
+
+        if (verbose) {
           message("Quantile breaks for group ", groups[j], ": ", paste(q[-c(1, length(q))], collapse = ", "))
         }
-        res[flag] <- cut(x[flag], breaks = q, labels = cut_labels, include.lowest = TRUE)
+        res[flag] <- cut(x[flag], breaks = q, right = right, labels = cut_labels, include.lowest = TRUE)
       }
-      res = factor(res)
+      res <- factor(res)
     } else {
       q <- quantile(x, probs = c(0, breaks, 1), na.rm = TRUE, names = FALSE)
-      
-      # Ensure breaks are strictly increasing
-      for (i in 2:length(q)) {
-        if (q[i] <= q[i - 1]) {
-          q[i] <- q[i - 1] + 1e-8
-        }
+      q <- force_increasing(q)
+
+      if (verbose) {
+        message("Quantiles breaks: ", paste(q, collapse = ", "))
       }
-      if(verbose){
-        message("Quantiles for group ", groups[i], ": ", paste(q, collapse = ", "))
-      }
-      res <- cut(x, breaks = q, right = FALSE, include.lowest = TRUE, ...)
+      res <- cut(x, breaks = q, right = right, include.lowest = TRUE, ...)
     }
   } else {
     q <- c(min(x, na.rm = TRUE), breaks, max(x, na.rm = TRUE))
-    
-    # Ensure breaks are strictly increasing
-    for (i in 2:length(q)) {
-      if (q[i] <= q[i - 1]) {
-        q[i] <- q[i - 1] + 1e-8
-      }
-    }
-    
-    res <- cut(x, breaks = q, right = FALSE, include.lowest = TRUE, ...)
+    q <- force_increasing(q)
+
+    res <- cut(x, breaks = q, right = right, include.lowest = TRUE, ...)
   }
   if (!is.null(cut_labels)) {
     if (label_type == "combined") {
@@ -114,14 +104,22 @@ cut_by <- function(x, breaks,
       levels(res) <- cut_labels
     }
   }
+  if(drop_empty){
+    prev_levels = levels(res)
+    res <- droplevels(res)
+    after_levels = levels(res)
+    if(length(prev_levels) != length(after_levels)){
+      warning("Empty levels are dropped: ", paste(setdiff(prev_levels, after_levels), collapse = ", "))
+    }
+  }
   res
 }
 
-force_increasing <- function(x) {
-  q=x
+force_increasing <- function(x, increment = 1e-8) {
+  q <- x
   for (i in 2:length(q)) {
     if (q[i] <= q[i - 1]) {
-      q[i] <- q[i - 1] + 1e-8
+      q[i] <- q[i - 1] + increment
     }
   }
   q

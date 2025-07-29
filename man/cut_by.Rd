@@ -8,8 +8,12 @@ cut_by(
   x,
   breaks,
   breaks_as_quantiles = FALSE,
+  group = NULL,
   labels = NULL,
   label_type = "ori",
+  right = FALSE,
+  drop_empty = TRUE,
+  verbose = FALSE,
   ...
 )
 }
@@ -19,13 +23,23 @@ cut_by(
 \item{breaks}{A numeric vector of internal cut points. If \code{breaks_as_quantiles} is TRUE, this
 is a proportion of the data. See \code{Details}.}
 
-\item{breaks_as_quantiles}{If TRUE, \code{breaks} is interpreted as a proportion of the data.}
+\item{breaks_as_quantiles}{If \code{TRUE}, \code{breaks} is interpreted as a proportion of the data.}
+
+\item{group}{A character vector of the same length as \code{x}, used to group the data before cut.
+Only effective when \code{breaks_as_quantiles} is \code{TRUE}.}
 
 \item{labels}{A vector of labels for the resulting factor levels.}
 
 \item{label_type}{If \code{labels} is \code{NULL}, this sets the label type. \code{"ori"} for original labels,
 \code{"LMH"} for "Low Medium High" style. \code{"combined"} labels that combine \code{"LMH"} type or provided \code{labels}
-with the original range labels.}
+with the original range labels. Only \code{"LMH"} is supported when \code{group} is specified.}
+
+\item{right}{logical, indicating if the intervals should be closed on the right (and open on the left) or
+vice versa. Note that the default is \code{FALSE}, which is different from \code{base::cut()}.}
+
+\item{drop_empty}{If \code{TRUE}, drop empty levels.}
+
+\item{verbose}{If \code{TRUE}, print the cut points.}
 
 \item{...}{Other arguments passed to \code{base::cut()}.}
 }
@@ -37,7 +51,7 @@ Divide numeric data into different groups. Easier to use than \code{base::cut()}
 }
 \details{
 \code{cut_by()} is a wrapper for \code{base::cut()}. Compared with the argument \code{breaks} in \code{base::cut()},
-\code{breaks} here automatically sets the minimum and maximum to \code{-Inf} and \code{Inf}.
+\code{breaks} here automatically sets the minimum and maximum. \code{breaks} outside the range of \code{x} are not allowed.
 }
 \note{
 The argument \code{right} in \code{base::cut()} is always set to \code{FALSE}, which means the levels follow the

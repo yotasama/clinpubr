@@ -25,6 +25,7 @@ value_initial_cleaning <- function(x) {
 
 
 #' @rdname value_initial_cleaning
+#' @export
 char_initial_cleaning <- function(x) {
   x <- stringi::stri_trans_general(x, "Fullwidth-Halfwidth")
   x <- str_squish(x)
