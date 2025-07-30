@@ -113,3 +113,27 @@ test_that("qq_show generates correct plot", {
     vdiffr::expect_doppelganger("QQ plot", p)
   })
 })
+
+
+test_that("indicate_duplicates correctly identifies duplicate elements", {
+  expect_equal(indicate_duplicates(c(1, 2, 2, 1, 3)), c(TRUE, TRUE, TRUE, TRUE, FALSE))
+  expect_equal(indicate_duplicates(c(1, NA, NA, 2)), c(FALSE, TRUE, TRUE, FALSE))
+  expect_equal(indicate_duplicates(c("a", "b", "a", "c")), c(TRUE, FALSE, TRUE, FALSE))
+  expect_equal(indicate_duplicates(factor(c("x", "y", "x", "z"))), c(TRUE, FALSE, TRUE, FALSE))
+  expect_equal(indicate_duplicates(c(1, 2, 3, 4)), rep(FALSE, 4))
+  expect_equal(indicate_duplicates(rep(5, 4)), rep(TRUE, 4))
+  expect_equal(indicate_duplicates(5), FALSE)
+  expect_equal(indicate_duplicates(numeric(0)), logical(0))
+})
+
+test_that("indicate_duplicates works with data frames and matrices", {
+  df <- data.frame(
+    id = c(1, 2, 1, 2, 3),
+    year = c(2010, 2011, 2010, 2010, 2011),
+    value = c(1, 2, 3, 4, 5)
+  )
+  expect_equal(indicate_duplicates(df[, c("id", "year")]), c(TRUE, FALSE, TRUE, FALSE, FALSE))
+
+  mat <- matrix(c(1, 2, 1, 3, 2, 3), ncol = 2)
+  expect_equal(indicate_duplicates(mat), c(TRUE, FALSE, TRUE))
+})

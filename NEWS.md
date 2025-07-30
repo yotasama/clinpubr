@@ -10,6 +10,8 @@
 
 * Added `char_initial_cleaning()` to clean character vectors.
 
+* Added `indicate_duplicates()` to determine duplicate elements, including their first occurrence.
+
 # clinpubr 1.0.1
 
 * Fixed potential colname conflict in `df_view_nonnum()`
