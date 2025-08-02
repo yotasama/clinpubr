@@ -10,7 +10,7 @@ indicate_duplicates(x)
 \item{x}{A vector.}
 }
 \value{
-A logical value.
+A logical vector.
 }
 \description{
 If an element is duplicated, all of its occurrence will be labeled \code{TRUE}.
