@@ -181,7 +181,7 @@ add_lists <- function(l1, l2) {
 #'   Useful to list and compare all duplicates.
 #' @param x A vector.
 #'
-#' @returns A logical value.
+#' @returns A logical vector.
 #' @export
 #' @examples
 #' indicate_duplicates(c(1, 2, NA, NA, 1))

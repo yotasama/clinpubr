@@ -6,6 +6,7 @@
 #' @param row_priority A positive numerical, the priority to keep rows. The higher the value, the higher the priority,
 #'   with `1` indicating equal priority for rows and columns.
 #' @param speedup_ratio A positive numerical, the ratio of speedup. The higher the value, the greedier the algorithm.
+#'   Should be in range of `[0, 1]`.
 #' @param return_index A logical, whether to return only the row and column indices of the subset.
 #' @details The function is based on a greedy algorithm. It iteratively removes the row or column with
 #'   the highest excessive missing rate weighted by the inverse of `row_priority` until the missing rates
@@ -29,7 +30,9 @@ get_valid_subset <- function(df, row_na_ratio = 0.5, col_na_ratio = 0.2, row_pri
   na_mat <- as.matrix(is.na(df))
   current_rows <- seq_len(ori_nrow)
   current_cols <- seq_len(ori_ncol)
-
+  if(speedup_ratio < 0 || speedup_ratio > 1) {
+    stop("speedup_ratio should be in range of [0, 1]")
+  }
   for (direction in c("remove", "add")) {
     repeat {
       if (direction == "remove") {
@@ -123,8 +126,9 @@ get_valid_subset <- function(df, row_na_ratio = 0.5, col_na_ratio = 0.2, row_pri
 #' data(cancer, package = "survival")
 #' max_missing_rates(cancer)
 max_missing_rates <- function(df) {
+  tmp <- is.na(df)
   list(
-    row = max(rowMeans(is.na(df))),
-    col = max(colMeans(is.na(df)))
+    row = max(rowMeans(tmp)),
+    col = max(colMeans(tmp))
   )
 }
