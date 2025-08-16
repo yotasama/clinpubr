@@ -12,6 +12,8 @@
 
 * Added `indicate_duplicates()` to determine duplicate elements, including their first occurrence.
 
+* Minor bug fixes and improvements.
+
 # clinpubr 1.0.1
 
 * Fixed potential colname conflict in `df_view_nonnum()`

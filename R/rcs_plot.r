@@ -26,6 +26,8 @@
 #' @param trans The transformation for the y axis in the plot.
 #'   Passed to `ggplot2::scale_y_continuous(transform = trans)`.
 #' @param save_plot A logical value indicating whether to save the plot.
+#' @param create_dir A logical value indicating whether to create the directory for the plot.
+#'   Passed to `ggplot2::ggsave()` as `create.dir`.
 #' @param filename A character string specifying the filename for the plot. If `NULL`, a default filename is used.
 #' @param y_lim The range of effect value of the plot. If `NULL`, the numbers are determined automatically.
 #' @param hist_max The maximum value for the histogram. If `NULL`, the maximum value is determined automatically.
@@ -47,14 +49,18 @@
 #' rcs_plot(cancer, x = "age", y = "dead", covars = "ph.karno", save_plot = FALSE)
 rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist = TRUE, ref = "x_median", ref_digits = 3,
                      group_by_ref = TRUE, group_title = NULL, group_labels = NULL, group_colors = NULL, breaks = 20,
-                     rcs_color = "#e23e57", print_p_ph = TRUE, trans = "identity", save_plot = FALSE, filename = NULL,
-                     y_lim = NULL, hist_max = NULL, xlim = NULL, height = 6, width = 6, return_details = FALSE) {
+                     rcs_color = "#e23e57", print_p_ph = TRUE, trans = "identity", save_plot = FALSE,
+                     create_dir = FALSE, filename = NULL, y_lim = NULL, hist_max = NULL, xlim = NULL, height = 6,
+                     width = 6, return_details = FALSE) {
   if (!is.null(xlim) && length(xlim) != 2) stop("`xlim` must be a vector of length 2")
   if (is.null(group_colors)) {
     group_colors <- emp_colors
   }
   if (add_hist && trans != "identity") {
     stop("`trans` must be `identity` when `add_hist` is `TRUE`")
+  }
+  if (anyDuplicated(c(x, y, time))) {
+    stop("`x`, `y`, and `time` must be different variables.")
   }
 
   if (!is.null(time)) {
@@ -106,10 +112,19 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
 
   phassump <- NULL
   phresidual <- NULL
+  pvalue_ph <- NA
   if (analysis_type == "cox") {
-    phassump <- survival::cox.zph(model, transform = "km")
-    phresidual <- survminer::ggcoxzph(phassump)
-    pvalue_ph <- phassump$table[1, 3]
+    tryCatch({
+      phassump <- survival::cox.zph(model, transform = "km")
+      pvalue_ph <- phassump$table[1, 3]
+    }, error = function(e) {
+      warning("Cox proportional hazards test failed with error: ", e)
+    })
+    tryCatch({
+      phresidual <- survminer::ggcoxzph(phassump)
+    }, error = function(e) {
+      warning("Graphical Test of Proportional Hazards failed with error: ", e)
+    })
   }
 
   anova_fit <- anova(model)
@@ -270,14 +285,14 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
     y0 = unit(0.92, "npc"),
     x1 = unit(0.12, "npc"),
     y1 = unit(0.92, "npc"),
-    gp = grid::gpar(col = rcs_color, lwd = 3,lineend = "butt")
+    gp = grid::gpar(col = rcs_color, lwd = 3, lineend = "butt")
   )
   segment2 <- grid::segmentsGrob(
     x0 = unit(0.05, "npc"),
     y0 = unit(0.88, "npc"),
     x1 = unit(0.12, "npc"),
     y1 = unit(0.88, "npc"),
-    gp = grid::gpar(col = rcs_color, lwd = 12, alpha = 0.1,lineend = "butt")
+    gp = grid::gpar(col = rcs_color, lwd = 12, alpha = 0.1, lineend = "butt")
   )
 
   p <- p +
@@ -334,7 +349,7 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
         ), ".png"
       )
     }
-    ggsave(filename, p, width = width, height = height)
+    ggsave(filename, p, width = width, height = height, create.dir = create_dir)
   }
 
   if (return_details) {

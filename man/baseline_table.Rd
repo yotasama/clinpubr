@@ -49,14 +49,14 @@ be the same as the main table, but with "_missing" and "_pairwise" appended.}
 
 \item{multiple_comparison_test}{A logical value indicating whether to perform multiple comparison tests. Variables in
 \code{factor_vars} and \code{exact_vars} are tested with pairwise \code{chisq.test} or \code{fisher.test}, and other variables are
-tested with \code{rstatix::dunn_test} or \code{rstatix::games_howell_test}.}
+tested with \code{rstatix::dunn_test()} or \code{rstatix::games_howell_test()}.}
 
 \item{p_adjust_method}{The method to use for p-value adjustment for pairwise comparison. Default is "BH".
 See \code{?p.adjust.methods}.}
 
-\item{smd}{A logical value indicating whether to include SMD in the table. Passed to \code{tableone::print.TableOne}.}
+\item{smd}{A logical value indicating whether to include SMD in the table. Passed to \code{tableone::print.TableOne()}.}
 
-\item{...}{Additional arguments passed to \code{tableone::print.TableOne}.}
+\item{...}{Additional arguments passed to \code{tableone::print.TableOne()}.}
 }
 \value{
 A list containing the baseline table and accompanying tables.

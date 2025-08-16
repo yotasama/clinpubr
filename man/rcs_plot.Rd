@@ -23,6 +23,7 @@ rcs_plot(
   print_p_ph = TRUE,
   trans = "identity",
   save_plot = FALSE,
+  create_dir = FALSE,
   filename = NULL,
   y_lim = NULL,
   hist_max = NULL,
@@ -76,6 +77,9 @@ If \code{group_by_ref} is \code{FALSE}, the first color is used as fill color.}
 Passed to \code{ggplot2::scale_y_continuous(transform = trans)}.}
 
 \item{save_plot}{A logical value indicating whether to save the plot.}
+
+\item{create_dir}{A logical value indicating whether to create the directory for the plot.
+Passed to \code{ggplot2::ggsave()} as \code{create.dir}.}
 
 \item{filename}{A character string specifying the filename for the plot. If \code{NULL}, a default filename is used.}
 

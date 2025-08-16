@@ -207,7 +207,7 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_f
 #' @param factor_vars A vector of factor variables. Overwrites the factor variables in `var_types`.
 #' @param exact_vars A vector of variables to test for exactness. Overwrites the exact variables in `var_types`.
 #' @param nonnormal_vars A vector of variables to test for normality. Overwrites the nonnormal variables in `var_types`.
-#' @param smd A logical value indicating whether to include SMD in the table. Passed to `tableone::print.TableOne`.
+#' @param smd A logical value indicating whether to include SMD in the table. Passed to `tableone::print.TableOne()`.
 #' @param seed A seed for the random number generator. This seed can be set for consistent simulation when
 #'   performing fisher exact tests.
 #' @param omit_missing_strata A logical value indicating whether to omit missing values in the strata variable.
@@ -216,10 +216,10 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_f
 #'   be the same as the main table, but with "_missing" and "_pairwise" appended.
 #' @param multiple_comparison_test A logical value indicating whether to perform multiple comparison tests. Variables in
 #'   `factor_vars` and `exact_vars` are tested with pairwise `chisq.test` or `fisher.test`, and other variables are
-#'   tested with `rstatix::dunn_test` or `rstatix::games_howell_test`.
+#'   tested with `rstatix::dunn_test()` or `rstatix::games_howell_test()`.
 #' @param p_adjust_method The method to use for p-value adjustment for pairwise comparison. Default is "BH".
 #'   See `?p.adjust.methods`.
-#' @param ... Additional arguments passed to `tableone::print.TableOne`.
+#' @param ... Additional arguments passed to `tableone::print.TableOne()`.
 #' @returns A list containing the baseline table and accompanying tables.
 #' @export
 #' @examples
