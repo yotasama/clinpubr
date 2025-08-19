@@ -71,7 +71,7 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, standardize_
   x_trans <- ifelse(analysis_type %in% c("cox", "logistic"), "log10", "none")
   covars <- remove_conflict(covars, c(y, x, time))
   ori_covs <- covars
-  subgroup_vars <- remove_conflict(subgroup_vars, c(y, x, time))
+  subgroup_vars <- remove_conflict(subgroup_vars, c(y, time))
   if (length(subgroup_vars) == 0) stop("No valid `subgroup_vars` specified.")
 
   indf <- dplyr::select(data, all_of(c(y, x, time, covars)))
