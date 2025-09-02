@@ -8,6 +8,8 @@
 #' @param y A character string of the outcome variable.
 #' @param time A character string of the time variable. If `NULL`, logistic regression is used.
 #'   Otherwise, Cox proportional hazards regression is used.
+#' @param time2 A character string of the ending time of the interval for interval censored or counting process
+#'   data only.
 #' @param covars A character vector of covariate names. If duplicated with `subgroup_vars`, the duplicated
 #'   covariates will be temporarily removed during the corresponding subgroup analysis.
 #' @param standardize_x A logical value. If `TRUE`, the predictor variable will be standardized.
@@ -41,7 +43,7 @@
 #'   subgroup_vars = c("sex", "wt.loss"), x = "ph.ecog_cat", y = "dead",
 #'   covars = "ph.karno", ticks_at = c(1, 2), save_plot = FALSE
 #' )
-subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, standardize_x = FALSE, covars = NULL,
+subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, time2 = NULL, standardize_x = FALSE, covars = NULL,
                             est_nsmall = 2, p_nsmall = 3, group_cut_quantiles = 0.5, save_plot = FALSE,
                             filename = NULL, ...) {
   x_type <- ifelse(!is.factor(data[[x]]), "number", "factor")
@@ -69,12 +71,12 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, standardize_
   effect_label <- paste0(effect_label, label_add, "(95% CI)")
   ref_val <- ifelse(analysis_type %in% c("cox", "logistic"), 1, 0)
   x_trans <- ifelse(analysis_type %in% c("cox", "logistic"), "log10", "none")
-  covars <- remove_conflict(covars, c(y, x, time))
+  covars <- remove_conflict(covars, c(y, x, time, time2))
   ori_covs <- covars
-  subgroup_vars <- remove_conflict(subgroup_vars, c(y, time))
+  subgroup_vars <- remove_conflict(subgroup_vars, c(y, time, time2))
   if (length(subgroup_vars) == 0) stop("No valid `subgroup_vars` specified.")
 
-  indf <- dplyr::select(data, all_of(c(y, x, time, covars)))
+  indf <- dplyr::select(data, all_of(c(y, x, time, time2, covars)))
 
   if (!is.null(covars)) {
     covars <- paste0("tmp_cov", seq_along(covars))
@@ -84,7 +86,7 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, standardize_
   }
 
   indf <- cbind(indf, dplyr::select(data, all_of(subgroup_vars)))
-  indf <- indf[complete.cases(indf[, c(y, x, time, covars)]), ]
+  indf <- indf[complete.cases(indf[, c(y, x, time, time2, covars)]), ]
   if (x_type == "factor") {
     n_plot_levels <- length(levels(indf[[x]])) - 1
   } else {
@@ -96,7 +98,7 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, standardize_
   }
 
   overall_res <- regression_fit(
-    data = indf, y = y, predictor = x, time = time, covars = covars, returned = "predictor_split"
+    data = indf, y = y, predictor = x, time = time, time2 = time2, covars = covars, returned = "predictor_split"
   )
   if (x_type == "number") {
     res <- data.frame(
@@ -143,7 +145,7 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, standardize_
     tmp_covs <- covars[ori_covs != var]
     if (length(tmp_covs) == 0) tmp_covs <- NULL
 
-    p_int <- interaction_p_value(indf, y, x, var, time = time, covars = tmp_covs)
+    p_int <- interaction_p_value(indf, y, x, var, time = time, time2 = time2, covars = tmp_covs)
 
     res <- rbind(
       res,
@@ -179,7 +181,10 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, standardize_
     tmp_res <- NULL
     for (lvl in lvls) {
       subset_data <- indf[which(indf[[var]] == lvl), ]
-      lvl_res <- regression_fit(subset_data, y, x, time = time, covars = tmp_covs, returned = "predictor_split")
+      lvl_res <- regression_fit(subset_data, y, x,
+        time = time, time2 = time2, covars = tmp_covs,
+        returned = "predictor_split"
+      )
 
       if (x_type == "number") {
         lvl_res <- data.frame(

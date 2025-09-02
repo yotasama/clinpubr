@@ -9,6 +9,7 @@ regression_forest(
   model_vars,
   y,
   time = NULL,
+  time2 = NULL,
   as_univariate = FALSE,
   est_nsmall = 2,
   p_nsmall = 3,
@@ -27,6 +28,9 @@ regression_forest(
 
 \item{time}{A character string of the time variable. If \code{NULL}, logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}
+
+\item{time2}{A character string of the ending time of the interval for interval censored or counting process
+data only.}
 
 \item{as_univariate}{A logical value indicating whether to treat the model_vars as univariate.}
 

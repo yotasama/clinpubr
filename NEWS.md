@@ -1,3 +1,9 @@
+# clinpubr 1.0.3
+
+* Added `exclusion_count()` which counts the number of excluded samples at each exclusion criteria.
+
+* Added `time2` argument to functions that support cox models.
+
 # clinpubr 1.0.2
 
 * Moved some dependencies from "Imports" to "Suggests".

@@ -9,7 +9,9 @@ rcs_plot(
   x,
   y,
   time = NULL,
+  time2 = NULL,
   covars = NULL,
+  cluster = NULL,
   knot = 4,
   add_hist = TRUE,
   ref = "x_median",
@@ -43,7 +45,13 @@ rcs_plot(
 \item{time}{A character string of the time variable. If \code{NULL}, logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}
 
+\item{time2}{A character string of the ending time of the interval for interval censored or counting process
+data only.}
+
 \item{covars}{A character vector of covariate names.}
+
+\item{cluster}{A character string of the cluster variable. If set, correct for heteroscedasticity and for
+correlated responses from cluster samples using \code{rms::robcov()}.}
 
 \item{knot}{The number of knots. If \code{NULL}, the number of knots is determined by AIC minimum.}
 

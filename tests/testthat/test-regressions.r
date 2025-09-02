@@ -163,3 +163,79 @@ test_that("fit_model handles different analysis types", {
   expect_s3_class(fit_logistic, "glm")
   expect_snapshot(summary(fit_logistic)$coefficients)
 })
+
+test_that("regression_fit works with time2", {
+  set.seed(123)
+  data(cancer, package = "survival")
+  # Create a dummy time2 variable
+  cancer$time2 <- cancer$time + runif(nrow(cancer), 0, 100)
+
+  # Test cox model with time2
+  fit_time2 <- regression_fit(
+    data = cancer, y = "status", predictor = "age",
+    time = "time", time2 = "time2", returned = "full"
+  )
+
+  # Manually create formula and fit model to compare
+  fit_manual <- survival::coxph(Surv(time, time2, status) ~ age, data = cancer)
+
+  expect_s3_class(fit_time2, "data.frame")
+  expect_equal(fit_time2$estimate, as.vector(exp(coef(fit_manual))), tolerance = 1e-6)
+})
+
+test_that("regression_basic_results works with time2", {
+  set.seed(123)
+  data(cancer, package = "survival")
+  # Create a dummy time2 variable
+  cancer$time2 <- cancer$time + runif(nrow(cancer), 0, 100)
+
+  results <- regression_basic_results(
+    data = cancer, x = "age", y = "status",
+    time = "time", time2 = "time2", save_output = FALSE
+  )
+
+  expect_type(results, "list")
+  expect_true("table" %in% names(results))
+  expect_s3_class(results$table, "data.frame")
+  # Check if HR is calculated
+  expect_true(any(grepl("HR", results$table[1, ])))
+})
+
+test_that("regression_forest works with time2", {
+  set.seed(123)
+  data(cancer, package = "survival")
+  # Create a dummy time2 variable
+  cancer$time2 <- cancer$time + runif(nrow(cancer), 0, 100)
+
+  plot <- regression_forest(
+    data = cancer,
+    model_vars = c("age", "sex"),
+    y = "status",
+    time = "time",
+    time2 = "time2",
+    save_plot = FALSE
+  )
+
+  expect_s3_class(plot, "gtable")
+})
+
+test_that("regression_scan works with time2", {
+  set.seed(123)
+  data(cancer, package = "survival")
+  # Create a dummy time2 variable
+  cancer$time2 <- cancer$time + runif(nrow(cancer), 0, 100)
+
+  scan_results <- regression_scan(
+    data = cancer,
+    y = "status",
+    time = "time",
+    time2 = "time2",
+    predictors = c("age", "sex"),
+    save_table = FALSE
+  )
+
+  expect_s3_class(scan_results, "data.frame")
+  expect_true("age" %in% scan_results$predictor)
+  expect_true("sex" %in% scan_results$predictor)
+  expect_true(any(grepl("HR", colnames(scan_results))))
+})

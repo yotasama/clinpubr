@@ -8,6 +8,7 @@ interaction_scan(
   data,
   y,
   time = NULL,
+  time2 = NULL,
   predictors = NULL,
   group_vars = NULL,
   covars = NULL,
@@ -24,6 +25,9 @@ interaction_scan(
 
 \item{time}{A character string of the time variable. If \code{NULL}, logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}
+
+\item{time2}{A character string of the ending time of the interval for interval censored or counting process
+data only.}
 
 \item{predictors}{The predictor variables to be scanned for interactions. If \code{NULL}, all variables
 except \code{y} and \code{time} are taken as predictors.}

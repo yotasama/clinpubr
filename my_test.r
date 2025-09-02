@@ -1,85 +1,128 @@
-set.seed(1)
 load_all()
-library(knitr)
-library(dtplyr)
 library(clinpubr)
-library(tictoc)
+library(rms)
 
-df <- data.frame(
-  x = c("1", "2", "3..3", "4", "6a"),
-  y = c("1", "ss", "aa.a", "4", "xx"),
-  z = c("1", "2", "3", "4", "6")
+set.seed(123)
+data(cancer, package = "survival")
+# Create a dummy time2 variable
+cancer$time2 <- cancer$time + runif(nrow(cancer), 0, 100)
+cancer=cancer[complete.cases(cancer[,c("time","inst","age")]),]
+
+p1=rcs_plot(cancer, x = "age", y = "status", time = "time", time2="time2", covars = "ph.karno", save_plot = FALSE)
+p2=rcs_plot(cancer, x = "age", y = "status", time = "time", time2="time2", cluster="inst",covars = "ph.karno", save_plot = FALSE)
+
+model=cph(Surv(time, time2, status) ~ rcs(age,4)+ ph.karno, data = cancer,x=T,y=T)
+model
+model2=robcov(model, cluster = cancer$inst)
+model2
+dd <- rms::datadist(cancer, q.display = c(0.025, 0.975))
+old_datadist <- getOption("datadist")
+on.exit(
+  {
+    options(datadist = old_datadist)
+  },
+  add = TRUE
 )
-df=dtplyr::lazy_dt(df)
-df_view_nonnum(df)
-df_view_nonnum <- function(df, max_count = 20, random_sample = FALSE, long_df = FALSE,
-                           subject_col = NULL, value_col = NULL) {
-  if (ncol(df) == 0) {
-    return(data.frame())
-  }
-  if (long_df && ncol(df) != 2 && (is.null(subject_col) || is.null(value_col))) {
-    stop("`subject_col` and `value_col` must be specified for long `data.frame` with more than 2 columns.")
-  }
-  if (long_df) {
-    if (inherits(df, "data.frame")) {
-      cols <- colnames(df)
-    } else if (inherits(df, "dtplyr_step")) {
-      cols <- df$vars
-    }
-    if (is.null(subject_col)) subject_col <- cols[1]
-    if (is.null(value_col)) value_col <- cols[2]
-    df_long <- df %>% dplyr::select(!!rlang::sym(subject_col), !!rlang::sym(value_col))
+options(datadist = dd)
+x1=Predict(model,
+  name = "age", fun = exp, type = "predictions", conf.int = 0.95, digits = 2
+)
+x2=Predict(model2,
+  name = "age", fun = exp, type = "predictions", conf.int = 0.95, digits = 2
+)
+head(x1)
+head(x2)
+
+
+cohort <- data.frame(
+  age = c(17, 25, 30, NA, 50, 60),
+  sex = c("M", "F", "F", "M", "F", "M"),
+  value = c(1, NA, 3, 4, 5, NA),
+  dementia = c(TRUE, FALSE, FALSE, FALSE, TRUE, FALSE)
+)
+exclusion_count(
+  cohort,
+  age < 18,
+  is.na(value),
+  dementia == TRUE,
+  .criteria_names = c(
+    "Age < 18 years",
+    "Missing value",
+    "History of dementia"
+  )
+)
+
+data(cancer, package = "survival")
+data = cancer
+y = "status"
+predictor = "age"
+time = "time"
+time2 = NULL
+rcs_knots = NULL
+covars = NULL
+cluster = NULL
+returned = c("full", "predictor_split", "predictor_combined")
+
+returned = "full"
+if (!is.null(rcs_knots) && rcs_knots == 0) rcs_knots <- NULL
+analysis_type <- if (!is.null(time)) {
+  "cox"
+} else if (length(levels(as.factor(data[[y]]))) == 2) {
+  "logistic"
+} else {
+  "linear"
+}
+covars <- remove_conflict(covars, c(y, predictor, time, time2))
+
+predictor_type <- if (is.factor(data[[predictor]]) && length(levels(data[[predictor]])) > 2) {
+  "multi_factor"
+} else {
+  "num_or_binary"
+}
+
+formula <- create_formula(y, predictor, time = time, time2 = time2, covars = covars, rcs_knots = rcs_knots)
+
+# need to check `rms` argument
+model <- fit_model(formula, data = data, analysis_type = analysis_type, cluster = cluster)
+model2 <- fit_model(formula, data = data, analysis_type = analysis_type, rms=T,cluster = cluster)
+full_res <- broom::tidy(model, conf.int = TRUE, exponentiate = analysis_type %in% c("logistic", "cox"))
+if (analysis_type %in% c("linear", "logistic")) full_res <- full_res[-1, ]
+
+if (returned == "full") {
+  return(as.data.frame(full_res))
+} else if (predictor_type == "num_or_binary" && is.null(rcs_knots)) {
+  return(as.data.frame(full_res[1, ]))
+} else if (returned == "predictor_split") {
+  if (is.numeric(data[[predictor]])) {
+    res <- as.data.frame(full_res[seq_len(rcs_knots - 1), ])
   } else {
-    subject_col <- "subject"
-    value_col <- "value"
-    df_long <- df %>%
-      tidyr::pivot_longer(
-        cols = dplyr::everything(),
-        names_to = subject_col,
-        values_to = value_col
-      )
+    res <- as.data.frame(full_res[seq_len(length(levels(data[[predictor]])) - 1), ])
   }
-  if (is.null(max_count) || max_count == 0) {
-    max_count <- df_long %>%
-      dplyr::count(!!rlang::sym(subject_col)) %>%
-      dplyr::pull(n) %>%
-      max()
-  }
-  
-  res <- df_long %>%
-    dplyr::group_by(!!rlang::sym(subject_col)) %>%
-    dplyr::group_map(~ {
-      # 注意这里使用 .x 代替原来的 .SD
-      x <- check_nonnum(.x[[value_col]],
-                        max_count = max_count,
-                        random_sample = random_sample,
-                        fix_len = TRUE)
-      
-      # 返回包含分组标识和结果的数据框
-      dplyr::tibble(
-        !!rlang::sym(subject_col) := .y[[1]],  # 添加分组标识
-        row = seq_along(x),
-        value = x
-      )
-    }) %>%
-    dplyr::bind_rows() %>%  # 合并所有分组结果
-    tidyr::pivot_wider(
-      names_from = !!rlang::sym(subject_col),
-      values_from = value,
-      values_fill = NA
-    ) %>%
-    dplyr::select(-row) %>%
-    dplyr::filter(dplyr::if_any(dplyr::everything(), ~ !is.na(.x))) %>%
-    dplyr::select(dplyr::where(~ any(!is.na(.x))))
-  
-  res
-}
-tmp_fun_factory <- function(value_col, max_count, random_sample) {
-  function(.x, .y) {
-    x <- check_nonnum(.x[[value_col]], 
-                      max_count = max_count,
-                      random_sample = random_sample,
-                      fix_len = TRUE)
-    tibble::tibble(row = seq_along(x), value = x)
+  if (any(!grepl(predictor, res$term))) stop("predictor not found in the regression result")
+  return(res)
+} else {
+  if (is.numeric(data[[predictor]]) && !is.null(rcs_knots)) {
+    model <- fit_model(formula, data = data, analysis_type = analysis_type, rms = TRUE, cluster = cluster)
+    ps <- unname(anova(model)[, "P"])
+    return(list(estimate = NA, p_overall = ps[1], p_nonlinear = ps[2]))
+  } else {
+    return(list(
+      estimate = NA,
+      p.value = broom::tidy(car::Anova(model, type = 2, test.statistic = "Wald"))$p.value[1]
+    ))
   }
 }
+
+library(Greg)
+library(broom)
+tidy(model2)
+dd <- rms::datadist(data, q.display = c(0.025, 0.975))
+old_datadist <- getOption("datadist")
+on.exit(
+  {
+    options(datadist = old_datadist)
+  },
+  add = TRUE
+)
+options(datadist = dd)
+options(datadist = NULL)

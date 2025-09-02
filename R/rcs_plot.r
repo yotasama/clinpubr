@@ -5,7 +5,11 @@
 #' @param y A character string of the outcome variable.
 #' @param time A character string of the time variable. If `NULL`, logistic regression is used.
 #'   Otherwise, Cox proportional hazards regression is used.
+#' @param time2 A character string of the ending time of the interval for interval censored or counting process
+#'   data only.
 #' @param covars A character vector of covariate names.
+#' @param cluster A character string of the cluster variable. If set, correct for heteroscedasticity and for
+#'   correlated responses from cluster samples using `rms::robcov()`.
 #' @param knot The number of knots. If `NULL`, the number of knots is determined by AIC minimum.
 #' @param add_hist A logical value. If `TRUE`, add histogram to the plot.
 #' @param ref The reference value for the plot. Could be `"x_median"`, `"x_mean"`, `"ratio_min"`, or a numeric value.
@@ -47,9 +51,10 @@
 #' # logistic model with time not assigned
 #' cancer$dead <- cancer$status == 2
 #' rcs_plot(cancer, x = "age", y = "dead", covars = "ph.karno", save_plot = FALSE)
-rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist = TRUE, ref = "x_median", ref_digits = 3,
-                     group_by_ref = TRUE, group_title = NULL, group_labels = NULL, group_colors = NULL, breaks = 20,
-                     rcs_color = "#e23e57", print_p_ph = TRUE, trans = "identity", save_plot = FALSE,
+rcs_plot <- function(data, x, y, time = NULL, time2 = NULL, covars = NULL, cluster = NULL, knot = 4, add_hist = TRUE,
+                     ref = "x_median",
+                     ref_digits = 3, group_by_ref = TRUE, group_title = NULL, group_labels = NULL, group_colors = NULL,
+                     breaks = 20, rcs_color = "#e23e57", print_p_ph = TRUE, trans = "identity", save_plot = FALSE,
                      create_dir = FALSE, filename = NULL, y_lim = NULL, hist_max = NULL, xlim = NULL, height = 6,
                      width = 6, return_details = FALSE) {
   if (!is.null(xlim) && length(xlim) != 2) stop("`xlim` must be a vector of length 2")
@@ -59,8 +64,8 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
   if (add_hist && trans != "identity") {
     stop("`trans` must be `identity` when `add_hist` is `TRUE`")
   }
-  if (anyDuplicated(c(x, y, time))) {
-    stop("`x`, `y`, and `time` must be different variables.")
+  if (anyDuplicated(c(x, y, time, time2, cluster))) {
+    stop("`x`, `y`, `time`, `time2`, and `cluster` must be different variables.")
   }
 
   if (!is.null(time)) {
@@ -77,8 +82,8 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
     pred_fun <- NULL
   }
 
-  covars <- remove_conflict(covars, c(y, x, time))
-  indf <- dplyr::select(data, all_of(c(y, x, time, covars)))
+  covars <- remove_conflict(covars, c(y, x, time, time2, cluster))
+  indf <- dplyr::select(data, all_of(c(y, x, time, time2, covars, cluster)))
 
   nmissing <- sum(!complete.cases(indf))
   if (nmissing > 0) {
@@ -99,32 +104,38 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
   aics <- NULL
   if (is.null(knot)) {
     for (i in 3:7) {
-      formula <- create_formula(y, x, time = time, covars = covars, rcs_knots = i)
-      model <- fit_model(formula, data = indf, analysis_type = analysis_type)
+      formula <- create_formula(y, x, time = time, time2 = time2, covars = covars, rcs_knots = i)
+      model <- fit_model(formula, data = indf, analysis_type = analysis_type, rms = TRUE, cluster = cluster)
       aics <- c(aics, AIC(model))
       kn <- seq(3, 7)[which.min(aics)]
     }
     knot <- kn
   }
 
-  formula <- create_formula(y, x, time = time, covars = covars, rcs_knots = knot)
-  model <- fit_model(formula, data = indf, analysis_type = analysis_type, rms = TRUE)
+  formula <- create_formula(y, x, time = time, time2 = time2, covars = covars, rcs_knots = knot)
+  model <- fit_model(formula, data = indf, analysis_type = analysis_type, rms = TRUE, cluster = cluster)
 
   phassump <- NULL
   phresidual <- NULL
   pvalue_ph <- NA
   if (analysis_type == "cox") {
-    tryCatch({
-      phassump <- survival::cox.zph(model, transform = "km")
-      pvalue_ph <- phassump$table[1, 3]
-    }, error = function(e) {
-      warning("Cox proportional hazards test failed with error: ", e)
-    })
-    tryCatch({
-      phresidual <- survminer::ggcoxzph(phassump)
-    }, error = function(e) {
-      warning("Graphical Test of Proportional Hazards failed with error: ", e)
-    })
+    tryCatch(
+      {
+        phassump <- survival::cox.zph(model, transform = "km")
+        pvalue_ph <- phassump$table[1, 3]
+      },
+      error = function(e) {
+        warning("Cox proportional hazards test failed with error: ", e)
+      }
+    )
+    tryCatch(
+      {
+        phresidual <- survminer::ggcoxzph(phassump)
+      },
+      error = function(e) {
+        warning("Graphical Test of Proportional Hazards failed with error: ", e)
+      }
+    )
   }
 
   anova_fit <- anova(model)
@@ -157,7 +168,7 @@ rcs_plot <- function(data, x, y, time = NULL, covars = NULL, knot = 4, add_hist 
   dd[["limits"]]["Adjust to", x] <- ref_val
   dd[["limits"]][c("Low:prediction", "High:prediction"), x] <- xlim
   options(datadist = dd)
-  model <- update(model)
+  model <- fit_model(formula, data = indf, analysis_type = analysis_type, rms = TRUE, cluster = cluster)
   df_pred <- rms::Predict(model,
     name = x, fun = pred_fun, type = "predictions", conf.int = 0.95, digits = 2,
     ref.zero = analysis_type %in% c("cox", "logistic")

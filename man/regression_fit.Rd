@@ -9,6 +9,7 @@ regression_fit(
   y,
   predictor,
   time = NULL,
+  time2 = NULL,
   covars = NULL,
   rcs_knots = NULL,
   returned = c("full", "predictor_split", "predictor_combined")
@@ -25,6 +26,9 @@ numeric, linear regression is used.}
 
 \item{time}{A character string of the time variable. If \code{NULL}, linear or logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}
+
+\item{time2}{A character string of the ending time of the interval for interval censored or counting process
+data only.}
 
 \item{covars}{A character vector of covariate names.}
 

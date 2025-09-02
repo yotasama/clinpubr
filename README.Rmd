@@ -99,6 +99,28 @@ knitr::kable(scan_result)
 ### Generating Publication-Ready Tables and Figures
 #### Example 3.1: Automatic Type Infer and Baseline Table Generation
 ```{r example_3.1}
+cohort <- data.frame(
+  age = c(17, 25, 30, NA, 50, 60),
+  sex = c("M", "F", "F", "M", "F", "M"),
+  value = c(1, NA, 3, 4, 5, NA),
+  dementia = c(TRUE, FALSE, FALSE, FALSE, TRUE, FALSE)
+)
+res <- exclusion_count(
+  cohort,
+  age < 18,
+  is.na(value),
+  dementia == TRUE,
+  .criteria_names = c(
+    "Age < 18 years",
+    "Missing value",
+    "History of dementia"
+  )
+)
+knitr::kable(res) # Display the table
+```
+
+#### Example 3.2: Automatic Type Infer and Baseline Table Generation
+```{r example_3.2}
 var_types <- get_var_types(mtcars, strata = "vs") # Automatically infer variable types
 print(var_types)
 
@@ -109,8 +131,8 @@ tables <- baseline_table(mtcars,
 knitr::kable(tables$baseline) # Display the table
 ```
 
-#### Example 3.2: RCS Plot
-```{r example_3.2}
+#### Example 3.3: RCS Plot
+```{r example_3.3}
 data(cancer, package = "survival")
 
 # Performing cox regression, which is inferred by `y` and `time`
@@ -118,8 +140,8 @@ p <- rcs_plot(cancer, x = "age", y = "status", time = "time", covars = c("sex", 
 plot(p)
 ```
 
-#### Example 3.3: Interaction Plot
-```{r example_3.3}
+#### Example 3.4: Interaction Plot
+```{r example_3.4}
 data(cancer, package = "survival")
 
 # Generating interaction plot of both linear and RCS models
@@ -131,8 +153,8 @@ plot(p$lin)
 plot(p$rcs)
 ```
 
-#### Example 3.4: Regression Forest Plot
-```{r example_3.4, fig.height=3}
+#### Example 3.5: Regression Forest Plot
+```{r example_3.5, fig.height=3}
 data(cancer, package = "survival")
 cancer$dead <- cancer$status == 2 # Preparing a binary variable for logistic regression
 cancer$`age per 1 sd` <- c(scale(cancer$age)) # Standardizing age
@@ -157,8 +179,8 @@ p2 <- regression_forest(
 plot(p2)
 ```
 
-#### Example 3.5: Subgroup Forest Plot
-```{r example_3.5, out.width = "70%", fig.width = 8, fig.height=4}
+#### Example 3.6: Subgroup Forest Plot
+```{r example_3.6, out.width = "70%", fig.width = 8, fig.height=4}
 data(cancer, package = "survival")
 # coxph model with time assigned
 p <- subgroup_forest(cancer,
@@ -168,8 +190,8 @@ p <- subgroup_forest(cancer,
 plot(p)
 ```
 
-#### Example 3.6: Classification Model Performance
-```{r example_3.6}
+#### Example 3.7: Classification Model Performance
+```{r example_3.7}
 # Building models with example data
 data(cancer, package = "survival")
 df <- kidney
@@ -190,8 +212,8 @@ plot(results$calibration_plot)
 plot(results$dca_plot)
 ```
 
-#### Example 3.7: Importance Plot
-```{r example_3.7}
+#### Example 3.8: Importance Plot
+```{r example_3.8}
 # Generating a dummy importance vector
 set.seed(5)
 dummy_importance <- runif(20, 0.2, 0.6)^5

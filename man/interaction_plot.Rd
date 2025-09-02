@@ -10,6 +10,7 @@ interaction_plot(
   predictor,
   group_var,
   time = NULL,
+  time2 = NULL,
   covars = NULL,
   group_colors = NULL,
   save_plot = FALSE,
@@ -35,6 +36,9 @@ numeric variable is provided, it will be split by the median value.}
 
 \item{time}{A character string of the time variable. If \code{NULL}, logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}
+
+\item{time2}{A character string of the ending time of the interval for interval censored or counting process
+data only.}
 
 \item{covars}{A character vector of covariate names.}
 

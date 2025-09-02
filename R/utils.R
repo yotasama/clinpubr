@@ -53,17 +53,22 @@ wrap_backticks <- function(x) {
 }
 
 # Create a formula for coxph or glm
-create_formula <- function(y, predictor, group_var = NULL, time = NULL, covars = NULL, rcs_knots = NULL,
+create_formula <- function(y, predictor, group_var = NULL, time = NULL, time2 = NULL, covars = NULL, rcs_knots = NULL,
                            interaction = FALSE, wrap_backtick = TRUE) {
   if (wrap_backtick) {
     y <- wrap_backticks(y)
     predictor <- wrap_backticks(predictor)
     group_var <- wrap_backticks(group_var)
     time <- wrap_backticks(time)
+    time2 <- wrap_backticks(time2)
     covars <- wrap_backticks(covars)
   }
   if (!is.null(time)) {
-    outcome <- paste0("Surv(", time, ",", y, ")")
+    if (!is.null(time2)) {
+      outcome <- paste0("Surv(", time, ",", time2, ",", y, ")")
+    } else {
+      outcome <- paste0("Surv(", time, ",", y, ")")
+    }
   } else {
     outcome <- y
   }

@@ -132,6 +132,41 @@ knitr::kable(scan_result)
 #### Example 3.1: Automatic Type Infer and Baseline Table Generation
 
 ``` r
+cohort <- data.frame(
+  age = c(17, 25, 30, NA, 50, 60),
+  sex = c("M", "F", "F", "M", "F", "M"),
+  value = c(1, NA, 3, 4, 5, NA),
+  dementia = c(TRUE, FALSE, FALSE, FALSE, TRUE, FALSE)
+)
+res <- exclusion_count(
+  cohort,
+  age < 18,
+  is.na(value),
+  dementia == TRUE,
+  .criteria_names = c(
+    "Age < 18 years",
+    "Missing value",
+    "History of dementia"
+  )
+)
+#> Warning in exclusion_count(cohort, age < 18, is.na(value), dementia == TRUE, :
+#> Criterion 'Age < 18 years' resulted in NA values. These rows have been excluded
+#> by default. Consider adding an explicit check for missing values (e.g.,
+#> is.na(variable)) as a preceding criterion.
+knitr::kable(res) # Display the table
+```
+
+| Criteria            |   N |
+|:--------------------|----:|
+| Initial N           |   6 |
+| Age \< 18 years     |   2 |
+| Missing value       |   2 |
+| History of dementia |   1 |
+| Final N             |   1 |
+
+#### Example 3.2: Automatic Type Infer and Baseline Table Generation
+
+``` r
 var_types <- get_var_types(mtcars, strata = "vs") # Automatically infer variable types
 print(var_types)
 #> $factor_vars
@@ -173,13 +208,13 @@ knitr::kable(tables$baseline) # Display the table
 | wt (mean (SD)) | 3.2 (1.0) | 3.7 (0.9) | 2.6 (0.7) | 0.001 |  |
 | qsec (mean (SD)) | 17.8 (1.8) | 16.7 (1.1) | 19.3 (1.4) | \<0.001 |  |
 | am = 1 (%) | 13 (40.6) | 6 (33.3) | 7 (50.0) | 0.556 |  |
-| gear (%) |  |  |  | 0.003 | exact |
+| gear (%) |  |  |  | 0.002 | exact |
 | 3 | 15 (46.9) | 12 (66.7) | 3 (21.4) |  |  |
 | 4 | 12 (37.5) | 2 (11.1) | 10 (71.4) |  |  |
 | 5 | 5 (15.6) | 4 (22.2) | 1 (7.1) |  |  |
 | carb (median \[IQR\]) | 2.0 \[2.0, 4.0\] | 4.0 \[2.2, 4.0\] | 1.5 \[1.0, 2.0\] | \<0.001 | nonnorm |
 
-#### Example 3.2: RCS Plot
+#### Example 3.3: RCS Plot
 
 ``` r
 data(cancer, package = "survival")
@@ -191,9 +226,9 @@ p <- rcs_plot(cancer, x = "age", y = "status", time = "time", covars = c("sex", 
 plot(p)
 ```
 
-<img src="man/figures/README-example_3.2-1.png" width="60%" />
+<img src="man/figures/README-example_3.3-1.png" width="60%" />
 
-#### Example 3.3: Interaction Plot
+#### Example 3.4: Interaction Plot
 
 ``` r
 data(cancer, package = "survival")
@@ -206,15 +241,15 @@ p <- interaction_plot(cancer,
 plot(p$lin)
 ```
 
-<img src="man/figures/README-example_3.3-1.png" width="60%" />
+<img src="man/figures/README-example_3.4-1.png" width="60%" />
 
 ``` r
 plot(p$rcs)
 ```
 
-<img src="man/figures/README-example_3.3-2.png" width="60%" />
+<img src="man/figures/README-example_3.4-2.png" width="60%" />
 
-#### Example 3.4: Regression Forest Plot
+#### Example 3.5: Regression Forest Plot
 
 ``` r
 data(cancer, package = "survival")
@@ -229,7 +264,7 @@ p1 <- regression_forest(cancer,
 plot(p1)
 ```
 
-<img src="man/figures/README-example_3.4-1.png" width="60%" />
+<img src="man/figures/README-example_3.5-1.png" width="60%" />
 
 ``` r
 
@@ -246,9 +281,9 @@ p2 <- regression_forest(
 plot(p2)
 ```
 
-<img src="man/figures/README-example_3.4-2.png" width="60%" />
+<img src="man/figures/README-example_3.5-2.png" width="60%" />
 
-#### Example 3.5: Subgroup Forest Plot
+#### Example 3.6: Subgroup Forest Plot
 
 ``` r
 data(cancer, package = "survival")
@@ -260,9 +295,9 @@ p <- subgroup_forest(cancer,
 plot(p)
 ```
 
-<img src="man/figures/README-example_3.5-1.png" width="70%" />
+<img src="man/figures/README-example_3.6-1.png" width="70%" />
 
-#### Example 3.6: Classification Model Performance
+#### Example 3.7: Classification Model Performance
 
 ``` r
 # Building models with example data
@@ -292,21 +327,21 @@ knitr::kable(results$metric_table)
 plot(results$roc_plot)
 ```
 
-<img src="man/figures/README-example_3.6-1.png" width="60%" />
+<img src="man/figures/README-example_3.7-1.png" width="60%" />
 
 ``` r
 plot(results$calibration_plot)
 ```
 
-<img src="man/figures/README-example_3.6-2.png" width="60%" />
+<img src="man/figures/README-example_3.7-2.png" width="60%" />
 
 ``` r
 plot(results$dca_plot)
 ```
 
-<img src="man/figures/README-example_3.6-3.png" width="60%" />
+<img src="man/figures/README-example_3.7-3.png" width="60%" />
 
-#### Example 3.7: Importance Plot
+#### Example 3.8: Importance Plot
 
 ``` r
 # Generating a dummy importance vector
@@ -321,7 +356,7 @@ plot(p)
 #> (`geom_bar()`).
 ```
 
-<img src="man/figures/README-example_3.7-1.png" width="60%" />
+<img src="man/figures/README-example_3.8-1.png" width="60%" />
 
 ## Documentation
 

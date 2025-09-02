@@ -9,6 +9,7 @@ regression_basic_results(
   x,
   y,
   time = NULL,
+  time2 = NULL,
   model_covs = NULL,
   pers = c(0.1, 10, 100),
   factor_breaks = NULL,
@@ -43,6 +44,9 @@ regression_basic_results(
 
 \item{time}{A character string of the time variable. If \code{NULL}, logistic regression is used.
 Otherwise, Cox proportional hazards regression is used.}
+
+\item{time2}{A character string of the ending time of the interval for interval censored or counting process
+data only.}
 
 \item{model_covs}{A character vector or a named list of covariates for different models.
 If \code{NULL}, only the crude model is used.}
