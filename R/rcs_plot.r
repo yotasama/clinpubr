@@ -16,6 +16,7 @@
 #'   If `"x_median"`, the median of the predictor variable is used. If `"ratio_min"`, the value of the
 #'   predictor variable that has the minium predicted risk is used. If a numeric value, that value is used.
 #' @param ref_digits The number of digits for the reference value.
+#' @param show_total_n A logical value. If `TRUE`, show the total number of samples in the plot.
 #' @param group_by_ref A logical value. If `TRUE`, split the histogram at the reference value from `ref` into
 #'   two groups.
 #' @param group_title A character string of the title for the group. Ignored if `group_by_ref` is `FALSE`.
@@ -52,8 +53,8 @@
 #' cancer$dead <- cancer$status == 2
 #' rcs_plot(cancer, x = "age", y = "dead", covars = "ph.karno", save_plot = FALSE)
 rcs_plot <- function(data, x, y, time = NULL, time2 = NULL, covars = NULL, cluster = NULL, knot = 4, add_hist = TRUE,
-                     ref = "x_median",
-                     ref_digits = 3, group_by_ref = TRUE, group_title = NULL, group_labels = NULL, group_colors = NULL,
+                     ref = "x_median", ref_digits = 3, show_total_n = TRUE,
+                     group_by_ref = TRUE, group_title = NULL, group_labels = NULL, group_colors = NULL,
                      breaks = 20, rcs_color = "#e23e57", print_p_ph = TRUE, trans = "identity", save_plot = FALSE,
                      create_dir = FALSE, filename = NULL, y_lim = NULL, hist_max = NULL, xlim = NULL, height = 6,
                      width = 6, return_details = FALSE) {
@@ -306,14 +307,17 @@ rcs_plot <- function(data, x, y, time = NULL, time2 = NULL, covars = NULL, clust
     gp = grid::gpar(col = rcs_color, lwd = 12, alpha = 0.1, lineend = "butt")
   )
 
-  p <- p +
-    annotation_custom(
-      grob = grid::textGrob(paste0("N = ", nrow(indf)),
-        x = unit(0.5, "npc"),
-        y = unit(0.9, "npc"),
-        gp = grid::gpar(fontsize = 15, fontface = "bold")
+  if (show_total_n) {
+    p <- p +
+      annotation_custom(
+        grob = grid::textGrob(paste0("N = ", nrow(indf)),
+          x = unit(0.5, "npc"),
+          y = unit(0.9, "npc"),
+          gp = grid::gpar(fontsize = 15, fontface = "bold")
+        )
       )
-    ) +
+  }
+  p <- p +
     annotation_custom(segment1) +
     annotation_custom(segment2) +
     annotation_custom(
