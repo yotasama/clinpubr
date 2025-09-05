@@ -15,6 +15,37 @@ na2false <- function(x) {
   x
 }
 
+#' Safe min and max functions that return NA if all values are NA
+#' @description Instead of returning `-Inf` or `Inf`, returns `NA` if all values are `NA`.
+#'   It also ignores `NA` values by default, which is different from base R functions.
+#'   This is useful when summarizing data frames with `dplyr::summarise()`.
+#' @param x A numeric vector.
+#' @param na.rm A logical value indicating whether to remove `NA` values before computation.
+#'   Defaults to `TRUE` instead of `FALSE` in base R functions.
+#'
+#' @returns The minimum or maximum value of the vector or `NA` if all values are `NA`.
+#' @export
+#' @examples
+#' na_max(c(1, 2, 3, NA))
+#' na_min(c(NA, NA, NA))
+na_max <- function(x, na.rm = TRUE) {
+  if (all(is.na(x))) {
+    NA
+  } else {
+    max(x, na.rm = na.rm)
+  }
+}
+
+#' @rdname na_max
+#' @export
+na_min <- function(x, na.rm = TRUE) {
+  if (all(is.na(x))) {
+    NA
+  } else {
+    min(x, na.rm = na.rm)
+  }
+}
+
 #' Generate code from string vector
 #' Generate the code that can be used to generate the string vector.
 #' @param x A string vector.
@@ -103,10 +134,11 @@ first_mode <- function(x, empty_return = NA) {
   l <- length(unique(x))
   if (l == 0) {
     empty_return
-  } else if (l == 1 || l == length(x)) {
+  } else if (l > 1 && l < length(x)) {
+    x[1] <- DescTools::Mode(x)[1]
     x[1]
   } else {
-    DescTools::Mode(x)[1]
+    x[1]
   }
 }
 
@@ -186,7 +218,7 @@ add_lists <- function(l1, l2) {
 #' @examples
 #' indicate_duplicates(c(1, 2, NA, NA, 1))
 #' indicate_duplicates(c(1, 2, 3, 4, 4))
-#' 
+#'
 #' # Useful to check duplicates in data frames.
 #' df <- data.frame(
 #'   id = c(1, 2, 1, 2, 3), year = c(2010, 2011, 2010, 2010, 2011),
