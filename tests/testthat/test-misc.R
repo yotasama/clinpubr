@@ -5,6 +5,14 @@ test_that("na2false replaces NAs with FALSE", {
   expect_equal(na2false(character(0)), character(0)) # Empty vector
 })
 
+# Test `na_min()` and `na_max()`
+test_that("na_min and na_max generate expected results", {
+  expect_equal(na_min(c("a", "b", "c", NA)), "a")
+  expect_equal(na_max(c(1, 2, 3, NA)), 3)
+  expect_equal(na_max(c(NA, NA)), NA)
+  expect_equal(na_max(character(0)), NA) # Empty vector
+})
+
 # Test vec2code
 test_that("vec2code generates correct code", {
   expect_equal(vec2code(c("a", "b", "c")), "c('a','b','c')")

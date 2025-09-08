@@ -1,5 +1,3 @@
-#' @include utils.R
-NULL
 #' Split multi-choice data into columns
 #' @description Split multi-choice data into columns, each new column consists of
 #'   booleans whether a choice is presented.
