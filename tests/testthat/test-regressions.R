@@ -183,6 +183,31 @@ test_that("regression_fit works with time2", {
   expect_equal(fit_time2$estimate, as.vector(exp(coef(fit_manual))), tolerance = 1e-6)
 })
 
+test_that("regression_fit works cluster", {
+  set.seed(123)
+  data(cancer, package = "survival")
+  # Create a dummy time2 variable
+  cancer$time2 <- cancer$time + runif(nrow(cancer), 0, 100)
+
+  # Test cox model with time2
+  fit_cluster <- regression_fit(
+    data = cancer, y = "status", predictor = "age",
+    time = "time", time2 = "time2", returned = "full", cluster = "inst"
+  )
+
+  expect_s3_class(fit_cluster, "data.frame")
+  expect_snapshot(fit_cluster)
+
+  cancer$status = cancer$status-1
+  fit_cluster2 <- regression_fit(
+    data = cancer, y = "status", predictor = "age", rcs_knots = 4,
+    time = NULL, time2 = NULL, returned = "full", cluster = "inst"
+  )
+
+  expect_s3_class(fit_cluster2, "data.frame")
+  expect_snapshot(fit_cluster2)
+})
+
 test_that("regression_basic_results works with time2", {
   set.seed(123)
   data(cancer, package = "survival")

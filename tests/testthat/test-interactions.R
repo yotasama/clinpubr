@@ -19,6 +19,9 @@ test_that("interaction_p_value returns valid p-values", {
   cancer$wt.loss <- rnorm(nrow(cancer)) # Mock continuous outcome
   p_linear <- interaction_p_value(cancer, y = "wt.loss", predictor = "age", group_var = "sex")
   expect_true(is.numeric(p_linear) && !is.na(p_linear))
+
+  p_logistic_rob <- interaction_p_value(cancer, y = "dead", predictor = "age", group_var = "sex", cluster = "inst")
+  expect_snapshot(p_logistic_rob)
 })
 
 # Test interaction_scan

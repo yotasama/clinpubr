@@ -49,6 +49,12 @@ test_that("rcs_plot handles custom knots", {
   vdiffr::expect_doppelganger("Logistic model RCS plot 5 knots", result$plot)
 })
 
+test_that("rcs_plot finds best knots", {
+  result <- rcs_plot(cancer, x = "age", y = "dead", knot = NULL, return_details = TRUE, save_plot = FALSE)
+  expect_snapshot(result$aics)
+  expect_equal(result$knot, 5)
+})
+
 test_that("rcs_plot warns about missing data", {
   cancer_missing <- cancer
   cancer_missing$age[1:5] <- NA

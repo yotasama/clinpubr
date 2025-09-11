@@ -374,3 +374,33 @@ qq_show <- function(x,
   }
   p
 }
+
+tidy.rms <- function(x, conf.int = FALSE, exponentiate = FALSE, ...) {
+  coef <- coef(x)
+  se <- sqrt(diag(vcov(x)))
+
+  wald_z <- coef / se
+  p_value <- 2 * pnorm(-abs(wald_z))
+
+  result_df <- data.frame(
+    term = names(coef),
+    estimate = coef,
+    std.error = se,
+    statistic = wald_z,
+    p.value = p_value
+  )
+
+  if (conf.int) {
+    tmp <- as.data.frame(confint.default(x))
+    colnames(tmp) <- c("conf.low", "conf.high")
+    result_df <- cbind(result_df, tmp)
+  }
+
+  if (exponentiate) {
+    result_df <- result_df %>%
+      dplyr::mutate(
+        dplyr::across(dplyr::any_of(c("estimate", "conf.low", "conf.high")), exp)
+      )
+  }
+  result_df
+}

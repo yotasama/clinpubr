@@ -12,6 +12,7 @@ interaction_plot(
   time = NULL,
   time2 = NULL,
   covars = NULL,
+  cluster = NULL,
   group_colors = NULL,
   save_plot = FALSE,
   filename = NULL,
@@ -41,6 +42,9 @@ Otherwise, Cox proportional hazards regression is used.}
 data only.}
 
 \item{covars}{A character vector of covariate names.}
+
+\item{cluster}{A character string of the cluster variable. If set, correct for heteroscedasticity and for
+correlated responses from cluster samples using \code{rms::robcov()}.}
 
 \item{group_colors}{A character vector of colors for the plot. If \code{NULL}, the default colors are used.}
 

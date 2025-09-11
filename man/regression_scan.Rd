@@ -11,6 +11,7 @@ regression_scan(
   time2 = NULL,
   predictors = NULL,
   covars = NULL,
+  cluster = NULL,
   num_to_factor = 5,
   p_adjust_method = "BH",
   save_table = FALSE,
@@ -32,6 +33,9 @@ data only.}
 except \code{y} and \code{time} are taken as predictors.}
 
 \item{covars}{A character vector of covariate names.}
+
+\item{cluster}{A character string of the cluster variable. If set, correct for heteroscedasticity and for
+correlated responses from cluster samples using \code{rms::robcov()}.}
 
 \item{num_to_factor}{An integer. Numerical variables with number of unique values below or equal
 to this value would be considered a factor.}

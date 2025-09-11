@@ -12,6 +12,7 @@ interaction_scan(
   predictors = NULL,
   group_vars = NULL,
   covars = NULL,
+  cluster = NULL,
   try_rcs = TRUE,
   p_adjust_method = "BH",
   save_table = FALSE,
@@ -37,6 +38,9 @@ except \code{y} and \code{time} are taken as group variables. The group variable
 numeric variable is included, it will be split by the median value.}
 
 \item{covars}{A character vector of covariate names.}
+
+\item{cluster}{A character string of the cluster variable. If set, correct for heteroscedasticity and for
+correlated responses from cluster samples using \code{rms::robcov()}.}
 
 \item{try_rcs}{A logical value indicating whether to perform restricted cubic spline interaction analysis.}
 

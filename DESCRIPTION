@@ -60,6 +60,7 @@ Suggests:
     caret,
     dcurves,
     dtplyr,
+    geepack,
     pROC,
     ResourceSelection,
     rstatix,

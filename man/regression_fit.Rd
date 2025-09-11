@@ -11,6 +11,7 @@ regression_fit(
   time = NULL,
   time2 = NULL,
   covars = NULL,
+  cluster = NULL,
   rcs_knots = NULL,
   returned = c("full", "predictor_split", "predictor_combined")
 )
@@ -31,6 +32,9 @@ Otherwise, Cox proportional hazards regression is used.}
 data only.}
 
 \item{covars}{A character vector of covariate names.}
+
+\item{cluster}{A character string of the cluster variable. If set, correct for heteroscedasticity and for
+correlated responses from cluster samples using \code{rms::robcov()}.}
 
 \item{rcs_knots}{The number of rcs knots. If \code{NULL}, a linear model would be fitted instead.}
 

@@ -13,6 +13,7 @@ subgroup_forest(
   time2 = NULL,
   standardize_x = FALSE,
   covars = NULL,
+  cluster = NULL,
   est_nsmall = 2,
   p_nsmall = 3,
   group_cut_quantiles = 0.5,
@@ -39,8 +40,10 @@ data only.}
 
 \item{standardize_x}{A logical value. If \code{TRUE}, the predictor variable will be standardized.}
 
-\item{covars}{A character vector of covariate names. If duplicated with \code{subgroup_vars}, the duplicated
-covariates will be temporarily removed during the corresponding subgroup analysis.}
+\item{covars}{A character vector of covariate names.}
+
+\item{cluster}{A character string of the cluster variable. If set, correct for heteroscedasticity and for
+correlated responses from cluster samples using \code{rms::robcov()}.}
 
 \item{est_nsmall}{An integer specifying the precision for the estimates in the plot.}
 

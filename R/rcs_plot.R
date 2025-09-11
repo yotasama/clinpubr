@@ -104,13 +104,13 @@ rcs_plot <- function(data, x, y, time = NULL, time2 = NULL, covars = NULL, clust
 
   aics <- NULL
   if (is.null(knot)) {
-    for (i in 3:7) {
+    knot_range <- 3:7
+    for (i in knot_range) {
       formula <- create_formula(y, x, time = time, time2 = time2, covars = covars, rcs_knots = i)
-      model <- fit_model(formula, data = indf, analysis_type = analysis_type, rms = TRUE, cluster = cluster)
+      model <- fit_model(formula, data = indf, analysis_type = analysis_type)
       aics <- c(aics, AIC(model))
-      kn <- seq(3, 7)[which.min(aics)]
     }
-    knot <- kn
+    knot <- knot_range[which.min(aics)]
   }
 
   formula <- create_formula(y, x, time = time, time2 = time2, covars = covars, rcs_knots = knot)

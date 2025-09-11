@@ -1,3 +1,10 @@
+# interaction_p_value returns valid p-values
+
+    Code
+      p_logistic_rob
+    Output
+      [1] 0.9413102
+
 # interaction_scan returns valid data frame and saves table
 
     Code

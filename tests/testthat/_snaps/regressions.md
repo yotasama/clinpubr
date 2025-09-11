@@ -166,3 +166,21 @@
       (Intercept) -1.3094866 1.01742651 -1.287058 0.19807419
       age          0.0367706 0.01644903  2.235426 0.02538937
 
+# regression_fit works cluster
+
+    Code
+      fit_cluster
+    Output
+          term estimate   std.error statistic     p.value conf.low conf.high
+      age  age 1.014301 0.005186644  2.737812 0.006184951 1.004043  1.024665
+
+---
+
+    Code
+      fit_cluster2
+    Output
+             term  estimate  std.error statistic    p.value  conf.low conf.high
+      age     age 1.1000422 0.04953593  1.924837 0.05424982 0.9982614  1.212200
+      age'   age' 0.8591691 0.11424446 -1.328638 0.18396737 0.6868052  1.074790
+      age'' age'' 2.1824513 0.61967902  1.259440 0.20787137 0.6478475  7.352183
+

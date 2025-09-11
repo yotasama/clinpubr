@@ -11,6 +11,7 @@ regression_basic_results(
   time = NULL,
   time2 = NULL,
   model_covs = NULL,
+  cluster = NULL,
   pers = c(0.1, 10, 100),
   factor_breaks = NULL,
   factor_labels = NULL,
@@ -51,6 +52,9 @@ data only.}
 \item{model_covs}{A character vector or a named list of covariates for different models.
 If \code{NULL}, only the crude model is used.}
 
+\item{cluster}{A character string of the cluster variable. If set, correct for heteroscedasticity and for
+correlated responses from cluster samples using \code{rms::robcov()}.}
+
 \item{pers}{A numeric vector of the denominators of variable \code{x}. Set this denominator to obtain a reasonable
 OR or HR.}
 
@@ -83,7 +87,7 @@ matches the provided strings will be used as the reference level.}
 
 \item{colors}{A vector of colors for the KM curves.}
 
-\item{xlab}{A character string of the x-axis label.}
+\item{xlab}{A character string of the x-axis label of the survival plot.}
 
 \item{legend_title}{A character string of the title of the legend.}
 

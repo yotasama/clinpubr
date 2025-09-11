@@ -10,6 +10,7 @@ regression_forest(
   y,
   time = NULL,
   time2 = NULL,
+  cluster = NULL,
   as_univariate = FALSE,
   est_nsmall = 2,
   p_nsmall = 3,
@@ -31,6 +32,9 @@ Otherwise, Cox proportional hazards regression is used.}
 
 \item{time2}{A character string of the ending time of the interval for interval censored or counting process
 data only.}
+
+\item{cluster}{A character string of the cluster variable. If set, correct for heteroscedasticity and for
+correlated responses from cluster samples using \code{rms::robcov()}.}
 
 \item{as_univariate}{A logical value indicating whether to treat the model_vars as univariate.}
 

@@ -1,3 +1,10 @@
+# rcs_plot finds best knots
+
+    Code
+      result$aics
+    Output
+      [1] 269.6667 270.2421 269.3772 271.2359 272.7613
+
 # rcs_plot returns details when requested
 
     Code
