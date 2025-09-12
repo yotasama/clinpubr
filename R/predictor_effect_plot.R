@@ -284,11 +284,16 @@ predictor_effect_plot <- function(data, x, y, time = NULL, time2 = NULL, covars 
       colnames(df_bar_plot) <- c("x", "den")
       df_bar_plot$den <- df_bar_plot$den * 100
       df_bar_plot$label <- paste0(round(df_bar_plot$den), "%")
+      df_bar_plot$xmin <- as.numeric(df_bar_plot$x)-0.45
+      df_bar_plot$xmax <- as.numeric(df_bar_plot$x)+0.45
 
       if (is.null(hist_max)) ymax2 <- ceiling(max(df_bar_plot$den * 1.5) / 5) * 5 else ymax2 <- hist_max
       scale_factor <- ymax2 / (ymax1 - ymin)
 
-      p <- p + geom_bar(data = df_bar_plot, aes(x = x, y = den / scale_factor + ymin, fill = x), stat = "identity", show.legend = FALSE) +
+      p <- p + geom_rect(data = df_bar_plot, aes(
+          xmin = xmin, xmax = xmax, ymin = ymin,
+          ymax = den / scale_factor + ymin, fill = x
+        ), show.legend = FALSE) +
         geom_text(data = df_bar_plot, aes(x = x, y = den / scale_factor + ymin, label = label), vjust = -0.5) +
         scale_fill_manual(values = group_colors)
     }
