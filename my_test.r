@@ -182,3 +182,5 @@ interaction_p_value <- function(
   model2 <- fit_model(formula2, data = data, analysis_type = analysis_type, cluster=cluster, rms=TRUE)
   return(lrtest(model1,model2)$stats[["P"]])
 }
+data(cancer, package = "survival")
+rcs_plot(cancer, x = "age", y = "status", time = "time", covars = "ph.karno", save_plot = FALSE)

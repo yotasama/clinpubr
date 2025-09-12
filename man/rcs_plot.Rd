@@ -43,75 +43,67 @@ rcs_plot(
 
 \item{y}{A character string of the outcome variable.}
 
-\item{time}{A character string of the time variable. If \code{NULL}, logistic regression is used.
-Otherwise, Cox proportional hazards regression is used.}
+\item{time}{A character string of the time variable for Cox models. If \code{NULL}, logistic or linear regression is used.}
 
-\item{time2}{A character string of the ending time of the interval for interval censored or counting process
-data only.}
+\item{time2}{A character string of the ending time for interval-censored or counting process data.}
 
 \item{covars}{A character vector of covariate names.}
 
-\item{cluster}{A character string of the cluster variable. If set, correct for heteroscedasticity and for
-correlated responses from cluster samples using \code{rms::robcov()}.}
+\item{cluster}{A character string of the cluster variable for robust variance estimation.}
 
-\item{knot}{The number of knots. If \code{NULL}, the number of knots is determined by AIC minimum.}
+\item{knot}{The number of knots for RCS. If \code{NULL}, AIC is used to find the optimal number.}
 
-\item{add_hist}{A logical value. If \code{TRUE}, add histogram to the plot.}
+\item{add_hist}{A logical value. If \code{TRUE}, add a distribution plot (histogram or bar plot).}
 
-\item{ref}{The reference value for the plot. Could be \code{"x_median"}, \code{"x_mean"}, \code{"ratio_min"}, or a numeric value.
-If \code{"x_median"}, the median of the predictor variable is used. If \code{"ratio_min"}, the value of the
-predictor variable that has the minium predicted risk is used. If a numeric value, that value is used.}
+\item{ref}{The reference value for numeric predictors, or the reference level for categorical predictors.
+For numeric \code{x}, can be \code{"x_median"}, \code{"x_mean"}, \code{"ratio_min"}, or a numeric value.}
 
-\item{ref_digits}{The number of digits for the reference value.}
+\item{ref_digits}{The number of digits for the reference value label.}
 
-\item{show_total_n}{A logical value. If \code{TRUE}, show the total number of samples in the plot.}
+\item{show_total_n}{A logical value. If \code{TRUE}, show the total number of samples.}
 
-\item{group_by_ref}{A logical value. If \code{TRUE}, split the histogram at the reference value from \code{ref} into
-two groups.}
+\item{group_by_ref}{A logical value. If \code{TRUE} and \code{x} is numeric, split the histogram at the reference value.}
 
-\item{group_title}{A character string of the title for the group. Ignored if \code{group_by_ref} is \code{FALSE}.}
+\item{group_title}{A character string for the group legend title.}
 
-\item{group_labels}{A character vector of the labels for the group. If \code{NULL}, the labels are generated
-automatically. Ignored if \code{group_by_ref} is \code{FALSE}.}
+\item{group_labels}{A character vector for group labels.}
 
-\item{group_colors}{A character vector of colors for the plot. If \code{NULL}, the default colors are used.
+\item{group_colors}{A character vector of colors for the distribution plot. If \code{NULL}, the default colors are used.
 If \code{group_by_ref} is \code{FALSE}, the first color is used as fill color.}
 
 \item{breaks}{The number of breaks for the histogram.}
 
-\item{rcs_color}{The color for the restricted cubic spline.}
+\item{rcs_color}{The color for the restricted cubic spline. This is passed to \code{line_color} in \code{predictor_effect_plot}.}
 
-\item{print_p_ph}{A logical value. If \code{TRUE}, print the p-value of the proportional hazards test
-(\code{survival::cox.zph()}) in the plot.}
+\item{print_p_ph}{A logical value. If \code{TRUE} (and model is Cox), print the p-value for the proportional hazards test.}
 
-\item{trans}{The transformation for the y axis in the plot.
-Passed to \code{ggplot2::scale_y_continuous(transform = trans)}.}
+\item{trans}{The transformation for the y-axis. Passed to \code{ggplot2::scale_y_continuous(transform = trans)}.}
 
 \item{save_plot}{A logical value indicating whether to save the plot.}
 
-\item{create_dir}{A logical value indicating whether to create the directory for the plot.
-Passed to \code{ggplot2::ggsave()} as \code{create.dir}.}
+\item{create_dir}{A logical value for creating the save directory.}
 
-\item{filename}{A character string specifying the filename for the plot. If \code{NULL}, a default filename is used.}
+\item{filename}{A character string for the saved plot filename.}
 
-\item{y_lim}{The range of effect value of the plot. If \code{NULL}, the numbers are determined automatically.}
+\item{y_lim}{The y-axis limits.}
 
-\item{hist_max}{The maximum value for the histogram. If \code{NULL}, the maximum value is determined automatically.}
+\item{hist_max}{The maximum value for the histogram y-axis.}
 
-\item{xlim}{The x-axis limits for the plot. If \code{NULL}, the limits are the \code{0.025} and \code{0.975} quantiles.
+\item{xlim}{The x-axis limits for numeric predictors. If \code{NULL}, the limits are the \code{0.025} and \code{0.975} quantiles.
 The actual plot range might be slightly larger than this range to fit the histogram.}
 
 \item{height}{The height of the saved plot.}
 
 \item{width}{The width of the saved plot.}
 
-\item{return_details}{A logical value indicating whether to return the details of the plot.}
+\item{return_details}{A logical value indicating whether to return plot details.}
 }
 \value{
 A \code{ggplot} object, or a list containing the \code{ggplot} object and other details if \code{return_details} is \code{TRUE}.
 }
 \description{
-Plot restricted cubic spline based on package \code{rms}. Support both logistic and cox model.
+This function is a wrapper for \code{predictor_effect_plot} with \code{method = "rcs"}.
+It plots a restricted cubic spline for a predictor in a regression model.
 }
 \examples{
 data(cancer, package = "survival")

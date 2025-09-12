@@ -35,6 +35,7 @@ Collate:
     'utils.R'
     'misc.R'
     'multichoice.R'
+    'predictor_effect_plot.R'
     'rcs_plot.R'
     'regressions.R'
     'subgroup_forest.R'

@@ -101,6 +101,6 @@
 <rect x='363.87' y='33.27' width='15.86' height='15.86' style='stroke-width: 1.07; stroke: none; stroke-linecap: butt; stroke-linejoin: miter; fill: #FC8D62;' />
 <text x='273.86' y='46.36' style='font-size: 15.00px; font-family: sans;' textLength='83.82px' lengthAdjust='spacingAndGlyphs'>Low (n=105)</text>
 <text x='385.92' y='46.36' style='font-size: 15.00px; font-family: sans;' textLength='87.15px' lengthAdjust='spacingAndGlyphs'>High (n=122)</text>
-<text x='50.13' y='17.87' style='font-size: 18.00px; font-family: sans;' textLength='163.09px' lengthAdjust='spacingAndGlyphs'>Cox model RCS plot</text>
+<text x='50.13' y='17.87' style='font-size: 18.00px; font-family: sans;' textLength='216.14px' lengthAdjust='spacingAndGlyphs'>predictor effect cox rcs age</text>
 </g>
 </svg>
