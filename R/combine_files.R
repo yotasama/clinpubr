@@ -22,6 +22,7 @@ combine_files <- function(path = ".", pattern = NULL, add_file_name = FALSE, uni
                           reader_fun = read.csv, ...) {
   files <- list.files(path = path, pattern = pattern, full.names = TRUE)
   if (length(files) > 0) {
+    file_list=list()
     for (f in files) {
       tmp <- reader_fun(f, ...)
       if (add_file_name) {
@@ -34,12 +35,9 @@ combine_files <- function(path = ".", pattern = NULL, add_file_name = FALSE, uni
         tmp <- cbind(temp_col = basename(f), tmp)
         colnames(tmp)[1] <- new_col_name
       }
-      if (f == files[1]) {
-        dat <- tmp
-      } else {
-        dat <- rbind(dat, tmp)
-      }
+      file_list[[f]] <- tmp
     }
+    dat = dplyr::bind_rows(file_list)
     if (unique_only) {
       dat <- unique(dat)
     }

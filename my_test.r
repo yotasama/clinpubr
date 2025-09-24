@@ -196,3 +196,18 @@ df <- data.frame(
 
 p <- ggplot(df, aes(trt, resp, colour = "red"))
 p+geom_crossbar(aes(ymin = lower, ymax = upper, fill = group),alpha=0.1 , width = 0.2,linewidth=0.03,fatten=50)
+
+library(tictoc)
+x=data.frame(matrix(rnorm(1e7),ncol=100))
+l=list(x,x,x,x,x,x,x)
+tic()
+y=data.table::rbindlist(l)
+toc()
+
+tic()
+y=dplyr::bind_rows(l)
+toc()
+
+tic()
+y=do.call(rbind,l)
+toc()
