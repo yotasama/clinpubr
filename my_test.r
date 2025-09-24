@@ -184,3 +184,15 @@ interaction_p_value <- function(
 }
 data(cancer, package = "survival")
 rcs_plot(cancer, x = "age", y = "status", time = "time", covars = "ph.karno", save_plot = FALSE)
+
+
+df <- data.frame(
+  trt = factor(c(1, 1, 2, 2)),
+  resp = c(1, 5, 3, 4),
+  group = factor(c(1, 2, 1, 2)),
+  upper = c(1.1, 5.3, 3.3, 4.2),
+  lower = c(0.8, 4.6, 2.4, 3.6)
+)
+
+p <- ggplot(df, aes(trt, resp, colour = "red"))
+p+geom_crossbar(aes(ymin = lower, ymax = upper, fill = group),alpha=0.1 , width = 0.2,linewidth=0.03,fatten=50)

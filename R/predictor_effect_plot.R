@@ -308,14 +308,16 @@ predictor_effect_plot <- function(data, x, y, time = NULL, time2 = NULL, covars 
 
   if (method %in% c("rcs", "linear")) {
     p <- p +
-      geom_ribbon(data = df_plot, aes(x = x, ymin = lower, ymax = upper), fill = line_color, alpha = 0.1) +
+      geom_ribbon(data = df_plot, aes(x = x, ymin = lower, ymax = upper), fill = line_color, alpha = 0.2) +
       geom_line(data = df_plot, aes(x = x, y = y), color = line_color, linewidth = 1)
     if (analysis_type %in% c("cox", "logistic") && !is.null(ref_val)) {
       p <- p + geom_text(aes(x = ref_val, y = 0.9 * (1 - ymin) + ymin, label = paste0("Ref=", format(ref_val, digits = ref_digits))), size = 5)
     }
   } else { # categorical
-    p <- p + geom_crossbar(data = df_plot, aes(x = x, y = y, ymin = lower, ymax = upper), color = line_color, width = 0.5)
+    p <- p + geom_crossbar(data = df_plot, aes(x = x, y = y, ymin = lower, ymax = upper), fill = line_color, alpha = 0.2, width = 0.5,
+      color = line_color, linewidth = 1)
   }
+
   p <- p + annotation_custom(
     grob = grid::textGrob(pvalue_text, x = unit(0.95, "npc"), y = unit(0.9, "npc"), just = "right", gp = grid::gpar(fontsize = 12))
   )
@@ -351,7 +353,7 @@ predictor_effect_plot <- function(data, x, y, time = NULL, time2 = NULL, covars 
   )
   segment2 <- grid::segmentsGrob(
     x0 = unit(0.05, "npc"), y0 = unit(0.88, "npc"), x1 = unit(0.12, "npc"), y1 = unit(0.88, "npc"),
-    gp = grid::gpar(col = line_color, lwd = 12, alpha = 0.1, lineend = "butt")
+    gp = grid::gpar(col = line_color, lwd = 12, alpha = 0.2, lineend = "butt")
   )
 
   p <- p +
