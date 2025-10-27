@@ -19,6 +19,7 @@
 #'   in `model_names` will be retained.
 #' @section Metrics:
 #'   - AUC: Area Under the Receiver Operating Characteristic Curve
+#'   - PRAUC: Area Under the Precision-Recall Curve
 #'   - Accuracy: Overall accuracy
 #'   - Sensitivity: True positive rate
 #'   - Specificity: True negative rate
@@ -59,7 +60,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   check_package("caret", "confusion matrix calculations")
   check_package("ResourceSelection", "Hosmer-Lemeshow test")
   check_package("dcurves", "decision curve analysis")
-  
+
   if (isTRUE(as_probability)) {
     vars_to_prob <- model_names[apply(data[, model_names, drop = FALSE], 2, function(x) any(x < 0 | x > 1))]
   } else if (is.character(as_probability)) {
@@ -80,9 +81,18 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   if (is.null(colors)) colors <- emp_colors
   data[[target_var]] <- factor(data[[target_var]])
   target <- data[[target_var]]
-  metric_table <- data.frame(matrix(NA, nrow = length(model_names), ncol = 13))
+  tmp <- is.na(target)
+  if (any(tmp)) {
+    data <- data[!tmp, ]
+    target <- target[!tmp]
+    warning(paste0(
+      "The target variable contains missing values.",
+      sum(tmp), " rows with missing target values are removed."
+    ))
+  }
+  metric_table <- data.frame(matrix(NA, nrow = length(model_names), ncol = 14))
   colnames(metric_table) <- c(
-    "Model", "AUC", "Accuracy", "Sensitivity", "Specificity", "Pos Pred Value",
+    "Model", "AUC", "PRAUC", "Accuracy", "Sensitivity", "Specificity", "Pos Pred Value",
     "Neg Pred Value", "F1", "Kappa", "Brier", "cutoff", "Youden", "HosLem"
   )
   metric_table$Model <- model_names
@@ -94,7 +104,15 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   model_aucs <- c()
   for (i in seq_along(model_names)) {
     model_name <- model_names[i]
-    tmp <- pROC::coords(pROC::roc(target, data[[model_name]], direction = "<", quiet = TRUE), "best")
+    roc_res <- pROC::roc(target, data[[model_name]], direction = "<", quiet = TRUE)
+    tmp <- pROC::coords(roc_res, "best")
+    tmp2 <- pROC::coords(roc_res, "all", ret = c("precision", "recall"))
+    valid_points <- !is.na(tmp2$precision) & !is.na(tmp2$recall)
+    tmp2 <- data.frame(recall = tmp2$recall[valid_points], precision = tmp2$precision[valid_points])
+    tmp2 <- tmp2[order(tmp2$recall), ]
+    pr_auc <- sum(diff(tmp2$recall) * (head(tmp2$precision, -1) + tail(tmp2$precision, -1)) / 2)
+    metric_table$PRAUC[i] <- round(pr_auc, 3)
+
     metric_table$cutoff[i] <- get_valid(tmp$threshold, mode = "last", disjoint = FALSE)
     model_predict <- cut(data[[model_name]], c(-Inf, metric_table$cutoff[i], Inf), right = FALSE)
     levels(model_predict) <- levels(target)
@@ -183,6 +201,34 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
     )
   if (save_output) {
     ggplot2::ggsave(roc_plot, file = paste0(output_prefix, "_roc.", figure_type), width = 4, height = 4)
+  }
+
+  # plot PRAUC curves
+  for(i in seq_along(roc_list)) {
+    pr_data <- pROC::coords(roc_list[[i]], "all", ret = c("precision", "recall"))
+    roc_list[[i]] <- data.frame(recall = pr_data$recall, precision = pr_data$precision,
+                                Model = paste0(metric_table$Model[i], " (", metric_table$PRAUC[i], ")"))
+  }
+  pr_data_all <- dplyr::bind_rows(roc_list)
+  pr_data_all$precision[is.nan(pr_data_all$precision)] <- 1
+  pr_plot <- ggplot2::ggplot(pr_data_all, aes(x = recall, y = precision, color = Model)) +
+    ggplot2::geom_line() +
+    ggplot2::scale_color_manual(values = colors) +
+    ggplot2::geom_abline(slope = -1, intercept = 1, linetype = 2, alpha = 0.5) +
+    ggplot2::theme_classic() +
+    ggplot2::lims(x = c(0, 1), y = c(0, 1)) +
+    ggplot2::labs(x = "Recall", y = "Precision") +
+    ggplot2::theme(
+      axis.text = element_text(size = 12),
+      axis.title = element_text(size = 15),
+      legend.title = element_blank(),
+      legend.background = element_blank(),
+      legend.text = element_text(size = 10),
+      legend.position = "inside",
+      legend.position.inside = c(0.25, 0.25),
+    )
+  if (save_output) {
+    ggplot2::ggsave(pr_plot, file = paste0(output_prefix, "_pr.", figure_type), width = 4, height = 4)
   }
 
   # plot calibration curves

@@ -4,9 +4,13 @@
 
 * Added `time2` argument to functions that support cox models.
 
+* Added `PRAUC` results and PR plot to `classif_model_compare()`.
+
 * Added `cluster` argument to functions to utilize robust Robust Covariance Matrix Estimates in cox models and Generalized Estimating Equations in glm models.
 
 * Added `na_min()` and `na_max()` that return `NA` if all values are `NA` and omit `NA`s by default.
+
+* Minor improvements.
 
 # clinpubr 1.0.2
 
