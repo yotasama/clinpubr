@@ -270,6 +270,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
     metric_table = metric_table,
     dca_plot = dca_plot,
     roc_plot = roc_plot,
+    pr_plot = pr_plot,
     calibration_plot = calibration_plot
   ))
 }

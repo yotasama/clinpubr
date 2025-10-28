@@ -32,24 +32,24 @@ test_that("save_output=FALSE suppresses file generation", {
   skip_if_not_installed("caret")
   skip_if_not_installed("dcurves")
   skip_if_not_installed("ResourceSelection")
-  with_tempdir({
-    set.seed(123)
-    data <- data.frame(
-      target = factor(rbinom(100, 1, 0.5)),
-      model = runif(100)
-    )
+  
+  set.seed(123)
+  data <- data.frame(
+    target = factor(rbinom(100, 1, 0.5)),
+    model = runif(100)
+  )
 
-    res <- classif_model_compare(data, "target", "model", save_output = FALSE)
+  res <- classif_model_compare(data, "target", "model", save_output = FALSE)
 
-    expect_false(file.exists("model_compare_table.csv"))
-    expect_false(file.exists("model_compare_dca.png"))
-    expect_named(res, c("metric_table", "dca_plot", "roc_plot", "calibration_plot"))
+  expect_false(file.exists("model_compare_table.csv"))
+  expect_false(file.exists("model_compare_dca.png"))
+  expect_named(res, c("metric_table", "dca_plot", "roc_plot", "pr_plot", "calibration_plot"))
 
-    vdiffr::expect_doppelganger("dca-plot", res$dca_plot)
-    vdiffr::expect_doppelganger("roc-plot", res$roc_plot)
-    vdiffr::expect_doppelganger("calibration-plot", res$calibration_plot)
-    expect_snapshot(res$metric_table)
-  })
+  vdiffr::expect_doppelganger("dca-plot", res$dca_plot)
+  vdiffr::expect_doppelganger("roc-plot", res$roc_plot)
+  vdiffr::expect_doppelganger("pr-plot", res$pr_plot)
+  vdiffr::expect_doppelganger("calibration-plot", res$calibration_plot)
+  expect_snapshot(res$metric_table)
 })
 
 test_that("as_probability handles value conversion", {
@@ -63,18 +63,16 @@ test_that("as_probability handles value conversion", {
     modelB = runif(100) * 5 - 2
   )
 
-  with_tempdir({
-    res1 <- classif_model_compare(df, "target", "modelA",
-      as_probability = TRUE,
-      save_output = FALSE
-    )
-    expect_true(all(res1$metric_table$Brier <= 1))
+  res1 <- classif_model_compare(df, "target", "modelA",
+    as_probability = TRUE,
+    save_output = FALSE
+  )
+  expect_true(all(res1$metric_table$Brier <= 1))
 
-    expect_error(
-      classif_model_compare(df, "target", "modelB", as_probability = FALSE),
-      "not in range 0 to 1"
-    )
-  })
+  expect_error(
+    classif_model_compare(df, "target", "modelB", as_probability = FALSE),
+    "not in range 0 to 1"
+  )
 })
 
 test_that("parameter validation works", {

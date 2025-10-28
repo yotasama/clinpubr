@@ -235,3 +235,5 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
     calibration_plot = calibration_plot
   ))
 }
+
+res$pr_plot$data
