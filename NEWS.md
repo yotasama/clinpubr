@@ -6,9 +6,11 @@
 
 * Added `PRAUC` results and PR plot to `classif_model_compare()`.
 
+* Refactored `rcs_plot()` and added a new `predictor_effect_plot()` function which can plot linear and categorical effects.
+
 * Added `cluster` argument to functions to utilize robust Robust Covariance Matrix Estimates in cox models and Generalized Estimating Equations in glm models.
 
-* Added `na_min()` and `na_max()` that return `NA` if all values are `NA` and omit `NA`s by default.
+* Added `na_min()` and `na_max()`, similar to `base::min()` and `base::max()`, but return `NA` if all values are `NA` and omit `NA`s by default.
 
 * Minor improvements.
 

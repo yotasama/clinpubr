@@ -8,12 +8,15 @@ model <- glm(dead ~ ., family = binomial(), data = df)
 df$base_pred <- predict(model0, type = "response")
 df$full_pred <- predict(model, type = "response")
 
-data=df
-target_var="dead"
-model_names=c("base_pred", "full_pred")
-colors = NULL; save_output = FALSE;
-figure_type = "png"; output_prefix = "model_compare"; as_probability = FALSE;
-auto_order = TRUE
+data <- df
+target_var <- "dead"
+model_names <- c("base_pred", "full_pred")
+colors <- NULL
+save_output <- FALSE
+figure_type <- "png"
+output_prefix <- "model_compare"
+as_probability <- FALSE
+auto_order <- TRUE
 classif_model_compare <- function(data, target_var, model_names, colors = NULL, save_output = FALSE,
                                   figure_type = "png", output_prefix = "model_compare", as_probability = FALSE,
                                   auto_order = TRUE) {
@@ -166,10 +169,12 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   }
 
   # plot PRAUC curves
-  for(i in seq_along(roc_list)) {
+  for (i in seq_along(roc_list)) {
     pr_data <- pROC::coords(roc_list[[i]], "all", ret = c("precision", "recall"))
-    roc_list[[i]] <- data.frame(recall = pr_data$recall, precision = pr_data$precision,
-                                Model = paste0(metric_table$Model[i], " (", metric_table$PRAUC[i], ")"))
+    roc_list[[i]] <- data.frame(
+      recall = pr_data$recall, precision = pr_data$precision,
+      Model = paste0(metric_table$Model[i], " (", metric_table$PRAUC[i], ")")
+    )
   }
   pr_data_all <- dplyr::bind_rows(roc_list)
   pr_data_all$precision[is.nan(pr_data_all$precision)] <- 1
@@ -237,3 +242,34 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
 }
 
 res$pr_plot$data
+
+library(ggplot2)
+library(grid)
+df <- data.frame(x = 1:10, y = 1:10)
+ggplot(df, aes(x = x, y = y)) +
+  geom_point() +
+  scale_y_continuous("y", expand = c(0.1, 0.1), transform = "log10") +
+  annotation_custom(
+    grob = grid::textGrob("some text",
+      x = unit(0.5, "npc"),
+      y = unit(0.9, "npc"),
+      gp = grid::gpar(fontsize = 12)
+    )
+  )
+ggsave("test_img_4.0.0.png", width = 4, height = 4)
+
+
+
+
+data <- mtcars
+data$am <- as.factor(data$am)
+data$vs <- as.factor(data$vs)
+
+p <- predictor_effect_plot(
+  data = data,
+  x = "am",
+  y = "vs",
+  ref = "1",
+  method = "categorical",
+  save_plot = FALSE
+)

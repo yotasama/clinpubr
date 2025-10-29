@@ -186,8 +186,6 @@ predictor_effect_plot <- function(data, x, y, time = NULL, time2 = NULL, covars 
       breaks <- break_at(xlim, breaks, ref_val)
       xlim <- breaks[c(1, length(breaks))]
     }
-
-    dd[["limits"]]["Adjust to", x] <- ref_val
     # Ensure prediction limits reflect final xlim used for plotting
     dd[["limits"]][c("Low:prediction", "High:prediction"), x] <- xlim
   } else { # categorical
@@ -196,10 +194,11 @@ predictor_effect_plot <- function(data, x, y, time = NULL, time2 = NULL, covars 
       ref_val <- levels(indf[[x]])[1]
     } else if (is.null(ref) || ref == "ratio_min") {
       ref_val <- levels(indf[[x]])[which.min(df_pred$y)]
+    } else {
+      ref_val <- ref
     }
-    indf[[x]] <- relevel(indf[[x]], ref = ref_val)
-    dd <- rms::datadist(indf) # re-run datadist with new factor levels
   }
+  dd[["limits"]]["Adjust to", x] <- ref_val
   options(datadist = dd)
 
   # --- Re-fit with new reference and get final predictions ---
