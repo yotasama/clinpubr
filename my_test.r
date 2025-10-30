@@ -254,7 +254,8 @@ ggplot(df, aes(x = x, y = y)) +
       x = unit(0.5, "npc"),
       y = unit(0.9, "npc"),
       gp = grid::gpar(fontsize = 12)
-    )
+    ),
+    ymin=0
   )
 ggsave("test_img_4.0.0.png", width = 4, height = 4)
 
@@ -273,3 +274,6 @@ p <- predictor_effect_plot(
   method = "categorical",
   save_plot = FALSE
 )
+
+build_manual()
+build_readme()

@@ -1,16 +1,18 @@
-# clinpubr 1.0.3
-
-* Added `exclusion_count()` which counts the number of excluded samples at each exclusion criteria.
+# clinpubr 1.1.0
 
 * Added `time2` argument to functions that support cox models.
+
+* Added `cluster` argument to functions to utilize robust Robust Covariance Matrix Estimates in cox models and Generalized Estimating Equations in glm models.
 
 * Added `PRAUC` results and PR plot to `classif_model_compare()`.
 
 * Refactored `rcs_plot()` and added a new `predictor_effect_plot()` function which can plot linear and categorical effects.
 
-* Added `cluster` argument to functions to utilize robust Robust Covariance Matrix Estimates in cox models and Generalized Estimating Equations in glm models.
+* Added `exclusion_count()` which counts the number of excluded samples at each exclusion criteria.
 
 * Added `na_min()` and `na_max()`, similar to `base::min()` and `base::max()`, but return `NA` if all values are `NA` and omit `NA`s by default.
+
+* Fixed `ggplot2` 4.0.0 compatibility.
 
 * Minor improvements.
 

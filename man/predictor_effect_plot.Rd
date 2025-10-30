@@ -112,10 +112,10 @@ It can display the distribution of the predictor variable as a histogram (for nu
 }
 \examples{
 data(cancer, package = "survival")
-data$dead <- data$status == 2
-data <- data[!is.na(data$inst), ]
+cancer$dead <- cancer$status == 2
+cancer <- cancer[!is.na(cancer$inst), ]
 predictor_effect_plot(
-  data = data,
+  data = cancer,
   x = "age",
   y = "dead",
   method = "linear",

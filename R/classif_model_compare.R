@@ -36,7 +36,8 @@
 #' @returns A list of various results. If the output files are not in desired format,
 #'   these results can be modified for further use.
 #'   - metric_table: A data frame containing the performance metrics for each model.
-#'   - roc_plot: A `ggplot` object of ROC curves.
+#'   - roc_plot: A `ggplot` object of Receiver Operating Characteristic curves.
+#'   - pr_plot: A `ggplot` object of Precision-Recall curves.
 #'   - dca_plot: A `ggplot` object of decision curve analysis plots.
 #'   - calibration_plot: A `ggplot` object of calibration plots.
 #' @export
@@ -110,7 +111,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
     valid_points <- !is.na(tmp2$precision) & !is.na(tmp2$recall)
     tmp2 <- data.frame(recall = tmp2$recall[valid_points], precision = tmp2$precision[valid_points])
     tmp2 <- tmp2[order(tmp2$recall), ]
-    pr_auc <- sum(diff(tmp2$recall) * (head(tmp2$precision, -1) + tail(tmp2$precision, -1)) / 2)
+    pr_auc <- sum(diff(tmp2$recall) * (utils::head(tmp2$precision, -1) + utils::tail(tmp2$precision, -1)) / 2)
     metric_table$PRAUC[i] <- round(pr_auc, 3)
 
     metric_table$cutoff[i] <- get_valid(tmp$threshold, mode = "last", disjoint = FALSE)

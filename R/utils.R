@@ -35,7 +35,7 @@ utils::globalVariables(c(
   "name", "value", "decile", "obsRate", "predRate", "label",
   ".predictor", ".group_var", "yhat", "lower", "upper",
   "xmin", "xmax", "den", "Group", "text", "level", "subject",
-  "quant", "quant_val"
+  "quant", "quant_val", "recall", "precision", "Model"
 ))
 
 #' default color palette for `clinpubr` plots

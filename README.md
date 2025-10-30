@@ -221,8 +221,8 @@ data(cancer, package = "survival")
 
 # Performing cox regression, which is inferred by `y` and `time`
 p <- rcs_plot(cancer, x = "age", y = "status", time = "time", covars = c("sex", "ph.karno"), save_plot = FALSE)
-#> Warning in rcs_plot(cancer, x = "age", y = "status", time = "time", covars =
-#> c("sex", : 1 incomplete cases excluded.
+#> Warning in predictor_effect_plot(data = data, x = x, y = y, time = time, : 1
+#> incomplete cases excluded.
 plot(p)
 ```
 
@@ -318,10 +318,10 @@ results <- classif_model_compare(df, "dead", c("base_pred", "full_pred"), save_o
 knitr::kable(results$metric_table)
 ```
 
-|  | Model | AUC | Accuracy | Sensitivity | Specificity | Pos Pred Value | Neg Pred Value | F1 | Kappa | Brier | cutoff | Youden | HosLem |
-|:---|:---|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 2 | full_pred | 0.915 (0.847, 0.984) | 0.839 | 0.8 | 0.889 | 0.903 | 0.774 | 0.848 | 0.677 | 0.114 | 0.626 | 0.689 | 0.944 |
-| 1 | base_pred | 0.822 (0.711, 0.933) | 0.806 | 0.8 | 0.815 | 0.848 | 0.759 | 0.824 | 0.610 | 0.171 | 0.490 | 0.615 | 0.405 |
+|  | Model | AUC | PRAUC | Accuracy | Sensitivity | Specificity | Pos Pred Value | Neg Pred Value | F1 | Kappa | Brier | cutoff | Youden | HosLem |
+|:---|:---|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 2 | full_pred | 0.915 (0.847, 0.984) | 0.885 | 0.839 | 0.8 | 0.889 | 0.903 | 0.774 | 0.848 | 0.677 | 0.114 | 0.626 | 0.689 | 0.944 |
+| 1 | base_pred | 0.822 (0.711, 0.933) | 0.766 | 0.806 | 0.8 | 0.815 | 0.848 | 0.759 | 0.824 | 0.610 | 0.171 | 0.490 | 0.615 | 0.405 |
 
 ``` r
 plot(results$roc_plot)

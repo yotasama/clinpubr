@@ -46,7 +46,8 @@ A list of various results. If the output files are not in desired format,
 these results can be modified for further use.
 \itemize{
 \item metric_table: A data frame containing the performance metrics for each model.
-\item roc_plot: A \code{ggplot} object of ROC curves.
+\item roc_plot: A \code{ggplot} object of Receiver Operating Characteristic curves.
+\item pr_plot: A \code{ggplot} object of Precision-Recall curves.
 \item dca_plot: A \code{ggplot} object of decision curve analysis plots.
 \item calibration_plot: A \code{ggplot} object of calibration plots.
 }
@@ -60,6 +61,7 @@ curve plot, decision curve analysis plot, and calibration plot.
 
 \itemize{
 \item AUC: Area Under the Receiver Operating Characteristic Curve
+\item PRAUC: Area Under the Precision-Recall Curve
 \item Accuracy: Overall accuracy
 \item Sensitivity: True positive rate
 \item Specificity: True negative rate
