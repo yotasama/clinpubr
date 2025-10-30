@@ -283,16 +283,16 @@ predictor_effect_plot <- function(data, x, y, time = NULL, time2 = NULL, covars 
       colnames(df_bar_plot) <- c("x", "den")
       df_bar_plot$den <- df_bar_plot$den * 100
       df_bar_plot$label <- paste0(round(df_bar_plot$den), "%")
-      df_bar_plot$xmin <- as.numeric(df_bar_plot$x)-0.45
-      df_bar_plot$xmax <- as.numeric(df_bar_plot$x)+0.45
+      df_bar_plot$xmin <- as.numeric(df_bar_plot$x) - 0.45
+      df_bar_plot$xmax <- as.numeric(df_bar_plot$x) + 0.45
 
       if (is.null(hist_max)) ymax2 <- ceiling(max(df_bar_plot$den * 1.5) / 5) * 5 else ymax2 <- hist_max
       scale_factor <- ymax2 / (ymax1 - ymin)
 
       p <- p + geom_rect(data = df_bar_plot, aes(
-          xmin = xmin, xmax = xmax, ymin = ymin,
-          ymax = den / scale_factor + ymin, fill = x
-        ), show.legend = FALSE) +
+        xmin = xmin, xmax = xmax, ymin = ymin,
+        ymax = den / scale_factor + ymin, fill = x
+      ), show.legend = FALSE) +
         geom_text(data = df_bar_plot, aes(x = x, y = den / scale_factor + ymin, label = label), vjust = -0.5) +
         scale_fill_manual(values = group_colors)
     }
@@ -313,12 +313,15 @@ predictor_effect_plot <- function(data, x, y, time = NULL, time2 = NULL, covars 
       p <- p + geom_text(aes(x = ref_val, y = 0.9 * (1 - ymin) + ymin, label = paste0("Ref=", format(ref_val, digits = ref_digits))), size = 5)
     }
   } else { # categorical
-    p <- p + geom_crossbar(data = df_plot, aes(x = x, y = y, ymin = lower, ymax = upper), fill = line_color, alpha = 0.2, width = 0.5,
-      color = line_color, linewidth = 1)
+    p <- p + geom_crossbar(
+      data = df_plot, aes(x = x, y = y, ymin = lower, ymax = upper), fill = line_color, alpha = 0.2, width = 0.5,
+      color = line_color, linewidth = 1
+    )
   }
 
   p <- p + annotation_custom(
-    grob = grid::textGrob(pvalue_text, x = unit(0.95, "npc"), y = unit(0.9, "npc"), just = "right", gp = grid::gpar(fontsize = 12))
+    grob = grid::textGrob(pvalue_text, x = unit(0.95, "npc"), y = unit(0.9, "npc"), just = "right", gp = grid::gpar(fontsize = 12)),
+    ymin = I(0)
   )
 
   # --- Final Touches & Theming ---
@@ -356,13 +359,19 @@ predictor_effect_plot <- function(data, x, y, time = NULL, time2 = NULL, covars 
   )
 
   p <- p +
-    annotation_custom(segment1) +
-    annotation_custom(segment2) +
-    annotation_custom(
-      grob = grid::textGrob("Estimation", x = unit(0.13, "npc"), y = unit(0.92, "npc"), just = "left", gp = grid::gpar(fontsize = 12))
+    annotation_custom(segment1,
+      ymin = I(0)
+    ) +
+    annotation_custom(segment2,
+      ymin = I(0)
     ) +
     annotation_custom(
-      grob = grid::textGrob("95% CI", x = unit(0.13, "npc"), y = unit(0.88, "npc"), just = "left", gp = grid::gpar(fontsize = 12))
+      grob = grid::textGrob("Estimation", x = unit(0.13, "npc"), y = unit(0.92, "npc"), just = "left", gp = grid::gpar(fontsize = 12)),
+      ymin = I(0)
+    ) +
+    annotation_custom(
+      grob = grid::textGrob("95% CI", x = unit(0.13, "npc"), y = unit(0.88, "npc"), just = "left", gp = grid::gpar(fontsize = 12)),
+      ymin = I(0)
     )
 
   if (show_total_n) {
@@ -372,7 +381,8 @@ predictor_effect_plot <- function(data, x, y, time = NULL, time2 = NULL, covars 
           x = unit(0.5, "npc"),
           y = unit(0.9, "npc"),
           gp = grid::gpar(fontsize = 15, fontface = "bold")
-        )
+        ),
+        ymin = I(0)
       )
   }
 

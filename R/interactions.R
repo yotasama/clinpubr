@@ -272,7 +272,8 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, time2 =
               x = unit(0.5, "npc"),
               y = unit(0.9, "npc"),
               gp = grid::gpar(fontsize = 15, fontface = "bold")
-            )
+            ),
+            ymin = I(0)
           )
       }
       plt1 <- plt1 +
@@ -343,7 +344,8 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, time2 =
                 x = unit(0.5, "npc"),
                 y = unit(0.9, "npc"),
                 gp = grid::gpar(fontsize = 15, fontface = "bold")
-              )
+              ),
+              ymin = I(0)
             )
         }
 

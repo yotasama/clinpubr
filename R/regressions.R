@@ -65,13 +65,14 @@
 #'   save_output = FALSE
 #' )
 regression_basic_results <- function(
-    data, x, y, time = NULL, time2 = NULL, model_covs = NULL, cluster = NULL,
-    pers = c(0.1, 10, 100), factor_breaks = NULL, factor_labels = NULL, quantile_breaks = NULL,
-    quantile_labels = NULL, label_with_range = FALSE, save_output = FALSE,
-    figure_type = "png", ref_levels = "lowest", est_nsmall = 2,
-    p_nsmall = 3, pval_eps = 1e-3, median_nsmall = 0, colors = NULL, xlab = NULL,
-    legend_title = x, legend_pos = c(0.8, 0.8), pval_pos = NULL, n_y_pos = 0.9,
-    height = 6, width = 6, ...) {
+  data, x, y, time = NULL, time2 = NULL, model_covs = NULL, cluster = NULL,
+  pers = c(0.1, 10, 100), factor_breaks = NULL, factor_labels = NULL, quantile_breaks = NULL,
+  quantile_labels = NULL, label_with_range = FALSE, save_output = FALSE,
+  figure_type = "png", ref_levels = "lowest", est_nsmall = 2,
+  p_nsmall = 3, pval_eps = 1e-3, median_nsmall = 0, colors = NULL, xlab = NULL,
+  legend_title = x, legend_pos = c(0.8, 0.8), pval_pos = NULL, n_y_pos = 0.9,
+  height = 6, width = 6, ...
+) {
   if (is.null(colors)) {
     colors <- emp_colors
   }
@@ -237,7 +238,8 @@ regression_basic_results <- function(
                   x = unit(0.5, "npc"),
                   y = unit(n_y_pos, "npc"),
                   gp = grid::gpar(fontsize = 15, fontface = "bold")
-                )
+                ),
+                ymin = I(0)
               )
           }
           p$plot <- p$plot +
@@ -609,7 +611,7 @@ regression_forest <- function(data, model_vars, y, time = NULL, time2 = NULL, cl
 #' data(cancer, package = "survival")
 #' regression_scan(cancer, y = "status", time = "time", save_table = FALSE)
 regression_scan <- function(data, y, time = NULL, time2 = NULL, predictors = NULL, covars = NULL, cluster = NULL,
-                            num_to_factor = 5,p_adjust_method = "BH", save_table = FALSE, filename = NULL) {
+                            num_to_factor = 5, p_adjust_method = "BH", save_table = FALSE, filename = NULL) {
   supported_var_trans <- list(
     numerical = c("original", "logarithm", "categorized", "rcs"),
     num_factor = c("original", "categorized"),
