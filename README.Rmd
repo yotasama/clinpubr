@@ -208,6 +208,7 @@ results <- classif_model_compare(df, "dead", c("base_pred", "full_pred"), save_o
 
 knitr::kable(results$metric_table)
 plot(results$roc_plot)
+plot(results$pr_plot)
 plot(results$calibration_plot)
 plot(results$dca_plot)
 ```

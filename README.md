@@ -330,16 +330,22 @@ plot(results$roc_plot)
 <img src="man/figures/README-example_3.7-1.png" width="60%" />
 
 ``` r
-plot(results$calibration_plot)
+plot(results$pr_plot)
 ```
 
 <img src="man/figures/README-example_3.7-2.png" width="60%" />
 
 ``` r
-plot(results$dca_plot)
+plot(results$calibration_plot)
 ```
 
 <img src="man/figures/README-example_3.7-3.png" width="60%" />
+
+``` r
+plot(results$dca_plot)
+```
+
+<img src="man/figures/README-example_3.7-4.png" width="60%" />
 
 #### Example 3.8: Importance Plot
 

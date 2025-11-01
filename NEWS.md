@@ -1,3 +1,7 @@
+# clinpubr 1.1.1
+
+* Fixed PR plot visual inconsistency in `classif_model_compare()`
+
 # clinpubr 1.1.0
 
 * Added `time2` argument to functions that support cox models.
