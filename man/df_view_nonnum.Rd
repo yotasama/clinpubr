@@ -35,7 +35,7 @@ If \code{NULL}, the value column is assumed to be the second column.}
 A data frame of the non-numeric elements.
 }
 \description{
-Shows the non-numeric elements in a data frame.
+Shows the non-numeric elements in a data frame. Only character columns are checked.
 Useful when setting the strategy to clean numeric values.
 }
 \examples{

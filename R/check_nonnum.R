@@ -39,7 +39,7 @@ check_nonnum <- function(x, return_idx = FALSE, show_unique = TRUE, max_count = 
 
 
 #' Show non-numeric elements in a data frame
-#' @description Shows the non-numeric elements in a data frame.
+#' @description Shows the non-numeric elements in a data frame. Only character columns are checked.
 #'   Useful when setting the strategy to clean numeric values.
 #' @param df A data frame.
 #' @param max_count An integer. The maximum number of elements to show for each column.
@@ -82,6 +82,7 @@ df_view_nonnum <- function(df, max_count = 20, random_sample = FALSE, long_df = 
     subject_col <- "subject"
     value_col <- "value"
     df_long <- df %>%
+      dplyr::select(where(is.character)) %>%
       tidyr::pivot_longer(
         cols = dplyr::everything(),
         names_to = subject_col,
