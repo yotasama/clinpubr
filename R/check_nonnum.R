@@ -82,7 +82,7 @@ df_view_nonnum <- function(df, max_count = 20, random_sample = FALSE, long_df = 
     subject_col <- "subject"
     value_col <- "value"
     df_long <- df %>%
-      dplyr::select(where(is.character)) %>%
+      dplyr::select(dplyr::where(is.character)) %>%
       tidyr::pivot_longer(
         cols = dplyr::everything(),
         names_to = subject_col,

@@ -1,6 +1,10 @@
 # clinpubr 1.1.1
 
-* Fixed PR plot visual inconsistency in `classif_model_compare()`
+* Fixed PR plot visual inconsistency in `classif_model_compare()`.
+
+* Changed the output of `vec2code()` to a more robust format.
+
+* Minor bug fixes and improvements.
 
 # clinpubr 1.1.0
 

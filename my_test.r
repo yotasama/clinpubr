@@ -1,6 +1,9 @@
 # frequent tasks for R package development----
 check()
 test()
+load_all()
+install()
+document()
 
 check(remote = TRUE, manual = TRUE)
 check_win_devel()

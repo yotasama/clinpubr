@@ -25,6 +25,13 @@
 #' extract_num(x, res_type = "range", allow_neg = FALSE, zero_regexp = "NEG|NS", max_regexp = "FULL")
 extract_num <- function(x, res_type = c("first", "range"), multimatch2na = FALSE, leq_1 = FALSE,
                         allow_neg = TRUE, zero_regexp = NULL, max_regexp = NULL, max_quantile = 0.95) {
+  if (is.numeric(x)) {
+    return(x)
+  }
+  try_res <- suppressWarnings(as.numeric(x))
+  if (all(is.na(try_res) == is.na(x))) {
+    return(try_res)
+  }
   res_type <- match.arg(res_type)
   if (!is.null(zero_regexp)) {
     flag_zero <- grepl(zero_regexp, x)
@@ -33,7 +40,7 @@ extract_num <- function(x, res_type = c("first", "range"), multimatch2na = FALSE
     flag_max <- grepl(max_regexp, x)
   }
   if (allow_neg) {
-    if (res_type == "range") warn("`allow_neg` is `TRUE`! Make sure you do not use '-' to connect numbers!")
+    if (res_type == "range") warning("`allow_neg` is `TRUE`! Make sure you do not use '-' to connect numbers!")
     my_expr <- "-?[0-9]+\\.?[0-9]*|-?\\.[0-9]+"
   } else {
     my_expr <- "[0-9]+\\.?[0-9]*|\\.[0-9]+"

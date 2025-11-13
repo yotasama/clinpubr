@@ -58,7 +58,8 @@ vec2code <- function(x) {
   if (length(x) == 0) {
     "c()"
   } else {
-    paste0("c('", paste0(x, collapse = "','"), "')")
+    x_str <- ifelse(is.na(x), "NA", paste0("'", x, "'"))
+    paste0("c(", paste0(x_str, collapse = ", "), ")")
   }
 }
 

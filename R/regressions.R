@@ -117,7 +117,7 @@ regression_basic_results <- function(
       complete.cases(dat[, c(tmp_covs)])
     })
     if (any(!rowSums(model_complete_cases) %in% c(0, length(model_covs)))) {
-      warn(paste0(
+      warning(paste0(
         "The missing values are present differently across models.\n",
         "The analysis will be performed with the complete cases only.\n",
         "Consider imputing the data before doing this analysis."

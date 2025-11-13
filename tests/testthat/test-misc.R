@@ -15,7 +15,7 @@ test_that("na_min and na_max generate expected results", {
 
 # Test vec2code
 test_that("vec2code generates correct code", {
-  expect_equal(vec2code(c("a", "b", "c")), "c('a','b','c')")
+  expect_equal(vec2code(c("a", "b", NA, "c")), "c('a', 'b', NA, 'c')")
   expect_equal(vec2code(character(0)), "c()") # Empty vector
 })
 

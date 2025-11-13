@@ -4,7 +4,11 @@
 #' @param subject_col The name of the subject column.
 #' @param value_col The name of the value column.
 #' @param unit_col The name of the unit column.
-#' @param change_rules A data frame or a list of lists. If a data frame, it must contain the following columns:
+#' @param change_rules A data frame or a list of lists. See details
+#' @param extract_numbers A logical value indicating whether to apply `extract_num` to extract numeric values
+#'   from the value column.
+#' @details `change_rules` can accept two formats:
+#'   If a data frame, it must contain the following columns:
 #'   \itemize{
 #'     \item `subject`: The subject to be standardized.
 #'     \item `unit`: The units of the subject.
@@ -82,7 +86,8 @@
 #'   df = df_standardized, subject_col = "subject", value_col = "value", unit_col = "unit",
 #'   save_table = FALSE, conflicts_only = FALSE
 #' )
-unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules) {
+unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules,
+                             extract_numbers = FALSE) {
   if (is.data.frame(change_rules)) {
     change_rules <- change_rules[!is.na(change_rules$label), ]
     subjects <- unique(df[[subject_col]])
@@ -120,13 +125,15 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules)
     df[flag, c(value_col, unit_col)] <- .unit_standardize(df[flag, c(value_col, unit_col)],
       target_unit = change_rules[[i]]$target_unit,
       units2change = change_rules[[i]]$units2change,
-      coeffs = change_rules[[i]]$coeffs
+      coeffs = change_rules[[i]]$coeffs,
+      extract_numbers = extract_numbers
     )
   }
   return(df)
 }
 
-.unit_standardize <- function(df, target_unit = NULL, units2change = NULL, coeffs = NULL) {
+.unit_standardize <- function(df, target_unit = NULL, units2change = NULL, coeffs = NULL,
+                              extract_numbers = FALSE) {
   if (length(coeffs) > 0 && length(units2change) != length(coeffs)) {
     stop("`coeffs` should have the same length as `units2change`!")
   }
@@ -145,7 +152,11 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules)
   }
   for (i in seq_along(units2change)) {
     flag <- df[, 2] %in% units2change[i]
-    df[flag, 1] <- as.numeric(df[flag, 1]) * coeffs[i]
+    if(extract_numbers){
+      df[flag, 1] <- extract_num(df[flag, 1]) * coeffs[i]
+    }else{
+      df[flag, 1] <- as.numeric(df[flag, 1]) * coeffs[i]
+    }
   }
   df[, 2] <- target_unit
   return(df)
@@ -185,6 +196,10 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules)
 #' )
 unit_view <- function(df, subject_col, value_col, unit_col, quantiles = c(0.025, 0.975), save_table = FALSE,
                       filename = NULL, conflicts_only = TRUE) {
+  if(!is.numeric(df[[value_col]])){
+    warning(paste0("Ignoring non-numeric values in `",value_col,"`!"))
+    suppressWarnings(df[[value_col]] <- as.numeric(df[[value_col]]))
+  }
   res <- df %>%
     group_by(!!as.symbol(subject_col), !!as.symbol(unit_col)) %>%
     summarise(

@@ -4,7 +4,14 @@
 \alias{unit_standardize}
 \title{Standardize units of numeric data.}
 \usage{
-unit_standardize(df, subject_col, value_col, unit_col, change_rules)
+unit_standardize(
+  df,
+  subject_col,
+  value_col,
+  unit_col,
+  change_rules,
+  extract_numbers = FALSE
+)
 }
 \arguments{
 \item{df}{A data frame of medical records that contains test subject, value, and unit cols.}
@@ -15,7 +22,20 @@ unit_standardize(df, subject_col, value_col, unit_col, change_rules)
 
 \item{unit_col}{The name of the unit column.}
 
-\item{change_rules}{A data frame or a list of lists. If a data frame, it must contain the following columns:
+\item{change_rules}{A data frame or a list of lists. See details}
+
+\item{extract_numbers}{A logical value indicating whether to apply \code{extract_num} to extract numeric values
+from the value column.}
+}
+\value{
+A data frame with subject units standardized.
+}
+\description{
+Standardize units of numeric data, especially for data of medical records with different units.
+}
+\details{
+\code{change_rules} can accept two formats:
+If a data frame, it must contain the following columns:
 \itemize{
 \item \code{subject}: The subject to be standardized.
 \item \code{unit}: The units of the subject.
@@ -41,13 +61,7 @@ function will use 1 for all units to be changed.
 \item \code{units2remove}: The units to be removed, and the corresponding values be set to \code{NA}.
 Set this when data with this unit cannot be used.
 }
-It's recommended to use the labeled result from \code{unit_view()} as the input.}
-}
-\value{
-A data frame with subject units standardized.
-}
-\description{
-Standardize units of numeric data, especially for data of medical records with different units.
+It's recommended to use the labeled result from \code{unit_view()} as the input.
 }
 \examples{
 # Example 1: Using the list as change_rules is more convenient for small datasets.
