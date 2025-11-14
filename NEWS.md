@@ -2,7 +2,11 @@
 
 * Fixed PR plot visual inconsistency in `classif_model_compare()`.
 
+* Added `remove_inequal` argument to `value_initial_cleaning()`.
+
 * Changed the output of `vec2code()` to a more robust format.
+
+* No longer showing the default row ids in auto-saved csv tables.
 
 * Minor bug fixes and improvements.
 

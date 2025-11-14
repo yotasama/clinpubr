@@ -216,10 +216,14 @@ unit_view <- function(df, subject_col, value_col, unit_col, quantiles = c(0.025,
         }), paste0("q_", quantiles)[seq_along(quantiles)])),
         .names = "{fn}"
       )
+    ) %>% 
+    rename(
+      subject = !!as.symbol(subject_col),
+      unit = !!as.symbol(unit_col)
     )
   if (conflicts_only) {
     res <- res %>%
-      group_by(!!as.symbol(subject_col)) %>%
+      group_by(subject) %>%
       dplyr::filter(n() > 1)
   }
   res <- as.data.frame(res)
@@ -227,7 +231,7 @@ unit_view <- function(df, subject_col, value_col, unit_col, quantiles = c(0.025,
     if (is.null(filename)) {
       filename <- "unit_view.csv"
     }
-    write.csv(res, file = filename, na = "")
+    write.csv(res, file = filename, row.names = FALSE, na = "")
   }
   return(res)
 }

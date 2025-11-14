@@ -66,7 +66,7 @@ subject_view <- function(df, subject_col, info_cols, value_col = NULL, info_n_sa
     if (is.null(filename)) {
       filename <- "subject_view.csv"
     }
-    write.csv(res, file = filename, na = "")
+    write.csv(res, file = filename, row.names = FALSE, na = "")
   }
   return(res)
 }

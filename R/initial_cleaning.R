@@ -8,6 +8,8 @@
 #'
 #'   `value_initial_cleaning()` will additionally remove all spaces and extra dots.
 #' @param x A string vector.
+#' @param remove_inequal A logical value. If `TRUE`, remove comparison symbols
+#'   such as `<`, `>`, `≤`, `≥` from the string
 #' @returns A string vector with less illegal characters.
 #' @export
 #' @examples
@@ -15,10 +17,14 @@
 #'        "hello world ")
 #' value_initial_cleaning(x)
 #' char_initial_cleaning(x)
-value_initial_cleaning <- function(x) {
+value_initial_cleaning <- function(x, remove_inequal = FALSE) {
   x <- stringi::stri_trans_general(x, "Fullwidth-Halfwidth")
-  x <- str_squish(x)
-  x <- str_replace_all(x, c(" " = "", "\\.+" = "\\."))
+  x <- str_replace_all(x, c("\\.+" = "\\."))
+  if(remove_inequal){
+    x <- str_remove_all(x, "[ <>≤≥&lt;&gt;]")
+  }else{
+    x <- str_remove_all(x, " ")
+  }
   x[which(x == "")] <- NA
   x
 }

@@ -5,12 +5,15 @@
 \alias{char_initial_cleaning}
 \title{Preliminarily cleaning string vectors}
 \usage{
-value_initial_cleaning(x)
+value_initial_cleaning(x, remove_inequal = FALSE)
 
 char_initial_cleaning(x)
 }
 \arguments{
 \item{x}{A string vector.}
+
+\item{remove_inequal}{A logical value. If \code{TRUE}, remove comparison symbols
+such as \code{<}, \code{>}, \verb{≤}, \verb{≥} from the string}
 }
 \value{
 A string vector with less illegal characters.

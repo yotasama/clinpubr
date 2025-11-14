@@ -78,7 +78,7 @@ withr::with_tempdir(
       labels = c("0", "1", ">=2", ">=2")
     )
     var_types <- get_var_types(cancer, strata = "ph.ecog_cat")
-    baseline_table(cancer, var_types = var_types, filename = "baselineV2.csv")
+    baseline_table(cancer, var_types = var_types, save_table = TRUE, filename = "baseline.csv")
     print(paste0("files saved to: ", getwd()))
   },
   clean = FALSE
