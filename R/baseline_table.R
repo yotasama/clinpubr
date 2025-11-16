@@ -5,16 +5,16 @@
 #' @param all_positive A logical value indicating whether all values are non-negative. If TRUE and
 #'   standard deviation is less than mean, the variable is considered non-normal (likely right-skewed).
 #' @returns A logical value indicating whether the variable is normal (TRUE) or non-normal (FALSE).
-#' @note This function performs Shapiro-Wilk, Lilliefors, Anderson-Darling, Jarque-Bera, and 
-#'   Shapiro-Francia tests. If at least two of these tests indicate that the variable is nonnormal 
-#'   (p < alpha), then it is considered nonnormal. For positive variables, if SD < mean, it's also 
+#' @note This function performs Shapiro-Wilk, Lilliefors, Anderson-Darling, Jarque-Bera, and
+#'   Shapiro-Francia tests. If at least two of these tests indicate that the variable is nonnormal
+#'   (p < alpha), then it is considered nonnormal. For positive variables, if SD < mean, it's also
 #'   considered non-normal as it suggests right skewness.
 #' @export
 #' @examples
 #' # Test normal data
 #' normal_data <- rnorm(100)
 #' test_normality(normal_data)
-#' 
+#'
 #' # Test non-normal data
 #' skewed_data <- rexp(100)
 #' test_normality(skewed_data)
@@ -25,14 +25,14 @@ test_normality <- function(x, alpha = 0.05, all_positive = NULL) {
     warning("Insufficient data points for normality testing")
     return(FALSE)
   }
-  
+
   x_scaled <- c(scale(x_clean))
-  
+
   # Check if all values are positive
   if (is.null(all_positive)) {
     all_positive <- all(x_clean >= 0, na.rm = TRUE)
   }
-  
+
   # Define normality tests
   normal_tests <- list(
     `Shapiro-Wilk` = shapiroTest,
@@ -41,7 +41,7 @@ test_normality <- function(x, alpha = 0.05, all_positive = NULL) {
     `Jarque-Bera` = jarqueberaTest,
     `Shapiro-Francia` = sfTest
   )
-  
+
   # Perform normality tests
   ps <- c()
   for (j in seq_along(normal_tests)) {
@@ -60,14 +60,14 @@ test_normality <- function(x, alpha = 0.05, all_positive = NULL) {
       }
     )
   }
-  
+
   # Determine if variable is normal
   # Consider non-normal if:
   # 1. For positive variables: SD < mean (indicating right skewness)
   # 2. At least two normality tests reject null hypothesis (p < alpha)
   is_nonnormal <- (all_positive && (sd(x_scaled, na.rm = TRUE) < mean(x_scaled, na.rm = TRUE))) ||
-                  (sum(ps < alpha, na.rm = TRUE) >= sum(!is.na(ps)) - 2)
-  
+    (sum(ps < alpha, na.rm = TRUE) >= sum(!is.na(ps)) - 2)
+
   return(!is_nonnormal)
 }
 
@@ -166,17 +166,17 @@ get_var_types <- function(data, strata = NULL, norm_test_by_group = TRUE, omit_f
       for (i in seq_along(dat_list)) {
         dat <- dat_list[[i]]
         x <- dat[[var]]
-        
+
         # Use the new test_normality function
         is_normal <- test_normality(x, alpha = alphas[i])
-        
+
         if (!is_normal) {
           nonnormal_vars <- union(nonnormal_vars, var)
           prefix <- "nonnormal"
         } else {
           prefix <- "normal"
         }
-        
+
         if (save_qqplots) {
           x_scaled <- c(scale(x))
           title <- var
@@ -248,7 +248,7 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
   if (multiple_comparison_test) {
     check_package("rstatix", "multiple comparison tests")
   }
-  
+
   if (!is.null(var_types) && !"var_types" %in% class(var_types)) {
     stop("Invalid 'var_types' arguement! Please use result from get_var_types function.")
   }
@@ -361,9 +361,14 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
     if (save_table) {
       write.csv(pairwise_result, file = str_replace(filename, ".csv", "_pairwise.csv"))
     }
-    return(list(baseline = printed_table, missing = missing_table, pairwise = pairwise_result))
+    res <- list(baseline = printed_table, missing = missing_table, pairwise = pairwise_result)
   } else {
-    return(list(baseline = printed_table, missing = missing_table))
+    res <- list(baseline = printed_table, missing = missing_table)
+  }
+  if (save_table) {
+    return(invisible(res))
+  } else {
+    return(res)
   }
 }
 

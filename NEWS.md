@@ -6,6 +6,8 @@
 
 * Changed the output of `vec2code()` to a more robust format.
 
+* `baseline_table()` now uses invisible return if `save_table` is `TRUE`.
+
 * No longer showing the default row ids in auto-saved csv tables.
 
 * Minor bug fixes and improvements.
