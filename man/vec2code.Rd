@@ -2,10 +2,12 @@
 % Please edit documentation in R/misc.R
 \name{vec2code}
 \alias{vec2code}
-\title{Generate code from string vector
-Generate the code that can be used to generate the string vector.}
+\alias{name2code}
+\title{Generate code from string vector}
 \usage{
 vec2code(x)
+
+name2code(x)
 }
 \arguments{
 \item{x}{A string vector.}
@@ -14,8 +16,9 @@ vec2code(x)
 A string that contains the code to generate the vector.
 }
 \description{
-Generate code from string vector
 Generate the code that can be used to generate the string vector.
+\code{name2code()} is a wrapper of \code{vec2code(names(x))} to generate code for names of a
+vector, list, data frame, or any object with names.
 }
 \examples{
 vec2code(colnames(mtcars))

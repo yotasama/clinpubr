@@ -47,13 +47,16 @@ na_min <- function(x, na.rm = TRUE) {
 }
 
 #' Generate code from string vector
-#' Generate the code that can be used to generate the string vector.
+#' @description Generate the code that can be used to generate the string vector.
+#'   `name2code()` is a wrapper of `vec2code(names(x))` to generate code for names of a
+#'   vector, list, data frame, or any object with names.
 #' @param x A string vector.
 #'
 #' @returns A string that contains the code to generate the vector.
 #' @export
 #' @examples
 #' vec2code(colnames(mtcars))
+#' name2code(mtcars)
 vec2code <- function(x) {
   if (length(x) == 0) {
     "c()"
@@ -61,6 +64,12 @@ vec2code <- function(x) {
     x_str <- ifelse(is.na(x), "NA", paste0("'", x, "'"))
     paste0("c(", paste0(x_str, collapse = ", "), ")")
   }
+}
+
+#' @rdname vec2code
+#' @export
+name2code <- function(x) {
+  vec2code(names(x))
 }
 
 #' Get common prefix of a string vector

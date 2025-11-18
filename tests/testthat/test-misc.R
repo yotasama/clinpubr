@@ -19,6 +19,12 @@ test_that("vec2code generates correct code", {
   expect_equal(vec2code(character(0)), "c()") # Empty vector
 })
 
+# Test name2code
+test_that("name2code generates correct code", {
+  expect_equal(name2code(c(a = 1, b = 2, c = 3)), "c('a', 'b', 'c')")
+  expect_equal(name2code(setNames(character(0), character(0))), "c()") # Empty names
+})
+
 # Test format_pval
 test_that("format_pval formats p-values correctly", {
   p_vals <- c(0.001, 0.0001, 0.05, 0.1123456, NA)
