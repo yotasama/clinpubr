@@ -22,4 +22,5 @@ vector, list, data frame, or any object with names.
 }
 \examples{
 vec2code(colnames(mtcars))
+name2code(mtcars)
 }

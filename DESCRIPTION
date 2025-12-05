@@ -40,6 +40,7 @@ Collate:
     'regressions.R'
     'subgroup_forest.R'
     'subject_standardize.R'
+    'time_roc.R'
     'to_date.R'
     'unit_standardize.R'
 Imports: 
@@ -62,11 +63,13 @@ Suggests:
     dcurves,
     dtplyr,
     geepack,
+    Hmisc,
     pROC,
     ResourceSelection,
     rstatix,
     tableone,
     testthat (>= 3.0.0),
+    timeROC,
     vdiffr,
     withr
 Config/testthat/edition: 3
