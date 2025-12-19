@@ -10,7 +10,7 @@ check_win_devel()
 
 build_manual()
 build_readme()
-use_version('minor')
+use_version()
 submit_cran()
 
 # codes to be processed--------

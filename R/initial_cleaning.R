@@ -21,7 +21,7 @@ value_initial_cleaning <- function(x, remove_inequal = FALSE) {
   x <- stringi::stri_trans_general(x, "Fullwidth-Halfwidth")
   x <- str_replace_all(x, c("\\.+" = "\\."))
   if(remove_inequal){
-    x <- str_remove_all(x, "[ <>≤≥&lt;&gt;]")
+    x <- str_remove_all(x, "[ <>\u2264\u2265&lt;&gt;]")
   }else{
     x <- str_remove_all(x, " ")
   }
