@@ -6,7 +6,7 @@
 #' @import survival
 #' @importFrom utils read.csv write.csv
 #' @importFrom tidyr pivot_wider pivot_longer
-#' @importFrom dplyr select mutate all_of group_by summarise ungroup reframe ntile n across
+#' @importFrom dplyr select mutate all_of group_by summarise ungroup reframe ntile n across rename
 #' @importFrom fBasics shapiroTest lillieTest adTest jarqueberaTest sfTest
 NULL
 
@@ -35,7 +35,7 @@ utils::globalVariables(c(
   "name", "value", "decile", "obsRate", "predRate", "label",
   ".predictor", ".group_var", "yhat", "lower", "upper",
   "xmin", "xmax", "den", "Group", "text", "level", "subject",
-  "quant", "quant_val", "recall", "precision", "Model"
+  "quant", "quant_val", "recall", "precision", "Model", "fpr", "tpr"
 ))
 
 #' default color palette for `clinpubr` plots

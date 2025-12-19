@@ -9,7 +9,7 @@
 #'   `value_initial_cleaning()` will additionally remove all spaces and extra dots.
 #' @param x A string vector.
 #' @param remove_inequal A logical value. If `TRUE`, remove comparison symbols
-#'   such as `<`, `>`, `≤`, `≥` from the string
+#'   such as `<`, `>` from the string
 #' @returns A string vector with less illegal characters.
 #' @export
 #' @examples

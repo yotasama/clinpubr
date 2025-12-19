@@ -23,7 +23,7 @@ Calculate C-index for survival data. It's a wrapper function for \code{Hmisc::rc
 }
 \examples{
 # Calculate C-index using lung dataset from survival package
-data(cancer)
+data(cancer, package = "survival")
 # Use age as the marker variable
 calc_cindex(lung, "time", "status", "age")
 }

@@ -8,6 +8,8 @@
 
 * Added a wrapper of `vec2code()`, where `name2code(x)` is equivalent to `vec2code(names(x))`.
 
+* Added `time_roc_plot()` that plot time-dependent ROC curve using `timeROC::timeROC()`.
+
 * `baseline_table()` now uses invisible return if `save_table` is `TRUE`.
 
 * No longer showing the default row ids in auto-saved csv tables.

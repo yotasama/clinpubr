@@ -13,7 +13,7 @@ char_initial_cleaning(x)
 \item{x}{A string vector.}
 
 \item{remove_inequal}{A logical value. If \code{TRUE}, remove comparison symbols
-such as \code{<}, \code{>}, \verb{≤}, \verb{≥} from the string}
+such as \code{<}, \code{>} from the string}
 }
 \value{
 A string vector with less illegal characters.

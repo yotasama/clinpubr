@@ -8,7 +8,7 @@
 #' @export
 #' @examples
 #' # Calculate C-index using lung dataset from survival package
-#' data(cancer)
+#' data(cancer, package = "survival")
 #' # Use age as the marker variable
 #' calc_cindex(lung, "time", "status", "age")
 calc_cindex <- function(data, time_var, event_var, marker_var) {
@@ -16,7 +16,7 @@ calc_cindex <- function(data, time_var, event_var, marker_var) {
 
   res <- Hmisc::rcorr.cens(
     data[[marker_var]],
-    survival::Surv(data[[time_var]], data[[event_var]])
+    Surv(data[[time_var]], data[[event_var]])
   )
   c_index <- res["C Index"]
   if (c_index < 0.5) {
@@ -47,7 +47,7 @@ calc_cindex <- function(data, time_var, event_var, marker_var) {
 #' @export
 #' @examples
 #' # Plot time-dependent ROC curves using lung dataset from survival package
-#' data(cancer)
+#' data(cancer, package = "survival")
 #' # Use age as the marker variable, plot at 6, 12, and 24 months
 #' lung$status <- lung$status == 2
 #' result <- time_roc_plot(lung, "time", "status", "age", times = c(180, 365, 730))

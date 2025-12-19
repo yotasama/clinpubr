@@ -54,7 +54,7 @@ Calculate time-dependent ROC curves using the \code{timeROC} package and plot th
 }
 \examples{
 # Plot time-dependent ROC curves using lung dataset from survival package
-data(cancer)
+data(cancer, package = "survival")
 # Use age as the marker variable, plot at 6, 12, and 24 months
 lung$status <- lung$status == 2
 result <- time_roc_plot(lung, "time", "status", "age", times = c(180, 365, 730))
