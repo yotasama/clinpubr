@@ -2,6 +2,7 @@
 #'
 #' @param path A string as the path to find the data files.
 #' @param pattern A file pattern to filter the required data files.
+#' @param recursive A logical value to indicate whether to search files recursively in subdirectories.
 #' @param add_file_name A logical value to indicate whether to add the file name as a column. Note that
 #'   the added file name will affect the uniqueness of the data.
 #' @param unique_only A logical value to indicate whether to remove the duplicated rows.
@@ -18,13 +19,15 @@
 #'   dat <- combine_files(pattern = "file")
 #' })
 #' print(dat)
-combine_files <- function(path = ".", pattern = NULL, add_file_name = FALSE, unique_only = TRUE,
+combine_files <- function(path = ".", pattern = NULL, recursive = FALSE,
+                          add_file_name = FALSE, unique_only = TRUE,
                           reader_fun = read.csv, ...) {
-  files <- list.files(path = path, pattern = pattern, full.names = TRUE)
+  files <- list.files(path = path, pattern = pattern, full.names = TRUE, recursive = recursive)
   if (length(files) > 0) {
-    file_list=list()
+    file_list <- list()
     for (f in files) {
       tmp <- reader_fun(f, ...)
+      if (nrow(tmp) == 0) next
       if (add_file_name) {
         base_col <- "origin_file"
         original_cols <- colnames(tmp)
@@ -37,7 +40,7 @@ combine_files <- function(path = ".", pattern = NULL, add_file_name = FALSE, uni
       }
       file_list[[f]] <- tmp
     }
-    dat = dplyr::bind_rows(file_list)
+    dat <- dplyr::bind_rows(file_list)
     if (unique_only) {
       dat <- unique(dat)
     }

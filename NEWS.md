@@ -1,3 +1,7 @@
+# clinpubr 1.1.2
+
+* Added `recursive` argument to `combine_files()`.
+
 # clinpubr 1.1.1
 
 * Fixed PR plot visual inconsistency in `classif_model_compare()`.
