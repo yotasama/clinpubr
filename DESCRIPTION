@@ -24,6 +24,7 @@ Collate:
     'classif_model_compare.R'
     'combine_files.R'
     'cut_by.R'
+    'data_overview.R'
     'exclusion_count.R'
     'extract_num.R'
     'get_valid.R'

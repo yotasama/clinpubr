@@ -2,30 +2,46 @@
 % Please edit documentation in R/mark_outlier.R
 \name{mad_outlier}
 \alias{mad_outlier}
-\title{Mark possible outliers with MAD.}
+\alias{iqr_outlier}
+\alias{zscore_outlier}
+\title{Mark possible outliers using different methods.}
 \usage{
-mad_outlier(x, constant = 1.4826 * 3)
+mad_outlier(x, threshold = 1.4826 * 3)
+
+iqr_outlier(x, threshold = 1.5)
+
+zscore_outlier(x, threshold = 3)
 }
 \arguments{
 \item{x}{A numeric vector.}
 
-\item{constant}{The constant multiplier for the MAD. Default is 1.4826 * 3.}
+\item{threshold}{The threshold value for detecting outliers. Defaults depend on the method:
+\itemize{
+\item For MAD method: 1.4826 * 3 (approximately 3 standard deviations)
+\item For IQR method: 1.5 (Tukey's rule)
+\item For Z-score method: 3 (3 standard deviations)
+}}
 }
 \value{
-A logical vector.
+A logical vector indicating which values are outliers.
 }
 \description{
-Mark possible outliers using the median absolute deviation (MAD) method.
+Mark possible outliers in a numeric vector using various methods.
+These functions return a logical vector indicating which values are outliers.
 }
 \details{
-The function calculates the median absolute deviation of the input vector and uses
-it to identify possible outliers. The default constant multiplier is 1.4826 * 3, which gives
-approximately the \eqn{3\sigma} of the normal distribution.
+\itemize{
+\item \strong{MAD method}: Uses median absolute deviation to identify outliers.
+Values with absolute deviation from the median greater than the threshold are considered outliers.
+\item \strong{IQR method}: Uses interquartile range to identify outliers.
+Values below Q1 - threshold * IQR or above Q3 + threshold * IQR are considered outliers.
+\item \strong{Z-score method}: Uses standardized Z-scores to identify outliers.
+Values with an absolute Z-score greater than the threshold are considered outliers.
+}
 }
 \examples{
-x <- c(1, 2, 3, 4, 5, 100)
+x <- c(1, 2, 3, 4, 5, 100, NA)
 mad_outlier(x)
-}
-\seealso{
-\code{\link[stats]{mad}}
+iqr_outlier(x, threshold = 2.0)
+zscore_outlier(x, threshold = 2.5)
 }

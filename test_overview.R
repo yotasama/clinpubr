@@ -28,31 +28,3 @@ test_df <- rbind(test_df, test_df[1:5,])
 
 # Test the function
 overview <- data_overview(test_df)
-
-cat('\n=== Detailed Quality Issues ===\n')
-print(names(overview$quality_issues))
-
-if (!is.null(overview$quality_issues$numeric_as_character)) {
-  cat('\nNumeric as Character Variables:\n')
-  print(names(overview$quality_issues$numeric_as_character))
-}
-
-if (!is.null(overview$quality_issues$missing_values)) {
-  cat('\nVariables with Missing Values:\n')
-  print(names(overview$quality_issues$missing_values))
-}
-
-if (!is.null(overview$quality_issues$near_zero_variance)) {
-  cat('\nNear Zero Variance Variables:\n')
-  print(names(overview$quality_issues$near_zero_variance))
-}
-
-if (!is.null(overview$quality_issues$duplicate_rows)) {
-  cat('\nDuplicate Rows Found:', overview$quality_issues$duplicate_rows, '\n')
-}
-
-# Print recommendations
-cat('\n=== Recommendations ===\n')
-for (rec in overview$recommendations) {
-  cat(sprintf('  - %s\n', rec))
-}

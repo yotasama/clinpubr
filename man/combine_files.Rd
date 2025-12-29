@@ -7,6 +7,7 @@
 combine_files(
   path = ".",
   pattern = NULL,
+  recursive = FALSE,
   add_file_name = FALSE,
   unique_only = TRUE,
   reader_fun = read.csv,
@@ -17,6 +18,8 @@ combine_files(
 \item{path}{A string as the path to find the data files.}
 
 \item{pattern}{A file pattern to filter the required data files.}
+
+\item{recursive}{A logical value to indicate whether to search files recursively in subdirectories.}
 
 \item{add_file_name}{A logical value to indicate whether to add the file name as a column. Note that
 the added file name will affect the uniqueness of the data.}
