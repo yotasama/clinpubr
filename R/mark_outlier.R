@@ -21,6 +21,7 @@
 #' iqr_outlier(x, threshold = 2.0)
 #' zscore_outlier(x, threshold = 2.5)
 mad_outlier <- function(x, threshold = 1.4826 * 3) {
+
   sample_mad <- stats::mad(x, constant = 1.4826, na.rm = TRUE)
   return(abs(x - stats::median(x, na.rm = TRUE)) > threshold * sample_mad)
 }
@@ -28,8 +29,8 @@ mad_outlier <- function(x, threshold = 1.4826 * 3) {
 #' @rdname mad_outlier
 #' @export
 iqr_outlier <- function(x, threshold = 1.5) {
-  q1 <- stats::quantile(x, 0.25, na.rm = TRUE)
-  q3 <- stats::quantile(x, 0.75, na.rm = TRUE)
+  q1 <- stats::quantile(x, 0.25, na.rm = TRUE, names = FALSE)
+  q3 <- stats::quantile(x, 0.75, na.rm = TRUE, names = FALSE)
   iqr_val <- q3 - q1
   lower_bound <- q1 - threshold * iqr_val
   upper_bound <- q3 + threshold * iqr_val
@@ -39,6 +40,11 @@ iqr_outlier <- function(x, threshold = 1.5) {
 #' @rdname mad_outlier
 #' @export
 zscore_outlier <- function(x, threshold = 3) {
+  # Handle all identical values
+  if (length(unique(x)) == 1) {
+    return(rep(FALSE, length(x)))
+  }
+  
   z_scores <- c(scale(x))
   return(abs(z_scores) > threshold)
 }
@@ -67,7 +73,7 @@ zscore_outlier <- function(x, threshold = 3) {
 #' detect_outliers(x, method = "iqr")
 detect_outliers <- function(x, method = "iqr", threshold = NULL) {
   # Validate input
-  if (!is.numeric(x)) {
+  if (!is.numeric(x) && !all(is.na(x))) {
     stop("Input must be a numeric vector")
   }
 
@@ -93,8 +99,20 @@ detect_outliers <- function(x, method = "iqr", threshold = NULL) {
     ))
   }
 
+  # Set default thresholds based on method
+  default_thresholds <- list(
+    mad = 1.4826 * 3,
+    iqr = 1.5,
+    zscore = 3
+  )
+  
+  # Use provided threshold or default
+  if (is.null(threshold)) {
+    threshold <- default_thresholds[[method]]
+  }
+  
   # Detect outliers based on method
-  outlier_mask_no_na <- switch(method,
+  outlier_result <- switch(method,
     "mad" = mad_outlier(x_no_na, threshold = threshold),
     "iqr" = iqr_outlier(x_no_na, threshold = threshold),
     "zscore" = zscore_outlier(x_no_na, threshold = threshold),
@@ -109,7 +127,7 @@ detect_outliers <- function(x, method = "iqr", threshold = NULL) {
   )
 
   # Calculate statistics after removing outliers
-  x_no_outliers <- x_no_na[!outlier_mask_no_na]
+  x_no_outliers <- x_no_na[!outlier_result]
   after_stats <- list(
     min = ifelse(length(x_no_outliers) > 0, min(x_no_outliers), NA),
     max = ifelse(length(x_no_outliers) > 0, max(x_no_outliers), NA),
@@ -126,10 +144,10 @@ detect_outliers <- function(x, method = "iqr", threshold = NULL) {
 
   # Create full outlier mask (including NA values)
   outlier_mask <- rep(NA, length(x))
-  outlier_mask[!is.na(x)] <- outlier_mask_no_na
+  outlier_mask[!is.na(x)] <- outlier_result
 
   # Calculate outlier statistics
-  outlier_count <- sum(outlier_mask_no_na)
+  outlier_count <- sum(outlier_result)
   outlier_pct <- round(outlier_count / length(x_no_na) * 100, 2)
 
   # Return results

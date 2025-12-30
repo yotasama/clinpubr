@@ -258,6 +258,170 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL) 
     recommendations$duplicate_rows <- paste("Found", duplicate_rows, "duplicate rows - consider removing them")
   }
 
+  # Check for negative values in predominantly positive numeric variables
+  negative_in_positive <- list()
+  if (length(variable_types$numeric) > 0) {
+    for (var in variable_types$numeric) {
+      x <- df[[var]]
+      x_no_na <- x[!is.na(x)]
+      
+      if (length(x_no_na) == 0) next
+      
+      n_positive <- sum(x_no_na >= 0)
+      n_negative <- sum(x_no_na < 0)
+      n_total <- length(x_no_na)
+      positive_pct <- n_positive / n_total * 100
+      
+      # If >90% are positive and there are negative values, flag it
+      if (positive_pct > 90 && n_negative > 0) {
+        negative_in_positive[[var]] <- list(
+          n_negative = n_negative,
+          negative_pct = round(n_negative / n_total * 100, 2),
+          positive_pct = round(positive_pct, 2),
+          sample_negative = head(x_no_na[x_no_na < 0], 3)
+        )
+      }
+    }
+  }
+  
+  if (length(negative_in_positive) > 0) {
+    quality_issues$negative_in_positive <- negative_in_positive
+    recommendations$negative_in_positive <- paste(
+      "Numeric variables with mostly positive values but containing negatives:",
+      paste(names(negative_in_positive), collapse = ", ")
+    )
+  }
+
+  # Check for completely empty columns (all NA)
+  empty_columns <- character(0)
+  for (var in names(df)) {
+    if (all(is.na(df[[var]]))) {
+      empty_columns <- c(empty_columns, var)
+    }
+  }
+  
+  if (length(empty_columns) > 0) {
+    quality_issues$empty_columns <- empty_columns
+    recommendations$empty_columns <- paste(
+      "Found completely empty columns:",
+      paste(empty_columns, collapse = ", "),
+      "- consider removing them"
+    )
+  }
+
+  # Check for completely empty rows (all NA)
+  empty_rows <- which(apply(df, 1, function(row) all(is.na(row))))
+  if (length(empty_rows) > 0) {
+    quality_issues$empty_rows <- empty_rows
+    recommendations$empty_rows <- paste(
+      "Found", length(empty_rows), "completely empty rows at positions:",
+      paste(head(empty_rows, 10), collapse = ", "),
+      ifelse(length(empty_rows) > 10, "...", ""),
+      "- consider removing them"
+    )
+  }
+
+  # Check for suspicious date values (year < 1910 or > current year)
+  suspicious_dates <- list()
+  if (length(variable_types$date) > 0) {
+    for (var in variable_types$date) {
+      x <- df[[var]]
+      x_no_na <- x[!is.na(x)]
+      
+      if (length(x_no_na) == 0) next
+      
+      current_year <- as.numeric(format(Sys.Date(), "%Y"))
+      years <- as.numeric(format(x_no_na, "%Y"))
+      suspicious_idx <- which(years < 1910 | years > current_year)
+      
+      if (length(suspicious_idx) > 0) {
+        suspicious_dates[[var]] <- list(
+          n_suspicious = length(suspicious_idx),
+          suspicious_pct = round(length(suspicious_idx) / length(years) * 100, 2),
+          sample_values = head(x_no_na[suspicious_idx], 5),
+          year_range = c(min(years), max(years))
+        )
+      }
+    }
+  }
+  
+  if (length(suspicious_dates) > 0) {
+    quality_issues$suspicious_dates <- suspicious_dates
+    recommendations$suspicious_dates <- paste(
+      "Review suspicious dates (year < 1910 or > current year) in:",
+      paste(names(suspicious_dates), collapse = ", ")
+    )
+  }
+
+  # Check for variables with few unique values that should be converted to factor
+  low_cardinality_vars <- list()
+  n_unique_threshold <- 5  # Variables with <= 5 unique values
+  
+  # Check numeric variables with few unique values
+  if (length(variable_types$numeric) > 0) {
+    for (var in variable_types$numeric) {
+      x <- df[[var]]
+      x_no_na <- x[!is.na(x)]
+      n_unique <- length(unique(x_no_na))
+      if (n_unique <= n_unique_threshold && all(x_no_na %in% c(0, 1))) next
+      
+      if (n_unique <= n_unique_threshold) {
+        low_cardinality_vars[[var]] <- list(
+          type = "numeric",
+          n_unique = n_unique,
+          unique_values = head(sort(unique(x_no_na)), n_unique_threshold)
+        )
+      }
+    }
+  }
+  
+  if (length(low_cardinality_vars) > 0) {
+    quality_issues$low_cardinality <- low_cardinality_vars
+    recommendations$low_cardinality <- paste(
+      "Consider converting these low-cardinality variables to factor:",
+      paste(names(low_cardinality_vars), collapse = ", ")
+    )
+  }
+
+  # Check for case inconsistency in factor variables
+  case_issues <- list()
+  if (length(variable_types$character) > 0) {
+    for (var in variable_types$character) {
+      x <- df[[var]]
+      x_no_na <- x[!is.na(x)]
+      
+      # Check if normalizing case would reduce unique values
+      x_lower <- tolower(x_no_na)
+      n_original <- length(unique(x_no_na))
+      n_lower <- length(unique(x_lower))
+      
+      if (n_lower < n_original) {
+        # Find the problematic values
+        dup_values <- unique(x_lower[duplicated(x_lower)])
+        examples <- list()
+        for (val in head(dup_values, 3)) {
+          examples[[val]] <- unique(x_no_na[tolower(x_no_na) == val])
+        }
+        
+        case_issues[[var]] <- list(
+          n_original = n_original,
+          n_normalized = n_lower,
+          reduction = n_original - n_lower,
+          examples = examples
+        )
+      }
+    }
+  }
+  
+  if (length(case_issues) > 0) {
+    quality_issues$case_issues <- case_issues
+    recommendations$case_issues <- paste(
+      "These character variables have case inconsistency issues:",
+      paste(names(case_issues), collapse = ", "),
+      "- consider standardizing to lowercase or uppercase"
+    )
+  }
+
   result$quality_issues <- quality_issues
   result$recommendations <- recommendations
 

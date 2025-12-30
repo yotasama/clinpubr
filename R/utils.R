@@ -4,7 +4,7 @@
 #' @import stringr
 #' @import rlang
 #' @import survival
-#' @importFrom utils read.csv write.csv
+#' @importFrom utils read.csv write.csv head
 #' @importFrom tidyr pivot_wider pivot_longer
 #' @importFrom dplyr select mutate all_of group_by summarise ungroup reframe ntile n across rename
 #' @importFrom fBasics shapiroTest lillieTest adTest jarqueberaTest sfTest

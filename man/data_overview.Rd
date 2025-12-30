@@ -4,24 +4,20 @@
 \alias{data_overview}
 \title{Data Overview and Quality Check}
 \usage{
-data_overview(
-  df,
-  outlier_method = "iqr",
-  z_threshold = 3,
-  iqr_threshold = 1.5,
-  mad_constant = 1.4826 * 3
-)
+data_overview(df, outlier_method = "iqr", outlier_threshold = NULL)
 }
 \arguments{
 \item{df}{A data.frame to be analyzed}
 
 \item{outlier_method}{Method for detecting outliers, one of "iqr" (default), "zscore", or "mad"}
 
-\item{z_threshold}{Z-score threshold for outlier detection (default: 3)}
-
-\item{iqr_threshold}{IQR multiplier for outlier detection (default: 1.5)}
-
-\item{mad_constant}{Constant multiplier for MAD outlier detection (default: 1.4826 * 3)}
+\item{outlier_threshold}{Threshold value for detecting outliers. If NULL (default),
+uses method-specific defaults:
+\itemize{
+\item For MAD method: 1.4826 * 3 (approximately 3 standard deviations)
+\item For IQR method: 1.5 (Tukey's rule)
+\item For Z-score method: 3 (3 standard deviations)
+}}
 }
 \value{
 A list containing:
