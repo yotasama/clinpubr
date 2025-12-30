@@ -1,4 +1,8 @@
-# clinpubr 1.1.2
+# clinpubr 1.2.0
+
+* Added `data_overview()` to get a quick overview of a data frame. It includes diagnostic information about common data issues and gives recommendations for data cleaning.
+
+* Added several outlier detection methods: `mad_outlier()`, `zscore_outlier()`, `iqr_outlier()`.
 
 * Added `recursive` argument to `combine_files()`.
 
