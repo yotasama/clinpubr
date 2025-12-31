@@ -47,18 +47,58 @@ install.packages("clinpubr", dependencies = TRUE)
 
 ## Basic Usage
 ### Cleaning Tools
-#### Example 1.1: Standardize Values in Medical Records
+#### Example 1.1: Generate Data Overview and Cleaning Recommendations
 ```{r example_1.1}
 library(clinpubr)
 
+# Sample messy data with various quality issues
+messy_data <- data.frame(
+  id = 1:15,
+  # Numeric with outliers
+  bmi = c(
+    22.5, 23.1, 24.2, 21.8, 25.0, 23.5, 999, 24.1, 22.9, 23.8,
+    21.5, 24.3, 23.0, 22.7, 23.9
+  ),
+  # Character with case inconsistency
+  city = c(
+    "Beijing", "BEIJING", "beijing", "Shanghai", "SHANGHAI",
+    "Guangzhou", "chengdu", "CHENGDU", "Shenzhen", "shenzhen",
+    "Beijing", "Shanghai", "Guangzhou", "Chengdu", "Shenzhen"
+  ),
+  # Numeric with negative values in predominantly positive
+  height = c(
+    1.75, 1.80, 1.65, 1.70, 1.85, 1.78, 1.68, 1.72, 1.76, 1.82,
+    1.60, 1.62, 1.74, 179, -1
+  ),
+  # Date with suspicious year
+  visit_date = as.Date(c(
+    "2020-01-15", "2020-02-20", "2020-03-10", "2019-05-18", "2020-06-22",
+    "2018-07-30", "2020-08-12", "2020-09-25", "2020-10-08", "2020-11-15",
+    "2020-12-20", "1900-01-01", "2030-02-28", "2020-03-15", "2020-04-20"
+  )),
+  # Numeric stored as character
+  age = c(
+    "25", "26", "27", "28", "29", "30", "31", "32", "33", "34",
+    "35", "unknown", "36", "37", "38"
+  ),
+  stringsAsFactors = FALSE
+)
+
+overview <- data_overview(messy_data)
+
+print(overview$quality_issues$case_issues)
+```
+
+#### Example 1.2: Standardize Values in Medical Records
+```{r example_1.2}
 # Sample messy data
 messy_data <- data.frame(values = c("１２．３", "0..45", "  67 ", "", "ａｂａｎｄｏｎ"))
 clean_data <- value_initial_cleaning(messy_data$values)
 print(clean_data)
 ```
 
-#### Example 1.2: Check Non-numerical Values
-```{r example_1.2}
+#### Example 1.3: Check Non-numerical Values
+```{r example_1.3}
 # Sample messy data
 x <- c("1.2(XXX)", "1.5", "0.82", "5-8POS", "NS", "FULL")
 print(check_nonnum(x))
@@ -66,8 +106,8 @@ print(check_nonnum(x))
 This function filters out non-numerical values, which helps you choose the
 appropriate method to handle them. 
 
-#### Example 1.3: Extracting Numerical Values from Text
-```{r example_1.3}
+#### Example 1.4: Extracting Numerical Values from Text
+```{r example_1.4}
 # Sample messy data
 x <- c("1.2(XXX)", "1.5", "0.82", "5-8POS", "NS", "FULL")
 print(extract_num(x))

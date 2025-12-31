@@ -4,7 +4,12 @@
 \alias{data_overview}
 \title{Data Overview and Quality Check}
 \usage{
-data_overview(df, outlier_method = "iqr", outlier_threshold = NULL)
+data_overview(
+  df,
+  outlier_method = "iqr",
+  outlier_threshold = NULL,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{df}{A data.frame to be analyzed}
@@ -18,6 +23,8 @@ uses method-specific defaults:
 \item For IQR method: 1.5 (Tukey's rule)
 \item For Z-score method: 3 (3 standard deviations)
 }}
+
+\item{verbose}{If TRUE (default), prints result messages}
 }
 \value{
 A list containing:

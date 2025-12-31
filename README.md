@@ -54,11 +54,92 @@ install.packages("clinpubr", dependencies = TRUE)
 
 ### Cleaning Tools
 
-#### Example 1.1: Standardize Values in Medical Records
+#### Example 1.1: Generate Data Overview and Cleaning Recommendations
 
 ``` r
 library(clinpubr)
 
+# Sample messy data with various quality issues
+messy_data <- data.frame(
+  id = 1:15,
+  # Numeric with outliers
+  bmi = c(
+    22.5, 23.1, 24.2, 21.8, 25.0, 23.5, 999, 24.1, 22.9, 23.8,
+    21.5, 24.3, 23.0, 22.7, 23.9
+  ),
+  # Character with case inconsistency
+  city = c(
+    "Beijing", "BEIJING", "beijing", "Shanghai", "SHANGHAI",
+    "Guangzhou", "chengdu", "CHENGDU", "Shenzhen", "shenzhen",
+    "Beijing", "Shanghai", "Guangzhou", "Chengdu", "Shenzhen"
+  ),
+  # Numeric with negative values in predominantly positive
+  height = c(
+    1.75, 1.80, 1.65, 1.70, 1.85, 1.78, 1.68, 1.72, 1.76, 1.82,
+    1.60, 1.62, 1.74, 179, -1
+  ),
+  # Date with suspicious year
+  visit_date = as.Date(c(
+    "2020-01-15", "2020-02-20", "2020-03-10", "2019-05-18", "2020-06-22",
+    "2018-07-30", "2020-08-12", "2020-09-25", "2020-10-08", "2020-11-15",
+    "2020-12-20", "1900-01-01", "2030-02-28", "2020-03-15", "2020-04-20"
+  )),
+  # Numeric stored as character
+  age = c(
+    "25", "26", "27", "28", "29", "30", "31", "32", "33", "34",
+    "35", "unknown", "36", "37", "38"
+  ),
+  stringsAsFactors = FALSE
+)
+
+overview <- data_overview(messy_data)
+#> === Data Overview Summary ===
+#> Dataset: 15 rows, 6 columns
+#> 
+#> Variable Types:
+#>   numeric   : 3 variables
+#>   character : 2 variables
+#>   date      : 1 variables
+#> 
+#> Found 6 potential quality issues:
+#>   numeric_as_character     : 1 cases
+#>   outliers                 : 2 cases
+#>   negative_in_positive     : 1 cases
+#>   suspicious_dates         : 1 cases
+#>   case_issues              : 1 cases
+#> 
+#> Recommendations:
+#>   - Consider converting these character variables to numeric: age
+#>   - Review outliers in these numeric variables: bmi, height
+#>   - Numeric variables with mostly positive values but containing negatives: height
+#>   - Review suspicious dates (year < 1910 or > current year) in: visit_date
+#>   - These character variables have case inconsistency issues: city - consider standardizing to lowercase or uppercase
+
+print(overview$quality_issues$case_issues)
+#> $city
+#> $city$n_original
+#> [1] 11
+#> 
+#> $city$n_normalized
+#> [1] 5
+#> 
+#> $city$reduction
+#> [1] 6
+#> 
+#> $city$examples
+#> $city$examples$beijing
+#> [1] "Beijing" "BEIJING" "beijing"
+#> 
+#> $city$examples$shanghai
+#> [1] "Shanghai" "SHANGHAI"
+#> 
+#> $city$examples$chengdu
+#> [1] "chengdu" "CHENGDU" "Chengdu"
+```
+
+#### Example 1.2: Standardize Values in Medical Records
+
+``` r
 # Sample messy data
 messy_data <- data.frame(values = c("１２．３", "0..45", "  67 ", "", "ａｂａｎｄｏｎ"))
 clean_data <- value_initial_cleaning(messy_data$values)
@@ -66,7 +147,7 @@ print(clean_data)
 #> [1] "12.3"    "0.45"    "67"      NA        "abandon"
 ```
 
-#### Example 1.2: Check Non-numerical Values
+#### Example 1.3: Check Non-numerical Values
 
 ``` r
 # Sample messy data
@@ -78,7 +159,7 @@ print(check_nonnum(x))
 This function filters out non-numerical values, which helps you choose
 the appropriate method to handle them.
 
-#### Example 1.3: Extracting Numerical Values from Text
+#### Example 1.4: Extracting Numerical Values from Text
 
 ``` r
 # Sample messy data
@@ -208,7 +289,7 @@ knitr::kable(tables$baseline) # Display the table
 | wt (mean (SD)) | 3.2 (1.0) | 3.7 (0.9) | 2.6 (0.7) | 0.001 |  |
 | qsec (mean (SD)) | 17.8 (1.8) | 16.7 (1.1) | 19.3 (1.4) | \<0.001 |  |
 | am = 1 (%) | 13 (40.6) | 6 (33.3) | 7 (50.0) | 0.556 |  |
-| gear (%) |  |  |  | 0.002 | exact |
+| gear (%) |  |  |  | 0.001 | exact |
 | 3 | 15 (46.9) | 12 (66.7) | 3 (21.4) |  |  |
 | 4 | 12 (37.5) | 2 (11.1) | 10 (71.4) |  |  |
 | 5 | 5 (15.6) | 4 (22.2) | 1 (7.1) |  |  |

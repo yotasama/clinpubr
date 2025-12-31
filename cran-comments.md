@@ -2,5 +2,5 @@
 
 0 errors | 0 warnings | 0 note
 
-* This is a patch release that added a few features and some bug fixes.
+* This is a minor release that introduced a few functions.
 * We don't expect any reverse dependency failures.

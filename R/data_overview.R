@@ -11,6 +11,7 @@
 #'   - For MAD method: 1.4826 * 3 (approximately 3 standard deviations)
 #'   - For IQR method: 1.5 (Tukey's rule)
 #'   - For Z-score method: 3 (3 standard deviations)
+#' @param verbose If TRUE (default), prints result messages
 #'
 #' @return A list containing:
 #'   - variable_types: Classification of variables by type
@@ -26,7 +27,8 @@
 #' print(overview$quality_issues)
 #'
 #' @export
-data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL) {
+data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL,
+                          verbose = TRUE) {
   # Check input
   if (!is.data.frame(df)) {
     stop("Input must be a data.frame")
@@ -152,10 +154,10 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL) 
   if (length(variable_types$numeric) > 0) {
     for (var in variable_types$numeric) {
       x <- df[[var]]
-      
+
       # Call detect_outliers function with unified threshold parameter
       outlier_result <- detect_outliers(x, method = outlier_method, threshold = outlier_threshold)
-      
+
       if (outlier_result$outlier_count > 0) {
         x_no_na <- x[!is.na(x)]
         outliers[[var]] <- list(
@@ -264,14 +266,14 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL) 
     for (var in variable_types$numeric) {
       x <- df[[var]]
       x_no_na <- x[!is.na(x)]
-      
+
       if (length(x_no_na) == 0) next
-      
+
       n_positive <- sum(x_no_na >= 0)
       n_negative <- sum(x_no_na < 0)
       n_total <- length(x_no_na)
       positive_pct <- n_positive / n_total * 100
-      
+
       # If >90% are positive and there are negative values, flag it
       if (positive_pct > 90 && n_negative > 0) {
         negative_in_positive[[var]] <- list(
@@ -283,7 +285,7 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL) 
       }
     }
   }
-  
+
   if (length(negative_in_positive) > 0) {
     quality_issues$negative_in_positive <- negative_in_positive
     recommendations$negative_in_positive <- paste(
@@ -299,7 +301,7 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL) 
       empty_columns <- c(empty_columns, var)
     }
   }
-  
+
   if (length(empty_columns) > 0) {
     quality_issues$empty_columns <- empty_columns
     recommendations$empty_columns <- paste(
@@ -327,13 +329,13 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL) 
     for (var in variable_types$date) {
       x <- df[[var]]
       x_no_na <- x[!is.na(x)]
-      
+
       if (length(x_no_na) == 0) next
-      
+
       current_year <- as.numeric(format(Sys.Date(), "%Y"))
       years <- as.numeric(format(x_no_na, "%Y"))
       suspicious_idx <- which(years < 1910 | years > current_year)
-      
+
       if (length(suspicious_idx) > 0) {
         suspicious_dates[[var]] <- list(
           n_suspicious = length(suspicious_idx),
@@ -344,7 +346,7 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL) 
       }
     }
   }
-  
+
   if (length(suspicious_dates) > 0) {
     quality_issues$suspicious_dates <- suspicious_dates
     recommendations$suspicious_dates <- paste(
@@ -355,8 +357,8 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL) 
 
   # Check for variables with few unique values that should be converted to factor
   low_cardinality_vars <- list()
-  n_unique_threshold <- 5  # Variables with <= 5 unique values
-  
+  n_unique_threshold <- 5 # Variables with <= 5 unique values
+
   # Check numeric variables with few unique values
   if (length(variable_types$numeric) > 0) {
     for (var in variable_types$numeric) {
@@ -364,7 +366,7 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL) 
       x_no_na <- x[!is.na(x)]
       n_unique <- length(unique(x_no_na))
       if (n_unique <= n_unique_threshold && all(x_no_na %in% c(0, 1))) next
-      
+
       if (n_unique <= n_unique_threshold) {
         low_cardinality_vars[[var]] <- list(
           type = "numeric",
@@ -374,7 +376,7 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL) 
       }
     }
   }
-  
+
   if (length(low_cardinality_vars) > 0) {
     quality_issues$low_cardinality <- low_cardinality_vars
     recommendations$low_cardinality <- paste(
@@ -389,12 +391,12 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL) 
     for (var in variable_types$character) {
       x <- df[[var]]
       x_no_na <- x[!is.na(x)]
-      
+
       # Check if normalizing case would reduce unique values
       x_lower <- tolower(x_no_na)
       n_original <- length(unique(x_no_na))
       n_lower <- length(unique(x_lower))
-      
+
       if (n_lower < n_original) {
         # Find the problematic values
         dup_values <- unique(x_lower[duplicated(x_lower)])
@@ -402,7 +404,7 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL) 
         for (val in head(dup_values, 3)) {
           examples[[val]] <- unique(x_no_na[tolower(x_no_na) == val])
         }
-        
+
         case_issues[[var]] <- list(
           n_original = n_original,
           n_normalized = n_lower,
@@ -412,7 +414,7 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL) 
       }
     }
   }
-  
+
   if (length(case_issues) > 0) {
     quality_issues$case_issues <- case_issues
     recommendations$case_issues <- paste(
@@ -437,27 +439,29 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL) 
     n_issues = length(unlist(quality_issues, recursive = FALSE))
   )
 
-  # Print summary for quick overview
-  cat("=== Data Overview Summary ===\n")
-  cat(sprintf("Dataset: %d rows, %d columns\n", result$overall$n_rows, result$overall$n_columns))
-  cat("\nVariable Types:\n")
-  for (type in names(variable_types)) {
-    cat(sprintf("  %-10s: %d variables\n", type, length(variable_types[[type]])))
-  }
-
-  if (result$overall$n_issues > 0) {
-    cat(sprintf("\nFound %d potential quality issues:\n", result$overall$n_issues))
-    for (issue_type in names(quality_issues)) {
-      cat(sprintf("  %-25s: %d cases\n", issue_type, length(quality_issues[[issue_type]])))
+  if (verbose) {
+    # Print summary for quick overview
+    cat("=== Data Overview Summary ===\n")
+    cat(sprintf("Dataset: %d rows, %d columns\n", result$overall$n_rows, result$overall$n_columns))
+    cat("\nVariable Types:\n")
+    for (type in names(variable_types)) {
+      cat(sprintf("  %-10s: %d variables\n", type, length(variable_types[[type]])))
     }
-  } else {
-    cat("\nNo major quality issues detected.\n")
-  }
 
-  if (length(recommendations) > 0) {
-    cat("\nRecommendations:\n")
-    for (rec in recommendations) {
-      cat(sprintf("  - %s\n", rec))
+    if (result$overall$n_issues > 0) {
+      cat(sprintf("\nFound %d potential quality issues:\n", result$overall$n_issues))
+      for (issue_type in names(quality_issues)) {
+        cat(sprintf("  %-25s: %d cases\n", issue_type, length(quality_issues[[issue_type]])))
+      }
+    } else {
+      cat("\nNo major quality issues detected.\n")
+    }
+
+    if (length(recommendations) > 0) {
+      cat("\nRecommendations:\n")
+      for (rec in recommendations) {
+        cat(sprintf("  - %s\n", rec))
+      }
     }
   }
 
