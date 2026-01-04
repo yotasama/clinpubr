@@ -17,66 +17,38 @@ submit_cran()
 ## correlation plot----
 library(export)
 library(corrplot)
-vars_to_show=c('Cystc','CKD.EPI..2009.','CKD.EPI.CrCy.2021..ori.',"IgG",'IgA')
-tmp=cor(data[,vars_to_show],use="pairwise.complete.obs")
-corrplot(corr=tmp,order = "AOE",type="upper",
-         tl.col = "red",
-         tl.pos = "d")
-corrplot(corr=tmp,add=TRUE, type="lower", method="number",order="AOE",diag=FALSE,tl.pos="n", cl.pos="n")
-export::graph2png(file="corrplot.png",width=4,height=4)
-
-## Survival results----
-library(timeROC)
-library(Hmisc)
-library(survival)
-
-res=rcorr.cens(data$Cystc,
-               Surv(data$Time,data$Outcome))
-c_index=res["C Index"]
-if(c_index<0.5){
-  c_index=1-c_index
-}
-class(res)
-print(c_index)
-
-time_roc <- timeROC(T=data$Time,
-                    delta=data$Outcome,
-                    marker=data$Cystc, 
-                    cause=1,
-                    weighting="marginal",
-                    times=c(12,36,60),
-                    ROC=TRUE)
-
-print(time_roc) 
-
-colors=c("red","blue","green")
-for(i in 1:length(time_roc$times)){
-  plot(time_roc, time=time_roc$times[i], col=colors[i], title=FALSE,add=i!=1)
-}
-legend("bottomright",
-       legend=paste0(time_roc$times," months AUC=",sprintf("%.3f",time_roc$AUC)),
-       col=colors,
-       lwd=2)
-export::graph2png(file="timeROC_Cystc_multiple.png",width=4,height=4)
+vars_to_show <- c("Cystc", "CKD.EPI..2009.", "CKD.EPI.CrCy.2021..ori.", "IgG", "IgA")
+tmp <- cor(data[, vars_to_show], use = "pairwise.complete.obs")
+corrplot(
+  corr = tmp, order = "AOE", type = "upper",
+  tl.col = "red",
+  tl.pos = "d"
+)
+corrplot(corr = tmp, add = TRUE, type = "lower", method = "number", order = "AOE", diag = FALSE, tl.pos = "n", cl.pos = "n")
+export::graph2png(file = "corrplot.png", width = 4, height = 4)
 
 # test codes----
 list.dirs()
 file.copy()
-df=data.frame(time=c(1:10,1:5,1:3),y=c(rep(1,10),rep(2,5),rep(3,3)),group=c(rep("A",10),rep("B",5),rep("C",3)))
-df$y=df$y+rnorm(n=nrow(df),mean=0,sd=0.01)
-model=lm(y~time,data=df)
+df <- data.frame(time = c(1:10, 1:5, 1:3), y = c(rep(1, 10), rep(2, 5), rep(3, 3)), group = c(rep("A", 10), rep("B", 5), rep("C", 3)))
+df$y <- df$y + rnorm(n = nrow(df), mean = 0, sd = 0.01)
+model <- lm(y ~ time, data = df)
 summary(model)
 
 load_all()
-model=regression_fit(data=df,
-                     y="y",
-                     predictor = "x",
-                     cluster="group")
+model <- regression_fit(
+  data = df,
+  y = "y",
+  predictor = "x",
+  cluster = "group"
+)
 
 library(geepack)
 # 使用可交换相关结构
-gee_model <- geeglm(y ~ time, id = group, data = df, 
-                   family = gaussian, corstr = "exchangeable")
+gee_model <- geeglm(y ~ time,
+  id = group, data = df,
+  family = gaussian, corstr = "exchangeable"
+)
 summary(gee_model)
 
 library(lme4)
@@ -93,7 +65,7 @@ dotplot(ranef(mixed_model, condVar = TRUE))
 
 # 使用ggplot绘制随机效应
 rand_eff <- ranef(mixed_model)$group
-ggplot(rand_eff, aes(x = `(Intercept)`)) + 
+ggplot(rand_eff, aes(x = `(Intercept)`)) +
   geom_histogram(bins = 10, fill = "lightblue", color = "black") +
   labs(title = "随机截距分布", x = "随机截距值", y = "频数")
 
@@ -101,9 +73,9 @@ ggplot(rand_eff, aes(x = `(Intercept)`)) +
 ranef_data <- as.data.frame(ranef(mixed_model))
 ggplot(ranef_data, aes(x = grp, y = condval)) +
   geom_point(size = 3) +
-  geom_errorbar(aes(ymin = condval - 2*condsd, ymax = condval + 2*condsd), width = 0.2) +
+  geom_errorbar(aes(ymin = condval - 2 * condsd, ymax = condval + 2 * condsd), width = 0.2) +
   labs(title = "各组的随机截距估计", x = "组别", y = "随机效应值")
-  
+
 library(broom.mixed)
 fixed_effects <- tidy(mixed_model, effects = "fixed")
 
@@ -111,7 +83,7 @@ fixed_effects <- tidy(mixed_model)
 
 ggplot(fixed_effects, aes(x = term, y = estimate)) +
   geom_point(size = 3) +
-  geom_errorbar(aes(ymin = estimate - 2*std.error, ymax = estimate + 2*std.error), width = 0.2) +
+  geom_errorbar(aes(ymin = estimate - 2 * std.error, ymax = estimate + 2 * std.error), width = 0.2) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
   labs(title = "固定效应估计", x = "参数", y = "估计值")
 
@@ -126,8 +98,8 @@ library(lmerTest)
 
 df <- data.frame(
   time = c(1:10, 1:5, 1:3),
-  y = c(rep(1,10), rep(2,5), rep(3,3)),
-  group = c(rep("A",10), rep("B",5), rep("C",3))
+  y = c(rep(1, 10), rep(2, 5), rep(3, 3)),
+  group = c(rep("A", 10), rep("B", 5), rep("C", 3))
 )
 
 # 添加少量噪声
@@ -150,7 +122,7 @@ print(VarCorr(mixed_model))
 
 
 group_effects_mixed <- coef(mixed_model)$group
-group_effects_fixed <- c(0, coef(lm_fixed)[3:4])  # 相对于A组的差异
+group_effects_fixed <- c(0, coef(lm_fixed)[3:4]) # 相对于A组的差异
 
 comparison <- data.frame(
   Group = c("A", "B", "C"),
@@ -160,3 +132,82 @@ comparison <- data.frame(
 print(comparison)
 
 
+df <- data.frame(name = c("AB", "B,C", "A..","ACD"))
+match <- data.frame(
+  ori = c("A", "B", "C", "ACD","AB"),
+  new = c("x1", "x2", "x3","x4","x5")
+)
+result <- data.frame(
+  name = c("AB", "AB", "B,C", "B,C", "A.."),
+  matched = c("x1", "x2", "x2", "x3", "x1")
+)
+
+str_contains_merge_stringi <- function(df, match_df, col_name = "name", ori_col = "ori", new_cols = "new") {
+  names_vec <- df[[col_name]]
+
+  if (length(new_cols) == 1) {
+    new_cols <- as.character(new_cols)
+  }
+
+  new_data <- match_df[, new_cols, drop = FALSE]
+
+  unique_new_combos <- unique(new_data)
+  result_list <- list()
+
+  for (i in seq_len(nrow(unique_new_combos))) {
+    combo <- unique_new_combos[i, , drop = FALSE]
+    combo_values <- as.character(combo[1, ])
+
+    match_idx <- apply(new_data, 1, function(row) {
+      all(as.character(row) == combo_values)
+    })
+    ori_patterns <- match_df[[ori_col]][match_idx]
+
+    ori_patterns <- ori_patterns[!is.na(ori_patterns)]
+    if (length(ori_patterns) == 0) next
+
+    ori_regex <- paste(ori_patterns, collapse = "|")
+
+    matches <- stringi::stri_detect_regex(names_vec, ori_regex)
+    matches[is.na(matches)] <- FALSE
+
+    if (any(matches, na.rm = TRUE)) {
+      matched_names <- unique(names_vec[matches])
+      matched_names <- matched_names[!is.na(matched_names)]
+
+      for (name in matched_names) {
+        result_list[[length(result_list) + 1]] <- c(
+          name = name,
+          as.list(combo)
+        )
+      }
+    }
+  }
+
+  if (length(result_list) > 0) {
+    result <- do.call(rbind, lapply(result_list, as.data.frame, stringsAsFactors = FALSE))
+
+    if (nrow(result) > 0) {
+      result <- result[order(match(result[[col_name]], names_vec)), ]
+      result <- result[!duplicated(result), ]
+    }
+    return(result)
+  } else {
+    return(data.frame(name = character(), stringsAsFactors = FALSE))
+  }
+}
+
+# 测试函数
+df <- data.frame(name = c("AB", "B,C", "A..","ACD"))
+match <- data.frame(
+  ori = c("A", "B", "C", "ACD","AB","AB","AB"),
+  new = c("x1", "x2", "x3","x4","x5","x6","x5")
+)
+
+# 使用基础版本
+result1 <- str_contains_merge_stringi(df, match)
+print(result1)
+
+all_equal <- identical(result1, result2) && identical(result1, result3)
+cat("所有版本结果一致:", all_equal, "\n")
+stringi::stri_detect_fixed(c("AB", "B,C", "A..","ACD"), "A")
