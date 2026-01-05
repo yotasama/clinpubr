@@ -5,8 +5,8 @@ load_all()
 install()
 document()
 
-check(remote = TRUE, manual = TRUE)
 check_win_devel()
+check(remote = TRUE, manual = TRUE)
 
 build_manual()
 build_readme()
@@ -287,3 +287,9 @@ grepl(escape_regex("^$=!<>:"), "^$=!<>:")
 matched=c(1:5)
 col_name="x"
 data.frame(setNames(list(matched), col_name))
+
+data=df
+key_df=match_df
+search_col="name"
+key_col="ori"
+value_cols = "category"

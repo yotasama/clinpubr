@@ -1,103 +1,104 @@
-#' Merge Data Frame with String Matching
+#' Merge Data Frame by String Key Matching
 #'
-#' This function merges a data frame with a match table based on string containment.
-#' It searches for patterns from `match_df[[ori_col]]` in `df[[key_col]]` and
-#' adds the corresponding columns from `match_df` to `df`.
+#' @description This function merges two data frames based on string key matching.
+#' It searches for keys from `key_df[[key_col]]` in `data[[search_col]]`
+#' and adds corresponding columns from `key_df` to `data`.
 #'
-#' @param df A data frame to be merged
-#' @param match_df A data frame containing matching patterns and values
-#' @param key_col Column name in `df` to search in (default: "name")
-#' @param ori_col Column name in `match_df` containing patterns to search for (default: "ori")
-#' @param new_cols Column name(s) in `match_df` to add to `df` (default: "new")
+#' @param data The primary data frame to be enhanced with additional columns
+#' @param key_df A data frame containing string keys and their corresponding values
+#' @param search_col Column name in `data` to search for keys (default: "name")
+#' @param key_col Column name in `key_df` containing keys to match (default: "key")
+#' @param value_cols Column name(s) in `key_df` to add to `data` (default: "value")
 #'   Can be a single column name or a character vector of column names
 #'
-#' @return A data frame with all columns from `df` plus matched columns from `match_df`.
-#'   Unmatched rows will have NA values in the new columns.
+#' @return A data frame with all columns from `data` plus matched columns from `key_df`.
+#'   Unmatched rows will have NA values in the added columns.
 #'
 #' @examples
 #' # Basic usage
-#' df <- data.frame(
+#' main_data <- data.frame(
 #'   name = c("AB", "B,C", "A..", "ACD"),
 #'   value = c(1, 2, 3, 4),
 #'   stringsAsFactors = FALSE
 #' )
-#' match_df <- data.frame(
-#'   ori = c("A", "B", "C", "ACD", "AB"),
+#' key_lookup <- data.frame(
+#'   key = c("A", "B", "C", "ACD", "AB"),
 #'   category = c("cat1", "cat2", "cat3", "cat4", "cat1"),
 #'   code = c("001", "002", "003", "004", "001"),
 #'   stringsAsFactors = FALSE
 #' )
-#' result <- merge_str_contains(df, match_df, new_cols = c("category", "code"))
+#' result <- merge_by_substring(main_data, key_lookup,
+#'   search_col = "name",
+#'   key_col = "key", value_cols = c("category", "code")
+#' )
 #' print(result)
 #'
 #' @export
-merge_str_contains <- function(df, match_df, key_col = "name", ori_col = "ori", new_cols = "new") {
+merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
   # Validate inputs
-  if (!is.data.frame(df)) {
-    stop("`df` must be a data frame")
+  if (!is.data.frame(data)) {
+    stop("`data` must be a data frame")
   }
-  if (!is.data.frame(match_df)) {
-    stop("`match_df` must be a data frame")
+  if (!is.data.frame(key_df)) {
+    stop("`key_df` must be a data frame")
   }
-  if (!key_col %in% names(df)) {
-    stop(sprintf("Column '%s' not found in `df`", key_col))
+  if (!search_col %in% names(data)) {
+    stop(sprintf("Column '%s' not found in `data`", search_col))
   }
-  if (!ori_col %in% names(match_df)) {
-    stop(sprintf("Column '%s' not found in `match_df`", ori_col))
+  if (!key_col %in% names(key_df)) {
+    stop(sprintf("Column '%s' not found in `key_df`", key_col))
   }
 
-  # Ensure new_cols is a character vector
-  if (length(new_cols) == 1) {
-    new_cols <- as.character(new_cols)
+  # Ensure value_cols is a character vector
+  if (length(value_cols) == 1) {
+    value_cols <- as.character(value_cols)
   }
-  if (!all(new_cols %in% names(match_df))) {
-    stop("All `new_cols` must exist in `match_df`")
+  if (!all(value_cols %in% names(key_df))) {
+    stop("All `value_cols` must exist in `key_df`")
   }
 
   # Extract unique key values
-  keys_vec <- unique(df[[key_col]])
+  search_values <- unique(data[[search_col]])
 
-  # Group match_df by new_cols and extract unique ori patterns for each group
-  groups <- match_df %>%
-    dplyr::group_by(dplyr::across(dplyr::all_of(new_cols))) %>%
+  # Group key_df by value_cols and extract unique keys for each group
+  groups <- key_df %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(value_cols))) %>%
     dplyr::summarize(
-      ori_list = list(unique(na.omit(.data[[ori_col]]))),
+      key_list = list(unique(na.omit(.data[[key_col]]))),
       .groups = "drop"
     ) %>%
-    dplyr::filter(lengths(ori_list) > 0)
+    dplyr::filter(lengths(key_list) > 0)
 
   if (nrow(groups) == 0) {
-    return(df)
+    return(data)
   }
 
   # Process each group
-  res_list <- vector("list", nrow(groups))
+  match_list <- vector("list", nrow(groups))
   k <- 0
 
   for (i in seq_len(nrow(groups))) {
-    ori_vec <- groups$ori_list[[i]]
-    ori_vec <- ori_vec[!is.na(ori_vec)]
-
-    if (length(ori_vec) == 0) next
+    keys <- groups$key_list[[i]]
+    keys <- keys[!is.na(keys)]
 
     # Escape special regex characters and build pattern
-    ori_vec_esc <- Hmisc::escapeRegex(as.character(ori_vec))
-    pattern <- paste0("(?:", paste(ori_vec_esc, collapse = "|"), ")")
+    keys_escaped <- Hmisc::escapeRegex(as.character(keys))
+    regex_pattern <- paste0("(?:", paste(keys_escaped, collapse = "|"), ")")
 
     # Find matches
-    matches <- stringi::stri_detect_regex(keys_vec, pattern)
+    matches <- stringi::stri_detect_regex(search_values, regex_pattern)
     matches[is.na(matches)] <- FALSE
 
     if (any(matches)) {
-      matched_keys <- keys_vec[matches]
+      matched_keys <- search_values[matches]
 
       if (length(matched_keys) > 0) {
-        group_info <- groups[i, new_cols, drop = FALSE] %>%
+        group_info <- groups[i, value_cols, drop = FALSE] %>%
           as.data.frame(stringsAsFactors = FALSE)
 
         k <- k + 1
-        res_list[[k]] <- cbind(
-          data.frame(setNames(list(matched_keys), key_col)),
+        match_list[[k]] <- cbind(
+          data.frame(setNames(list(matched_keys), search_col)),
           group_info[rep(1, length(matched_keys)), , drop = FALSE],
           stringsAsFactors = FALSE
         )
@@ -106,16 +107,13 @@ merge_str_contains <- function(df, match_df, key_col = "name", ori_col = "ori", 
   }
 
   if (k == 0) {
-    return(df)
+    return(data)
   }
 
-  # Combine results and merge with original df
-  match_results <- dplyr::bind_rows(res_list[seq_len(k)])
+  # Combine results and merge with original data
+  match_results <- dplyr::bind_rows(match_list[seq_len(k)])
   rownames(match_results) <- NULL
 
-  # Remove duplicates: keep first match for each key
-  match_results <- match_results[!duplicated(match_results[[key_col]]), ]
-
-  result <- merge(df, match_results, by = key_col, all.x = TRUE)
+  result <- merge(data, match_results, by = search_col, all.x = TRUE)
   return(result)
 }

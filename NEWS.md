@@ -4,6 +4,8 @@
 
 * Added several outlier detection methods: `mad_outlier()`, `zscore_outlier()`, `iqr_outlier()`.
 
+* Added `merge_by_substring()` to merge data frames by substring matching.
+
 * Added `recursive` argument to `combine_files()`.
 
 # clinpubr 1.1.1

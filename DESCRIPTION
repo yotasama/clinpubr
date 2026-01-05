@@ -33,6 +33,7 @@ Collate:
     'initial_cleaning.R'
     'interactions.R'
     'mark_outlier.R'
+    'merge.R'
     'utils.R'
     'misc.R'
     'multichoice.R'

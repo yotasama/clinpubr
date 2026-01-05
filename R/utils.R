@@ -23,7 +23,7 @@ check_package <- function(pkg, purpose = NULL) {
     stop(
       "Package '", pkg, "' is required for ", purpose, " but is not installed.\n",
       "Please install it with: install.packages('", pkg, "'), or install all dependencies with: ",
-      "install.packages('clinpubr', dependencies = TRUE)", 
+      "install.packages('clinpubr', dependencies = TRUE)",
       call. = FALSE
     )
   }
@@ -35,7 +35,8 @@ utils::globalVariables(c(
   "name", "value", "decile", "obsRate", "predRate", "label",
   ".predictor", ".group_var", "yhat", "lower", "upper",
   "xmin", "xmax", "den", "Group", "text", "level", "subject",
-  "quant", "quant_val", "recall", "precision", "Model", "fpr", "tpr"
+  "quant", "quant_val", "recall", "precision", "Model", "fpr", "tpr",
+  "key_list"
 ))
 
 #' default color palette for `clinpubr` plots
