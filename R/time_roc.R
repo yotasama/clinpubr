@@ -12,8 +12,6 @@
 #' # Use age as the marker variable
 #' calc_cindex(lung, "time", "status", "age")
 calc_cindex <- function(data, time_var, event_var, marker_var) {
-  check_package("Hmisc", "C-index calculations")
-
   res <- Hmisc::rcorr.cens(
     data[[marker_var]],
     survival::Surv(data[[time_var]], data[[event_var]])

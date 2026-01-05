@@ -143,55 +143,68 @@ result <- data.frame(
 )
 
 str_contains_merge_stringi <- function(df, match_df, col_name = "name", ori_col = "ori", new_cols = "new") {
+  if (!requireNamespace("stringi", quietly = TRUE)) {
+    stop("请先安装stringi包: install.packages('stringi')")
+  }
+  if (!requireNamespace("dplyr", quietly = TRUE)) {
+    stop("请先安装dplyr包: install.packages('dplyr')")
+  }
+
   names_vec <- df[[col_name]]
 
   if (length(new_cols) == 1) {
     new_cols <- as.character(new_cols)
   }
 
-  new_data <- match_df[, new_cols, drop = FALSE]
+  # 按 new_cols 分组并拆分成列表
+  grouped <- match_df %>%
+    dplyr::group_by(across(all_of(new_cols)))
 
-  unique_new_combos <- unique(new_data)
+  group_list <- dplyr::group_split(grouped)
+
   result_list <- list()
 
-  for (i in seq_len(nrow(unique_new_combos))) {
-    combo <- unique_new_combos[i, , drop = FALSE]
-    combo_values <- as.character(combo[1, ])
+  # 对每个组进行处理
+  for (group_df in group_list) {
+    ori_vec <- group_df[[ori_col]]
+    ori_vec <- ori_vec[!is.na(ori_vec)]
 
-    match_idx <- apply(new_data, 1, function(row) {
-      all(as.character(row) == combo_values)
+    if (length(ori_vec) == 0) next
+
+    matches <- rep(FALSE, length(names_vec))
+
+    # 创建匹配矩阵
+    match_matrix <- sapply(ori_vec, function(ori_pattern) {
+      result <- stringi::stri_detect_fixed(names_vec, ori_pattern)
+      result[is.na(result)] <- FALSE
+      result
     })
-    ori_patterns <- match_df[[ori_col]][match_idx]
+    
+    # 行或操作：有任意一列匹配即为匹配
+    matches <- rowSums(match_matrix) >= 1
 
-    ori_patterns <- ori_patterns[!is.na(ori_patterns)]
-    if (length(ori_patterns) == 0) next
-
-    ori_regex <- paste(ori_patterns, collapse = "|")
-
-    matches <- stringi::stri_detect_regex(names_vec, ori_regex)
-    matches[is.na(matches)] <- FALSE
-
-    if (any(matches, na.rm = TRUE)) {
+    if (any(matches)) {
       matched_names <- unique(names_vec[matches])
       matched_names <- matched_names[!is.na(matched_names)]
 
-      for (name in matched_names) {
-        result_list[[length(result_list) + 1]] <- c(
-          name = name,
-          as.list(combo)
+      if (length(matched_names) > 0) {
+        group_info <- group_df[1, new_cols, drop = FALSE]
+
+        result_list[[length(result_list) + 1]] <- data.frame(
+          name = matched_names,
+          group_info,
+          stringsAsFactors = FALSE
         )
       }
     }
   }
 
   if (length(result_list) > 0) {
-    result <- do.call(rbind, lapply(result_list, as.data.frame, stringsAsFactors = FALSE))
-
-    if (nrow(result) > 0) {
-      result <- result[order(match(result[[col_name]], names_vec)), ]
-      result <- result[!duplicated(result), ]
-    }
-    return(result)
+    group_results <- do.call(rbind, result_list)
+    group_results <- group_results[order(match(group_results[[col_name]], names_vec)), ]
+    group_results <- group_results[!duplicated(group_results), ]
+    rownames(group_results) <- NULL
+    return(group_results)
   } else {
     return(data.frame(name = character(), stringsAsFactors = FALSE))
   }
@@ -211,3 +224,66 @@ print(result1)
 all_equal <- identical(result1, result2) && identical(result1, result3)
 cat("所有版本结果一致:", all_equal, "\n")
 stringi::stri_detect_fixed(c("AB", "B,C", "A..","ACD"), "A")
+
+
+escape_regex <- function(x) {
+  gsub("([.\\+*?\\[\\^\\]$(){}=!<>|:\\-\\\\])", "\\\\\\1", x, perl = TRUE)
+}
+
+escape_regex("[2-5]+3*.x[1]")
+Hmisc::escapeRegex("[2-5]+3*.x[1]")
+stringi::stri_detect_regex("3", Hmisc::escapeRegex("2-5"))
+stringi::stri_detect_regex("3","[2-5]")
+
+
+test_regex_escape <- function() {
+  # 测试字符串，包含各种特殊字符
+  test_cases <- list(
+    "基础字符" = "a.b*c?d[e]f{g}h(i)j|k+l-m\\n",
+    "边界情况" = "^$=!<>:",
+    "括号" = "()[]{}2-3(())",
+    "量词" = "*+?{5}",
+    "转义" = "\\t\\n\\r",
+    "路径" = "C:\\Users\\test\\file.txt",
+    "URL" = "https://example.com/path?query=1&param=2",
+    "正则模式" = "^(19|20)\\d\\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$"
+  )
+  
+  # 测试两个函数
+  for (name in names(test_cases)) {
+    str <- test_cases[[name]]
+    cat("\n=== ", name, ": ", str, " ===\n")
+    
+    # 使用两种方法转义
+    custom <- escape_regex(str)
+    hmisc <- Hmisc::escapeRegex(str)
+    
+    cat("自定义函数: ", custom, "\n")
+    cat("Hmisc函数: ", hmisc, "\n")
+    
+    # 测试转义后是否安全（字面匹配应该返回TRUE）
+    test_regex_safety(str, custom, name = "自定义")
+    test_regex_safety(str, hmisc, name = "Hmisc")
+  }
+}
+
+test_regex_safety <- function(original, escaped, name) {
+  # 测试转义后的正则表达式是否能精确匹配原字符串
+  tryCatch({
+    # 使用grepl测试，应该返回TRUE
+    result <- grepl(escaped, original)
+    if (result) {
+      cat(name, "转义: ✓ 安全 (精确匹配)\n")
+    } else {
+      cat(name, "转义: ✗ 不安全 (不匹配)\n")
+    }
+  }, error = function(e) {
+    cat(name, "转义: ✗ 错误 (无效正则):", e$message, "\n")
+  })
+}
+test_regex_escape()
+grepl(escape_regex("^$=!<>:"), "^$=!<>:")
+
+matched=c(1:5)
+col_name="x"
+data.frame(setNames(list(matched), col_name))
