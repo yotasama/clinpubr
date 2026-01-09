@@ -337,9 +337,11 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
         }
         pt <- pairwise.table(compare_levels, levels(g), p_adjust_method)
       } else if (var %in% nonnormal_vars) {
-        pt <- rstatix::dunn_test(data, as.formula(paste0(var, "~", strata)), p.adjust.method = p_adjust_method)
+        pt <- rstatix::dunn_test(data, as.formula(paste0("`", var, "` ~ `", strata, "`")),
+          p.adjust.method = p_adjust_method
+        )
       } else {
-        pt <- rstatix::games_howell_test(data, as.formula(paste0(var, "~", strata)))
+        pt <- rstatix::games_howell_test(data, as.formula(paste0("`", var, "` ~ `", strata, "`")))
       }
 
       if (var %in% c(exact_vars, factor_vars)) {
@@ -355,7 +357,14 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
           reframe(comparison = paste(group1, group2, sep = "_"), p.adj)
       }
       p_values_wide <- as.data.frame(pivot_wider(p_values_long, names_from = comparison, values_from = p.adj))
-      pairwise_result <- rbind(pairwise_result, p_values_wide)
+      if (nrow(p_values_wide) == 0) {
+        pairwise_result <- dplyr::bind_rows(pairwise_result, setNames(
+          as.list(rep(NA, ncol(pairwise_result))),
+          names(pairwise_result)
+        ))
+      } else {
+        pairwise_result <- dplyr::bind_rows(pairwise_result, p_values_wide)
+      }
     }
     rownames(pairwise_result) <- vars
     if (save_table) {

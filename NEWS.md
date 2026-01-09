@@ -1,3 +1,7 @@
+# clinpubr 1.2.1
+
+* Minor bug fixes and improvements.
+
 # clinpubr 1.2.0
 
 * Added `data_overview()` to get a quick overview of a data frame. It includes diagnostic information about common data issues and gives recommendations for data cleaning.
