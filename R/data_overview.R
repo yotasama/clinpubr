@@ -12,6 +12,8 @@
 #'   - For IQR method: 1.5 (Tukey's rule)
 #'   - For Z-score method: 3 (3 standard deviations)
 #' @param verbose If TRUE (default), prints result messages
+#' @param sample Maximum number of rows to sample for large datasets (default is 10000). Set to `NULL`
+#'   `NA`, or `0` to disable sampling.
 #'
 #' @return A list containing:
 #'   - variable_types: Classification of variables by type
@@ -28,10 +30,18 @@
 #'
 #' @export
 data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL,
-                          verbose = TRUE) {
+                          verbose = TRUE, sample = 10000) {
   # Check input
   if (!is.data.frame(df)) {
     stop("Input must be a data.frame")
+  }
+
+  # Sample data if larger than sample size
+  if (!is.null(sample) && !is.na(sample) && sample > 0 && nrow(df) > sample) {
+    df <- df[sample(nrow(df), sample), ]
+    if (verbose) {
+      message(sprintf("Data sampled to %d rows for performance.", sample))
+    }
   }
 
   # Initialize results list

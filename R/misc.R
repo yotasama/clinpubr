@@ -306,6 +306,101 @@ str_match_replace <- function(x, to_match, to_replace) {
   return(x)
 }
 
+#' Keep string segment by regex keyword position
+#' @description Desensitize a character vector by removing the unneeded part of each string.
+#'   The retained part is determined by keyword matches from a regular expression.
+#' @param x A character vector.
+#' @param keyword A regular expression keyword pattern.
+#' @param from Left boundary of retained text:
+#'   - `"start"`: start of the string.
+#'   - `"first"`: first keyword match.
+#'   - `"last"`: last keyword match.
+#' @param to Right boundary of retained text:
+#'   - `"first"`: first keyword match.
+#'   - `"last"`: last keyword match.
+#'   - `"end"`: end of the string.
+#' @param include_keyword Logical. Whether to include the keyword match used as split point
+#'   in output.
+#'
+#' @returns A character vector with retained text only.
+#' @export
+#' @examples
+#' urls <- c(
+#'   "https://hospital.example.com/patient/123?token=abc",
+#'   "https://trial.example.org/visit/456"
+#' )
+#' # Keep domain only
+#' keep_by_keyword(urls, "com|org|net", from = "start", to = "last", include_keyword = TRUE)
+#'
+#' ids <- c("SITE-2026-0001", "CTR-2025-0912")
+#' # Keep site prefix before first '-'
+#' keep_by_keyword(ids, "-", from = "start", to = "first", include_keyword = FALSE)
+keep_by_keyword <- function(x,
+                            keyword,
+                            from = c("start", "first", "last"),
+                            to = c("first", "last", "end"),
+                            include_keyword = TRUE) {
+  from <- match.arg(from)
+  to <- match.arg(to)
+
+  if (!is.character(keyword) || length(keyword) != 1 || is.na(keyword) || keyword == "") {
+    stop("`keyword` must be one non-empty regular expression string")
+  }
+
+  if (!is.character(x)) {
+    x <- as.character(x)
+  }
+  if (!is.logical(include_keyword) || length(include_keyword) != 1 || is.na(include_keyword)) {
+    stop("`include_keyword` must be one non-NA logical value")
+  }
+  if (c(start = 1L, first = 2L, last = 3L)[[from]] > c(first = 2L, last = 3L, end = 4L)[[to]]) {
+    stop("`from` must not be after `to`")
+  }
+  if(from =="start" && to == "end") {
+    warning("`from = 'start'` and `to = 'end'` will keep the whole string, no keyword filtering applied.")
+    return(x)
+  }
+
+  vapply(
+    x,
+    FUN.VALUE = character(1),
+    USE.NAMES = FALSE,
+    FUN = function(s) {
+      if (is.na(s)) {
+        return(NA_character_)
+      }
+
+      m <- gregexpr(keyword, s, perl = TRUE)[[1]]
+      if (length(m) == 1 && m[1] == -1) {
+        return("")
+      }
+      mlen <- attr(m, "match.length")
+
+      first_start <- m[1]
+      first_end <- m[1] + mlen[1] - 1
+      last_start <- m[length(m)]
+      last_end <- m[length(m)] + mlen[length(mlen)] - 1
+      n <- nchar(s)
+
+      start_pos <- switch(from,
+        start = 1L,
+        first = if (include_keyword) first_start else first_end + 1L,
+        last = if (include_keyword) last_start else last_end + 1L
+      )
+      end_pos <- switch(to,
+        first = if (include_keyword) first_end else first_start - 1L,
+        last = if (include_keyword) last_end else last_start - 1L,
+        end = n
+      )
+
+      if (start_pos > end_pos || start_pos > n || end_pos < 1L) {
+        return("")
+      }
+      substr(s, max(1L, start_pos), min(n, end_pos))
+    }
+  )
+}
+
 #' Unmake names
 #' @description Inverse function of `make.names`. You can use `make.names` to make colnames legal for
 #'   subsequent processing and analysis in R. Then use this function to switch back for publication.

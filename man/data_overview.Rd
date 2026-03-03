@@ -8,7 +8,8 @@ data_overview(
   df,
   outlier_method = "iqr",
   outlier_threshold = NULL,
-  verbose = TRUE
+  verbose = TRUE,
+  sample = 10000
 )
 }
 \arguments{
@@ -25,6 +26,9 @@ uses method-specific defaults:
 }}
 
 \item{verbose}{If TRUE (default), prints result messages}
+
+\item{sample}{Maximum number of rows to sample for large datasets (default is 10000). Set to \code{NULL}
+\code{NA}, or \code{0} to disable sampling.}
 }
 \value{
 A list containing:

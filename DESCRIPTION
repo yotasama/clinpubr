@@ -25,6 +25,7 @@ Collate:
     'combine_files.R'
     'cut_by.R'
     'data_overview.R'
+    'data_screen.R'
     'exclusion_count.R'
     'extract_num.R'
     'get_valid.R'
