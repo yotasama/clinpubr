@@ -1,16 +1,21 @@
-test_that("entry patient_id level keeps all records of matched patients", {
+test_that("entry expression supports cross-table any() with &", {
   patient <- data.frame(pid = 1:3, stringsAsFactors = FALSE)
+  diagnosis <- data.frame(
+    pid = c(1, 2, 2, 3),
+    vid = c(11, 21, 21, 31),
+    icd = c("I10", "I10", "I18", "J18"),
+    stringsAsFactors = FALSE
+  )
   lab <- data.frame(
     pid = c(1, 1, 2, 3),
     vid = c(11, 12, 21, 31),
-    item = c("Hb", "Hb", "Hb", "Hb"),
-    value = c(11.2, 9.8, 10.5, 8.9),
+    Hb = c(9.5, 11.2, 10.8, 8.6),
     stringsAsFactors = FALSE
   )
 
   res <- screen_data_list(
-    data_list = list(patient = patient, lab = lab),
-    entry_filters = list(lab = ~ item == "Hb" & value > 10),
+    data_list = list(patient = patient, diagnosis = diagnosis, lab = lab),
+    entry_expr = any(Hb > 10) & any(icd == "I10"),
     entry_level = "patient_id",
     patient_id_map = "pid",
     output = "list"
@@ -18,61 +23,50 @@ test_that("entry patient_id level keeps all records of matched patients", {
 
   expect_equal(sort(unique(res$patient$pid)), c(1, 2))
   expect_equal(sort(unique(res$lab$pid)), c(1, 2))
+  expect_equal(sort(unique(res$diagnosis$pid)), c(1, 2))
 })
 
-test_that("entry visit_id level keeps matched visits and related data", {
-  patient <- data.frame(pid = 1:2, stringsAsFactors = FALSE)
-  admission <- data.frame(
-    pid = c(1, 1, 2),
-    vid = c(11, 12, 21),
-    stringsAsFactors = FALSE
-  )
-  lab <- data.frame(
-    pid = c(1, 1, 2),
-    vid = c(11, 12, 21),
-    item = c("Hb", "Hb", "Hb"),
-    value = c(9.9, 10.8, 10.3),
+test_that("entry expression supports all() grouped condition", {
+  patient <- data.frame(pid = 1:3, stringsAsFactors = FALSE)
+  diagnosis <- data.frame(
+    pid = c(1, 1, 2, 2, 3),
+    vid = c(11, 12, 21, 22, 31),
+    icd = c("I10", "E11", "I10", "J18", "I10"),
     stringsAsFactors = FALSE
   )
 
   res <- screen_data_list(
-    data_list = list(patient = patient, admission = admission, lab = lab),
-    entry_filters = list(lab = ~ item == "Hb" & value > 10),
-    entry_level = "visit_id",
+    data_list = list(patient = patient, diagnosis = diagnosis),
+    entry_expr = all(icd == "I10" | icd == "E11"),
+    entry_level = "patient_id",
     patient_id_map = "pid",
-    visit_id_map = c(admission = "vid", lab = "vid"),
     output = "list"
   )
 
-  expect_equal(sort(unique(res$patient$pid)), c(1, 2))
-  expect_equal(sort(unique(res$admission$vid)), c(12, 21))
-  expect_equal(sort(unique(res$lab$vid)), c(12, 21))
+  expect_equal(sort(unique(res$patient$pid)), c(1, 3))
 })
 
-test_that("entry date level keeps matched dates for date-mapped tables", {
-  patient <- data.frame(pid = 1:2, stringsAsFactors = FALSE)
+test_that("entry expression supports mean(..., na.rm=TRUE) > threshold", {
+  patient <- data.frame(pid = 1:3, stringsAsFactors = FALSE)
   lab <- data.frame(
-    pid = c(1, 1, 2),
-    test_day = c(1, 5, 2),
-    item = c("Hb", "Hb", "Hb"),
-    value = c(9.9, 10.8, 10.3),
+    pid = c(1, 1, 2, 2, 3, 3),
+    vid = c(11, 12, 21, 22, 31, 32),
+    Hb = c(11.0, NA, 9.8, 9.9, 10.5, 10.7),
     stringsAsFactors = FALSE
   )
 
   res <- screen_data_list(
     data_list = list(patient = patient, lab = lab),
-    entry_filters = list(lab = ~ item == "Hb" & value > 10),
-    entry_level = "date",
+    entry_expr = mean(Hb, na.rm = TRUE) > 10,
+    entry_level = "patient_id",
     patient_id_map = "pid",
-    date_map = c(lab = "test_day"),
     output = "list"
   )
 
-  expect_equal(sort(unique(res$patient$pid)), c(1, 2))
-  expect_equal(sort(unique(res$lab$test_day)), c(2, 5))
+  expect_equal(sort(unique(res$patient$pid)), c(1, 3))
 })
 
-test_that("scenario 1: any target diagnosis then all records of matched patients", {
+test_that("scenario 1: target diagnosis patients and all medical records", {
   patient <- data.frame(pid = 1:3, stringsAsFactors = FALSE)
   admission <- data.frame(
     pid = c(1, 1, 2, 2, 3),
@@ -97,7 +91,7 @@ test_that("scenario 1: any target diagnosis then all records of matched patients
 
   res <- screen_data_list(
     data_list = list(patient = patient, admission = admission, diagnosis = diagnosis, lab = lab),
-    entry_filters = list(diagnosis = ~ icd == "I10"),
+    entry_expr = any(icd == "I10"),
     entry_level = "patient_id",
     patient_id_map = "pid",
     output = "list"
@@ -108,7 +102,7 @@ test_that("scenario 1: any target diagnosis then all records of matched patients
   expect_equal(sort(unique(res$lab$vid)), c(11, 12, 21, 22))
 })
 
-test_that("scenario 2: any target diagnosis then diagnosis-index admission and after", {
+test_that("scenario 2: target diagnosis patients then index admission and after", {
   patient <- data.frame(pid = 1:3, stringsAsFactors = FALSE)
   admission <- data.frame(
     pid = c(1, 1, 2, 2, 3),
@@ -118,8 +112,8 @@ test_that("scenario 2: any target diagnosis then diagnosis-index admission and a
   )
   diagnosis <- data.frame(
     pid = c(1, 2, 3),
-    vid = c(11, 21, 31),
-    dx_day = c(1, 2, 3),
+    vid = c(11, 22, 31),
+    dx_day = c(1, 9, 3),
     icd = c("I10", "I10", "J18"),
     stringsAsFactors = FALSE
   )
@@ -133,10 +127,10 @@ test_that("scenario 2: any target diagnosis then diagnosis-index admission and a
 
   res <- screen_data_list(
     data_list = list(patient = patient, admission = admission, diagnosis = diagnosis, lab = lab),
-    entry_filters = list(diagnosis = ~ icd == "I10"),
+    entry_expr = any(icd == "I10"),
     entry_level = "patient_id",
-    anchor_filters = list(diagnosis = ~ icd == "I10"),
-    anchor_level = "date",
+    anchor_expr = any(icd == "I10"),
+    anchor_level = "visit_id",
     anchor_window = "from_first_anchor",
     patient_id_map = "pid",
     visit_id_map = c(admission = "vid", diagnosis = "vid", lab = "vid"),
@@ -145,16 +139,16 @@ test_that("scenario 2: any target diagnosis then diagnosis-index admission and a
   )
 
   expect_equal(sort(unique(res$patient$pid)), c(1, 2))
-  expect_equal(sort(unique(res$admission$vid)), c(11, 12, 21, 22))
-  expect_equal(sort(unique(res$lab$vid)), c(11, 12, 21, 22))
+  expect_equal(sort(unique(res$admission$vid)), c(11, 12, 22))
+  expect_equal(sort(unique(res$lab$vid)), c(11, 12, 22))
 })
 
-test_that("scenario 3: target diagnosis patients then abnormal indicator visit and after", {
+test_that("scenario 3: target diagnosis patients then abnormal indicator and after", {
   patient <- data.frame(pid = 1:3, stringsAsFactors = FALSE)
   admission <- data.frame(
-    pid = c(1, 1, 2, 2, 3),
-    vid = c(11, 12, 21, 22, 31),
-    admit_day = c(1, 5, 2, 8, 3),
+    pid = c(1, 1, 2, 2, 2, 3),
+    vid = c(11, 12, 20, 21, 22, 31),
+    admit_day = c(1, 5, 1, 2, 8, 3),
     stringsAsFactors = FALSE
   )
   diagnosis <- data.frame(
@@ -165,19 +159,18 @@ test_that("scenario 3: target diagnosis patients then abnormal indicator visit a
     stringsAsFactors = FALSE
   )
   lab <- data.frame(
-    pid = c(1, 1, 2, 2, 3),
-    vid = c(11, 12, 21, 22, 31),
-    lab_day = c(1, 5, 2, 8, 3),
-    item = c("Hb", "Hb", "Hb", "Hb", "Hb"),
-    value = c(9.8, 10.6, 10.7, 9.1, 8.6),
+    pid = c(1, 1, 2, 2, 2, 3),
+    vid = c(11, 12, 20, 21, 22, 31),
+    lab_day = c(1, 5, 1, 2, 8, 3),
+    Hb = c(9.8, 10.6, 6, 10.7, 9.1, 8.6),
     stringsAsFactors = FALSE
   )
 
   res <- screen_data_list(
     data_list = list(patient = patient, admission = admission, diagnosis = diagnosis, lab = lab),
-    entry_filters = list(diagnosis = ~ icd == "I10"),
+    entry_expr = any(icd == "I10"),
     entry_level = "patient_id",
-    anchor_filters = list(lab = ~ item == "Hb" & value > 10),
+    anchor_expr = any(Hb > 10),
     anchor_level = "date",
     anchor_window = "from_first_anchor",
     patient_id_map = "pid",
@@ -208,9 +201,9 @@ test_that("anchor date falls back to visit ordering when date_map is missing", {
   expect_warning(
     res <- screen_data_list(
       data_list = list(patient = patient, admission = admission, diagnosis = diagnosis),
-      entry_filters = list(diagnosis = ~ code %in% c("I10", "I11")),
+      entry_expr = any(code %in% c("I10", "I11")),
       entry_level = "patient_id",
-      anchor_filters = list(diagnosis = ~ code == "I11"),
+      anchor_expr = any(code == "I11"),
       anchor_level = "date",
       anchor_window = "from_first_anchor",
       patient_id_map = "pid",
@@ -233,13 +226,13 @@ test_that("followup_min_visits works", {
   lab <- data.frame(
     pid = c(1, 1, 2),
     vid = c(11, 12, 21),
-    value = c(5, 6, 7),
+    Hb = c(10.1, 10.8, 9.7),
     stringsAsFactors = FALSE
   )
 
   res <- screen_data_list(
     data_list = list(admission = admission, lab = lab),
-    entry_filters = list(admission = ~ pid %in% c(1, 2)),
+    entry_expr = any(Hb > 9),
     entry_level = "patient_id",
     patient_id_map = "pid",
     visit_id_map = "vid",
@@ -253,12 +246,12 @@ test_that("followup_min_visits works", {
 })
 
 test_that("joined output and return_audit both work", {
-  admission <- data.frame(pid = c(1, 2), vid = c(11, 21), stringsAsFactors = FALSE)
+  admission <- data.frame(pid = c(1, 2), vid = c(11, 21), keep_flag = c(0, 1), stringsAsFactors = FALSE)
   diagnosis <- data.frame(pid = c(1), vid = c(11), icd = c("I10"), stringsAsFactors = FALSE)
 
   res <- screen_data_list(
     data_list = list(admission = admission, diagnosis = diagnosis),
-    entry_filters = list(admission = ~ pid %in% c(1, 2)),
+    entry_expr = any(icd == "I10") | any(keep_flag == 1),
     entry_level = "patient_id",
     patient_id_map = "pid",
     output = "joined",
@@ -271,5 +264,5 @@ test_that("joined output and return_audit both work", {
   expect_equal(nrow(res$data), 2)
   expect_true("icd" %in% names(res$data))
   expect_true(is.list(res$audit))
-  expect_true("entry_filter" %in% names(res$audit))
+  expect_true("entry_scope" %in% names(res$audit))
 })

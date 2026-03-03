@@ -1,20 +1,24 @@
-#' Screen and Join Multi-Table Clinical Data by Entry and Anchor Stages
+#' Screen and Join Multi-Table Clinical Data by Expression
 #'
 #' @description
-#' One-call cohort screening pipeline with explicit stages:
-#' 1) entry stage: evaluate `entry_filters` and decide which keys enter downstream;
-#' 2) anchor stage (optional): evaluate `anchor_filters` and keep records from first anchor onward;
+#' One-call cohort screening pipeline with expression stages:
+#' 1) entry stage: evaluate `entry_expr` and decide which keys enter downstream;
+#' 2) anchor stage (optional): evaluate `anchor_expr` and keep records from first anchor onward;
 #' 3) optional follow-up visit filtering;
 #' 4) optional left-join integration.
 #'
+#' `entry_expr` and `anchor_expr` support boolean combinations of grouped terms,
+#' for example: `any(Hb > 10) & all(icd != "J18")` or
+#' `mean(Hb, na.rm = TRUE) > 10 & any(icd == "I10")`.
+#' `&` is applied as set intersection and `|` as set union on keys defined by level.
+#'
 #' @param data_list A named list of data frames.
-#' @param entry_filters Named list of filter rules by table for entry stage.
-#'   Rule type supports function, one-sided formula, expression, or list of them.
-#' @param entry_level Granularity used to build entry keys: `"patient_id"`, `"visit_id"`, or `"date"`.
-#' @param entry_logic Logic to combine entry matches across tables, default is `"and"`.
-#' @param anchor_filters Optional named list of filter rules by table for anchor stage.
+#' @param entry_expr Entry expression for key selection. Supports grouped terminal
+#'   expressions combined by `&`, `|`, and parentheses.
+#' @param entry_level Granularity used to build entry keys: `"patient_id"`,
+#'   `"visit_id"`, or `"date"`.
+#' @param anchor_expr Optional anchor expression. Same grammar as `entry_expr`.
 #' @param anchor_level Granularity used for anchor order: `"date"` or `"visit_id"`.
-#' @param anchor_logic Logic to combine anchor matches across tables, default is `"or"`.
 #' @param anchor_window Anchor window strategy: `"none"` or `"from_first_anchor"`.
 #' @param patient_id_map Patient ID mapping. Either one default column name
 #'   or a named vector by table.
@@ -35,9 +39,7 @@
 #' If `return_audit = FALSE`, returns filtered list or joined data frame.
 #' If `return_audit = TRUE`, returns a list with:
 #' - `data`: filtered list or joined data frame
-#' - `audit$entry_filter`: entry table filter log
 #' - `audit$entry_scope`: entry key scope application log
-#' - `audit$anchor_filter`: anchor table filter log
 #' - `audit$anchor_scope`: anchor window application log
 #' - `audit$followup`: follow-up filtering log
 #' - `audit$join`: join step log
@@ -59,27 +61,24 @@
 #'   pid = c(1, 1, 2, 2, 3),
 #'   vid = c(11, 12, 21, 22, 31),
 #'   lab_day = c(1, 5, 2, 8, 3),
-#'   item = c("K", "Hb", "Hb", "Hb", "Hb"),
-#'   value = c(4.2, 11.3, 10.8, 9.2, 8.6)
+#'   Hb = c(9.8, 11.3, 10.8, 9.2, 8.6)
 #' )
 #'
-#' # Scenario 1:
-#' # Any diagnosis contains target code, keep all records of those patients.
+#' # Scenario 1: any target diagnosis, keep all records of matched patients.
 #' res_s1 <- screen_data_list(
 #'   data_list = list(patient = patient, admission = admission, diagnosis = diagnosis, lab = lab),
-#'   entry_filters = list(diagnosis = ~ icd == "I10"),
+#'   entry_expr = any(icd == "I10"),
 #'   entry_level = "patient_id",
 #'   patient_id_map = "pid",
 #'   output = "list"
 #' )
 #'
-#' # Scenario 2:
-#' # Any diagnosis contains target code, keep index admission and after.
+#' # Scenario 2: any target diagnosis, keep diagnosis-index admission and after.
 #' res_s2 <- screen_data_list(
 #'   data_list = list(patient = patient, admission = admission, diagnosis = diagnosis, lab = lab),
-#'   entry_filters = list(diagnosis = ~ icd == "I10"),
+#'   entry_expr = any(icd == "I10"),
 #'   entry_level = "patient_id",
-#'   anchor_filters = list(diagnosis = ~ icd == "I10"),
+#'   anchor_expr = any(icd == "I10"),
 #'   anchor_level = "date",
 #'   anchor_window = "from_first_anchor",
 #'   patient_id_map = "pid",
@@ -88,13 +87,12 @@
 #'   output = "list"
 #' )
 #'
-#' # Scenario 3:
-#' # Any diagnosis contains target code, then use abnormal indicator as anchor.
+#' # Scenario 3: target diagnosis patients, then abnormal indicator visit and after.
 #' res_s3 <- screen_data_list(
 #'   data_list = list(patient = patient, admission = admission, diagnosis = diagnosis, lab = lab),
-#'   entry_filters = list(diagnosis = ~ icd == "I10"),
+#'   entry_expr = any(icd == "I10"),
 #'   entry_level = "patient_id",
-#'   anchor_filters = list(lab = ~ item == "Hb" & value > 10),
+#'   anchor_expr = any(Hb > 10),
 #'   anchor_level = "date",
 #'   anchor_window = "from_first_anchor",
 #'   patient_id_map = "pid",
@@ -105,12 +103,10 @@
 #'
 #' @export
 screen_data_list <- function(data_list,
-                             entry_filters,
+                             entry_expr,
                              entry_level = c("patient_id", "visit_id", "date"),
-                             entry_logic = c("and", "or"),
-                             anchor_filters = NULL,
+                             anchor_expr = NULL,
                              anchor_level = c("date", "visit_id"),
-                             anchor_logic = c("or", "and"),
                              anchor_window = c("none", "from_first_anchor"),
                              patient_id_map,
                              visit_id_map = NULL,
@@ -124,15 +120,19 @@ screen_data_list <- function(data_list,
                              return_audit = FALSE,
                              verbose = FALSE) {
   entry_level <- match.arg(entry_level)
-  entry_logic <- match.arg(entry_logic)
   anchor_level <- match.arg(anchor_level)
-  anchor_logic <- match.arg(anchor_logic)
   anchor_window <- match.arg(anchor_window)
   output <- match.arg(output)
 
+  entry_expr <- substitute(entry_expr)
+  anchor_expr <- if (missing(anchor_expr)) NULL else substitute(anchor_expr)
+  if (!is.null(anchor_expr) && identical(anchor_expr, quote(NULL))) {
+    anchor_expr <- NULL
+  }
+
   .validate_data_list(data_list)
-  if (missing(entry_filters) || is.null(entry_filters)) {
-    stop("`entry_filters` is required")
+  if (is.null(entry_expr)) {
+    stop("`entry_expr` is required")
   }
 
   if (is.null(join_base)) {
@@ -148,17 +148,14 @@ screen_data_list <- function(data_list,
     stop("`followup_table` not found in `data_list`")
   }
 
-  entry_filters <- .validate_filters(entry_filters, data_list, "entry_filters")
-  anchor_filters <- .validate_filters(anchor_filters, data_list, "anchor_filters")
   patient_id_map <- .normalize_column_map(patient_id_map, data_list, "patient_id_map", required = TRUE)
   visit_id_map <- .normalize_column_map(visit_id_map, data_list, "visit_id_map", required = FALSE)
   date_map <- .normalize_column_map(date_map, data_list, "date_map", required = FALSE)
 
   entry_res <- .apply_entry_stage(
     data_list = data_list,
-    entry_filters = entry_filters,
+    entry_expr = entry_expr,
     entry_level = entry_level,
-    entry_logic = entry_logic,
     patient_id_map = patient_id_map,
     visit_id_map = visit_id_map,
     date_map = date_map,
@@ -168,9 +165,8 @@ screen_data_list <- function(data_list,
 
   anchor_res <- .apply_anchor_stage(
     data_list = filtered,
-    anchor_filters = anchor_filters,
+    anchor_expr = anchor_expr,
     anchor_level = anchor_level,
-    anchor_logic = anchor_logic,
     anchor_window = anchor_window,
     patient_id_map = patient_id_map,
     visit_id_map = visit_id_map,
@@ -213,9 +209,7 @@ screen_data_list <- function(data_list,
   }
 
   audit <- list(
-    entry_filter = entry_res$filter_log,
     entry_scope = entry_res$scope_log,
-    anchor_filter = anchor_res$filter_log,
     anchor_scope = anchor_res$scope_log,
     followup = followup_res$log,
     join = join_log
@@ -237,20 +231,6 @@ screen_data_list <- function(data_list,
   if (!all(vapply(data_list, is.data.frame, logical(1)))) {
     stop("All elements of `data_list` must be data frames")
   }
-}
-
-.validate_filters <- function(filters, data_list, filters_name) {
-  if (is.null(filters)) {
-    return(NULL)
-  }
-  if (!is.list(filters) || is.null(names(filters))) {
-    stop("`", filters_name, "` must be a named list")
-  }
-  unknown <- setdiff(names(filters), names(data_list))
-  if (length(unknown) > 0) {
-    stop("Unknown table names in `", filters_name, "`: ", paste(unknown, collapse = ", "))
-  }
-  filters
 }
 
 .normalize_column_map <- function(col_map, data_list, map_name, required) {
@@ -284,63 +264,21 @@ screen_data_list <- function(data_list,
   col_map
 }
 
-.apply_table_filters <- function(df, rules) {
-  if (is.null(rules) || nrow(df) == 0) {
-    return(list(
-      data = df,
-      log = data.frame(
-        rule = "none",
-        before = nrow(df),
-        after = nrow(df),
-        removed = 0,
-        stringsAsFactors = FALSE
-      )
-    ))
-  }
-
-  is_single <- is.function(rules) || inherits(rules, "formula") || is.language(rules) || is.expression(rules)
-  rules <- if (is_single) list(rules) else rules
-  if (!is.list(rules)) {
-    stop("Each table filter must be a function, formula, expression, or a list of these")
-  }
-
-  log <- data.frame(rule = character(), before = integer(), after = integer(), removed = integer(), stringsAsFactors = FALSE)
-  current <- df
-  for (i in seq_along(rules)) {
-    before <- nrow(current)
-    keep <- .evaluate_filter_rule(current, rules[[i]])
-    current <- current[which(keep), , drop = FALSE]
-    after <- nrow(current)
-    log <- rbind(log, data.frame(rule = paste0("rule_", i), before = before, after = after, removed = before - after, stringsAsFactors = FALSE))
-  }
-
-  list(data = current, log = log)
-}
-
-.evaluate_filter_rule <- function(df, rule) {
-  if (is.function(rule)) {
-    out <- rule(df)
-  } else if (inherits(rule, "formula")) {
-    out <- eval(rlang::f_rhs(rule), envir = df, enclos = parent.frame())
-  } else if (is.language(rule) || is.expression(rule)) {
-    out <- eval(rule, envir = df, enclos = parent.frame())
-  } else {
-    stop("Unsupported filter rule type")
-  }
-
-  if (!is.logical(out) || length(out) != nrow(df)) {
-    stop("Each filter rule must return a logical vector with length nrow(table)")
-  }
-  out[is.na(out)] <- FALSE
-  out
-}
-
 .make_token <- function(...) {
   paste(..., sep = "::")
 }
 
 .extract_patient_from_token <- function(tokens) {
   sub("::.*$", "", tokens)
+}
+
+.split_token <- function(tokens) {
+  parts <- strsplit(tokens, "::", fixed = TRUE)
+  data.frame(
+    patient_id = vapply(parts, `[`, character(1), 1),
+    order_value = vapply(parts, `[`, character(1), 2),
+    stringsAsFactors = FALSE
+  )
 }
 
 .collect_level_tokens <- function(df, level, pid_col, vid_col = NULL, dcol = NULL) {
@@ -361,7 +299,6 @@ screen_data_list <- function(data_list,
     ok <- !is.na(pid) & !is.na(vid)
     return(unique(.make_token(pid[ok], vid[ok])))
   }
-
   if (is.null(dcol)) {
     stop("`date_map` is required for level 'date'")
   }
@@ -369,140 +306,6 @@ screen_data_list <- function(data_list,
   dd <- as.character(df[[dcol]])
   ok <- !is.na(pid) & !is.na(dd)
   unique(.make_token(pid[ok], dd[ok]))
-}
-
-.combine_token_sets <- function(tokens_by_table, logic) {
-  if (length(tokens_by_table) == 0) {
-    return(character())
-  }
-  if (logic == "or") {
-    return(unique(unlist(tokens_by_table, use.names = FALSE)))
-  }
-  Reduce(intersect, tokens_by_table)
-}
-
-.keep_by_entry_level <- function(df, level, pid_col, selected_patients, selected_tokens, vid_col = NULL, dcol = NULL) {
-  if (nrow(df) == 0) {
-    return(df)
-  }
-
-  pid <- as.character(df[[pid_col]])
-  keep_patient <- pid %in% selected_patients
-
-  if (level == "patient_id") {
-    return(df[which(keep_patient), , drop = FALSE])
-  }
-
-  if (level == "visit_id") {
-    if (is.null(vid_col)) {
-      return(df[which(keep_patient), , drop = FALSE])
-    }
-    token <- .make_token(pid, as.character(df[[vid_col]]))
-    keep <- keep_patient & token %in% selected_tokens
-    return(df[which(keep), , drop = FALSE])
-  }
-
-  if (is.null(dcol)) {
-    return(df[which(keep_patient), , drop = FALSE])
-  }
-  token <- .make_token(pid, as.character(df[[dcol]]))
-  keep <- keep_patient & token %in% selected_tokens
-  df[which(keep), , drop = FALSE]
-}
-
-.apply_entry_stage <- function(data_list,
-                               entry_filters,
-                               entry_level,
-                               entry_logic,
-                               patient_id_map,
-                               visit_id_map,
-                               date_map,
-                               verbose) {
-  filter_log <- data.frame(
-    table = character(),
-    rule = character(),
-    before = integer(),
-    after = integer(),
-    removed = integer(),
-    stringsAsFactors = FALSE
-  )
-  scope_log <- data.frame(
-    step = character(),
-    table = character(),
-    before = integer(),
-    after = integer(),
-    removed = integer(),
-    stringsAsFactors = FALSE
-  )
-
-  token_sets <- list()
-  for (tbl in names(entry_filters)) {
-    out <- .apply_table_filters(data_list[[tbl]], entry_filters[[tbl]])
-    filter_log <- rbind(filter_log, cbind(table = tbl, out$log, stringsAsFactors = FALSE))
-
-    pid_col <- patient_id_map[[tbl]]
-    vid_col <- if (!is.null(visit_id_map) && tbl %in% names(visit_id_map)) visit_id_map[[tbl]] else NULL
-    dcol <- if (!is.null(date_map) && tbl %in% names(date_map)) date_map[[tbl]] else NULL
-
-    token_sets[[tbl]] <- .collect_level_tokens(
-      df = out$data,
-      level = entry_level,
-      pid_col = pid_col,
-      vid_col = vid_col,
-      dcol = dcol
-    )
-  }
-
-  selected_tokens <- .combine_token_sets(token_sets, entry_logic)
-  if (length(selected_tokens) == 0) {
-    filtered <- lapply(data_list, function(df) df[0, , drop = FALSE])
-    for (tbl in names(data_list)) {
-      scope_log <- rbind(scope_log, data.frame(
-        step = "entry_scope",
-        table = tbl,
-        before = nrow(data_list[[tbl]]),
-        after = 0,
-        removed = nrow(data_list[[tbl]]),
-        stringsAsFactors = FALSE
-      ))
-    }
-    return(list(data = filtered, filter_log = filter_log, scope_log = scope_log))
-  }
-
-  selected_patients <- if (entry_level == "patient_id") selected_tokens else unique(.extract_patient_from_token(selected_tokens))
-
-  filtered <- data_list
-  for (tbl in names(filtered)) {
-    pid_col <- patient_id_map[[tbl]]
-    vid_col <- if (!is.null(visit_id_map) && tbl %in% names(visit_id_map)) visit_id_map[[tbl]] else NULL
-    dcol <- if (!is.null(date_map) && tbl %in% names(date_map)) date_map[[tbl]] else NULL
-
-    before <- nrow(filtered[[tbl]])
-    filtered[[tbl]] <- .keep_by_entry_level(
-      df = filtered[[tbl]],
-      level = entry_level,
-      pid_col = pid_col,
-      selected_patients = selected_patients,
-      selected_tokens = selected_tokens,
-      vid_col = vid_col,
-      dcol = dcol
-    )
-    after <- nrow(filtered[[tbl]])
-
-    scope_log <- rbind(scope_log, data.frame(
-      step = "entry_scope",
-      table = tbl,
-      before = before,
-      after = after,
-      removed = before - after,
-      stringsAsFactors = FALSE
-    ))
-    if (verbose) {
-      message(sprintf("[entry_scope] %s: %d -> %d", tbl, before, after))
-    }
-  }
-
-  list(data = filtered, filter_log = filter_log, scope_log = scope_log)
 }
 
 .order_compare_ge <- function(left, right) {
@@ -537,23 +340,154 @@ screen_data_list <- function(data_list,
   min(x_chr)
 }
 
-.apply_anchor_stage <- function(data_list,
-                                anchor_filters,
-                                anchor_level,
-                                anchor_logic,
-                                anchor_window,
-                                patient_id_map,
-                                visit_id_map,
-                                date_map,
-                                verbose) {
-  filter_log <- data.frame(
-    table = character(),
-    rule = character(),
-    before = integer(),
-    after = integer(),
-    removed = integer(),
-    stringsAsFactors = FALSE
+.find_table_for_vars <- function(vars, data_list) {
+  if (length(vars) == 0) {
+    stop("Predicate in `any(...)` must reference at least one column")
+  }
+
+  hit <- vapply(names(data_list), function(tbl) all(vars %in% names(data_list[[tbl]])), logical(1))
+  tables <- names(data_list)[hit]
+  if (length(tables) == 0) {
+    stop("No table contains all referenced columns: ", paste(vars, collapse = ", "))
+  }
+  if (length(tables) > 1) {
+    stop("Columns are ambiguous across tables for predicate: ", paste(vars, collapse = ", "))
+  }
+  tables[[1]]
+}
+
+.token_vector_by_level <- function(df, level, pid_col, vid_col = NULL, dcol = NULL) {
+  pid <- as.character(df[[pid_col]])
+  if (level == "patient_id") {
+    return(pid)
+  }
+  if (level == "visit_id") {
+    if (is.null(vid_col)) {
+      stop("`visit_id_map` is required for level 'visit_id'")
+    }
+    return(.make_token(pid, as.character(df[[vid_col]])))
+  }
+  if (is.null(dcol)) {
+    stop("`date_map` is required for level 'date'")
+  }
+  .make_token(pid, as.character(df[[dcol]]))
+}
+
+.eval_term_tokens <- function(term_expr,
+                              data_list,
+                              level,
+                              patient_id_map,
+                              visit_id_map,
+                              date_map) {
+  vars <- all.vars(term_expr)
+  tbl <- .find_table_for_vars(vars, data_list)
+  df <- data_list[[tbl]]
+
+  pid_col <- patient_id_map[[tbl]]
+  vid_col <- if (!is.null(visit_id_map) && tbl %in% names(visit_id_map)) visit_id_map[[tbl]] else NULL
+  dcol <- if (!is.null(date_map) && tbl %in% names(date_map)) date_map[[tbl]] else NULL
+
+  tokens <- .token_vector_by_level(df, level, pid_col, vid_col, dcol)
+  ok <- !is.na(tokens)
+  if (!any(ok)) {
+    return(character())
+  }
+
+  group_idx <- split(which(ok), tokens[ok])
+  keep_tokens <- character()
+
+  for (tok in names(group_idx)) {
+    idx <- group_idx[[tok]]
+    sub_df <- df[idx, , drop = FALSE]
+    val <- eval(term_expr, envir = sub_df, enclos = parent.frame())
+
+    if (is.logical(val) && length(val) == 1) {
+      keep <- isTRUE(val)
+    } else if (is.logical(val) && length(val) == nrow(sub_df)) {
+      stop("Terminal expression must return one logical value per group; wrap row-wise conditions with any()/all().")
+    } else {
+      stop("Terminal expression must return a single logical value per group.")
+    }
+
+    if (keep) {
+      keep_tokens <- c(keep_tokens, tok)
+    }
+  }
+
+  unique(keep_tokens)
+}
+
+.eval_key_expr_tokens <- function(expr,
+                                  data_list,
+                                  level,
+                                  patient_id_map,
+                                  visit_id_map,
+                                  date_map) {
+  if (is.call(expr)) {
+    op <- as.character(expr[[1]])
+    if (op %in% c("&", "&&")) {
+      left <- .eval_key_expr_tokens(expr[[2]], data_list, level, patient_id_map, visit_id_map, date_map)
+      right <- .eval_key_expr_tokens(expr[[3]], data_list, level, patient_id_map, visit_id_map, date_map)
+      return(intersect(left, right))
+    }
+    if (op %in% c("|", "||")) {
+      left <- .eval_key_expr_tokens(expr[[2]], data_list, level, patient_id_map, visit_id_map, date_map)
+      right <- .eval_key_expr_tokens(expr[[3]], data_list, level, patient_id_map, visit_id_map, date_map)
+      return(union(left, right))
+    }
+    if (op == "(") {
+      return(.eval_key_expr_tokens(expr[[2]], data_list, level, patient_id_map, visit_id_map, date_map))
+    }
+    return(.eval_term_tokens(expr, data_list, level, patient_id_map, visit_id_map, date_map))
+  }
+  stop("Expression supports grouped terminal expressions combined by `&`, `|`, and parentheses")
+}
+
+.keep_by_level <- function(df, level, pid_col, selected_patients, selected_tokens, vid_col = NULL, dcol = NULL) {
+  if (nrow(df) == 0) {
+    return(df)
+  }
+
+  pid <- as.character(df[[pid_col]])
+  keep_patient <- pid %in% selected_patients
+
+  if (level == "patient_id") {
+    return(df[which(keep_patient), , drop = FALSE])
+  }
+
+  if (level == "visit_id") {
+    if (is.null(vid_col)) {
+      return(df[which(keep_patient), , drop = FALSE])
+    }
+    token <- .make_token(pid, as.character(df[[vid_col]]))
+    keep <- keep_patient & token %in% selected_tokens
+    return(df[which(keep), , drop = FALSE])
+  }
+
+  if (is.null(dcol)) {
+    return(df[which(keep_patient), , drop = FALSE])
+  }
+  token <- .make_token(pid, as.character(df[[dcol]]))
+  keep <- keep_patient & token %in% selected_tokens
+  df[which(keep), , drop = FALSE]
+}
+
+.apply_entry_stage <- function(data_list,
+                               entry_expr,
+                               entry_level,
+                               patient_id_map,
+                               visit_id_map,
+                               date_map,
+                               verbose) {
+  selected_tokens <- .eval_key_expr_tokens(
+    expr = entry_expr,
+    data_list = data_list,
+    level = entry_level,
+    patient_id_map = patient_id_map,
+    visit_id_map = visit_id_map,
+    date_map = date_map
   )
+
   scope_log <- data.frame(
     step = character(),
     table = character(),
@@ -563,8 +497,76 @@ screen_data_list <- function(data_list,
     stringsAsFactors = FALSE
   )
 
-  if (is.null(anchor_filters) || anchor_window == "none") {
-    return(list(data = data_list, filter_log = filter_log, scope_log = scope_log))
+  if (length(selected_tokens) == 0) {
+    filtered <- lapply(data_list, function(df) df[0, , drop = FALSE])
+    for (tbl in names(data_list)) {
+      scope_log <- rbind(scope_log, data.frame(
+        step = "entry_scope",
+        table = tbl,
+        before = nrow(data_list[[tbl]]),
+        after = 0,
+        removed = nrow(data_list[[tbl]]),
+        stringsAsFactors = FALSE
+      ))
+    }
+    return(list(data = filtered, scope_log = scope_log))
+  }
+
+  selected_patients <- if (entry_level == "patient_id") selected_tokens else unique(.extract_patient_from_token(selected_tokens))
+
+  filtered <- data_list
+  for (tbl in names(filtered)) {
+    pid_col <- patient_id_map[[tbl]]
+    vid_col <- if (!is.null(visit_id_map) && tbl %in% names(visit_id_map)) visit_id_map[[tbl]] else NULL
+    dcol <- if (!is.null(date_map) && tbl %in% names(date_map)) date_map[[tbl]] else NULL
+
+    before <- nrow(filtered[[tbl]])
+    filtered[[tbl]] <- .keep_by_level(
+      df = filtered[[tbl]],
+      level = entry_level,
+      pid_col = pid_col,
+      selected_patients = selected_patients,
+      selected_tokens = selected_tokens,
+      vid_col = vid_col,
+      dcol = dcol
+    )
+    after <- nrow(filtered[[tbl]])
+
+    scope_log <- rbind(scope_log, data.frame(
+      step = "entry_scope",
+      table = tbl,
+      before = before,
+      after = after,
+      removed = before - after,
+      stringsAsFactors = FALSE
+    ))
+    if (verbose) {
+      message(sprintf("[entry_scope] %s: %d -> %d", tbl, before, after))
+    }
+  }
+
+  list(data = filtered, scope_log = scope_log)
+}
+
+.apply_anchor_stage <- function(data_list,
+                                anchor_expr,
+                                anchor_level,
+                                anchor_window,
+                                patient_id_map,
+                                visit_id_map,
+                                date_map,
+                                verbose) {
+  scope_log <- data.frame(
+    step = character(),
+    table = character(),
+    before = integer(),
+    after = integer(),
+    removed = integer(),
+    stringsAsFactors = FALSE
+  )
+
+  if (is.null(anchor_expr) || anchor_window == "none") {
+    return(list(data = data_list, scope_log = scope_log))
   }
 
   effective_level <- anchor_level
@@ -580,39 +582,16 @@ screen_data_list <- function(data_list,
     stop("`date_map` is required for anchor level 'date'")
   }
 
-  events_by_tbl <- list()
-  patients_by_tbl <- list()
+  selected_tokens <- .eval_key_expr_tokens(
+    expr = anchor_expr,
+    data_list = data_list,
+    level = effective_level,
+    patient_id_map = patient_id_map,
+    visit_id_map = visit_id_map,
+    date_map = date_map
+  )
 
-  for (tbl in names(anchor_filters)) {
-    out <- .apply_table_filters(data_list[[tbl]], anchor_filters[[tbl]])
-    filter_log <- rbind(filter_log, cbind(table = tbl, out$log, stringsAsFactors = FALSE))
-
-    pid_col <- patient_id_map[[tbl]]
-    ocol <- if (effective_level == "date") date_map[[tbl]] else visit_id_map[[tbl]]
-
-    if (is.null(ocol)) {
-      stop("Missing ", effective_level, " mapping for anchor table: ", tbl)
-    }
-
-    tmp <- out$data[, c(pid_col, ocol), drop = FALSE]
-    names(tmp) <- c("patient_id", "order_value")
-    tmp <- tmp[!is.na(tmp$patient_id) & !is.na(tmp$order_value), , drop = FALSE]
-
-    events_by_tbl[[tbl]] <- tmp
-    patients_by_tbl[[tbl]] <- unique(as.character(tmp$patient_id))
-  }
-
-  if (length(events_by_tbl) == 0) {
-    return(list(data = data_list, filter_log = filter_log, scope_log = scope_log))
-  }
-
-  selected_patients <- if (anchor_logic == "or") {
-    unique(unlist(patients_by_tbl, use.names = FALSE))
-  } else {
-    Reduce(intersect, patients_by_tbl)
-  }
-
-  if (length(selected_patients) == 0) {
+  if (length(selected_tokens) == 0) {
     filtered <- lapply(data_list, function(df) df[0, , drop = FALSE])
     for (tbl in names(data_list)) {
       scope_log <- rbind(scope_log, data.frame(
@@ -624,17 +603,12 @@ screen_data_list <- function(data_list,
         stringsAsFactors = FALSE
       ))
     }
-    return(list(data = filtered, filter_log = filter_log, scope_log = scope_log))
+    return(list(data = filtered, scope_log = scope_log))
   }
 
-  all_events <- do.call(rbind, events_by_tbl)
-  all_events <- all_events[all_events$patient_id %in% selected_patients, , drop = FALSE]
-
-  index_order <- stats::aggregate(
-    as.character(all_events$order_value),
-    by = list(patient_id = as.character(all_events$patient_id)),
-    FUN = .order_min
-  )
+  token_df <- .split_token(selected_tokens)
+  selected_patients <- unique(token_df$patient_id)
+  index_order <- stats::aggregate(token_df$order_value, by = list(patient_id = token_df$patient_id), FUN = .order_min)
   names(index_order)[2] <- "index_order"
 
   filtered <- data_list
@@ -674,7 +648,7 @@ screen_data_list <- function(data_list,
     }
   }
 
-  list(data = filtered, filter_log = filter_log, scope_log = scope_log)
+  list(data = filtered, scope_log = scope_log)
 }
 
 .apply_followup_filter <- function(data_list,
