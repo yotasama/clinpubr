@@ -299,3 +299,123 @@ nrow(x)
 
 y=list(a=x,b="x")
 y2=dplyr::filter(y$a,X1>0)
+
+
+# ---- 10 million rows simulation benchmark for screen_data_list ----
+run_screen_data_benchmark_10m <- function(seed = 20260304) {
+  set.seed(seed)
+
+  n_lab <- 4e7
+  n_diag <- 10e6
+  n_pid <- 6e6
+
+  cat("Generating simulation data...\n")
+  t_gen <- system.time({
+    lab <- data.frame(
+      pid = sample.int(n_pid, n_lab, replace = TRUE),
+      vid = sample.int(n_pid * 3L, n_lab, replace = TRUE),
+      lab_day = sample.int(3650L, n_lab, replace = TRUE),
+      Hb = rnorm(n_lab, mean = 10.8, sd = 1.8)
+    )
+
+    diagnosis <- data.frame(
+      pid = sample.int(n_pid, n_diag, replace = TRUE),
+      vid = sample.int(n_pid * 3L, n_diag, replace = TRUE),
+      dx_day = sample.int(3650L, n_diag, replace = TRUE),
+      icd = sample(c("I10", "I11", "E11", "J18"), n_diag, replace = TRUE,
+        prob = c(0.22, 0.08, 0.30, 0.40)
+      )
+    )
+
+    admission <- unique(rbind(
+      data.frame(pid = lab$pid, vid = lab$vid, admit_day = lab$lab_day),
+      data.frame(pid = diagnosis$pid, vid = diagnosis$vid, admit_day = diagnosis$dx_day)
+    ))
+
+    patient <- data.frame(pid = sort(unique(c(lab$pid, diagnosis$pid))))
+  })
+
+  cat("Data generation time (sec):", t_gen[["elapsed"]], "\n")
+  cat("Rows - patient:", nrow(patient),
+      "admission:", nrow(admission),
+      "diagnosis:", nrow(diagnosis),
+      "lab:", nrow(lab), "\n")
+  cat("Approx lab size (GB):", round(as.numeric(object.size(lab)) / 1024^3, 3), "\n")
+
+  gc()
+
+  cat("Running screen_data_list benchmark...\n")
+  t_fit <- system.time({
+    res <- screen_data_list(
+      data_list = list(
+        patient = patient,
+        admission = admission,
+        diagnosis = diagnosis,
+        lab = lab
+      ),
+      entry_expr = any(icd == "I10"),
+      entry_level = "patient_id",
+      anchor_expr = any(Hb > 11.5),
+      anchor_level = "date",
+      anchor_window = "from_first_anchor",
+      patient_id_map = "pid",
+      visit_id_map = c(admission = "vid", diagnosis = "vid", lab = "vid"),
+      date_map = c(admission = "admit_day", diagnosis = "dx_day", lab = "lab_day"),
+      output = "list",
+      return_audit = FALSE,
+      verbose = FALSE
+    )
+  })
+
+  cat("screen_data_list time (sec):", t_fit[["elapsed"]], "\n")
+  cat("Output rows - patient:", nrow(res$patient),
+      "admission:", nrow(res$admission),
+      "diagnosis:", nrow(res$diagnosis),
+      "lab:", nrow(res$lab), "\n")
+
+  invisible(list(
+    timing_generation = t_gen,
+    timing_screen = t_fit,
+    output_n = vapply(res, nrow, numeric(1))
+  ))
+}
+
+# Run manually when needed:
+bench_10m <- run_screen_data_benchmark_10m()
+
+
+patient <- data.frame(pid = 1:3, stringsAsFactors = FALSE)
+admission <- data.frame(
+  pid = c(1, 1, 2, 2, 3),
+  vid = c(11, 12, 21, 22, 31),
+  admit_day = c(1, 5, 1, 8, 3),
+  stringsAsFactors = FALSE
+)
+diagnosis <- data.frame(
+  pid = c(1, 2, 2, 3),
+  vid = c(11, 21, 21, 31),
+  dx_day = c(1, 1, 2, 3),
+  icd = c("I10", "X12", "I10", "J18"),
+  stringsAsFactors = FALSE
+)
+lab <- data.frame(
+  pid = c(1, 1, 2, 2, 2, 2, 3),
+  vid = c(11, 12, 20, 21, 21, 22, 31),
+  lab_day = c(1, 5, 1, 2, 4, 8, 3),
+  Hb = c(9.8, 10.6, 6, 10.7, 3, 9.1, 8.6),
+  stringsAsFactors = FALSE
+)
+
+res <- screen_data_list(
+  data_list = list(patient = patient, admission = admission, diagnosis = diagnosis, lab = lab),
+  entry_expr = any(icd == "I10"),
+  entry_level = "patient_id",
+  anchor_expr = any(Hb > 10),
+  anchor_level = "date",
+  anchor_window = "from_first_anchor",
+  patient_id_map = "pid",
+  visit_id_map = c(admission = "vid", diagnosis = "vid", lab = "vid"),
+  date_map = c(admission = "admit_day", diagnosis = "dx_day", lab = "lab_day"),
+  output = "joined"
+)
+

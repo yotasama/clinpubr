@@ -174,7 +174,7 @@ test_that("scenario 3: target diagnosis patients then abnormal indicator and aft
     anchor_level = "date",
     anchor_window = "from_first_anchor",
     patient_id_map = "pid",
-    visit_id_map = c(admission = "vid", diagnosis = "vid", lab = "vid"),
+    visit_id_map = "vid",
     date_map = c(admission = "admit_day", diagnosis = "dx_day", lab = "lab_day"),
     output = "list"
   )
@@ -182,6 +182,47 @@ test_that("scenario 3: target diagnosis patients then abnormal indicator and aft
   expect_equal(sort(unique(res$patient$pid)), c(1, 2))
   expect_equal(sort(unique(res$admission$vid)), c(12, 21, 22))
   expect_equal(sort(unique(res$lab$vid)), c(12, 21, 22))
+})
+
+test_that("scenario 3 joined output works", {
+  admission <- data.frame(
+    pid = c(1, 1, 2, 2, 2, 3),
+    vid = c(11, 12, 20, 21, 22, 31),
+    admit_day = c(1, 5, 1, 2, 8, 3),
+    stringsAsFactors = FALSE
+  )
+  diagnosis <- data.frame(
+    pid = c(1, 2, 3),
+    vid = c(11, 21, 31),
+    dx_day = c(1, 2, 3),
+    icd = c("I10", "I10", "J18"),
+    stringsAsFactors = FALSE
+  )
+  lab <- data.frame(
+    pid = c(1, 1, 2, 2, 2, 3),
+    vid = c(11, 12, 20, 21, 22, 31),
+    lab_day = c(1, 5, 1, 2, 8, 3),
+    Hb = c(9.8, 10.6, 6, 10.7, 9.1, 8.6),
+    stringsAsFactors = FALSE
+  )
+
+  res <- screen_data_list(
+    data_list = list(admission = admission, diagnosis = diagnosis, lab = lab),
+    entry_expr = any(icd == "I10"),
+    entry_level = "patient_id",
+    anchor_expr = any(Hb > 10),
+    anchor_level = "date",
+    anchor_window = "from_first_anchor",
+    patient_id_map = "pid",
+    visit_id_map = c(admission = "vid", diagnosis = "vid", lab = "vid"),
+    date_map = c(admission = "admit_day", diagnosis = "dx_day", lab = "lab_day"),
+    output = "joined"
+  )
+
+  expect_true(is.data.frame(res))
+  expect_true(all(c("pid", "vid") %in% names(res)))
+  expect_equal(sort(unique(res$pid)), c(1, 2))
+  expect_equal(sort(unique(res$vid)), c(12, 21, 22))
 })
 
 test_that("anchor date falls back to visit ordering when date_map is missing", {
@@ -254,9 +295,8 @@ test_that("joined output and return_audit both work", {
     entry_expr = any(icd == "I10") | any(keep_flag == 1),
     entry_level = "patient_id",
     patient_id_map = "pid",
+    visit_id_map = "vid",
     output = "joined",
-    join_base = "admission",
-    join_by = list(diagnosis = c(pid = "pid", vid = "vid")),
     return_audit = TRUE
   )
 

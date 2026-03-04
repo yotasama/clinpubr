@@ -5,14 +5,16 @@
 #' 1) entry stage: evaluate `entry_expr` and decide which keys enter downstream;
 #' 2) anchor stage (optional): evaluate `anchor_expr` and keep records from first anchor onward;
 #' 3) optional follow-up visit filtering;
-#' 4) optional left-join integration.
+#' 4) optional outer-join integration.
 #'
 #' `entry_expr` and `anchor_expr` support boolean combinations of grouped terms,
 #' for example: `any(Hb > 10) & all(icd != "J18")` or
 #' `mean(Hb, na.rm = TRUE) > 10 & any(icd == "I10")`.
 #' `&` is applied as set intersection and `|` as set union on keys defined by level.
 #'
-#' @param data_list A named list of data frames.
+#' @param data_list A named list of data frames. If `output = "joined"`, all tables
+#'   will be outer-joined in the order of `data_list` after filtering.
+#'   If `output = "list"`, tables are filtered but not joined.
 #' @param entry_expr Entry expression for key selection. Supports grouped terminal
 #'   expressions combined by `&`, `|`, and parentheses.
 #' @param entry_level Granularity used to build entry keys: `"patient_id"`,
@@ -27,11 +29,10 @@
 #' @param date_map Date/order column mapping. Either one default column name
 #'   or a named vector by table.
 #' @param followup_min_visits Optional minimum number of distinct visits per patient.
-#' @param followup_table Table used to count follow-up visits. Defaults to `join_base`.
+#' @param followup_table Table used to count follow-up visits. Only used when
+#'   `followup_min_visits` is not `NULL`. If missing, defaults to the first table
+#'   that has both `patient_id` and `visit_id` mappings.
 #' @param output Output format: `"list"` or `"joined"`.
-#' @param join_base Base table for left join when `output = "joined"`.
-#' @param join_order Optional vector of table names to join, in order.
-#' @param join_by Optional named list of join keys by table.
 #' @param return_audit Logical, whether to return audit logs.
 #' @param verbose Logical, whether to print progress messages.
 #'
@@ -114,9 +115,6 @@ screen_data_list <- function(data_list,
                              followup_min_visits = NULL,
                              followup_table = NULL,
                              output = c("list", "joined"),
-                             join_base = NULL,
-                             join_order = NULL,
-                             join_by = NULL,
                              return_audit = FALSE,
                              verbose = FALSE) {
   entry_level <- match.arg(entry_level)
@@ -135,22 +133,43 @@ screen_data_list <- function(data_list,
     stop("`entry_expr` is required")
   }
 
-  if (is.null(join_base)) {
-    join_base <- names(data_list)[1]
-  }
-  if (!join_base %in% names(data_list)) {
-    stop("`join_base` not found in `data_list`")
-  }
-  if (is.null(followup_table)) {
-    followup_table <- join_base
-  }
-  if (!followup_table %in% names(data_list)) {
-    stop("`followup_table` not found in `data_list`")
-  }
-
   patient_id_map <- .normalize_column_map(patient_id_map, data_list, "patient_id_map", required = TRUE)
   visit_id_map <- .normalize_column_map(visit_id_map, data_list, "visit_id_map", required = FALSE)
   date_map <- .normalize_column_map(date_map, data_list, "date_map", required = FALSE)
+
+  if (output == "joined") {
+    .check_join_key_uniqueness(
+      data_list = data_list,
+      patient_id_map = patient_id_map,
+      visit_id_map = visit_id_map,
+      date_map = date_map
+    )
+  }
+
+  if (!is.null(followup_min_visits)) {
+    if (is.null(followup_table)) {
+      candidates <- names(data_list)
+      if (!is.null(patient_id_map)) {
+        candidates <- candidates[candidates %in% names(patient_id_map)]
+      } else {
+        candidates <- character()
+      }
+      if (!is.null(visit_id_map)) {
+        candidates <- candidates[candidates %in% names(visit_id_map)]
+      } else {
+        candidates <- character()
+      }
+
+      if (length(candidates) == 0) {
+        stop("No table has both patient_id and visit_id mappings for follow-up counting")
+      }
+      followup_table <- candidates[[1]]
+    }
+
+    if (!followup_table %in% names(data_list)) {
+      stop("`followup_table` not found in `data_list`")
+    }
+  }
 
   entry_res <- .apply_entry_stage(
     data_list = data_list,
@@ -197,11 +216,11 @@ screen_data_list <- function(data_list,
   if (output == "list") {
     result <- filtered
   } else {
-    join_res <- .left_join_all(
+    join_res <- .full_join_all(
       data_list = filtered,
-      join_base = join_base,
-      join_order = join_order,
-      join_by = join_by,
+      patient_id_map = patient_id_map,
+      visit_id_map = visit_id_map,
+      date_map = date_map,
       verbose = verbose
     )
     result <- join_res$data
@@ -245,7 +264,12 @@ screen_data_list <- function(data_list,
   }
 
   if (length(col_map) == 1 && is.null(names(col_map))) {
-    col_map <- stats::setNames(rep(col_map, length(data_list)), names(data_list))
+    default_col <- col_map[[1]]
+    hit_tables <- names(data_list)[vapply(data_list, function(df) default_col %in% names(df), logical(1))]
+    if (required && length(hit_tables) == 0) {
+      stop("Default column '", default_col, "' from `", map_name, "` not found in any table")
+    }
+    col_map <- stats::setNames(rep(default_col, length(hit_tables)), hit_tables)
   }
   if (is.null(names(col_map)) || any(names(col_map) == "")) {
     stop("`", map_name, "` must be a named character vector, or one default column name")
@@ -256,12 +280,57 @@ screen_data_list <- function(data_list,
     stop("Unknown table names in `", map_name, "`: ", paste(unknown, collapse = ", "))
   }
 
+  if (required) {
+    missing_tbl <- setdiff(names(data_list), names(col_map))
+    if (length(missing_tbl) > 0) {
+      stop("`", map_name, "` is missing mappings for tables: ", paste(missing_tbl, collapse = ", "))
+    }
+  }
+
   for (tbl in names(col_map)) {
     if (!col_map[[tbl]] %in% names(data_list[[tbl]])) {
       stop("Column '", col_map[[tbl]], "' not found in table '", tbl, "' from `", map_name, "`")
     }
   }
   col_map
+}
+
+.check_join_key_uniqueness <- function(data_list, patient_id_map, visit_id_map, date_map) {
+  problems <- character()
+
+  for (tbl in names(data_list)) {
+    key_cols <- c(
+      patient_id_map[[tbl]],
+      if (!is.null(visit_id_map) && tbl %in% names(visit_id_map)) visit_id_map[[tbl]] else NULL,
+      if (!is.null(date_map) && tbl %in% names(date_map)) date_map[[tbl]] else NULL
+    )
+    key_cols <- unique(key_cols)
+    key_cols <- key_cols[!is.na(key_cols) & nzchar(key_cols)]
+
+    if (length(key_cols) == 0) {
+      next
+    }
+
+    df <- data_list[[tbl]]
+    if (nrow(df) == 0) {
+      next
+    }
+
+    if (any(duplicated(df[, key_cols, drop = FALSE]))) {
+      problems <- c(
+        problems,
+        paste0("table '", tbl, "' has non-unique join keys [", paste(key_cols, collapse = "+"), "]")
+      )
+    }
+  }
+
+  if (length(problems) > 0) {
+    stop(
+      "Join key uniqueness check failed before joining: ",
+      paste(problems, collapse = "; "),
+      ". Consider using output = 'list' instead of 'joined'."
+    )
+  }
 }
 
 .make_token <- function(...) {
@@ -373,27 +442,104 @@ screen_data_list <- function(data_list,
   .make_token(pid, as.character(df[[dcol]]))
 }
 
-.eval_term_tokens <- function(term_expr,
-                              data_list,
-                              level,
-                              patient_id_map,
-                              visit_id_map,
-                              date_map) {
-  vars <- all.vars(term_expr)
-  tbl <- .find_table_for_vars(vars, data_list)
-  df <- data_list[[tbl]]
+.group_bool_any <- function(values, tokens) {
+  tok_u <- unique(tokens)
+  tok_f <- factor(tokens, levels = tok_u)
+  hit <- rowsum(as.integer(values), tok_f, reorder = FALSE)[, 1] > 0
+  tok_u[hit]
+}
 
-  pid_col <- patient_id_map[[tbl]]
-  vid_col <- if (!is.null(visit_id_map) && tbl %in% names(visit_id_map)) visit_id_map[[tbl]] else NULL
-  dcol <- if (!is.null(date_map) && tbl %in% names(date_map)) date_map[[tbl]] else NULL
+.group_bool_all <- function(values, tokens) {
+  tok_u <- unique(tokens)
+  tok_f <- factor(tokens, levels = tok_u)
+  miss <- rowsum(as.integer(!values), tok_f, reorder = FALSE)[, 1] == 0
+  tok_u[miss]
+}
 
-  tokens <- .token_vector_by_level(df, level, pid_col, vid_col, dcol)
-  ok <- !is.na(tokens)
-  if (!any(ok)) {
-    return(character())
+.extract_agg_spec <- function(term_expr) {
+  if (!is.call(term_expr)) {
+    return(NULL)
   }
 
-  group_idx <- split(which(ok), tokens[ok])
+  cmp <- as.character(term_expr[[1]])
+  cmp_ops <- c(">", ">=", "<", "<=", "==", "!=")
+  if (!cmp %in% cmp_ops || length(term_expr) != 3) {
+    return(NULL)
+  }
+
+  lhs <- term_expr[[2]]
+  rhs <- term_expr[[3]]
+
+  is_agg_call <- function(x) {
+    is.call(x) && as.character(x[[1]]) %in% c("mean", "sum", "min", "max") && length(x) >= 2
+  }
+
+  if (is_agg_call(lhs) && length(all.vars(rhs)) == 0) {
+    return(list(cmp = cmp, agg = lhs, rhs = rhs, agg_on_left = TRUE))
+  }
+  if (is_agg_call(rhs) && length(all.vars(lhs)) == 0) {
+    return(list(cmp = cmp, agg = rhs, rhs = lhs, agg_on_left = FALSE))
+  }
+  NULL
+}
+
+.eval_agg_by_token <- function(x, tokens, fun_name, na_rm) {
+  tok_u <- unique(tokens)
+  tok_f <- factor(tokens, levels = tok_u)
+
+  if (fun_name == "sum") {
+    x2 <- x
+    if (na_rm) {
+      x2[is.na(x2)] <- 0
+    }
+    out <- rowsum(x2, tok_f, reorder = FALSE)[, 1]
+    if (!na_rm) {
+      has_na <- rowsum(as.integer(is.na(x)), tok_f, reorder = FALSE)[, 1] > 0
+      out[has_na] <- NA_real_
+    }
+    names(out) <- tok_u
+    return(out)
+  }
+
+  if (fun_name == "mean") {
+    x_sum <- x
+    is_na <- is.na(x_sum)
+    x_sum[is_na] <- 0
+    sums <- rowsum(x_sum, tok_f, reorder = FALSE)[, 1]
+    if (na_rm) {
+      cnt <- rowsum(as.integer(!is_na), tok_f, reorder = FALSE)[, 1]
+    } else {
+      cnt <- rowsum(rep(1L, length(x_sum)), tok_f, reorder = FALSE)[, 1]
+      has_na <- rowsum(as.integer(is_na), tok_f, reorder = FALSE)[, 1] > 0
+    }
+    out <- sums / cnt
+    out[cnt == 0] <- NA_real_
+    if (!na_rm) {
+      out[has_na] <- NA_real_
+    }
+    names(out) <- tok_u
+    return(out)
+  }
+
+  split_vals <- split(x, tok_f)
+  fun <- match.fun(fun_name)
+  out <- vapply(split_vals, function(z) {
+    suppressWarnings(fun(z, na.rm = na_rm))
+  }, numeric(1))
+  out
+}
+
+.cmp_values <- function(lhs, rhs, op) {
+  if (op == ">") return(lhs > rhs)
+  if (op == ">=") return(lhs >= rhs)
+  if (op == "<") return(lhs < rhs)
+  if (op == "<=") return(lhs <= rhs)
+  if (op == "==") return(lhs == rhs)
+  lhs != rhs
+}
+
+.eval_term_tokens_fallback <- function(term_expr, df, tokens) {
+  group_idx <- split(seq_along(tokens), tokens)
   keep_tokens <- character()
 
   for (tok in names(group_idx)) {
@@ -415,6 +561,70 @@ screen_data_list <- function(data_list,
   }
 
   unique(keep_tokens)
+}
+
+.eval_term_tokens <- function(term_expr,
+                              data_list,
+                              level,
+                              patient_id_map,
+                              visit_id_map,
+                              date_map) {
+  vars <- all.vars(term_expr)
+  tbl <- .find_table_for_vars(vars, data_list)
+  df <- data_list[[tbl]]
+
+  pid_col <- patient_id_map[[tbl]]
+  vid_col <- if (!is.null(visit_id_map) && tbl %in% names(visit_id_map)) visit_id_map[[tbl]] else NULL
+  dcol <- if (!is.null(date_map) && tbl %in% names(date_map)) date_map[[tbl]] else NULL
+
+  tokens_raw <- .token_vector_by_level(df, level, pid_col, vid_col, dcol)
+  ok <- !is.na(tokens_raw)
+  if (!any(ok)) {
+    return(character())
+  }
+  tokens <- tokens_raw[ok]
+  df_ok <- df[ok, , drop = FALSE]
+
+  if (is.call(term_expr) && as.character(term_expr[[1]]) %in% c("any", "all") && length(term_expr) == 2) {
+    predicate <- term_expr[[2]]
+    values <- eval(predicate, envir = df_ok, enclos = parent.frame())
+    if (!is.logical(values) || length(values) != nrow(df_ok)) {
+      stop("Predicate inside any()/all() must return logical vector with nrow(table) length")
+    }
+    values[is.na(values)] <- FALSE
+    if (as.character(term_expr[[1]]) == "any") {
+      return(.group_bool_any(values, tokens))
+    }
+    return(.group_bool_all(values, tokens))
+  }
+
+  agg_spec <- .extract_agg_spec(term_expr)
+  if (!is.null(agg_spec)) {
+    agg_call <- agg_spec$agg
+    fun_name <- as.character(agg_call[[1]])
+
+    x_expr <- agg_call[[2]]
+    if (is.symbol(x_expr)) {
+      x <- df_ok[[as.character(x_expr)]]
+      na_rm <- FALSE
+      if (length(agg_call) > 2 && "na.rm" %in% names(as.list(agg_call))) {
+        na_rm <- isTRUE(eval(agg_call$na.rm, envir = parent.frame()))
+      }
+
+      agg_vals <- .eval_agg_by_token(x = x, tokens = tokens, fun_name = fun_name, na_rm = na_rm)
+      rhs_val <- eval(agg_spec$rhs, envir = parent.frame())
+
+      cmp_out <- if (agg_spec$agg_on_left) {
+        .cmp_values(agg_vals, rhs_val, agg_spec$cmp)
+      } else {
+        .cmp_values(rhs_val, agg_vals, agg_spec$cmp)
+      }
+      keep <- !is.na(cmp_out) & cmp_out
+      return(names(agg_vals)[keep])
+    }
+  }
+
+  .eval_term_tokens_fallback(term_expr = term_expr, df = df_ok, tokens = tokens)
 }
 
 .eval_key_expr_tokens <- function(expr,
@@ -612,6 +822,9 @@ screen_data_list <- function(data_list,
   names(index_order)[2] <- "index_order"
 
   filtered <- data_list
+  index_patients <- as.character(index_order$patient_id)
+  index_values <- as.character(index_order$index_order)
+
   for (tbl in names(filtered)) {
     pid_col <- patient_id_map[[tbl]]
     before <- nrow(filtered[[tbl]])
@@ -619,7 +832,8 @@ screen_data_list <- function(data_list,
     dat <- filtered[[tbl]]
     dat$.tmp_pid <- as.character(dat[[pid_col]])
     dat <- dat[dat$.tmp_pid %in% selected_patients, , drop = FALSE]
-    dat <- merge(dat, index_order, by.x = ".tmp_pid", by.y = "patient_id", all.x = TRUE, sort = FALSE)
+    idx <- match(dat$.tmp_pid, index_patients)
+    dat$index_order <- index_values[idx]
 
     ocol <- if (effective_level == "date") {
       if (!is.null(date_map) && tbl %in% names(date_map)) date_map[[tbl]] else NULL
@@ -689,13 +903,11 @@ screen_data_list <- function(data_list,
   if (nrow(tmp) == 0) {
     keep_patients <- character()
   } else {
-    n_vis <- stats::aggregate(
-      as.character(tmp$visit_id),
-      by = list(patient_id = as.character(tmp$patient_id)),
-      FUN = function(x) length(unique(x))
-    )
-    names(n_vis)[2] <- "n_visits"
-    keep_patients <- n_vis$patient_id[n_vis$n_visits >= followup_min_visits]
+    tmp$patient_id <- as.character(tmp$patient_id)
+    tmp$visit_id <- as.character(tmp$visit_id)
+    pairs <- unique(tmp)
+    vis_tab <- table(pairs$patient_id)
+    keep_patients <- names(vis_tab)[as.integer(vis_tab) >= followup_min_visits]
   }
 
   for (tbl in names(data_list)) {
@@ -716,14 +928,9 @@ screen_data_list <- function(data_list,
   list(data = data_list, log = log)
 }
 
-.left_join_all <- function(data_list, join_base, join_order, join_by, verbose) {
-  if (is.null(join_order)) {
-    join_order <- setdiff(names(data_list), join_base)
-  }
-  unknown <- setdiff(join_order, names(data_list))
-  if (length(unknown) > 0) {
-    stop("Unknown table names in `join_order`: ", paste(unknown, collapse = ", "))
-  }
+.full_join_all <- function(data_list, patient_id_map, visit_id_map, date_map, verbose) {
+  join_base <- names(data_list)[1]
+  join_order <- setdiff(names(data_list), join_base)
 
   joined <- data_list[[join_base]]
   log <- data.frame(
@@ -739,28 +946,45 @@ screen_data_list <- function(data_list,
     tbl <- join_order[i]
     rhs <- data_list[[tbl]]
 
-    if (!is.null(join_by) && !is.null(join_by[[tbl]])) {
-      by_map <- join_by[[tbl]]
-      if (!is.character(by_map) || is.null(names(by_map)) || length(by_map) == 0) {
-        stop("`join_by[[", tbl, "]]` must be a named character vector")
+    by_used <- character()
+    by_names <- character()
+
+    key_specs <- list(
+      patient_id = list(base = patient_id_map[[join_base]], rhs = patient_id_map[[tbl]]),
+      visit_id = list(
+        base = if (!is.null(visit_id_map) && join_base %in% names(visit_id_map)) visit_id_map[[join_base]] else NULL,
+        rhs = if (!is.null(visit_id_map) && tbl %in% names(visit_id_map)) visit_id_map[[tbl]] else NULL
+      ),
+      date = list(
+        base = if (!is.null(date_map) && join_base %in% names(date_map)) date_map[[join_base]] else NULL,
+        rhs = if (!is.null(date_map) && tbl %in% names(date_map)) date_map[[tbl]] else NULL
+      )
+    )
+
+    for (key_name in names(key_specs)) {
+      lhs_col <- key_specs[[key_name]]$base
+      rhs_col <- key_specs[[key_name]]$rhs
+      if (is.null(lhs_col) || is.null(rhs_col)) {
+        next
       }
-      if (!all(names(by_map) %in% names(joined))) {
-        stop("Some `join_by` keys not found in current joined data for table '", tbl, "'")
+      if (!lhs_col %in% names(joined) || !rhs_col %in% names(rhs)) {
+        next
       }
-      if (!all(unname(by_map) %in% names(rhs))) {
-        stop("Some `join_by` keys not found in table '", tbl, "'")
-      }
-      by_used <- stats::setNames(unname(by_map), names(by_map))
-    } else {
-      shared <- intersect(names(joined), names(rhs))
-      if (length(shared) == 0) {
-        stop("No shared columns found for auto left join with table '", tbl, "'. Please provide `join_by`.")
-      }
-      by_used <- shared
+      by_names <- c(by_names, lhs_col)
+      by_used <- c(by_used, rhs_col)
     }
 
+    if (length(by_used) == 0) {
+      stop(
+        "No semantic shared key found for join with table '", tbl,
+        "'. Ensure id maps overlap on patient_id/visit_id/date."
+      )
+    }
+
+    by_used <- stats::setNames(by_used, by_names)
+
     before <- nrow(joined)
-    joined <- dplyr::left_join(joined, rhs, by = by_used)
+    joined <- dplyr::full_join(joined, rhs, by = by_used)
     after <- nrow(joined)
 
     by_txt <- if (is.character(by_used) && is.null(names(by_used))) {
