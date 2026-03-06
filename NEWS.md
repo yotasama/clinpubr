@@ -1,8 +1,8 @@
 # clinpubr 1.3.0
 
 * Added `screen_data_list()` that screens and joins multi-table clinical data by expression.
-* Added `keep_by_keyword()` to keep string segment by regex keyword position. Could be used to
-  desensitize character vectors.
+* Added `to_wide()` that converts long-format clinical data in database to wide format for analysis and publication.
+* Added `keep_by_keyword()` to keep string segment by regex keyword position. Could be used to desensitize character vectors.
 * Minor bug fixes and improvements.
 
 # clinpubr 1.2.0

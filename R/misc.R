@@ -306,6 +306,90 @@ str_match_replace <- function(x, to_match, to_replace) {
   return(x)
 }
 
+#' Fast long-to-wide conversion with item selection
+#' @description Convert long-format data to wide format by grouping keys,
+#'   using one column as item names and one column as values. When there are
+#'   multiple values under the same key-item combination, values are reduced
+#'   by `agg_fun`. Designed to convert long-format clinical data in database
+#'   to wide format for analysis and publication.
+#' @param df A data frame in long format.
+#' @param keys A character vector of key column names.
+#' @param item_col A single column name that contains item names.
+#' @param value_col A single column name that contains values to spread.
+#' @param items Optional character vector of items to keep in wide format.
+#'   If provided, output item columns follow this order and missing items are
+#'   kept as `NA` columns.
+#' @param agg_fun Aggregation function used when key-item combinations have
+#'   multiple values. Default is `get_valid()`.
+#'
+#' @returns A wide-format data frame.
+#' @export
+#' @examples
+#' df <- data.frame(
+#'   id = c(1, 1, 1, 2, 2),
+#'   visit = c("v1", "v1", "v1", "v1", "v1"),
+#'   item = c("A", "A", "B", "A", "C"),
+#'   value = c(3, 5, 2, 1, 9)
+#' )
+#'
+#' to_wide(
+#'   df,
+#'   keys = c("id", "visit"),
+#'   item_col = "item",
+#'   value_col = "value",
+#'   items = c("A", "B", "C"),
+#'   agg_fun = max
+#' )
+to_wide <- function(df, keys, item_col, value_col, items = NULL, agg_fun = get_valid) {
+  if (!is.data.frame(df)) {
+    stop("`df` must be a data frame.")
+  }
+  if (!is.character(keys) || length(keys) == 0) {
+    stop("`keys` must be a non-empty character vector.")
+  }
+  if (!is.character(item_col) || length(item_col) != 1) {
+    stop("`item_col` must be a single character string.")
+  }
+  if (!is.character(value_col) || length(value_col) != 1) {
+    stop("`value_col` must be a single character string.")
+  }
+  if (!is.function(agg_fun)) {
+    stop("`agg_fun` must be a function.")
+  }
+
+  required_cols <- unique(c(keys, item_col, value_col))
+  missing_cols <- setdiff(required_cols, colnames(df))
+  if (length(missing_cols) > 0) {
+    stop("Missing columns in `df`: ", paste(missing_cols, collapse = ", "))
+  }
+
+  if (!is.null(items)) {
+    if (!is.character(items)) {
+      stop("`items` must be NULL or a character vector.")
+    }
+    items <- unique(items)
+    df <- df %>%
+      dplyr::filter(!!rlang::sym(item_col) %in% items) %>%
+      dplyr::mutate(!!rlang::sym(item_col) := factor(!!rlang::sym(item_col), levels = items))
+  }
+
+  res <- df %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(c(keys, item_col)))) %>%
+    dplyr::summarise(.value = agg_fun(.data[[value_col]]), .groups = "drop") %>%
+    tidyr::pivot_wider(
+      names_from = !!rlang::sym(item_col),
+      values_from = .value,
+      names_expand = !is.null(items)
+    )
+
+  if (!is.null(items)) {
+    res <- res %>%
+      dplyr::select(dplyr::all_of(keys), dplyr::any_of(items))
+  }
+
+  res
+}
+
 #' Keep string segment by regex keyword position
 #' @description Desensitize a character vector by removing the unneeded part of each string.
 #'   The retained part is determined by keyword matches from a regular expression.

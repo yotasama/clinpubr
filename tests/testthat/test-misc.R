@@ -189,3 +189,70 @@ test_that("indicate_duplicates works with data frames and matrices", {
   mat <- matrix(c(1, 2, 1, 3, 2, 3), ncol = 2)
   expect_equal(indicate_duplicates(mat), c(TRUE, FALSE, TRUE))
 })
+
+test_that("to_wide converts long data to wide with aggregation", {
+  df <- data.frame(
+    id = c(1, 1, 1, 2, 2),
+    visit = c("v1", "v1", "v1", "v1", "v1"),
+    item = c("A", "A", "B", "A", "C"),
+    value = c(3, 5, 2, 1, 9)
+  )
+
+  res <- to_wide(
+    df,
+    keys = c("id", "visit"),
+    item_col = "item",
+    value_col = "value",
+    items = c("A", "B", "C"),
+    agg_fun = function(x) max(x, na.rm = TRUE)
+  )
+
+  expect_equal(names(res), c("id", "visit", "A", "B", "C"))
+  expect_equal(res$A[res$id == 1], 5)
+  expect_equal(res$B[res$id == 1], 2)
+  expect_true(is.na(res$C[res$id == 1]))
+  expect_equal(res$A[res$id == 2], 1)
+  expect_true(is.na(res$B[res$id == 2]))
+  expect_equal(res$C[res$id == 2], 9)
+})
+
+test_that("to_wide keeps item order and creates missing item columns", {
+  df <- data.frame(
+    id = c(1, 1, 2, 2, 2),
+    item = c("A", "C", "A", "D", "D"),
+    value = c(10, 30, 20, 40, 50)
+  )
+
+  res <- to_wide(
+    df,
+    keys = "id",
+    item_col = "item",
+    value_col = "value",
+    items = c("C", "B", "A")
+  )
+
+  expect_equal(names(res), c("id", "C", "B", "A"))
+  expect_true(all(is.na(res$B)))
+})
+
+test_that("to_wide validates input arguments", {
+  df <- data.frame(id = 1, item = "A", value = 1)
+
+  expect_error(
+    to_wide(df, keys = character(0), item_col = "item", value_col = "value"),
+    "`keys` must be a non-empty character vector.",
+    fixed = TRUE
+  )
+
+  expect_error(
+    to_wide(df, keys = "id", item_col = "item", value_col = "missing"),
+    "Missing columns in `df`: missing",
+    fixed = TRUE
+  )
+
+  expect_error(
+    to_wide(df, keys = "id", item_col = "item", value_col = "value", agg_fun = 1),
+    "`agg_fun` must be a function.",
+    fixed = TRUE
+  )
+})
