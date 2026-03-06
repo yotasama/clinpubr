@@ -137,7 +137,52 @@ print(overview$quality_issues$case_issues)
 #> [1] "chengdu" "CHENGDU" "Chengdu"
 ```
 
-#### Example 1.2: Standardize Values in Medical Records
+#### Example 1.2: Screen Multi-Table Cohort by Entry and Anchor Rules
+
+``` r
+patient <- data.frame(pid = 1:4)
+admission <- data.frame(
+  pid = c(1, 1, 2, 3, 4),
+  vid = c(11, 12, 21, 31, 41),
+  admit_day = c(1, 5, 2, 3, 4)
+)
+diagnosis <- data.frame(
+  pid = c(1, 2, 3, 4),
+  vid = c(11, 21, 31, 41),
+  dx_day = c(1, 2, 3, 4),
+  icd = c("I10", "I10", "J18", "I11")
+)
+lab <- data.frame(
+  pid = c(1, 1, 2, 2, 3, 4),
+  vid = c(11, 12, 21, 21, 31, 41),
+  lab_day = c(1, 5, 2, 5, 3, 4),
+  Hb = c(9.8, 10.6, 10.7, 5, 8.9, 9.1)
+)
+
+# Keep patients with any I10 diagnosis, then keep records from first Hb > 10 onward, and join tables together
+res <- screen_data_list(
+  data_list = list(patient = patient, admission = admission, diagnosis = diagnosis, lab = lab),
+  entry_expr = any(icd == "I10"),
+  entry_level = "patient_id",
+  anchor_expr = any(Hb > 10),
+  anchor_level = "visit_id",
+  anchor_window = "from_first_anchor",
+  patient_id_map = "pid",
+  visit_id_map = "vid",
+  date_map = c(admission = "admit_day", diagnosis = "dx_day", lab = "lab_day"),
+  output = "joined"
+)
+
+knitr::kable(res)
+```
+
+| patient_id | visit_id | date | icd |   Hb |
+|-----------:|---------:|-----:|:----|-----:|
+|          1 |       12 |    5 | NA  | 10.6 |
+|          2 |       21 |    2 | I10 | 10.7 |
+|          2 |       21 |    5 | NA  |  5.0 |
+
+#### Example 1.3: Standardize Values in Medical Records
 
 ``` r
 # Sample messy data
@@ -147,7 +192,7 @@ print(clean_data)
 #> [1] "12.3"    "0.45"    "67"      NA        "abandon"
 ```
 
-#### Example 1.3: Check Non-numerical Values
+#### Example 1.4: Check Non-numerical Values
 
 ``` r
 # Sample messy data
@@ -159,7 +204,7 @@ print(check_nonnum(x))
 This function filters out non-numerical values, which helps you choose
 the appropriate method to handle them.
 
-#### Example 1.4: Extracting Numerical Values from Text
+#### Example 1.5: Extracting Numerical Values from Text
 
 ``` r
 # Sample messy data

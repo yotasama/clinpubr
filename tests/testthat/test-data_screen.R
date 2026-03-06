@@ -185,6 +185,7 @@ test_that("scenario 3: target diagnosis patients then abnormal indicator and aft
 })
 
 test_that("scenario 3 joined output works", {
+  patient <- data.frame(pid = 1:3, stringsAsFactors = FALSE)
   admission <- data.frame(
     pid = c(1, 1, 2, 2, 2, 3),
     vid = c(11, 12, 20, 21, 22, 31),
@@ -207,7 +208,7 @@ test_that("scenario 3 joined output works", {
   )
 
   res <- screen_data_list(
-    data_list = list(admission = admission, diagnosis = diagnosis, lab = lab),
+    data_list = list(patient=patient, admission = admission, diagnosis = diagnosis, lab = lab),
     entry_expr = any(icd == "I10"),
     entry_level = "patient_id",
     anchor_expr = any(Hb > 10),
@@ -220,9 +221,9 @@ test_that("scenario 3 joined output works", {
   )
 
   expect_true(is.data.frame(res))
-  expect_true(all(c("pid", "vid") %in% names(res)))
-  expect_equal(sort(unique(res$pid)), c(1, 2))
-  expect_equal(sort(unique(res$vid)), c(12, 21, 22))
+  expect_true(all(c("patient_id", "visit_id", "date") %in% names(res)))
+  expect_equal(sort(unique(res$patient_id)), c(1, 2))
+  expect_equal(sort(unique(res$visit_id)), c(12, 21, 22))
 })
 
 test_that("anchor date falls back to visit ordering when date_map is missing", {
@@ -256,6 +257,64 @@ test_that("anchor date falls back to visit ordering when date_map is missing", {
 
   expect_equal(unique(res$patient$pid), 1)
   expect_equal(sort(unique(res$admission$vid)), 12)
+})
+
+test_that("joined output does not use unmapped plain date column as join key", {
+  patient <- data.frame(
+    pid = c(1, 2),
+    date = c("A", "B"),
+    stringsAsFactors = FALSE
+  )
+  diagnosis <- data.frame(
+    pid = c(1, 2),
+    code = c("I10", "I10"),
+    date = c("X", "Y"),
+    stringsAsFactors = FALSE
+  )
+
+  out <- screen_data_list(
+    data_list = list(patient = patient, diagnosis = diagnosis),
+    entry_expr = any(code == "I10"),
+    entry_level = "patient_id",
+    patient_id_map = "pid",
+    output = "joined",
+    return_audit = TRUE
+  )
+
+  expect_true(is.data.frame(out$data))
+  expect_false(any(grepl("date", out$audit$join$by, fixed = TRUE)))
+  expect_true("date.patient" %in% names(out$data))
+  expect_true("date.diagnosis" %in% names(out$data))
+})
+
+test_that("data_list tables must have unique and non-empty column names", {
+  dup_df <- data.frame(matrix(1:4, nrow = 2))
+  names(dup_df) <- c("pid", "pid")
+
+  expect_error(
+    screen_data_list(
+      data_list = list(patient = dup_df),
+      entry_expr = any(pid > 0),
+      entry_level = "patient_id",
+      patient_id_map = c(patient = "pid"),
+      output = "list"
+    ),
+    "duplicated column names"
+  )
+
+  empty_df <- data.frame(matrix(1:4, nrow = 2))
+  names(empty_df) <- c("pid", "")
+
+  expect_error(
+    screen_data_list(
+      data_list = list(patient = empty_df),
+      entry_expr = any(pid > 0),
+      entry_level = "patient_id",
+      patient_id_map = c(patient = "pid"),
+      output = "list"
+    ),
+    "empty column names"
+  )
 })
 
 test_that("followup_min_visits works", {

@@ -251,6 +251,21 @@ screen_data_list <- function(data_list,
   if (!all(vapply(data_list, is.data.frame, logical(1)))) {
     stop("All elements of `data_list` must be data frames")
   }
+
+  for (tbl in names(data_list)) {
+    nms <- names(data_list[[tbl]])
+    if (is.null(nms) || any(is.na(nms)) || any(nms == "")) {
+      stop("Table '", tbl, "' has empty column names; please provide valid column names")
+    }
+    dup_nms <- unique(nms[duplicated(nms)])
+    if (length(dup_nms) > 0) {
+      stop(
+        "Table '", tbl, "' has duplicated column names: ",
+        paste(dup_nms, collapse = ", "),
+        ". Please make column names unique before calling `screen_data_list()`."
+      )
+    }
+  }
 }
 
 .normalize_column_map <- function(col_map, data_list, map_name, required) {
@@ -929,7 +944,99 @@ screen_data_list <- function(data_list,
   list(data = data_list, log = log)
 }
 
+.rename_col_safe <- function(df, old_name, new_name) {
+  if (is.null(old_name) || is.null(new_name) || !old_name %in% names(df) || old_name == new_name) {
+    return(df)
+  }
+
+  target <- new_name
+  if (target %in% names(df)) {
+    i <- 1L
+    repeat {
+      cand <- paste0(new_name, ".", i)
+      if (!cand %in% names(df)) {
+        target <- cand
+        break
+      }
+      i <- i + 1L
+    }
+  }
+
+  names(df)[names(df) == old_name] <- target
+  df
+}
+
+.prepare_join_tables <- function(data_list, patient_id_map, visit_id_map, date_map) {
+  out <- data_list
+
+  for (tbl in names(out)) {
+    df <- out[[tbl]]
+
+    pid_col <- patient_id_map[[tbl]]
+    vid_col <- if (!is.null(visit_id_map) && tbl %in% names(visit_id_map)) visit_id_map[[tbl]] else NULL
+    date_col <- if (!is.null(date_map) && tbl %in% names(date_map)) date_map[[tbl]] else NULL
+
+    # If a semantic key is not mapped for this table, protect same-named normal columns
+    # from being treated as standardized join keys later.
+    if (is.null(pid_col) && "patient_id" %in% names(df)) {
+      df <- .rename_col_safe(df, "patient_id", paste0("patient_id.", tbl))
+    }
+    if (is.null(vid_col) && "visit_id" %in% names(df)) {
+      df <- .rename_col_safe(df, "visit_id", paste0("visit_id.", tbl))
+    }
+    if (is.null(date_col) && "date" %in% names(df)) {
+      df <- .rename_col_safe(df, "date", paste0("date.", tbl))
+    }
+
+    if (!is.null(pid_col) && pid_col != "patient_id" && "patient_id" %in% names(df)) {
+      df <- .rename_col_safe(df, "patient_id", paste0("patient_id.", tbl))
+    }
+    if (!is.null(vid_col) && vid_col != "visit_id" && "visit_id" %in% names(df)) {
+      df <- .rename_col_safe(df, "visit_id", paste0("visit_id.", tbl))
+    }
+    if (!is.null(date_col) && date_col != "date" && "date" %in% names(df)) {
+      df <- .rename_col_safe(df, "date", paste0("date.", tbl))
+    }
+
+    if (!is.null(pid_col) && pid_col %in% names(df)) {
+      names(df)[names(df) == pid_col] <- "patient_id"
+    }
+    if (!is.null(vid_col) && vid_col %in% names(df)) {
+      names(df)[names(df) == vid_col] <- "visit_id"
+    }
+    if (!is.null(date_col) && date_col %in% names(df)) {
+      names(df)[names(df) == date_col] <- "date"
+    }
+
+    out[[tbl]] <- df
+  }
+
+  key_names <- c("patient_id", "visit_id", "date")
+  nonkey_names <- unlist(lapply(out, function(df) setdiff(names(df), key_names)), use.names = FALSE)
+  dup_nonkeys <- names(which(table(nonkey_names) > 1L))
+
+  if (length(dup_nonkeys) > 0) {
+    for (tbl in names(out)) {
+      df <- out[[tbl]]
+      hit <- intersect(dup_nonkeys, names(df))
+      for (col in hit) {
+        df <- .rename_col_safe(df, col, paste0(col, ".", tbl))
+      }
+      out[[tbl]] <- df
+    }
+  }
+
+  out
+}
+
 .full_join_all <- function(data_list, patient_id_map, visit_id_map, date_map, verbose) {
+  data_list <- .prepare_join_tables(
+    data_list = data_list,
+    patient_id_map = patient_id_map,
+    visit_id_map = visit_id_map,
+    date_map = date_map
+  )
+
   join_base <- names(data_list)[1]
   join_order <- setdiff(names(data_list), join_base)
 
@@ -947,33 +1054,8 @@ screen_data_list <- function(data_list,
     tbl <- join_order[i]
     rhs <- data_list[[tbl]]
 
-    by_used <- character()
-    by_names <- character()
-
-    key_specs <- list(
-      patient_id = list(base = patient_id_map[[join_base]], rhs = patient_id_map[[tbl]]),
-      visit_id = list(
-        base = if (!is.null(visit_id_map) && join_base %in% names(visit_id_map)) visit_id_map[[join_base]] else NULL,
-        rhs = if (!is.null(visit_id_map) && tbl %in% names(visit_id_map)) visit_id_map[[tbl]] else NULL
-      ),
-      date = list(
-        base = if (!is.null(date_map) && join_base %in% names(date_map)) date_map[[join_base]] else NULL,
-        rhs = if (!is.null(date_map) && tbl %in% names(date_map)) date_map[[tbl]] else NULL
-      )
-    )
-
-    for (key_name in names(key_specs)) {
-      lhs_col <- key_specs[[key_name]]$base
-      rhs_col <- key_specs[[key_name]]$rhs
-      if (is.null(lhs_col) || is.null(rhs_col)) {
-        next
-      }
-      if (!lhs_col %in% names(joined) || !rhs_col %in% names(rhs)) {
-        next
-      }
-      by_names <- c(by_names, lhs_col)
-      by_used <- c(by_used, rhs_col)
-    }
+    by_used <- c("patient_id", "visit_id", "date")
+    by_used <- by_used[by_used %in% names(joined) & by_used %in% names(rhs)]
 
     if (length(by_used) == 0) {
       stop(
@@ -982,17 +1064,11 @@ screen_data_list <- function(data_list,
       )
     }
 
-    by_used <- stats::setNames(by_used, by_names)
-
     before <- nrow(joined)
     joined <- dplyr::full_join(joined, rhs, by = by_used)
     after <- nrow(joined)
 
-    by_txt <- if (is.character(by_used) && is.null(names(by_used))) {
-      paste(by_used, collapse = ",")
-    } else {
-      paste(paste(names(by_used), unname(by_used), sep = "="), collapse = ",")
-    }
+    by_txt <- paste(by_used, collapse = ",")
 
     log <- rbind(log, data.frame(
       step = i,

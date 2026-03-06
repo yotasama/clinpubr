@@ -384,38 +384,64 @@ run_screen_data_benchmark_10m <- function(seed = 20260304) {
 bench_10m <- run_screen_data_benchmark_10m()
 
 
-patient <- data.frame(pid = 1:3, stringsAsFactors = FALSE)
+patient <- data.frame(pid = 1:4)
 admission <- data.frame(
-  pid = c(1, 1, 2, 2, 3),
-  vid = c(11, 12, 21, 22, 31),
-  admit_day = c(1, 5, 1, 8, 3),
-  stringsAsFactors = FALSE
+  pid = c(1, 1, 2, 3, 4),
+  vid = c(11, 12, 21, 31, 41),
+  admit_day = c(1, 5, 2, 3, 4)
 )
 diagnosis <- data.frame(
-  pid = c(1, 2, 2, 3),
-  vid = c(11, 21, 21, 31),
-  dx_day = c(1, 1, 2, 3),
-  icd = c("I10", "X12", "I10", "J18"),
-  stringsAsFactors = FALSE
+  pid = c(1, 2, 3, 4),
+  vid = c(11, 21, 31, 41),
+  dx_day = c(1, 2, 3, 4),
+  icd = c("I10", "I10", "J18", "I11")
 )
 lab <- data.frame(
-  pid = c(1, 1, 2, 2, 2, 2, 3),
-  vid = c(11, 12, 20, 21, 21, 22, 31),
-  lab_day = c(1, 5, 1, 2, 4, 8, 3),
-  Hb = c(9.8, 10.6, 6, 10.7, 3, 9.1, 8.6),
-  stringsAsFactors = FALSE
+  pid = c(1, 1, 2, 3, 4),
+  vid = c(11, 12, 21, 31, 41),
+  lab_day = c(1, 5, 2, 3, 4),
+  Hb = c(9.8, 10.6, 10.7, 8.9, 9.1)
 )
 
+# Keep patients with any I10 diagnosis, then keep records from first Hb > 10 onward
 res <- screen_data_list(
   data_list = list(patient = patient, admission = admission, diagnosis = diagnosis, lab = lab),
   entry_expr = any(icd == "I10"),
   entry_level = "patient_id",
   anchor_expr = any(Hb > 10),
-  anchor_level = "date",
+  anchor_level = "visit_id",
   anchor_window = "from_first_anchor",
   patient_id_map = "pid",
-  visit_id_map = c(admission = "vid", diagnosis = "vid", lab = "vid"),
+  visit_id_map = "vid",
   date_map = c(admission = "admit_day", diagnosis = "dx_day", lab = "lab_day"),
   output = "joined"
 )
+dplyr::full_join(res$patient,res$admission,by="pid") %>% 
+  dplyr::full_join(res$diagnosis,by=dplyr::join_by(pid, vid,admit_day==dx_day)) %>%
+  dplyr::full_join(res$lab,by=dplyr::join_by(pid, vid,admit_day==lab_day))
 
+tt <- function(
+                             entry_level = c("patient_id", "visit_id", "date"),
+                             anchor_level = c("date", "visit_id"),
+                             anchor_window = c("none", "from_first_anchor")) {
+  entry_level <- match.arg(entry_level)
+  anchor_level <- match.arg(anchor_level)
+  anchor_window <- match.arg(anchor_window)
+  print(paste("entry_level:", entry_level))
+  print(paste("anchor_level:", anchor_level))
+  print(paste("anchor_window:", anchor_window))
+  }
+tt(entry_level = "patient", anchor_level = "visit", anchor_window = "f")
+
+a=tibble::lst(patient, admission, diagnosis, lab)
+
+
+clean_dl <- adj_cran_downloads(packages = "clinpubr", from = "2025-06-04", 
+  to = "2026-03-04")
+
+# 对比原始数据和清洗后的数据
+print(clean_dl)
+# 查看不同系统的峰值分布
+plot(clean_dl$date, clean_dl$count, type = "l", col = "blue", xlab = "Date", ylab = "Downloads", main = "CFA Package Downloads Over Time")
+clean_dl[clean_dl$adjusted_downloads<clean_dl$count,]
+clean_dl$adjusted_total_downloads
