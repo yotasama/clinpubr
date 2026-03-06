@@ -1,3 +1,5 @@
+# clinpubr 1.3.0
+
 # clinpubr 1.2.1
 
 * Added `keep_by_keyword()` to keep string segment by regex keyword position. Could be used to
