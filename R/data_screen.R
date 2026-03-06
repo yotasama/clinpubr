@@ -22,17 +22,18 @@
 #' @param anchor_expr Optional anchor expression. Same grammar as `entry_expr`.
 #' @param anchor_level Granularity used for anchor order: `"date"` or `"visit_id"`.
 #' @param anchor_window Anchor window strategy: `"none"` or `"from_first_anchor"`.
-#' @param patient_id_map Patient ID mapping. Either one default column name
-#'   or a named vector by table.
-#' @param visit_id_map Visit ID mapping. Either one default column name
-#'   or a named vector by table.
-#' @param date_map Date/order column mapping. Either one default column name
-#'   or a named vector by table.
+#' @param patient_id_map,visit_id_map,date_map Join key column mappings. Each can be either:
+#'   - a single column name (character of length 1) that is used as the patient/visit/date ID
+#'     column for all tables that contain it, or
+#'   - a named vector where names are table names and values are column names specific to each
+#'     table.
 #' @param followup_min_visits Optional minimum number of distinct visits per patient.
 #' @param followup_table Table used to count follow-up visits. Only used when
 #'   `followup_min_visits` is not `NULL`. If missing, defaults to the first table
 #'   that has both `patient_id` and `visit_id` mappings.
-#' @param output Output format: `"list"` or `"joined"`.
+#' @param output Output format: `"list"` or `"joined"`. If `"joined"`, all tables will
+#'   be outer-joined after filtering, which works best when join keys are unique and tables
+#'   are in "wide" format.
 #' @param return_audit Logical, whether to return audit logs.
 #' @param verbose Logical, whether to print progress messages.
 #'

@@ -1,9 +1,8 @@
 # clinpubr 1.3.0
 
-# clinpubr 1.2.1
-
+* Added `screen_data_list()` that screens and joins multi-table clinical data by expression.
 * Added `keep_by_keyword()` to keep string segment by regex keyword position. Could be used to
-desensitize character vectors.
+  desensitize character vectors.
 * Minor bug fixes and improvements.
 
 # clinpubr 1.2.0
