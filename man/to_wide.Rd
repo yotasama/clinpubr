@@ -29,7 +29,8 @@ A wide-format data frame.
 Convert long-format data to wide format by grouping keys,
 using one column as item names and one column as values. When there are
 multiple values under the same key-item combination, values are reduced
-by \code{agg_fun}.
+by \code{agg_fun}. Designed to convert long-format clinical data in database
+to wide format for analysis and publication.
 }
 \examples{
 df <- data.frame(
