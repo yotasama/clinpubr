@@ -1,3 +1,8 @@
+# clinpubr 1.3.1
+
+* Improved return type consistency of `first_mode()`.
+* Minor bug fixes and improvements.
+
 # clinpubr 1.3.0
 
 * Added `screen_data_list()` that screens and joins multi-table clinical data by expression.

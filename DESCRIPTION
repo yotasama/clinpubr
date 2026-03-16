@@ -64,6 +64,7 @@ Imports:
     tidyr
 Suggests: 
     caret,
+    data.table,
     dcurves,
     dtplyr,
     geepack,

@@ -4,7 +4,7 @@
 \alias{first_mode}
 \title{Calculate the first mode}
 \usage{
-first_mode(x, empty_return = NA)
+first_mode(x, empty_return)
 }
 \arguments{
 \item{x}{A vector.}

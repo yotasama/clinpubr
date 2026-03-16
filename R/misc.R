@@ -139,11 +139,15 @@ format_pval <- function(p, text_ahead = NULL, digits = 1, nsmall = 2, eps = 1e-3
 #' @export
 #' @examples
 #' first_mode(c(1, 1, 2, 2, 3, 3, 3, NA, NA, NA))
-first_mode <- function(x, empty_return = NA) {
+first_mode <- function(x, empty_return) {
   x <- na.omit(x)
   l <- length(unique(x))
   if (l == 0) {
-    empty_return
+    if(!missing(empty_return)) {
+      empty_return
+    } else {
+      x[NA]
+    }
   } else if (l > 1 && l < length(x)) {
     x[1] <- DescTools::Mode(x)[1]
     x[1]

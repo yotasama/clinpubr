@@ -132,10 +132,10 @@ comparison <- data.frame(
 print(comparison)
 
 
-df <- data.frame(name = c("AB", "B,C", "A..","ACD"))
+df <- data.frame(name = c("AB", "B,C", "A..", "ACD"))
 match <- data.frame(
-  ori = c("A", "B", "C", "ACD","AB"),
-  new = c("x1", "x2", "x3","x4","x5")
+  ori = c("A", "B", "C", "ACD", "AB"),
+  new = c("x1", "x2", "x3", "x4", "x5")
 )
 result <- data.frame(
   name = c("AB", "AB", "B,C", "B,C", "A.."),
@@ -179,7 +179,7 @@ str_contains_merge_stringi <- function(df, match_df, col_name = "name", ori_col 
       result[is.na(result)] <- FALSE
       result
     })
-    
+
     # 行或操作：有任意一列匹配即为匹配
     matches <- rowSums(match_matrix) >= 1
 
@@ -211,10 +211,10 @@ str_contains_merge_stringi <- function(df, match_df, col_name = "name", ori_col 
 }
 
 # 测试函数
-df <- data.frame(name = c("AB", "B,C", "A..","ACD"))
+df <- data.frame(name = c("AB", "B,C", "A..", "ACD"))
 match <- data.frame(
-  ori = c("A", "B", "C", "ACD","AB","AB","AB"),
-  new = c("x1", "x2", "x3","x4","x5","x6","x5")
+  ori = c("A", "B", "C", "ACD", "AB", "AB", "AB"),
+  new = c("x1", "x2", "x3", "x4", "x5", "x6", "x5")
 )
 
 # 使用基础版本
@@ -223,7 +223,7 @@ print(result1)
 
 all_equal <- identical(result1, result2) && identical(result1, result3)
 cat("所有版本结果一致:", all_equal, "\n")
-stringi::stri_detect_fixed(c("AB", "B,C", "A..","ACD"), "A")
+stringi::stri_detect_fixed(c("AB", "B,C", "A..", "ACD"), "A")
 
 
 escape_regex <- function(x) {
@@ -233,7 +233,7 @@ escape_regex <- function(x) {
 escape_regex("[2-5]+3*.x[1]")
 Hmisc::escapeRegex("[2-5]+3*.x[1]")
 stringi::stri_detect_regex("3", Hmisc::escapeRegex("2-5"))
-stringi::stri_detect_regex("3","[2-5]")
+stringi::stri_detect_regex("3", "[2-5]")
 
 
 test_regex_escape <- function() {
@@ -248,19 +248,19 @@ test_regex_escape <- function() {
     "URL" = "https://example.com/path?query=1&param=2",
     "正则模式" = "^(19|20)\\d\\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$"
   )
-  
+
   # 测试两个函数
   for (name in names(test_cases)) {
     str <- test_cases[[name]]
     cat("\n=== ", name, ": ", str, " ===\n")
-    
+
     # 使用两种方法转义
     custom <- escape_regex(str)
     hmisc <- Hmisc::escapeRegex(str)
-    
+
     cat("自定义函数: ", custom, "\n")
     cat("Hmisc函数: ", hmisc, "\n")
-    
+
     # 测试转义后是否安全（字面匹配应该返回TRUE）
     test_regex_safety(str, custom, name = "自定义")
     test_regex_safety(str, hmisc, name = "Hmisc")
@@ -269,36 +269,39 @@ test_regex_escape <- function() {
 
 test_regex_safety <- function(original, escaped, name) {
   # 测试转义后的正则表达式是否能精确匹配原字符串
-  tryCatch({
-    # 使用grepl测试，应该返回TRUE
-    result <- grepl(escaped, original)
-    if (result) {
-      cat(name, "转义: ✓ 安全 (精确匹配)\n")
-    } else {
-      cat(name, "转义: ✗ 不安全 (不匹配)\n")
+  tryCatch(
+    {
+      # 使用grepl测试，应该返回TRUE
+      result <- grepl(escaped, original)
+      if (result) {
+        cat(name, "转义: ✓ 安全 (精确匹配)\n")
+      } else {
+        cat(name, "转义: ✗ 不安全 (不匹配)\n")
+      }
+    },
+    error = function(e) {
+      cat(name, "转义: ✗ 错误 (无效正则):", e$message, "\n")
     }
-  }, error = function(e) {
-    cat(name, "转义: ✗ 错误 (无效正则):", e$message, "\n")
-  })
+  )
 }
 test_regex_escape()
 grepl(escape_regex("^$=!<>:"), "^$=!<>:")
 
-matched=c(1:5)
-col_name="x"
+matched <- c(1:5)
+col_name <- "x"
 data.frame(setNames(list(matched), col_name))
 
-data=df
-key_df=match_df
-search_col="name"
-key_col="ori"
-value_cols = "category"
+data <- df
+key_df <- match_df
+search_col <- "name"
+key_col <- "ori"
+value_cols <- "category"
 
-x=data.frame(matrix(rnorm(5e8),nrow=1e6))
+x <- data.frame(matrix(rnorm(5e8), nrow = 1e6))
 nrow(x)
 
-y=list(a=x,b="x")
-y2=dplyr::filter(y$a,X1>0)
+y <- list(a = x, b = "x")
+y2 <- dplyr::filter(y$a, X1 > 0)
 
 
 # ---- 10 million rows simulation benchmark for screen_data_list ----
@@ -322,7 +325,8 @@ run_screen_data_benchmark_10m <- function(seed = 20260304) {
       pid = sample.int(n_pid, n_diag, replace = TRUE),
       vid = sample.int(n_pid * 3L, n_diag, replace = TRUE),
       dx_day = sample.int(3650L, n_diag, replace = TRUE),
-      icd = sample(c("I10", "I11", "E11", "J18"), n_diag, replace = TRUE,
+      icd = sample(c("I10", "I11", "E11", "J18"), n_diag,
+        replace = TRUE,
         prob = c(0.22, 0.08, 0.30, 0.40)
       )
     )
@@ -336,10 +340,12 @@ run_screen_data_benchmark_10m <- function(seed = 20260304) {
   })
 
   cat("Data generation time (sec):", t_gen[["elapsed"]], "\n")
-  cat("Rows - patient:", nrow(patient),
-      "admission:", nrow(admission),
-      "diagnosis:", nrow(diagnosis),
-      "lab:", nrow(lab), "\n")
+  cat(
+    "Rows - patient:", nrow(patient),
+    "admission:", nrow(admission),
+    "diagnosis:", nrow(diagnosis),
+    "lab:", nrow(lab), "\n"
+  )
   cat("Approx lab size (GB):", round(as.numeric(object.size(lab)) / 1024^3, 3), "\n")
 
   gc()
@@ -368,10 +374,12 @@ run_screen_data_benchmark_10m <- function(seed = 20260304) {
   })
 
   cat("screen_data_list time (sec):", t_fit[["elapsed"]], "\n")
-  cat("Output rows - patient:", nrow(res$patient),
-      "admission:", nrow(res$admission),
-      "diagnosis:", nrow(res$diagnosis),
-      "lab:", nrow(res$lab), "\n")
+  cat(
+    "Output rows - patient:", nrow(res$patient),
+    "admission:", nrow(res$admission),
+    "diagnosis:", nrow(res$diagnosis),
+    "lab:", nrow(res$lab), "\n"
+  )
 
   invisible(list(
     timing_generation = t_gen,
@@ -416,32 +424,193 @@ res <- screen_data_list(
   date_map = c(admission = "admit_day", diagnosis = "dx_day", lab = "lab_day"),
   output = "joined"
 )
-dplyr::full_join(res$patient,res$admission,by="pid") %>% 
-  dplyr::full_join(res$diagnosis,by=dplyr::join_by(pid, vid,admit_day==dx_day)) %>%
-  dplyr::full_join(res$lab,by=dplyr::join_by(pid, vid,admit_day==lab_day))
+dplyr::full_join(res$patient, res$admission, by = "pid") %>%
+  dplyr::full_join(res$diagnosis, by = dplyr::join_by(pid, vid, admit_day == dx_day)) %>%
+  dplyr::full_join(res$lab, by = dplyr::join_by(pid, vid, admit_day == lab_day))
 
-tt <- function(
-                             entry_level = c("patient_id", "visit_id", "date"),
-                             anchor_level = c("date", "visit_id"),
-                             anchor_window = c("none", "from_first_anchor")) {
+tt <- function(entry_level = c("patient_id", "visit_id", "date"),
+               anchor_level = c("date", "visit_id"),
+               anchor_window = c("none", "from_first_anchor")) {
   entry_level <- match.arg(entry_level)
   anchor_level <- match.arg(anchor_level)
   anchor_window <- match.arg(anchor_window)
   print(paste("entry_level:", entry_level))
   print(paste("anchor_level:", anchor_level))
   print(paste("anchor_window:", anchor_window))
-  }
+}
 tt(entry_level = "patient", anchor_level = "visit", anchor_window = "f")
 
-a=tibble::lst(patient, admission, diagnosis, lab)
+a <- tibble::lst(patient, admission, diagnosis, lab)
 
 
-clean_dl <- adj_cran_downloads(packages = "clinpubr", from = "2025-06-04", 
-  to = "2026-03-04")
+clean_dl <- adj_cran_downloads(
+  packages = "clinpubr", from = "2025-06-04",
+  to = "2026-03-04"
+)
 
 # 对比原始数据和清洗后的数据
 print(clean_dl)
 # 查看不同系统的峰值分布
 plot(clean_dl$date, clean_dl$count, type = "l", col = "blue", xlab = "Date", ylab = "Downloads", main = "CFA Package Downloads Over Time")
-clean_dl[clean_dl$adjusted_downloads<clean_dl$count,]
+clean_dl[clean_dl$adjusted_downloads < clean_dl$count, ]
 clean_dl$adjusted_total_downloads
+
+#' Benchmark group_by %>% summarise using tictoc
+#'
+#' This function generates a data.frame with approximately `n` rows and
+#' runs `reps` repetitions of a `dplyr` `group_by` + `summarise` pipeline,
+#' timing each run with `tictoc` and returning elapsed times.
+#'
+#' @param n Number of rows to generate (default 1e6).
+#' @param n_groups Number of distinct groups (default 100).
+#' @param reps Number of repetitions to run (default 3).
+#' @param seed Random seed for reproducibility (default 123).
+#' @returns A list with `times` (numeric vector, seconds) and `last_summary` (the last summarised data.frame).
+#' @examples
+#' # Make sure tictoc and dplyr are installed, then:
+#' # bench_group_by_summary(1e6, 100, reps = 2)
+bench_group_by_summary <- function(n = 1e6, n_groups = 100, reps = 3, seed = 123) {
+  if (!requireNamespace("tictoc", quietly = TRUE)) stop("Please install the 'tictoc' package")
+  if (!requireNamespace("dplyr", quietly = TRUE)) stop("Please install the 'dplyr' package")
+
+  n <- as.integer(n)
+  n_groups <- as.integer(n_groups)
+  reps <- as.integer(reps)
+
+  set.seed(seed)
+  message(sprintf("Generating %s rows with %s groups...", format(n, big.mark = ","), n_groups))
+  df <- data.frame(
+    id = seq_len(n),
+    group = sample(seq_len(n_groups), n, replace = TRUE),
+    value = rnorm(n)
+  )
+
+  times <- numeric(reps)
+  last_summary <- NULL
+
+  for (i in seq_len(reps)) {
+    tictoc::tic(sprintf("run_%d", i))
+    # run the dplyr pipeline to be measured
+    last_summary <- df %>%
+      dplyr::group_by(group) %>%
+      dplyr::summarise(
+        mean_value = mean(value, na.rm = TRUE),
+        sd_value = sd(value, na.rm = TRUE),
+        n = dplyr::n(),
+        .groups = "drop"
+      )
+    # stop the tic and read the logged time
+    tictoc::toc(log = TRUE)
+    lg <- tictoc::tic.log(format = FALSE)
+    # take the most recent log entry's time
+    entry <- lg[[length(lg)]]
+    times[i] <- as.numeric(entry$time)
+    # clear log to avoid accumulation
+    tictoc::tic.clearlog()
+    message(sprintf("Iteration %d: %.3f sec", i, times[i]))
+    # free some memory (not strictly necessary)
+    gc()
+  }
+
+  invisible(list(times = times, last_summary = last_summary))
+}
+
+library(dtplyr)
+library(dplyr)
+
+n <- 1e7
+n_groups <- 1e6
+df <- data.frame(
+  id = seq_len(n),
+  group = sample(1:n_groups, n, replace = TRUE),
+  value = sample(c(1:10, NA), n, replace = TRUE)
+)
+
+tictoc::tic()
+# run the dplyr pipeline to be measured
+last_summary <- df %>%
+  lazy_dt() %>%
+  dplyr::group_by(group) %>%
+  dplyr::summarise(
+    mean_value = first_mode(value),
+    n = dplyr::n(),
+    .groups = "drop"
+  ) %>%
+  as.data.frame()
+# stop the tic and read the logged time
+tictoc::toc(log = TRUE)
+
+first_mode <- function(x, empty_return = NA) {
+  x <- na.omit(x)
+  l <- length(unique(x))
+  if (l == 0) {
+    empty_return
+  } else if (l > 1 && l < length(x)) {
+    x[1] <- DescTools::Mode(x)[1]
+    x[1]
+  } else {
+    x[1]
+  }
+}
+
+first_mode <- function(x) {
+  x <- na.omit(x)
+  l <- length(unique(x))
+  if (l == 0) {
+    x[NA]
+  } else if (l > 1 && l < length(x)) {
+    x[1] <- DescTools::Mode(x)[1]
+    x[1]
+  } else {
+    x[1]
+  }
+}
+
+first_mode <- function(x) {
+  x <- na.omit(x)
+  l <- length(unique(x))
+  if (l == 0) {
+    x[NA]
+  } else if (l > 1 && l < length(x)) {
+    x[1] <- DescTools::Mode(x)[1]
+    x[1]
+  } else {
+    x[1]
+  }
+}
+
+
+x <- sample(c(3:10), 1e6, replace = TRUE)
+dat <- data.frame(id = sample(1:1e5, 1e6, replace = TRUE), value = x)
+dat <- dat %>%
+  group_by(id) %>%
+  mutate(end_date = cumsum(value), start_date = end_date - value + 1) %>%
+  ungroup() %>%
+  arrange(id, start_date)
+head(dat)
+dat2 <- data.frame(id = sample(1:1e5, 1e7, replace = TRUE), date = sample(1:200, 1e7, replace = TRUE))
+tictoc::tic()
+datx <- dat %>%
+  merge_by_date_range(
+    y = dat2,
+    by = "id",
+    x_start = "start_date",
+    x_end = "end_date",
+    y_date = "date",
+    include_start = TRUE,
+    include_end = TRUE,
+    engine = "data.table"
+  )
+# stop the tic and read the logged time
+tictoc::toc(log = TRUE)
+
+library(data.table)
+tictoc::tic()
+datx2 <- merge(
+  setDT(dat),
+  setDT(dat2),
+  by = "id",
+  allow.cartesian = TRUE
+)[date >= start_date & date <= end_date]
+# stop the tic and read the logged time
+tictoc::toc(log = TRUE)
