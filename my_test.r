@@ -588,17 +588,15 @@ dat <- dat %>%
   ungroup() %>%
   arrange(id, start_date)
 head(dat)
-dat2 <- data.frame(id = sample(1:1e5, 1e7, replace = TRUE), date = sample(1:200, 1e7, replace = TRUE))
+dat2 <- data.frame(id = sample(1:1e5, 1e8, replace = TRUE), date = sample(1:200, 1e8, replace = TRUE))
 tictoc::tic()
 datx <- dat %>%
-  merge_by_date_range(
+  merge_by_range(
     y = dat2,
     by = "id",
     x_start = "start_date",
     x_end = "end_date",
-    y_date = "date",
-    include_start = TRUE,
-    include_end = TRUE,
+    y_val = "date",
     engine = "data.table"
   )
 # stop the tic and read the logged time

@@ -118,7 +118,7 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
   return(result)
 }
 
-.coerce_join_date_value <- function(x, arg_name) {
+.coerce_join_value <- function(x, arg_name) {
   if (inherits(x, "Date") || inherits(x, "POSIXt")) {
     return(as.numeric(x))
   }
@@ -182,24 +182,24 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
   out
 }
 
-.match_date_range_group_vector <- function(start,
-                                           end,
-                                           date,
-                                           include_start = TRUE,
-                                           include_end = TRUE) {
-  matched_x <- vector("list", length(date))
-  matched_y <- vector("list", length(date))
+.match_range_group_vector <- function(start,
+                                      end,
+                                      val,
+                                      include_start = TRUE,
+                                      include_end = TRUE) {
+  matched_x <- vector("list", length(val))
+  matched_y <- vector("list", length(val))
   match_count <- 0L
 
-  for (date_index in seq_along(date)) {
-    lower_ok <- if (include_start) start <= date[date_index] else start < date[date_index]
-    upper_ok <- if (include_end) date[date_index] <= end else date[date_index] < end
+  for (val_index in seq_along(val)) {
+    lower_ok <- if (include_start) start <= val[val_index] else start < val[val_index]
+    upper_ok <- if (include_end) val[val_index] <= end else val[val_index] < end
     keep <- lower_ok & upper_ok
 
     if (any(keep)) {
       match_count <- match_count + 1L
       matched_x[[match_count]] <- which(keep)
-      matched_y[[match_count]] <- rep.int(date_index, sum(keep))
+      matched_y[[match_count]] <- rep.int(val_index, sum(keep))
     }
   }
 
@@ -213,35 +213,35 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
   )
 }
 
-.match_date_range_group_sweep <- function(start,
-                                          end,
-                                          date,
-                                          include_start = TRUE,
-                                          include_end = TRUE) {
+.match_range_group_sweep <- function(start,
+                                     end,
+                                     val,
+                                     include_start = TRUE,
+                                     include_end = TRUE) {
   n_interval <- length(start)
-  n_date <- length(date)
+  n_val <- length(val)
 
-  if (n_interval == 0 || n_date == 0) {
+  if (n_interval == 0 || n_val == 0) {
     return(list(x = integer(0), y = integer(0)))
   }
 
   start_order <- order(start, end)
   end_order <- order(end, start)
-  date_order <- order(date)
+  val_order <- order(val)
 
   active <- rep(FALSE, n_interval)
   start_pointer <- 1L
   end_pointer <- 1L
-  matched_x <- vector("list", n_date)
-  matched_y <- vector("list", n_date)
+  matched_x <- vector("list", n_val)
+  matched_y <- vector("list", n_val)
   match_count <- 0L
 
-  for (date_index in date_order) {
-    date_value <- date[date_index]
+  for (val_index in val_order) {
+    val_value <- val[val_index]
 
     while (start_pointer <= n_interval) {
       start_value <- start[start_order[start_pointer]]
-      start_ok <- if (include_start) start_value <= date_value else start_value < date_value
+      start_ok <- if (include_start) start_value <= val_value else start_value < val_value
 
       if (!start_ok) {
         break
@@ -253,7 +253,7 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
 
     while (end_pointer <= n_interval) {
       end_value <- end[end_order[end_pointer]]
-      end_expired <- if (include_end) end_value < date_value else end_value <= date_value
+      end_expired <- if (include_end) end_value < val_value else end_value <= val_value
 
       if (!end_expired) {
         break
@@ -268,7 +268,7 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
     if (length(active_index) > 0) {
       match_count <- match_count + 1L
       matched_x[[match_count]] <- active_index
-      matched_y[[match_count]] <- rep(date_index, length(active_index))
+      matched_y[[match_count]] <- rep(val_index, length(active_index))
     }
   }
 
@@ -282,42 +282,43 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
   )
 }
 
-.match_date_range_group <- function(start,
-                                    end,
-                                    date,
-                                    include_start = TRUE,
-                                    include_end = TRUE) {
-  pair_count <- length(start) * length(date)
+.match_range_group <- function(start,
+                               end,
+                               val,
+                               include_start = TRUE,
+                               include_end = TRUE) {
+  pair_count <- length(start) * length(val)
 
-  if (pair_count <= 4096L || length(start) <= 32L || length(date) <= 32L) {
-    return(.match_date_range_group_vector(
+  if (pair_count <= 4096L || length(start) <= 32L || length(val) <= 32L) {
+    return(.match_range_group_vector(
       start = start,
       end = end,
-      date = date,
+      val = val,
       include_start = include_start,
       include_end = include_end
     ))
   }
 
-  .match_date_range_group_sweep(
+  .match_range_group_sweep(
     start = start,
     end = end,
-    date = date,
+    val = val,
     include_start = include_start,
     include_end = include_end
   )
 }
 
-.merge_by_date_range_base <- function(x,
-                                      y,
-                                      by,
-                                      x_start_value,
-                                      x_end_value,
-                                      y_date_value,
-                                      include_start = TRUE,
-                                      include_end = TRUE) {
-  x_group <- .build_merge_group_key(x, by)
-  y_group <- .build_merge_group_key(y, by)
+.merge_by_range_base <- function(x,
+                                 y,
+                                 by_x,
+                                 by_y,
+                                 x_start_value,
+                                 x_end_value,
+                                 x_start_relaxed,
+                                 x_end_relaxed,
+                                 y_val_value) {
+  x_group <- .build_merge_group_key(x, by_x)
+  y_group <- .build_merge_group_key(y, by_y)
 
   x_groups <- split(seq_len(nrow(x))[!is.na(x_group)], x_group[!is.na(x_group)], drop = TRUE)
   y_groups <- split(seq_len(nrow(y))[!is.na(y_group)], y_group[!is.na(y_group)], drop = TRUE)
@@ -331,19 +332,17 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
     x_idx <- x_groups[[group_name]]
     y_idx <- y_groups[[group_name]]
 
-    x_idx <- x_idx[!is.na(x_start_value[x_idx]) & !is.na(x_end_value[x_idx])]
-    y_idx <- y_idx[!is.na(y_date_value[y_idx])]
+    x_idx <- x_idx[!is.na(x_start_relaxed[x_idx]) & !is.na(x_end_relaxed[x_idx])]
+    y_idx <- y_idx[!is.na(y_val_value[y_idx])]
 
     if (length(x_idx) == 0 || length(y_idx) == 0) {
       next
     }
 
-    group_matches <- .match_date_range_group(
-      start = x_start_value[x_idx],
-      end = x_end_value[x_idx],
-      date = y_date_value[y_idx],
-      include_start = include_start,
-      include_end = include_end
+    group_matches <- .match_range_group(
+      start = x_start_relaxed[x_idx],
+      end = x_end_relaxed[x_idx],
+      val = y_val_value[y_idx]
     )
 
     if (length(group_matches$x) > 0) {
@@ -363,36 +362,40 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
   )
 }
 
-.merge_by_date_range_data_table <- function(x,
-                                            y,
-                                            by,
-                                            x_start_value,
-                                            x_end_value,
-                                            y_date_value,
-                                            include_start = TRUE,
-                                            include_end = TRUE) {
-  check_package("data.table", "fast date-range joins")
+.merge_by_range_data_table <- function(x,
+                                       y,
+                                       by_x,
+                                       by_y,
+                                       x_start_value,
+                                       x_end_value,
+                                       x_start_relaxed,
+                                       x_end_relaxed,
+                                       y_val_value) {
+  check_package("data.table", "fast range joins")
 
-  x_valid <- !is.na(x_start_value) & !is.na(x_end_value)
-  y_valid <- !is.na(y_date_value)
+  x_valid <- !is.na(x_start_relaxed) & !is.na(x_end_relaxed)
+  y_valid <- !is.na(y_val_value)
 
-  if (length(by) > 0) {
-    x_valid <- x_valid & stats::complete.cases(x[, by, drop = FALSE])
-    y_valid <- y_valid & stats::complete.cases(y[, by, drop = FALSE])
+  if (length(by_x) > 0) {
+    x_valid <- x_valid & stats::complete.cases(x[, by_x, drop = FALSE])
+    y_valid <- y_valid & stats::complete.cases(y[, by_y, drop = FALSE])
   }
 
   if (!any(x_valid) || !any(y_valid)) {
     return(list(x = integer(0), y = integer(0)))
   }
 
-  x_join <- data.table::as.data.table(x[x_valid, by, drop = FALSE])
-  data.table::set(x_join, j = "cp_join_start", value = x_start_value[x_valid])
-  data.table::set(x_join, j = "cp_join_end", value = x_end_value[x_valid])
+  x_join <- data.table::as.data.table(x[x_valid, by_x, drop = FALSE])
+  data.table::set(x_join, j = "cp_join_start", value = x_start_relaxed[x_valid])
+  data.table::set(x_join, j = "cp_join_end", value = x_end_relaxed[x_valid])
   data.table::set(x_join, j = "cp_x_row", value = which(x_valid))
 
-  y_join <- data.table::as.data.table(y[y_valid, by, drop = FALSE])
-  data.table::set(y_join, j = "cp_join_date_start", value = y_date_value[y_valid])
-  data.table::set(y_join, j = "cp_join_date_end", value = y_date_value[y_valid])
+  y_join <- data.table::as.data.table(y[y_valid, by_y, drop = FALSE])
+  if (length(by_x) > 0 && !identical(by_x, by_y)) {
+    data.table::setnames(y_join, by_y, by_x)
+  }
+  data.table::set(y_join, j = "cp_join_val_start", value = y_val_value[y_valid])
+  data.table::set(y_join, j = "cp_join_val_end", value = y_val_value[y_valid])
   data.table::set(y_join, j = "cp_y_row", value = which(y_valid))
 
   if (nrow(x_join) == 0 || nrow(y_join) == 0) {
@@ -401,24 +404,17 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
 
   data.table::setkeyv(
     x_join,
-    c(by, "cp_join_start", "cp_join_end")
+    c(by_x, "cp_join_start", "cp_join_end")
   )
 
   pairs <- data.table::foverlaps(
     x = y_join,
     y = x_join,
-    by.x = c(by, "cp_join_date_start", "cp_join_date_end"),
-    by.y = c(by, "cp_join_start", "cp_join_end"),
+    by.x = c(by_x, "cp_join_val_start", "cp_join_val_end"),
+    by.y = c(by_x, "cp_join_start", "cp_join_end"),
     type = "within",
     nomatch = 0L
   )
-
-  if (!include_start) {
-    pairs <- pairs[pairs[["cp_join_start"]] < pairs[["cp_join_date_start"]], ]
-  }
-  if (!include_end) {
-    pairs <- pairs[pairs[["cp_join_date_end"]] < pairs[["cp_join_end"]], ]
-  }
 
   if (nrow(pairs) == 0) {
     return(list(x = integer(0), y = integer(0)))
@@ -427,19 +423,36 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
   list(x = pairs[["cp_x_row"]], y = pairs[["cp_y_row"]])
 }
 
-.merge_by_date_range_finalize <- function(x,
-                                          y,
-                                          by,
-                                          matched_x,
-                                          matched_y,
-                                          all.x = FALSE,
-                                          all.y = FALSE,
-                                          suffixes = c(".x", ".y")) {
-  y_keep <- setdiff(names(y), by)
+.merge_by_range_finalize <- function(x,
+                                     y,
+                                     by_x,
+                                     by_y,
+                                     matched_x,
+                                     matched_y,
+                                     x_start_value,
+                                     x_end_value,
+                                     y_val_value,
+                                     all_y = FALSE,
+                                     suffixes = c(".x", ".y")) {
+  y_row_id_col <- ".cp_y_row_id"
+  has_duplicate_warning <- FALSE
+
+  y_keep <- setdiff(names(y), by_y)
   duplicated_cols <- intersect(names(x), y_keep)
 
   x_out <- x
   y_out <- y[, y_keep, drop = FALSE]
+
+  if (length(by_x) > 0 && !identical(by_x, by_y)) {
+    y_out_cols <- names(y_out)
+    for (i in seq_along(by_x)) {
+      if (by_y[i] %in% y_keep) {
+        y_out_cols[y_out_cols == by_y[i]] <- by_x[i]
+      }
+    }
+    names(y_out) <- y_out_cols
+    duplicated_cols <- intersect(names(x), names(y_out))
+  }
 
   names(x_out)[names(x_out) %in% duplicated_cols] <- paste0(
     names(x_out)[names(x_out) %in% duplicated_cols],
@@ -450,75 +463,136 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
     suffixes[2]
   )
 
-  pieces <- list()
-
   if (length(matched_x) > 0) {
-    pieces[[length(pieces) + 1]] <- cbind(
+    y_row_id <- matched_y
+    since_start <- as.numeric(y_val_value[matched_y] - x_start_value[matched_x])
+    beyond_end <- y_val_value[matched_y] > x_end_value[matched_x]
+
+    result <- cbind(
       x_out[matched_x, , drop = FALSE],
-      y_out[matched_y, , drop = FALSE]
+      y_out[matched_y, , drop = FALSE],
+      since_start = since_start,
+      stringsAsFactors = FALSE
+    )
+    result[[y_row_id_col]] <- y_row_id
+
+    y_dup <- duplicated(y_row_id) | duplicated(y_row_id, fromLast = TRUE)
+
+    if (any(y_dup)) {
+      dup_ids <- unique(y_row_id[y_dup])
+      rows_to_remove <- integer(0)
+
+      for (id in dup_ids) {
+        idx <- which(y_row_id == id)
+        if (length(idx) <= 1) next
+
+        current_idx <- idx
+
+        neg_since_start_idx <- current_idx[since_start[current_idx] < 0]
+        if (length(neg_since_start_idx) > 0 && length(current_idx) > 1) {
+          rows_to_remove <- c(rows_to_remove, neg_since_start_idx)
+          current_idx <- setdiff(current_idx, neg_since_start_idx)
+        }
+
+        if (length(current_idx) > 1) {
+          beyond_end_idx <- current_idx[beyond_end[current_idx]]
+          if (length(beyond_end_idx) > 0) {
+            rows_to_remove <- c(rows_to_remove, beyond_end_idx)
+            current_idx <- setdiff(current_idx, beyond_end_idx)
+          }
+        }
+
+        if (length(current_idx) > 1) {
+          has_duplicate_warning <- TRUE
+        }
+      }
+
+      if (length(rows_to_remove) > 0) {
+        result <- result[-rows_to_remove, , drop = FALSE]
+        y_row_id <- y_row_id[-rows_to_remove]
+        since_start <- since_start[-rows_to_remove]
+        beyond_end <- beyond_end[-rows_to_remove]
+      }
+
+      if (has_duplicate_warning) {
+        warning(
+          "Some rows in `y` matched multiple ranges in `x` after filtering. ",
+          "The `.cp_y_row_id` column is retained in the output to identify duplicates."
+        )
+      } else {
+        result[[y_row_id_col]] <- NULL
+      }
+    } else {
+      result[[y_row_id_col]] <- NULL
+    }
+  } else {
+    result <- cbind(
+      x_out[FALSE, , drop = FALSE],
+      y_out[FALSE, , drop = FALSE],
+      since_start = numeric(0)
     )
   }
 
-  if (all.x) {
-    unmatched_x <- setdiff(seq_len(nrow(x)), unique(matched_x))
-    if (length(unmatched_x) > 0) {
-      pieces[[length(pieces) + 1]] <- cbind(
-        x_out[unmatched_x, , drop = FALSE],
-        .na_like_df(y_out, length(unmatched_x))
-      )
-    }
-  }
-
-  if (all.y) {
+  if (all_y) {
     unmatched_y <- setdiff(seq_len(nrow(y)), unique(matched_y))
     if (length(unmatched_y) > 0) {
-      pieces[[length(pieces) + 1]] <- cbind(
+      unmatched_piece <- cbind(
         .na_like_df(x_out, length(unmatched_y)),
-        y_out[unmatched_y, , drop = FALSE]
+        y_out[unmatched_y, , drop = FALSE],
+        since_start = rep(NA_real_, length(unmatched_y))
       )
+      result <- dplyr::bind_rows(result, unmatched_piece)
     }
   }
 
-  if (length(pieces) == 0) {
-    return(cbind(
-      x_out[FALSE, , drop = FALSE],
-      y_out[FALSE, , drop = FALSE]
-    ))
-  }
-
-  dplyr::bind_rows(pieces)
+  result
 }
 
-#' Merge Data Frames by Exact Keys and Date Range
+#' Merge Data Frames by Exact Keys and Value Range
 #'
 #' @description
 #' Merge two data frames where shared keys in `by` must match exactly and the
-#' date in `y[[y_date]]` must fall within the date range defined by
+#' value in `y[[y_val]]` must fall within the range defined by
 #' `x[[x_start]]` and `x[[x_end]]`.
 #'
-#' This avoids constructing the full Cartesian product that would be produced by
-#' a regular equality join followed by date-range filtering.
+#' This function is particularly useful for date-based matching scenarios,
+#' where you need to match events (e.g., examinations, treatments) to
+#' time intervals (e.g., hospital admissions, visits). While the function
+#' accepts any ordered values (numeric, Date, POSIXt), date matching is
+#' the primary use case.
 #'
-#' @param x A data frame containing the date range columns.
-#' @param y A data frame containing the point-in-time date column.
-#' @param by Character vector of column names that must match exactly in both
-#'   data frames. Use `character(0)` when no exact-match keys are needed.
-#' @param x_start Column name in `x` containing the range start date.
-#' @param x_end Column name in `x` containing the range end date.
-#' @param y_date Column name in `y` containing the date to be matched.
-#' @param include_start Logical, whether the lower bound is inclusive.
-#' @param include_end Logical, whether the upper bound is inclusive.
-#' @param all.x Logical, whether to keep rows from `x` that have no match.
-#' @param all.y Logical, whether to keep rows from `y` that have no match.
+#' This avoids constructing the full Cartesian product that would be produced by
+#' a regular equality join followed by range filtering.
+#'
+#' @param x A data frame containing the range columns.
+#' @param y A data frame containing the point-in-time value column.
+#' @param by Either a character vector of column names that must match exactly
+#'   in both data frames, or a named list with elements `x` and `y` specifying
+#'   different column names in each data frame (e.g., `list(x = c("id1", "id2"), y = c("ID1", "ID2"))`).
+#'   The two vectors must have the same length and are matched by position.
+#'   Use `character(0)` when no exact-match keys are needed.
+#' @param x_start Column name in `x` containing the range start.
+#' @param x_end Column name in `x` containing the range end. If `NULL`, defaults
+#'   to `x_start` (treating the range as a single point).
+#' @param y_val Column name in `y` containing the value to be matched.
+#' @param range_relax A numeric vector of length 2 specifying how to extend the
+#'   matching range. The first element extends backwards from `x_start`,
+#'   the second extends forwards from `x_end`. Default is `c(0, 0)` (no extension).
+#'   Both values must be >= 0.
+#' @param all_y Logical, whether to keep rows from `y` that have no match.
 #' @param suffixes Character vector of length 2 used for duplicated non-key
 #'   column names from `x` and `y`.
 #' @param engine Join engine. Use `"auto"` to prefer `data.table` when
 #'   installed and otherwise fall back to the base R implementation. Use
 #'   `"data.table"` to require the fast non-equi join path explicitly.
 #'
-#' @return A data frame containing matched rows from `x` and `y`. Rows may be
-#'   duplicated when one date matches multiple ranges or one range contains
-#'   multiple dates.
+#' @return A data frame containing matched rows from `x` and `y`. The output
+#'   includes a `since_start` column indicating the numeric difference between
+#'   `y_val` and `x_start` (in the units of the values, e.g., days for Date objects).
+#'
+#'   If any row from `y` matches multiple ranges in `x` after applying the
+#'   `range_relax` extension and filtering, a `.cp_y_row_id` column is retained
+#'   in the output to identify duplicates, and a warning is issued.
 #'
 #' @examples
 #' admissions <- data.frame(
@@ -533,28 +607,26 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
 #'   exam_name = c("CT", "MRI", "XR", "US")
 #' )
 #'
-#' merge_by_date_range(
+#' merge_by_range(
 #'   x = admissions,
 #'   y = examinations,
 #'   by = "patient_id",
 #'   x_start = "date_start",
 #'   x_end = "date_end",
-#'   y_date = "exam_date"
+#'   y_val = "exam_date"
 #' )
 #'
 #' @export
-merge_by_date_range <- function(x,
-                                y,
-                                by,
-                                x_start,
-                                x_end,
-                                y_date,
-                                include_start = TRUE,
-                                include_end = TRUE,
-                                all.x = FALSE,
-                                all.y = FALSE,
-                                suffixes = c(".x", ".y"),
-                                engine = c("auto", "data.table", "base")) {
+merge_by_range <- function(x,
+                           y,
+                           by,
+                           x_start,
+                           x_end = NULL,
+                           y_val,
+                           range_relax = c(0, 0),
+                           all_y = FALSE,
+                           suffixes = c(".x", ".y"),
+                           engine = c("auto", "data.table", "base")) {
   if (!is.data.frame(x)) {
     stop("`x` must be a data frame")
   }
@@ -562,10 +634,31 @@ merge_by_date_range <- function(x,
     stop("`y` must be a data frame")
   }
 
-  by <- as.character(by)
+  by_x <- NULL
+  by_y <- NULL
 
-  required_x <- c(by, x_start, x_end)
-  required_y <- c(by, y_date)
+  if (is.list(by) && !is.data.frame(by)) {
+    if (!all(c("x", "y") %in% names(by))) {
+      stop("When `by` is a list, it must contain elements named 'x' and 'y'")
+    }
+    by_x <- as.character(by$x)
+    by_y <- as.character(by$y)
+    if (length(by_x) != length(by_y)) {
+      stop("`by$x` and `by$y` must have the same length")
+    }
+    by <- by_x
+  } else {
+    by <- as.character(by)
+    by_x <- by
+    by_y <- by
+  }
+
+  if (is.null(x_end)) {
+    x_end <- x_start
+  }
+
+  required_x <- c(by_x, x_start, x_end)
+  required_y <- c(by_y, y_val)
 
   missing_x <- setdiff(required_x, names(x))
   missing_y <- setdiff(required_y, names(y))
@@ -577,17 +670,15 @@ merge_by_date_range <- function(x,
     stop(sprintf("Columns not found in `y`: %s", paste(missing_y, collapse = ", ")))
   }
 
-  if (!is.logical(include_start) || length(include_start) != 1 || is.na(include_start)) {
-    stop("`include_start` must be a single TRUE/FALSE value")
+  if (!is.numeric(range_relax) || length(range_relax) != 2) {
+    stop("`range_relax` must be a numeric vector of length 2")
   }
-  if (!is.logical(include_end) || length(include_end) != 1 || is.na(include_end)) {
-    stop("`include_end` must be a single TRUE/FALSE value")
+  if (any(range_relax < 0)) {
+    stop("All elements of `range_relax` must be >= 0")
   }
-  if (!is.logical(all.x) || length(all.x) != 1 || is.na(all.x)) {
-    stop("`all.x` must be a single TRUE/FALSE value")
-  }
-  if (!is.logical(all.y) || length(all.y) != 1 || is.na(all.y)) {
-    stop("`all.y` must be a single TRUE/FALSE value")
+
+  if (!is.logical(all_y) || length(all_y) != 1 || is.na(all_y)) {
+    stop("`all_y` must be a single TRUE/FALSE value")
   }
   if (!is.character(suffixes) || length(suffixes) != 2) {
     stop("`suffixes` must be a character vector of length 2")
@@ -598,47 +689,54 @@ merge_by_date_range <- function(x,
     engine <- if (requireNamespace("data.table", quietly = TRUE)) "data.table" else "base"
   }
 
-  x_start_value <- .coerce_join_date_value(x[[x_start]], x_start)
-  x_end_value <- .coerce_join_date_value(x[[x_end]], x_end)
-  y_date_value <- .coerce_join_date_value(y[[y_date]], y_date)
+  x_start_value <- .coerce_join_value(x[[x_start]], x_start)
+  x_end_value <- .coerce_join_value(x[[x_end]], x_end)
+  y_val_value <- .coerce_join_value(y[[y_val]], y_val)
+
+  x_start_relaxed <- x_start_value - range_relax[1]
+  x_end_relaxed <- x_end_value + range_relax[2]
 
   invalid_range <- !is.na(x_start_value) & !is.na(x_end_value) & x_start_value > x_end_value
   if (any(invalid_range)) {
     stop("`x_start` must be earlier than or equal to `x_end` for all non-missing rows")
   }
 
-  matches <- switch(
-    engine,
-    data.table = .merge_by_date_range_data_table(
+  matches <- switch(engine,
+    data.table = .merge_by_range_data_table(
       x = x,
       y = y,
-      by = by,
+      by_x = by_x,
+      by_y = by_y,
       x_start_value = x_start_value,
       x_end_value = x_end_value,
-      y_date_value = y_date_value,
-      include_start = include_start,
-      include_end = include_end
+      x_start_relaxed = x_start_relaxed,
+      x_end_relaxed = x_end_relaxed,
+      y_val_value = y_val_value
     ),
-    base = .merge_by_date_range_base(
+    base = .merge_by_range_base(
       x = x,
       y = y,
-      by = by,
+      by_x = by_x,
+      by_y = by_y,
       x_start_value = x_start_value,
       x_end_value = x_end_value,
-      y_date_value = y_date_value,
-      include_start = include_start,
-      include_end = include_end
+      x_start_relaxed = x_start_relaxed,
+      x_end_relaxed = x_end_relaxed,
+      y_val_value = y_val_value
     )
   )
 
-  .merge_by_date_range_finalize(
+  .merge_by_range_finalize(
     x = x,
     y = y,
-    by = by,
+    by_x = by_x,
+    by_y = by_y,
     matched_x = matches$x,
     matched_y = matches$y,
-    all.x = all.x,
-    all.y = all.y,
+    x_start_value = x_start_value,
+    x_end_value = x_end_value,
+    y_val_value = y_val_value,
+    all_y = all_y,
     suffixes = suffixes
   )
 }
