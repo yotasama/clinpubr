@@ -36,7 +36,7 @@ test_that("format_pval formats p-values correctly", {
 test_that("first_mode calculates the first mode", {
   expect_equal(first_mode(c(1, 1, 2, 2, 3, 3, 3, NA, NA, NA)), 3)
   expect_equal(first_mode(c(1, 2, 3)), 1) # All unique, returns first
-  expect_equal(first_mode(NA), NA) # All NAs
+  expect_equal(first_mode(c(NA, NA)), NA) # All NAs
   expect_null(first_mode(character(0), empty_return = NULL)) # Empty vector
 })
 

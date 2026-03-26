@@ -167,19 +167,21 @@ test_that("merge_by_substring works with special regex characters", {
   expect_equal(result$category[result$name == "A.B"], "cat1")
 })
 
-test_that("merge_by_range matches exact keys and inclusive date ranges", {
+test_that("merge_by_range matches exact keys and returns since_start", {
   admissions <- data.frame(
     patient_id = c(1, 1, 2),
     visit_id = c("A", "B", "A"),
     date_start = as.Date(c("2024-01-01", "2024-02-01", "2024-03-01")),
     date_end = as.Date(c("2024-01-10", "2024-02-10", "2024-03-05")),
-    ward = c("W1", "W2", "W3")
+    ward = c("W1", "W2", "W3"),
+    stringsAsFactors = FALSE
   )
   examinations <- data.frame(
     patient_id = c(1, 1, 1, 2),
     visit_id = c("A", "B", "B", "A"),
     exam_date = as.Date(c("2024-01-01", "2024-02-10", "2024-02-11", "2024-03-03")),
-    exam_name = c("CT", "MRI", "US", "XR")
+    exam_name = c("CT", "MRI", "US", "XR"),
+    stringsAsFactors = FALSE
   )
 
   result <- merge_by_range(
@@ -188,63 +190,27 @@ test_that("merge_by_range matches exact keys and inclusive date ranges", {
     by = c("patient_id", "visit_id"),
     x_start = "date_start",
     x_end = "date_end",
-    y_val = "exam_date"
+    y_val = "exam_date",
+    all_y = FALSE
   )
 
   expect_true(is.data.frame(result))
   expect_equal(nrow(result), 3)
   expect_equal(result$exam_name, c("CT", "MRI", "XR"))
   expect_equal(result$ward, c("W1", "W2", "W3"))
-  expect_true("since_start" %in% names(result))
+  expect_equal(result$since_start, c(0, 9, 2))
 })
 
-test_that("merge_by_range supports range_relax parameter", {
+test_that("merge_by_range supports x_end = NULL and range_relax", {
   x <- data.frame(
     id = 1,
-    date_start = as.Date("2024-01-05"),
-    date_end = as.Date("2024-01-10"),
+    visit_start = as.Date("2024-01-10"),
+    label = "visit",
     stringsAsFactors = FALSE
   )
   y <- data.frame(
     id = c(1, 1, 1),
-    exam_date = as.Date(c("2024-01-01", "2024-01-05", "2024-01-10")),
-    stringsAsFactors = FALSE
-  )
-
-  result_no_relax <- merge_by_range(
-    x = x,
-    y = y,
-    by = "id",
-    x_start = "date_start",
-    x_end = "date_end",
-    y_val = "exam_date"
-  )
-  expect_equal(nrow(result_no_relax), 2)
-
-  result_relax <- merge_by_range(
-    x = x,
-    y = y,
-    by = "id",
-    x_start = "date_start",
-    x_end = "date_end",
-    y_val = "exam_date",
-    range_relax = c(4, 0)
-  )
-  expect_equal(nrow(result_relax), 3)
-})
-
-test_that("merge_by_range keeps unmatched rows from y when all_y=TRUE", {
-  x <- data.frame(
-    id = c(1, 2),
-    date_start = as.Date(c("2024-01-01", "2024-02-01")),
-    date_end = as.Date(c("2024-01-10", "2024-02-05")),
-    admission_type = c("A", "B"),
-    stringsAsFactors = FALSE
-  )
-  y <- data.frame(
-    id = c(1, 3),
-    exam_date = as.Date(c("2024-01-03", "2024-03-01")),
-    admission_type = c("same_name", "other"),
+    event_date = as.Date(c("2024-01-09", "2024-01-10", "2024-01-11")),
     stringsAsFactors = FALSE
   )
 
@@ -252,15 +218,46 @@ test_that("merge_by_range keeps unmatched rows from y when all_y=TRUE", {
     x = x,
     y = y,
     by = "id",
-    x_start = "date_start",
-    x_end = "date_end",
-    y_val = "exam_date",
+    x_start = "visit_start",
+    y_val = "event_date",
+    range_relax = c(1, 0),
+    all_y = FALSE
+  )
+
+  expect_equal(nrow(result), 2)
+  expect_equal(result$event_date, as.Date(c("2024-01-09", "2024-01-10")))
+  expect_equal(result$since_start, c(-1, 0))
+})
+
+test_that("merge_by_range supports different by columns and keeps unmatched y rows", {
+  x <- data.frame(
+    patient_id = c(1, 2),
+    range_start = c(10, 20),
+    range_end = c(15, 25),
+    admission_type = c("A", "B"),
+    stringsAsFactors = FALSE
+  )
+  y <- data.frame(
+    pid = c(1, 3),
+    event_value = c(12, 99),
+    admission_type = c("same_name", "other"),
+    stringsAsFactors = FALSE
+  )
+
+  result <- merge_by_range(
+    x = x,
+    y = y,
+    by = list(x = "patient_id", y = "pid"),
+    x_start = "range_start",
+    x_end = "range_end",
+    y_val = "event_value",
     all_y = TRUE
   )
 
   expect_equal(nrow(result), 2)
   expect_true(all(c("admission_type.x", "admission_type.y") %in% names(result)))
-  expect_equal(sum(is.na(result$date_start)), 1)
+  expect_equal(sum(is.na(result$range_start)), 1)
+  expect_equal(sum(is.na(result$since_start)), 1)
 })
 
 test_that("merge_by_range validates inputs", {
@@ -274,10 +271,11 @@ test_that("merge_by_range validates inputs", {
     exam_date = as.Date("2024-01-01")
   )
 
-  expect_error(merge_by_range("bad", y, "id", "date_start", "date_end", y_val = "exam_date"))
-  expect_error(merge_by_range(x, "bad", "id", "date_start", "date_end", y_val = "exam_date"))
-  expect_error(merge_by_range(x, y, "missing", "date_start", "date_end", y_val = "exam_date"))
-  expect_error(merge_by_range(x, y, "id", "date_start", "date_end", y_val = "exam_date"))
+  expect_error(merge_by_range("bad", y, "id", "date_start", "date_end", "exam_date"))
+  expect_error(merge_by_range(x, "bad", "id", "date_start", "date_end", "exam_date"))
+  expect_error(merge_by_range(x, y, "missing", "date_start", "date_end", "exam_date"))
+  expect_error(merge_by_range(x, y, "id", "date_start", "date_end", "exam_date", range_relax = c(0)))
+  expect_error(merge_by_range(x, y, "id", "date_start", "date_end", "exam_date", range_relax = c(-1, 0)))
   expect_error(
     merge_by_range(
       transform(x, date_end = as.Date("2024-01-01")),
@@ -285,70 +283,22 @@ test_that("merge_by_range validates inputs", {
       "id",
       "date_start",
       "date_end",
-      y_val = "exam_date"
+      "exam_date"
     )
   )
-  expect_error(merge_by_range(x, y, "id", "date_start", "date_end", y_val = "exam_date", range_relax = c(-1, 0)))
 })
 
-test_that("merge_by_range data.table and base engines are consistent", {
-  skip_if_not_installed("data.table")
-
+test_that("merge_by_range clips relax-only overlap to a single neighboring range", {
   x <- data.frame(
-    id = c(1, 1, 2, 2),
-    grp = c("A", "A", "B", "B"),
-    date_start = as.Date(c("2024-01-01", "2024-01-05", "2024-02-01", "2024-02-10")),
-    date_end = as.Date(c("2024-01-10", "2024-01-08", "2024-02-05", "2024-02-20")),
-    x_value = c("x1", "x2", "x3", "x4"),
+    id = c(1, 1),
+    start = c(1, 6),
+    end = c(4, 8),
+    label = c("left", "right"),
     stringsAsFactors = FALSE
   )
   y <- data.frame(
-    id = c(1, 1, 2, 2, 3),
-    grp = c("A", "A", "B", "B", "C"),
-    exam_date = as.Date(c("2024-01-05", "2024-01-09", "2024-02-03", "2024-02-21", "2024-03-01")),
-    y_value = c("y1", "y2", "y3", "y4", "y5"),
-    stringsAsFactors = FALSE
-  )
-
-  result_base <- merge_by_range(
-    x = x,
-    y = y,
-    by = c("id", "grp"),
-    x_start = "date_start",
-    x_end = "date_end",
-    y_val = "exam_date",
-    all_y = TRUE,
-    engine = "base"
-  )
-
-  result_dt <- merge_by_range(
-    x = x,
-    y = y,
-    by = c("id", "grp"),
-    x_start = "date_start",
-    x_end = "date_end",
-    y_val = "exam_date",
-    all_y = TRUE,
-    engine = "data.table"
-  )
-
-  order_cols <- c("id", "grp", "date_start", "date_end", "exam_date", "x_value", "y_value")
-  result_base <- result_base[do.call(order, result_base[order_cols]), , drop = FALSE]
-  result_dt <- result_dt[do.call(order, result_dt[order_cols]), , drop = FALSE]
-
-  expect_equal(result_dt, result_base)
-})
-
-test_that("merge_by_range supports x_end = NULL for point matching", {
-  x <- data.frame(
-    id = c(1, 2),
-    date_point = as.Date(c("2024-01-05", "2024-02-10")),
-    value = c("a", "b"),
-    stringsAsFactors = FALSE
-  )
-  y <- data.frame(
-    id = c(1, 1, 2),
-    exam_date = as.Date(c("2024-01-05", "2024-01-06", "2024-02-10")),
+    id = 1,
+    value = 5,
     stringsAsFactors = FALSE
   )
 
@@ -356,24 +306,31 @@ test_that("merge_by_range supports x_end = NULL for point matching", {
     x = x,
     y = y,
     by = "id",
-    x_start = "date_point",
-    y_val = "exam_date"
+    x_start = "start",
+    x_end = "end",
+    y_val = "value",
+    range_relax = c(1, 1),
+    all_y = FALSE,
+    engine = "base"
   )
 
-  expect_equal(nrow(result), 2)
-  expect_equal(result$exam_date, as.Date(c("2024-01-05", "2024-02-10")))
+  expect_equal(nrow(result), 1)
+  expect_equal(result$label, "right")
+  expect_equal(result$since_start, -1)
+  expect_false(".cp_y_row_id" %in% names(result))
 })
 
-test_that("merge_by_range handles duplicate y rows with warning", {
+test_that("merge_by_range keeps duplicates for fully overlapping core ranges and warns", {
   x <- data.frame(
     id = c(1, 1),
-    date_start = as.Date(c("2024-01-01", "2024-01-05")),
-    date_end = as.Date(c("2024-01-10", "2024-01-15")),
+    start = c(1, 1),
+    end = c(4, 4),
+    label = c("left", "right"),
     stringsAsFactors = FALSE
   )
   y <- data.frame(
     id = 1,
-    exam_date = as.Date("2024-01-06"),
+    value = 2,
     stringsAsFactors = FALSE
   )
 
@@ -382,44 +339,102 @@ test_that("merge_by_range handles duplicate y rows with warning", {
       x = x,
       y = y,
       by = "id",
-      x_start = "date_start",
-      x_end = "date_end",
-      y_val = "exam_date"
+      x_start = "start",
+      x_end = "end",
+      y_val = "value",
+      range_relax = c(1, 1),
+      all_y = FALSE,
+      engine = "base"
     ),
-    "matched multiple ranges"
+      "matched multiple clipped ranges"
   )
 
+  expect_equal(nrow(result), 2)
+  expect_equal(sort(result$label), c("left", "right"))
+  expect_true(".cp_y_row_id" %in% names(result))
+  expect_true(all(result$.cp_y_row_id == 1))
+})
+
+test_that("merge_by_range clips x_end NULL extensions before retaining true duplicate starts", {
+  x <- data.frame(
+    id = c(1, 1, 1, 1),
+    start = c(1, 4, 4, 8),
+    label = c("a", "b1", "b2", "c"),
+    stringsAsFactors = FALSE
+  )
+  y <- data.frame(
+    id = c(1, 1, 1, 1),
+    value = c(2, 4, 5, 8),
+    stringsAsFactors = FALSE
+  )
+
+  expect_warning(
+    result <- merge_by_range(
+      x = x,
+      y = y,
+      by = "id",
+      x_start = "start",
+      y_val = "value",
+      range_relax = c(0, Inf),
+      all_y = FALSE,
+      engine = "base"
+    ),
+      "matched multiple clipped ranges"
+  )
+
+    result <- result[order(result[["value"]], result[["label"]]), , drop = FALSE]
+  expect_equal(result$label, c("a", "b1", "b2", "b1", "b2", "c"))
+  expect_equal(result$value, c(2, 4, 4, 5, 5, 8))
+  expect_equal(result$since_start, c(1, 0, 0, 1, 1, 0))
   expect_true(".cp_y_row_id" %in% names(result))
 })
 
-test_that("merge_by_range supports different column names via by list", {
+test_that("merge_by_range data.table and base engines are consistent", {
+  skip_if_not_installed("data.table")
+
   x <- data.frame(
-    patient_id = c(1, 1, 2),
-    visit_id = c("A", "B", "A"),
-    date_start = as.Date(c("2024-01-01", "2024-02-01", "2024-03-01")),
-    date_end = as.Date(c("2024-01-10", "2024-02-10", "2024-03-05")),
-    ward = c("W1", "W2", "W3")
+    id = c(1, 1, 2, 2),
+    grp = c("A", "A", "B", "B"),
+    start = c(1, 4, 10, 15),
+    end = c(4, 8, 12, 20),
+    x_value = c("x1", "x2", "x3", "x4"),
+    stringsAsFactors = FALSE
   )
   y <- data.frame(
-    pid = c(1, 1, 1, 2),
-    vid = c("A", "B", "B", "A"),
-    exam_date = as.Date(c("2024-01-01", "2024-02-10", "2024-02-11", "2024-03-03")),
-    exam_name = c("CT", "MRI", "US", "XR")
+    gid = c(1, 1, 2, 2, 3),
+    grp_id = c("A", "A", "B", "B", "C"),
+    value = c(4, 5, 11, 21, 99),
+    y_value = c("y1", "y2", "y3", "y4", "y5"),
+    stringsAsFactors = FALSE
   )
 
-  result <- merge_by_range(
+  result_base <- suppressWarnings(merge_by_range(
     x = x,
     y = y,
-    by = list(x = c("patient_id", "visit_id"), y = c("pid", "vid")),
-    x_start = "date_start",
-    x_end = "date_end",
-    y_val = "exam_date"
-  )
+    by = list(x = c("id", "grp"), y = c("gid", "grp_id")),
+    x_start = "start",
+    x_end = "end",
+    y_val = "value",
+    range_relax = c(1, 1),
+    all_y = TRUE,
+    engine = "base"
+  ))
 
-  expect_true(is.data.frame(result))
-  expect_equal(nrow(result), 3)
-  expect_true("patient_id" %in% names(result))
-  expect_true("visit_id" %in% names(result))
-  expect_false("pid" %in% names(result))
-  expect_false("vid" %in% names(result))
+  result_dt <- suppressWarnings(merge_by_range(
+    x = x,
+    y = y,
+    by = list(x = c("id", "grp"), y = c("gid", "grp_id")),
+    x_start = "start",
+    x_end = "end",
+    y_val = "value",
+    range_relax = c(1, 1),
+    all_y = TRUE,
+    engine = "data.table"
+  ))
+
+  order_cols <- c("id", "grp", "start", "end", "value", "x_value", "y_value")
+  result_base <- result_base[do.call(order, result_base[order_cols]), , drop = FALSE]
+  result_dt <- result_dt[do.call(order, result_dt[order_cols]), , drop = FALSE]
+
+  expect_equal(result_dt, result_base)
 })

@@ -517,6 +517,7 @@ bench_group_by_summary <- function(n = 1e6, n_groups = 100, reps = 3, seed = 123
 
 library(dtplyr)
 library(dplyr)
+load_all()
 
 n <- 1e7
 n_groups <- 1e6
@@ -580,15 +581,18 @@ first_mode <- function(x) {
 }
 
 
+library(dtplyr)
+library(dplyr)
+load_all()
 x <- sample(c(3:10), 1e6, replace = TRUE)
 dat <- data.frame(id = sample(1:1e5, 1e6, replace = TRUE), value = x)
 dat <- dat %>%
   group_by(id) %>%
-  mutate(end_date = cumsum(value), start_date = end_date - value + 1) %>%
+  mutate(end_date = cumsum(value)+5, start_date = end_date - value + 1) %>%
   ungroup() %>%
   arrange(id, start_date)
 head(dat)
-dat2 <- data.frame(id = sample(1:1e5, 1e8, replace = TRUE), date = sample(1:200, 1e8, replace = TRUE))
+dat2 <- data.frame(id = sample(1:1e5, 1e7, replace = TRUE), date = sample(1:200, 1e7, replace = TRUE))
 tictoc::tic()
 datx <- dat %>%
   merge_by_range(
@@ -596,11 +600,17 @@ datx <- dat %>%
     by = "id",
     x_start = "start_date",
     x_end = "end_date",
+    # range_relax = c(0, Inf),
     y_val = "date",
-    engine = "data.table"
+    engine = "data.table",
+    all_y = TRUE
   )
+
 # stop the tic and read the logged time
 tictoc::toc(log = TRUE)
+head(datx)
+nrow(datx)
+table(is.na(datx$value))
 
 library(data.table)
 tictoc::tic()
@@ -612,3 +622,29 @@ datx2 <- merge(
 )[date >= start_date & date <= end_date]
 # stop the tic and read the logged time
 tictoc::toc(log = TRUE)
+
+library(dplyr)
+
+df <- data.frame(pid = c(1,1,2,2), value = c(10,20,30,40), value2 = c(100,200,300,400))
+
+# 默认行为：返回长度 > 1 → 展开多行
+
+f1=function(x){
+  if(min(x)<30){
+    20
+  }else{
+    c(30,40)
+  }
+}
+df %>%
+  group_by(pid) %>%
+  summarise(across(everything(), f1))
+# 输出4行，每个pid出现两次
+
+# 显式用 list() 包裹 → 变成列表列，每个分组一行
+df %>%
+  group_by(pid) %>%
+  summarise(q = list(quantile(value, c(0.25, 0.75))))
+  
+  
+  

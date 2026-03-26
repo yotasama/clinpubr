@@ -182,6 +182,83 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
   out
 }
 
+.build_clipped_ranges <- function(x,
+                                  by_x,
+                                  x_start_value,
+                                  x_end_value,
+                                  x_start_relaxed,
+                                  x_end_relaxed) {
+  clipped_start <- x_start_relaxed
+  clipped_end <- x_end_relaxed
+  include_start <- rep(TRUE, length(x_start_value))
+  include_end <- rep(TRUE, length(x_start_value))
+
+  valid_idx <- which(!is.na(x_start_relaxed) & !is.na(x_end_relaxed))
+  if (length(by_x) > 0) {
+    valid_idx <- valid_idx[stats::complete.cases(x[valid_idx, by_x, drop = FALSE])]
+  }
+
+  if (length(valid_idx) == 0L) {
+    return(list(
+      start = clipped_start,
+      end = clipped_end,
+      include_start = include_start,
+      include_end = include_end
+    ))
+  }
+
+  x_group <- .build_merge_group_key(x[valid_idx, by_x, drop = FALSE], by_x)
+  order_idx <- order(x_group, x_start_value[valid_idx], x_end_value[valid_idx], valid_idx)
+  sorted_idx <- valid_idx[order_idx]
+  sorted_group <- x_group[order_idx]
+  sorted_start <- x_start_value[sorted_idx]
+  sorted_end <- x_end_value[sorted_idx]
+  sorted_start_relaxed <- x_start_relaxed[sorted_idx]
+  sorted_end_relaxed <- x_end_relaxed[sorted_idx]
+
+  block_break <- c(
+    TRUE,
+    sorted_group[-1] != sorted_group[-length(sorted_group)] |
+      sorted_start[-1] != sorted_start[-length(sorted_start)]
+  )
+  block_id <- cumsum(block_break)
+  block_first <- which(block_break)
+  block_last <- c(block_first[-1] - 1L, length(sorted_idx))
+  block_group <- sorted_group[block_first]
+  block_start <- sorted_start[block_first]
+  block_start_relaxed <- sorted_start_relaxed[block_first]
+  block_end_max <- vapply(seq_along(block_first), function(i) {
+    max(sorted_end[block_first[i]:block_last[i]])
+  }, numeric(1))
+  block_prev_end <- ave(
+    block_end_max,
+    block_group,
+    FUN = function(values) c(-Inf, head(cummax(values), -1L))
+  )
+  block_left <- pmin(block_start, pmax(block_start_relaxed, block_prev_end))
+  block_next_left <- c(block_left[-1], Inf)
+  block_next_left[c(block_group[-1] != block_group[-length(block_group)], TRUE)] <- Inf
+
+  sorted_clipped_start <- block_left[block_id]
+  sorted_next_left <- block_next_left[block_id]
+  sorted_clipped_end <- pmax(sorted_end, pmin(sorted_end_relaxed, sorted_next_left))
+  sorted_include_start <- !(sorted_clipped_start > sorted_start_relaxed & sorted_clipped_start < sorted_start)
+  sorted_clipped_by_next <- is.finite(sorted_next_left) & sorted_next_left <= sorted_end_relaxed
+  sorted_include_end <- !(sorted_clipped_by_next & sorted_clipped_end == sorted_next_left)
+
+  clipped_start[sorted_idx] <- sorted_clipped_start
+  clipped_end[sorted_idx] <- sorted_clipped_end
+  include_start[sorted_idx] <- sorted_include_start
+  include_end[sorted_idx] <- sorted_include_end
+
+  list(
+    start = clipped_start,
+    end = clipped_end,
+    include_start = include_start,
+    include_end = include_end
+  )
+}
+
 .match_range_group_vector <- function(start,
                                       end,
                                       val,
@@ -316,6 +393,8 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
                                  x_end_value,
                                  x_start_relaxed,
                                  x_end_relaxed,
+                                 x_include_start,
+                                 x_include_end,
                                  y_val_value) {
   x_group <- .build_merge_group_key(x, by_x)
   y_group <- .build_merge_group_key(y, by_y)
@@ -346,9 +425,24 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
     )
 
     if (length(group_matches$x) > 0) {
+      matched_x_idx <- x_idx[group_matches$x]
+      matched_y_idx <- y_idx[group_matches$y]
+
+      matched_val <- y_val_value[matched_y_idx]
+      keep <- (
+        matched_val > x_start_relaxed[matched_x_idx] |
+          (matched_val == x_start_relaxed[matched_x_idx] & x_include_start[matched_x_idx])
+      ) & (
+        matched_val < x_end_relaxed[matched_x_idx] |
+          (matched_val == x_end_relaxed[matched_x_idx] & x_include_end[matched_x_idx])
+      )
+      if (!any(keep)) {
+        next
+      }
+
       match_count <- match_count + 1L
-      matched_x[[match_count]] <- x_idx[group_matches$x]
-      matched_y[[match_count]] <- y_idx[group_matches$y]
+      matched_x[[match_count]] <- matched_x_idx[keep]
+      matched_y[[match_count]] <- matched_y_idx[keep]
     }
   }
 
@@ -370,6 +464,8 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
                                        x_end_value,
                                        x_start_relaxed,
                                        x_end_relaxed,
+                                       x_include_start,
+                                       x_include_end,
                                        y_val_value) {
   check_package("data.table", "fast range joins")
 
@@ -388,6 +484,8 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
   x_join <- data.table::as.data.table(x[x_valid, by_x, drop = FALSE])
   data.table::set(x_join, j = "cp_join_start", value = x_start_relaxed[x_valid])
   data.table::set(x_join, j = "cp_join_end", value = x_end_relaxed[x_valid])
+  data.table::set(x_join, j = "cp_join_include_start", value = x_include_start[x_valid])
+  data.table::set(x_join, j = "cp_join_include_end", value = x_include_end[x_valid])
   data.table::set(x_join, j = "cp_x_row", value = which(x_valid))
 
   y_join <- data.table::as.data.table(y[y_valid, by_y, drop = FALSE])
@@ -420,7 +518,18 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
     return(list(x = integer(0), y = integer(0)))
   }
 
-  list(x = pairs[["cp_x_row"]], y = pairs[["cp_y_row"]])
+  keep <- (
+    pairs[["cp_join_val_start"]] > pairs[["cp_join_start"]] |
+      (pairs[["cp_join_val_start"]] == pairs[["cp_join_start"]] & pairs[["cp_join_include_start"]])
+  ) & (
+    pairs[["cp_join_val_start"]] < pairs[["cp_join_end"]] |
+      (pairs[["cp_join_val_start"]] == pairs[["cp_join_end"]] & pairs[["cp_join_include_end"]])
+  )
+  if (!any(keep)) {
+    return(list(x = integer(0), y = integer(0)))
+  }
+
+  list(x = pairs[["cp_x_row"]][keep], y = pairs[["cp_y_row"]][keep])
 }
 
 .merge_by_range_finalize <- function(x,
@@ -430,7 +539,7 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
                                      matched_x,
                                      matched_y,
                                      x_start_value,
-                                     x_end_value,
+                                     x_end_match_value,
                                      y_val_value,
                                      all_y = FALSE,
                                      suffixes = c(".x", ".y")) {
@@ -466,7 +575,6 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
   if (length(matched_x) > 0) {
     y_row_id <- matched_y
     since_start <- as.numeric(y_val_value[matched_y] - x_start_value[matched_x])
-    beyond_end <- y_val_value[matched_y] > x_end_value[matched_x]
 
     result <- cbind(
       x_out[matched_x, , drop = FALSE],
@@ -479,49 +587,12 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
     y_dup <- duplicated(y_row_id) | duplicated(y_row_id, fromLast = TRUE)
 
     if (any(y_dup)) {
-      dup_ids <- unique(y_row_id[y_dup])
-      rows_to_remove <- integer(0)
-
-      for (id in dup_ids) {
-        idx <- which(y_row_id == id)
-        if (length(idx) <= 1) next
-
-        current_idx <- idx
-
-        neg_since_start_idx <- current_idx[since_start[current_idx] < 0]
-        if (length(neg_since_start_idx) > 0 && length(current_idx) > 1) {
-          rows_to_remove <- c(rows_to_remove, neg_since_start_idx)
-          current_idx <- setdiff(current_idx, neg_since_start_idx)
-        }
-
-        if (length(current_idx) > 1) {
-          beyond_end_idx <- current_idx[beyond_end[current_idx]]
-          if (length(beyond_end_idx) > 0) {
-            rows_to_remove <- c(rows_to_remove, beyond_end_idx)
-            current_idx <- setdiff(current_idx, beyond_end_idx)
-          }
-        }
-
-        if (length(current_idx) > 1) {
-          has_duplicate_warning <- TRUE
-        }
-      }
-
-      if (length(rows_to_remove) > 0) {
-        result <- result[-rows_to_remove, , drop = FALSE]
-        y_row_id <- y_row_id[-rows_to_remove]
-        since_start <- since_start[-rows_to_remove]
-        beyond_end <- beyond_end[-rows_to_remove]
-      }
-
-      if (has_duplicate_warning) {
-        warning(
-          "Some rows in `y` matched multiple ranges in `x` after filtering. ",
-          "The `.cp_y_row_id` column is retained in the output to identify duplicates."
-        )
-      } else {
-        result[[y_row_id_col]] <- NULL
-      }
+      has_duplicate_warning <- TRUE
+      warning(
+        "Some rows in `y` matched multiple clipped ranges in `x`. ",
+        "The `.cp_y_row_id` column is retained in the output to identify duplicates.",
+        call. = FALSE
+      )
     } else {
       result[[y_row_id_col]] <- NULL
     }
@@ -564,6 +635,26 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
 #' This avoids constructing the full Cartesian product that would be produced by
 #' a regular equality join followed by range filtering.
 #'
+#' @details
+#' Matching proceeds in three stages:
+#' 
+#' 1. Rows in `x` and `y` are first grouped by the exact-match keys in `by`.
+#' 2. Within each group, `y[[y_val]]` is matched against the interval defined by
+#'    `x[[x_start]]` and `x[[x_end]]`, optionally extended by `range_relax`.
+#' 3. When `range_relax` is non-zero, the relaxed intervals are clipped against
+#'    neighboring core intervals before matching, but never clipped further than
+#'    the original core interval.
+#'
+#' If any row from `y` still matches multiple clipped ranges in `x`, a warning
+#' is issued and `.cp_y_row_id` is retained in the output so duplicate matches
+#' can be identified downstream.
+#'
+#' When `all_y = TRUE`, rows from `y` with no match are appended to the result
+#' with `NA` values for columns coming from `x` and for `since_start`.
+#'
+#' `engine = "auto"` prefers the `data.table` implementation when available and
+#' otherwise falls back to the base R implementation.
+#'
 #' @param x A data frame containing the range columns.
 #' @param y A data frame containing the point-in-time value column.
 #' @param by Either a character vector of column names that must match exactly
@@ -589,10 +680,6 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
 #' @return A data frame containing matched rows from `x` and `y`. The output
 #'   includes a `since_start` column indicating the numeric difference between
 #'   `y_val` and `x_start` (in the units of the values, e.g., days for Date objects).
-#'
-#'   If any row from `y` matches multiple ranges in `x` after applying the
-#'   `range_relax` extension and filtering, a `.cp_y_row_id` column is retained
-#'   in the output to identify duplicates, and a warning is issued.
 #'
 #' @examples
 #' admissions <- data.frame(
@@ -624,7 +711,7 @@ merge_by_range <- function(x,
                            x_end = NULL,
                            y_val,
                            range_relax = c(0, 0),
-                           all_y = FALSE,
+                           all_y = TRUE,
                            suffixes = c(".x", ".y"),
                            engine = c("auto", "data.table", "base")) {
   if (!is.data.frame(x)) {
@@ -695,10 +782,28 @@ merge_by_range <- function(x,
 
   x_start_relaxed <- x_start_value - range_relax[1]
   x_end_relaxed <- x_end_value + range_relax[2]
+  x_include_start <- rep(TRUE, length(x_start_value))
+  x_include_end <- rep(TRUE, length(x_start_value))
 
   invalid_range <- !is.na(x_start_value) & !is.na(x_end_value) & x_start_value > x_end_value
   if (any(invalid_range)) {
     stop("`x_start` must be earlier than or equal to `x_end` for all non-missing rows")
+  }
+
+  if (any(range_relax != 0)) {
+    clipped_ranges <- .build_clipped_ranges(
+      x = x,
+      by_x = by_x,
+      x_start_value = x_start_value,
+      x_end_value = x_end_value,
+      x_start_relaxed = x_start_relaxed,
+      x_end_relaxed = x_end_relaxed
+    )
+
+    x_start_relaxed <- clipped_ranges$start
+    x_end_relaxed <- clipped_ranges$end
+    x_include_start <- clipped_ranges$include_start
+    x_include_end <- clipped_ranges$include_end
   }
 
   matches <- switch(engine,
@@ -711,6 +816,8 @@ merge_by_range <- function(x,
       x_end_value = x_end_value,
       x_start_relaxed = x_start_relaxed,
       x_end_relaxed = x_end_relaxed,
+      x_include_start = x_include_start,
+      x_include_end = x_include_end,
       y_val_value = y_val_value
     ),
     base = .merge_by_range_base(
@@ -722,6 +829,8 @@ merge_by_range <- function(x,
       x_end_value = x_end_value,
       x_start_relaxed = x_start_relaxed,
       x_end_relaxed = x_end_relaxed,
+      x_include_start = x_include_start,
+      x_include_end = x_include_end,
       y_val_value = y_val_value
     )
   )
@@ -734,7 +843,7 @@ merge_by_range <- function(x,
     matched_x = matches$x,
     matched_y = matches$y,
     x_start_value = x_start_value,
-    x_end_value = x_end_value,
+    x_end_match_value = x_end_relaxed,
     y_val_value = y_val_value,
     all_y = all_y,
     suffixes = suffixes

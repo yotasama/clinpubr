@@ -12,7 +12,7 @@ merge_by_range(
   x_end = NULL,
   y_val,
   range_relax = c(0, 0),
-  all_y = FALSE,
+  all_y = TRUE,
   suffixes = c(".x", ".y"),
   engine = c("auto", "data.table", "base")
 )
@@ -53,10 +53,6 @@ installed and otherwise fall back to the base R implementation. Use
 A data frame containing matched rows from \code{x} and \code{y}. The output
 includes a \code{since_start} column indicating the numeric difference between
 \code{y_val} and \code{x_start} (in the units of the values, e.g., days for Date objects).
-
-If any row from \code{y} matches multiple ranges in \code{x} after applying the
-\code{range_relax} extension and filtering, a \code{.cp_y_row_id} column is retained
-in the output to identify duplicates, and a warning is issued.
 }
 \description{
 Merge two data frames where shared keys in \code{by} must match exactly and the
@@ -71,6 +67,27 @@ the primary use case.
 
 This avoids constructing the full Cartesian product that would be produced by
 a regular equality join followed by range filtering.
+}
+\details{
+Matching proceeds in three stages:
+\enumerate{
+\item Rows in \code{x} and \code{y} are first grouped by the exact-match keys in \code{by}.
+\item Within each group, \code{y[[y_val]]} is matched against the interval defined by
+\code{x[[x_start]]} and \code{x[[x_end]]}, optionally extended by \code{range_relax}.
+\item When \code{range_relax} is non-zero, the relaxed intervals are clipped against
+neighboring core intervals before matching, but never clipped further than
+the original core interval.
+}
+
+If any row from \code{y} still matches multiple clipped ranges in \code{x}, a warning
+is issued and \code{.cp_y_row_id} is retained in the output so duplicate matches
+can be identified downstream.
+
+When \code{all_y = TRUE}, rows from \code{y} with no match are appended to the result
+with \code{NA} values for columns coming from \code{x} and for \code{since_start}.
+
+\code{engine = "auto"} prefers the \code{data.table} implementation when available and
+otherwise falls back to the base R implementation.
 }
 \examples{
 admissions <- data.frame(
