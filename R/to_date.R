@@ -18,30 +18,49 @@ to_date <- function(x, from_excel = TRUE, verbose = TRUE,
     } else {
       y <- as.Date(x)
     }
+  } else if (is.character(x)) {
+    y <- .to_date_vectorized(x, from_excel = from_excel, verbose = verbose,
+                              try_formats = try_formats)
   } else {
-    y <- as.Date(sapply(x, .to_date,
-      from_excel = from_excel, verbose = verbose,
-      try_formats = try_formats, USE.NAMES = FALSE
-    ))
+    stop(sprintf("Input must be numeric or character vector, got: %s", class(x)[1]), call. = FALSE)
   }
   y
 }
 
-.to_date <- function(x, from_excel = TRUE, verbose = TRUE,
-                     try_formats = c("%Y-%m-%d", "%Y/%m/%d", "%Y%m%d", "%Y.%m.%d")) {
-  if (suppressWarnings((!is.na(as.numeric(x))) && (as.numeric(x) < 100000) && from_excel)) {
-    as.Date(as.numeric(x), origin = "1899-12-30")
-  } else {
-    tryCatch(
-      {
-        as.Date(as.character(x), tryFormats = try_formats)
-      },
-      error = function(e) {
-        if (verbose) {
-          message(paste0("cannot process:", as.character(x)))
-        }
-        NA
-      }
-    )
+.to_date_vectorized <- function(x, from_excel = TRUE, verbose = TRUE,
+                                 try_formats = c("%Y-%m-%d", "%Y/%m/%d", "%Y%m%d", "%Y.%m.%d")) {
+  n <- length(x)
+  result <- as.Date(rep(NA, n))
+
+  # Identify potential Excel dates (numeric strings < 100000)
+  if (from_excel) {
+    num_x <- suppressWarnings(as.numeric(x))
+    excel_idx <- !is.na(num_x) & num_x < 100000
+
+    if (any(excel_idx, na.rm = TRUE)) {
+      result[excel_idx] <- as.Date(num_x[excel_idx], origin = "1899-12-30")
+    }
   }
+
+  # Process remaining values with try_formats
+  for (fmt in try_formats) {
+    still_na <- is.na(result)
+    if (!any(still_na, na.rm = TRUE)) break
+
+    parsed <- suppressWarnings(as.Date(x, format = fmt))
+    result[is.na(result)] <- parsed[still_na]
+  }
+
+  # Report unconverted values if verbose
+  if (verbose) {
+    failed_idx <- is.na(result) & !is.na(x)
+    if (any(failed_idx, na.rm = TRUE)) {
+      failed_values <- unique(x[failed_idx])
+      for (val in failed_values) {
+        message(paste0("cannot process:", val))
+      }
+    }
+  }
+
+  result
 }

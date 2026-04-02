@@ -12,7 +12,8 @@ unit_view(
   quantiles = c(0.025, 0.975),
   save_table = FALSE,
   filename = NULL,
-  conflicts_only = TRUE
+  conflicts_only = TRUE,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ unit_view(
 \item{filename}{The name of the csv file to be saved.}
 
 \item{conflicts_only}{A logical value indicating whether to only show the conflicting units.}
+
+\item{verbose}{A logical value indicating whether to print progress messages.}
 }
 \value{
 A data frame of conflicting units.
