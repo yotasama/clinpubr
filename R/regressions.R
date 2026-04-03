@@ -504,7 +504,7 @@ regression_forest <- function(data, model_vars, y, time = NULL, time2 = NULL, cl
     res_list[[model_name]] <- tmp_res
   }
 
-  plot_df <- do.call(rbind, res_list)
+  plot_df <- data.table::rbindlist(res_list)
   plot_df[[effect_label]] <- ifelse(!is.na(plot_df$Variable) & !is.na(plot_df$Level),
     "Reference",
     paste0(

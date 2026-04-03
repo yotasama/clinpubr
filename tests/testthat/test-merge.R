@@ -310,8 +310,7 @@ test_that("merge_by_range clips relax-only overlap to a single neighboring range
     x_end = "end",
     y_val = "value",
     range_relax = c(1, 1),
-    all_y = FALSE,
-    engine = "base"
+    all_y = FALSE
   )
 
   expect_equal(nrow(result), 1)
@@ -343,8 +342,7 @@ test_that("merge_by_range keeps duplicates for fully overlapping core ranges and
       x_end = "end",
       y_val = "value",
       range_relax = c(1, 1),
-      all_y = FALSE,
-      engine = "base"
+      all_y = FALSE
     ),
       "matched multiple clipped ranges"
   )
@@ -376,8 +374,7 @@ test_that("merge_by_range clips x_end NULL extensions before retaining true dupl
       x_start = "start",
       y_val = "value",
       range_relax = c(0, Inf),
-      all_y = FALSE,
-      engine = "base"
+      all_y = FALSE
     ),
       "matched multiple clipped ranges"
   )
@@ -389,52 +386,4 @@ test_that("merge_by_range clips x_end NULL extensions before retaining true dupl
   expect_true(".cp_y_row_id" %in% names(result))
 })
 
-test_that("merge_by_range data.table and base engines are consistent", {
-  skip_if_not_installed("data.table")
 
-  x <- data.frame(
-    id = c(1, 1, 2, 2),
-    grp = c("A", "A", "B", "B"),
-    start = c(1, 4, 10, 15),
-    end = c(4, 8, 12, 20),
-    x_value = c("x1", "x2", "x3", "x4"),
-    stringsAsFactors = FALSE
-  )
-  y <- data.frame(
-    gid = c(1, 1, 2, 2, 3),
-    grp_id = c("A", "A", "B", "B", "C"),
-    value = c(4, 5, 11, 21, 99),
-    y_value = c("y1", "y2", "y3", "y4", "y5"),
-    stringsAsFactors = FALSE
-  )
-
-  result_base <- suppressWarnings(merge_by_range(
-    x = x,
-    y = y,
-    by = list(x = c("id", "grp"), y = c("gid", "grp_id")),
-    x_start = "start",
-    x_end = "end",
-    y_val = "value",
-    range_relax = c(1, 1),
-    all_y = TRUE,
-    engine = "base"
-  ))
-
-  result_dt <- suppressWarnings(merge_by_range(
-    x = x,
-    y = y,
-    by = list(x = c("id", "grp"), y = c("gid", "grp_id")),
-    x_start = "start",
-    x_end = "end",
-    y_val = "value",
-    range_relax = c(1, 1),
-    all_y = TRUE,
-    engine = "data.table"
-  ))
-
-  order_cols <- c("id", "grp", "start", "end", "value", "x_value", "y_value")
-  result_base <- result_base[do.call(order, result_base[order_cols]), , drop = FALSE]
-  result_dt <- result_dt[do.call(order, result_dt[order_cols]), , drop = FALSE]
-
-  expect_equal(result_dt, result_base)
-})

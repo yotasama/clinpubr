@@ -13,8 +13,7 @@ merge_by_range(
   y_val,
   range_relax = c(0, 0),
   all_y = TRUE,
-  suffixes = c(".x", ".y"),
-  engine = c("auto", "data.table", "base")
+  suffixes = c(".x", ".y")
 )
 }
 \arguments{
@@ -44,10 +43,6 @@ Both values must be >= 0.}
 
 \item{suffixes}{Character vector of length 2 used for duplicated non-key
 column names from \code{x} and \code{y}.}
-
-\item{engine}{Join engine. Use \code{"auto"} to prefer \code{data.table} when
-installed and otherwise fall back to the base R implementation. Use
-\code{"data.table"} to require the fast non-equi join path explicitly.}
 }
 \value{
 A data frame containing matched rows from \code{x} and \code{y}. The output
@@ -85,9 +80,6 @@ can be identified downstream.
 
 When \code{all_y = TRUE}, rows from \code{y} with no match are appended to the result
 with \code{NA} values for columns coming from \code{x} and for \code{since_start}.
-
-\code{engine = "auto"} prefers the \code{data.table} implementation when available and
-otherwise falls back to the base R implementation.
 }
 \examples{
 admissions <- data.frame(

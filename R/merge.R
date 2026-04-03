@@ -259,215 +259,17 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
   )
 }
 
-.match_range_group_vector <- function(start,
-                                      end,
-                                      val,
-                                      include_start = TRUE,
-                                      include_end = TRUE) {
-  matched_x <- vector("list", length(val))
-  matched_y <- vector("list", length(val))
-  match_count <- 0L
-
-  for (val_index in seq_along(val)) {
-    lower_ok <- if (include_start) start <= val[val_index] else start < val[val_index]
-    upper_ok <- if (include_end) val[val_index] <= end else val[val_index] < end
-    keep <- lower_ok & upper_ok
-
-    if (any(keep)) {
-      match_count <- match_count + 1L
-      matched_x[[match_count]] <- which(keep)
-      matched_y[[match_count]] <- rep.int(val_index, sum(keep))
-    }
-  }
-
-  if (match_count == 0L) {
-    return(list(x = integer(0), y = integer(0)))
-  }
-
-  list(
-    x = unlist(matched_x[seq_len(match_count)], use.names = FALSE),
-    y = unlist(matched_y[seq_len(match_count)], use.names = FALSE)
-  )
-}
-
-.match_range_group_sweep <- function(start,
-                                     end,
-                                     val,
-                                     include_start = TRUE,
-                                     include_end = TRUE) {
-  n_interval <- length(start)
-  n_val <- length(val)
-
-  if (n_interval == 0 || n_val == 0) {
-    return(list(x = integer(0), y = integer(0)))
-  }
-
-  start_order <- order(start, end)
-  end_order <- order(end, start)
-  val_order <- order(val)
-
-  active <- rep(FALSE, n_interval)
-  start_pointer <- 1L
-  end_pointer <- 1L
-  matched_x <- vector("list", n_val)
-  matched_y <- vector("list", n_val)
-  match_count <- 0L
-
-  for (val_index in val_order) {
-    val_value <- val[val_index]
-
-    while (start_pointer <= n_interval) {
-      start_value <- start[start_order[start_pointer]]
-      start_ok <- if (include_start) start_value <= val_value else start_value < val_value
-
-      if (!start_ok) {
-        break
-      }
-
-      active[start_order[start_pointer]] <- TRUE
-      start_pointer <- start_pointer + 1L
-    }
-
-    while (end_pointer <= n_interval) {
-      end_value <- end[end_order[end_pointer]]
-      end_expired <- if (include_end) end_value < val_value else end_value <= val_value
-
-      if (!end_expired) {
-        break
-      }
-
-      active[end_order[end_pointer]] <- FALSE
-      end_pointer <- end_pointer + 1L
-    }
-
-    active_index <- which(active)
-
-    if (length(active_index) > 0) {
-      match_count <- match_count + 1L
-      matched_x[[match_count]] <- active_index
-      matched_y[[match_count]] <- rep(val_index, length(active_index))
-    }
-  }
-
-  if (match_count == 0L) {
-    return(list(x = integer(0), y = integer(0)))
-  }
-
-  list(
-    x = unlist(matched_x[seq_len(match_count)], use.names = FALSE),
-    y = unlist(matched_y[seq_len(match_count)], use.names = FALSE)
-  )
-}
-
-.match_range_group <- function(start,
-                               end,
-                               val,
-                               include_start = TRUE,
-                               include_end = TRUE) {
-  pair_count <- length(start) * length(val)
-
-  if (pair_count <= 4096L || length(start) <= 32L || length(val) <= 32L) {
-    return(.match_range_group_vector(
-      start = start,
-      end = end,
-      val = val,
-      include_start = include_start,
-      include_end = include_end
-    ))
-  }
-
-  .match_range_group_sweep(
-    start = start,
-    end = end,
-    val = val,
-    include_start = include_start,
-    include_end = include_end
-  )
-}
-
-.merge_by_range_base <- function(x,
-                                 y,
-                                 by_x,
-                                 by_y,
-                                 x_start_value,
-                                 x_end_value,
-                                 x_start_relaxed,
-                                 x_end_relaxed,
-                                 x_include_start,
-                                 x_include_end,
-                                 y_val_value) {
-  x_group <- .build_merge_group_key(x, by_x)
-  y_group <- .build_merge_group_key(y, by_y)
-
-  x_groups <- split(seq_len(nrow(x))[!is.na(x_group)], x_group[!is.na(x_group)], drop = TRUE)
-  y_groups <- split(seq_len(nrow(y))[!is.na(y_group)], y_group[!is.na(y_group)], drop = TRUE)
-  common_groups <- intersect(names(x_groups), names(y_groups))
-
-  matched_x <- list()
-  matched_y <- list()
-  match_count <- 0L
-
-  for (group_name in common_groups) {
-    x_idx <- x_groups[[group_name]]
-    y_idx <- y_groups[[group_name]]
-
-    x_idx <- x_idx[!is.na(x_start_relaxed[x_idx]) & !is.na(x_end_relaxed[x_idx])]
-    y_idx <- y_idx[!is.na(y_val_value[y_idx])]
-
-    if (length(x_idx) == 0 || length(y_idx) == 0) {
-      next
-    }
-
-    group_matches <- .match_range_group(
-      start = x_start_relaxed[x_idx],
-      end = x_end_relaxed[x_idx],
-      val = y_val_value[y_idx]
-    )
-
-    if (length(group_matches$x) > 0) {
-      matched_x_idx <- x_idx[group_matches$x]
-      matched_y_idx <- y_idx[group_matches$y]
-
-      matched_val <- y_val_value[matched_y_idx]
-      keep <- (
-        matched_val > x_start_relaxed[matched_x_idx] |
-          (matched_val == x_start_relaxed[matched_x_idx] & x_include_start[matched_x_idx])
-      ) & (
-        matched_val < x_end_relaxed[matched_x_idx] |
-          (matched_val == x_end_relaxed[matched_x_idx] & x_include_end[matched_x_idx])
-      )
-      if (!any(keep)) {
-        next
-      }
-
-      match_count <- match_count + 1L
-      matched_x[[match_count]] <- matched_x_idx[keep]
-      matched_y[[match_count]] <- matched_y_idx[keep]
-    }
-  }
-
-  if (match_count == 0L) {
-    return(list(x = integer(0), y = integer(0)))
-  }
-
-  list(
-    x = unlist(matched_x[seq_len(match_count)], use.names = FALSE),
-    y = unlist(matched_y[seq_len(match_count)], use.names = FALSE)
-  )
-}
-
-.merge_by_range_data_table <- function(x,
-                                       y,
-                                       by_x,
-                                       by_y,
-                                       x_start_value,
-                                       x_end_value,
-                                       x_start_relaxed,
-                                       x_end_relaxed,
-                                       x_include_start,
-                                       x_include_end,
-                                       y_val_value) {
-  check_package("data.table", "fast range joins")
+.merge_by_range_impl <- function(x,
+                                  y,
+                                  by_x,
+                                  by_y,
+                                  x_start_value,
+                                  x_end_value,
+                                  x_start_relaxed,
+                                  x_end_relaxed,
+                                  x_include_start,
+                                  x_include_end,
+                                  y_val_value) {
 
   x_valid <- !is.na(x_start_relaxed) & !is.na(x_end_relaxed)
   y_valid <- !is.na(y_val_value)
@@ -652,9 +454,6 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
 #' When `all_y = TRUE`, rows from `y` with no match are appended to the result
 #' with `NA` values for columns coming from `x` and for `since_start`.
 #'
-#' `engine = "auto"` prefers the `data.table` implementation when available and
-#' otherwise falls back to the base R implementation.
-#'
 #' @param x A data frame containing the range columns.
 #' @param y A data frame containing the point-in-time value column.
 #' @param by Either a character vector of column names that must match exactly
@@ -673,9 +472,6 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
 #' @param all_y Logical, whether to keep rows from `y` that have no match.
 #' @param suffixes Character vector of length 2 used for duplicated non-key
 #'   column names from `x` and `y`.
-#' @param engine Join engine. Use `"auto"` to prefer `data.table` when
-#'   installed and otherwise fall back to the base R implementation. Use
-#'   `"data.table"` to require the fast non-equi join path explicitly.
 #'
 #' @return A data frame containing matched rows from `x` and `y`. The output
 #'   includes a `since_start` column indicating the numeric difference between
@@ -712,8 +508,7 @@ merge_by_range <- function(x,
                            y_val,
                            range_relax = c(0, 0),
                            all_y = TRUE,
-                           suffixes = c(".x", ".y"),
-                           engine = c("auto", "data.table", "base")) {
+                           suffixes = c(".x", ".y")) {
   if (!is.data.frame(x)) {
     stop("`x` must be a data frame")
   }
@@ -771,11 +566,6 @@ merge_by_range <- function(x,
     stop("`suffixes` must be a character vector of length 2")
   }
 
-  engine <- match.arg(engine)
-  if (identical(engine, "auto")) {
-    engine <- if (requireNamespace("data.table", quietly = TRUE)) "data.table" else "base"
-  }
-
   x_start_value <- .coerce_join_value(x[[x_start]], x_start)
   x_end_value <- .coerce_join_value(x[[x_end]], x_end)
   y_val_value <- .coerce_join_value(y[[y_val]], y_val)
@@ -806,33 +596,18 @@ merge_by_range <- function(x,
     x_include_end <- clipped_ranges$include_end
   }
 
-  matches <- switch(engine,
-    data.table = .merge_by_range_data_table(
-      x = x,
-      y = y,
-      by_x = by_x,
-      by_y = by_y,
-      x_start_value = x_start_value,
-      x_end_value = x_end_value,
-      x_start_relaxed = x_start_relaxed,
-      x_end_relaxed = x_end_relaxed,
-      x_include_start = x_include_start,
-      x_include_end = x_include_end,
-      y_val_value = y_val_value
-    ),
-    base = .merge_by_range_base(
-      x = x,
-      y = y,
-      by_x = by_x,
-      by_y = by_y,
-      x_start_value = x_start_value,
-      x_end_value = x_end_value,
-      x_start_relaxed = x_start_relaxed,
-      x_end_relaxed = x_end_relaxed,
-      x_include_start = x_include_start,
-      x_include_end = x_include_end,
-      y_val_value = y_val_value
-    )
+  matches <- .merge_by_range_impl(
+    x = x,
+    y = y,
+    by_x = by_x,
+    by_y = by_y,
+    x_start_value = x_start_value,
+    x_end_value = x_end_value,
+    x_start_relaxed = x_start_relaxed,
+    x_end_relaxed = x_end_relaxed,
+    x_include_start = x_include_start,
+    x_include_end = x_include_end,
+    y_val_value = y_val_value
   )
 
   .merge_by_range_finalize(

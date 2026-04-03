@@ -49,6 +49,7 @@ Collate:
 Imports: 
     broom,
     car,
+    data.table,
     DescTools,
     dplyr,
     fBasics,
@@ -64,7 +65,6 @@ Imports:
     tidyr
 Suggests: 
     caret,
-    data.table,
     dcurves,
     dtplyr,
     geepack,

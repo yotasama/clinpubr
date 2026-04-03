@@ -19,8 +19,10 @@ to_date <- function(x, from_excel = TRUE, verbose = TRUE,
       y <- as.Date(x)
     }
   } else if (is.character(x)) {
-    y <- .to_date_vectorized(x, from_excel = from_excel, verbose = verbose,
-                              try_formats = try_formats)
+    y <- .to_date_vectorized(x,
+      from_excel = from_excel, verbose = verbose,
+      try_formats = try_formats
+    )
   } else {
     stop(sprintf("Input must be numeric or character vector, got: %s", class(x)[1]), call. = FALSE)
   }
@@ -28,7 +30,7 @@ to_date <- function(x, from_excel = TRUE, verbose = TRUE,
 }
 
 .to_date_vectorized <- function(x, from_excel = TRUE, verbose = TRUE,
-                                 try_formats = c("%Y-%m-%d", "%Y/%m/%d", "%Y%m%d", "%Y.%m.%d")) {
+                                try_formats = c("%Y-%m-%d", "%Y/%m/%d", "%Y%m%d", "%Y.%m.%d")) {
   n <- length(x)
   result <- as.Date(rep(NA, n))
 

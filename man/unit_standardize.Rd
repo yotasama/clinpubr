@@ -11,8 +11,7 @@ unit_standardize(
   unit_col,
   change_rules,
   extract_numbers = FALSE,
-  verbose = FALSE,
-  batch_size = NULL
+  verbose = FALSE
 )
 }
 \arguments{
@@ -30,9 +29,6 @@ unit_standardize(
 from the value column.}
 
 \item{verbose}{A logical value indicating whether to print progress messages.}
-
-\item{batch_size}{An integer specifying the batch size for processing large datasets.
-Default is NULL (no batching). Set to a positive integer to process data in batches.}
 }
 \value{
 A data frame with subject units standardized.

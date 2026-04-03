@@ -8,8 +8,6 @@
 #' @param extract_numbers A logical value indicating whether to apply `extract_num` to extract numeric values
 #'   from the value column.
 #' @param verbose A logical value indicating whether to print progress messages.
-#' @param batch_size An integer specifying the batch size for processing large datasets.
-#'   Default is NULL (no batching). Set to a positive integer to process data in batches.
 #' @details `change_rules` can accept two formats:
 #'   If a data frame, it must contain the following columns:
 #'   \itemize{
@@ -90,8 +88,7 @@
 #'   save_table = FALSE, conflicts_only = FALSE
 #' )
 unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules,
-                             extract_numbers = FALSE, verbose = FALSE,
-                             batch_size = NULL) {
+                             extract_numbers = FALSE, verbose = FALSE) {
   .validate_inputs(df, subject_col, value_col, unit_col)
 
   # Convert value_col to numeric if needed
@@ -103,11 +100,6 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules,
 
   if (verbose) {
     message(sprintf("Processing %d subjects with %d rows...", length(change_rules), nrow(df)))
-  }
-
-  if (!is.null(batch_size) && batch_size > 0 && nrow(df) > batch_size) {
-    return(.process_in_batches(df, subject_col, value_col, unit_col, change_rules,
-                               extract_numbers, verbose, batch_size))
   }
 
   result <- .unit_standardize_optimized(df, subject_col, value_col, unit_col,
@@ -311,38 +303,6 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules,
   result[[unit_col]] <- units
 
   return(result)
-}
-
-.process_in_batches <- function(df, subject_col, value_col, unit_col, change_rules,
-                                 extract_numbers, verbose, batch_size) {
-  n_rows <- nrow(df)
-  n_batches <- ceiling(n_rows / batch_size)
-
-  if (verbose) {
-    message(sprintf("Processing in %d batches of ~%d rows each...", n_batches, batch_size))
-  }
-
-  results <- vector("list", n_batches)
-
-  for (i in seq_len(n_batches)) {
-    start_idx <- (i - 1) * batch_size + 1
-    end_idx <- min(i * batch_size, n_rows)
-
-    if (verbose && i %% 10 == 1) {
-      message(sprintf("Processing batch %d/%d (rows %d-%d)...", i, n_batches, start_idx, end_idx))
-    }
-
-    batch_df <- df[start_idx:end_idx, , drop = FALSE]
-
-    results[[i]] <- tryCatch({
-      .unit_standardize_optimized(batch_df, subject_col, value_col, unit_col,
-                                   change_rules, extract_numbers, FALSE)
-    }, error = function(e) {
-      stop(sprintf("Error in batch %d (rows %d-%d): %s", i, start_idx, end_idx, conditionMessage(e)), call. = FALSE)
-    })
-  }
-
-  return(do.call(rbind, results))
 }
 
 #' Generate a table of conflicting units.

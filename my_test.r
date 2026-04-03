@@ -200,7 +200,7 @@ str_contains_merge_stringi <- function(df, match_df, col_name = "name", ori_col 
   }
 
   if (length(result_list) > 0) {
-    group_results <- do.call(rbind, result_list)
+    group_results <- data.table::rbindlist(result_list)
     group_results <- group_results[order(match(group_results[[col_name]], names_vec)), ]
     group_results <- group_results[!duplicated(group_results), ]
     rownames(group_results) <- NULL
@@ -646,5 +646,29 @@ df %>%
   group_by(pid) %>%
   summarise(q = list(quantile(value, c(0.25, 0.75))))
   
-  
-  
+library(dplyr)
+library(data.table)
+library(tictoc)
+x=data.frame(x=c(1:1e6),y=rnorm(1e6))
+tt=function(xx){
+  out=setDT(xx)%>%
+    mutate(x=x+10)%>%
+    as.data.frame
+  out
+}
+mean(tt(x)$x)
+mean(x$x)
+class(x)
+y=list(x,x,x,x,x,x,x,x,x,x)
+tic()
+z=data.table::rbindlist(y)
+toc()
+tic()
+z=bind_rows(y)
+toc()
+tic()
+z=rbindlist(y)
+toc()
+df1 <- data.frame(x = 1:3)
+setDT(df1)
+class(df1)

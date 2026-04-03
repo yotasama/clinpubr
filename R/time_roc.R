@@ -114,7 +114,7 @@ time_roc_plot <- function(data, time_var, event_var, marker_var, times = c(12, 3
   }
 
   # Combine all ROC data
-  roc_data_all <- do.call(rbind, roc_data_list)
+  roc_data_all <- data.table::rbindlist(roc_data_list)
   roc_data_all$time <- factor(roc_data_all$time, levels = paste0(valid_time_roc_times, " months"))
 
   # Add legend with AUC values
