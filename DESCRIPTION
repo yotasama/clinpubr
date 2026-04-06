@@ -68,12 +68,15 @@ Suggests:
     dcurves,
     dtplyr,
     geepack,
+    knitr,
     pROC,
     ResourceSelection,
+    rmarkdown,
     rstatix,
     tableone,
     testthat (>= 3.0.0),
     timeROC,
     vdiffr,
     withr
+VignetteBuilder: knitr
 Config/testthat/edition: 3

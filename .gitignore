@@ -134,3 +134,9 @@ dmypy.json
 .Rhistory
 clinpubr.Rproj
 .VSCodeCounter/
+
+# Vignettes
+vignettes/*.html
+vignettes/*.R
+doc/
+Meta/

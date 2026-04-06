@@ -8,6 +8,7 @@ document()
 check_win_devel()
 check(remote = TRUE, manual = TRUE)
 
+build()
 build_manual()
 build_readme()
 use_version()
