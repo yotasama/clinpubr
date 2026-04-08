@@ -358,12 +358,12 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
       }
       p_values_wide <- as.data.frame(pivot_wider(p_values_long, names_from = comparison, values_from = p.adj))
       if (nrow(p_values_wide) == 0) {
-        pairwise_result <- dplyr::bind_rows(pairwise_result, setNames(
+        pairwise_result <- data.table::rbindlist(pairwise_result, setNames(
           as.list(rep(NA, ncol(pairwise_result))),
           names(pairwise_result)
         ))
       } else {
-        pairwise_result <- dplyr::bind_rows(pairwise_result, p_values_wide)
+        pairwise_result <- data.table::rbindlist(pairwise_result, p_values_wide)
       }
     }
     rownames(pairwise_result) <- vars

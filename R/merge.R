@@ -111,7 +111,7 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
   }
 
   # Combine results and merge with original data
-  match_results <- dplyr::bind_rows(match_list[seq_len(k)])
+  match_results <- data.table::rbindlist(match_list[seq_len(k)])
   rownames(match_results) <- NULL
 
   result <- merge(data, match_results, by = search_col, all.x = TRUE)
@@ -414,7 +414,7 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
         y_out[unmatched_y, , drop = FALSE],
         since_start = rep(NA_real_, length(unmatched_y))
       )
-      result <- dplyr::bind_rows(result, unmatched_piece)
+      result <- data.table::rbindlist(result, unmatched_piece)
     }
   }
 

@@ -40,7 +40,7 @@ combine_files <- function(path = ".", pattern = NULL, recursive = FALSE,
       }
       file_list[[f]] <- tmp
     }
-    dat <- dplyr::bind_rows(file_list)
+    dat <- data.table::rbindlist(file_list)
     if (unique_only) {
       dat <- unique(dat)
     }

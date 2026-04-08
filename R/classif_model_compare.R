@@ -210,7 +210,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
     roc_list[[i]] <- data.frame(recall = pr_data$recall, precision = pr_data$precision,
                                 Model = paste0(metric_table$Model[i], " (", metric_table$PRAUC[i], ")"))
   }
-  pr_data_all <- dplyr::bind_rows(roc_list)
+  pr_data_all <- data.table::rbindlist(roc_list)
   pr_data_all$precision[is.nan(pr_data_all$precision)] <- 1
   pr_data_all$Model <- factor(pr_data_all$Model, levels = paste0(metric_table$Model, " (", metric_table$PRAUC, ")"))
   pr_plot <- ggplot2::ggplot(pr_data_all, aes(x = recall, y = precision, color = Model)) +

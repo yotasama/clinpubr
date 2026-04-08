@@ -111,7 +111,7 @@ df_view_nonnum <- function(df, max_count = 20, random_sample = FALSE, long_df = 
         value = !!x
       )
     }) %>%
-    dplyr::bind_rows() %>%
+    data.table::rbindlist() %>%
     tidyr::pivot_wider(
       names_from = subject,
       values_from = value,
