@@ -5,15 +5,18 @@
 \alias{char_initial_cleaning}
 \title{Preliminarily cleaning string vectors}
 \usage{
-value_initial_cleaning(x, remove_inequal = FALSE)
+value_initial_cleaning(x, remove_inequal = FALSE, fix_encoding = TRUE)
 
-char_initial_cleaning(x)
+char_initial_cleaning(x, fix_encoding = TRUE)
 }
 \arguments{
 \item{x}{A string vector.}
 
 \item{remove_inequal}{A logical value. If \code{TRUE}, remove comparison symbols
 such as \code{<}, \code{>} from the string}
+
+\item{fix_encoding}{Logical. If \code{TRUE}, automatically detect and repair non-UTF-8
+encoding issues before cleaning. Default is \code{TRUE}.}
 }
 \value{
 A string vector with less illegal characters.
@@ -28,8 +31,11 @@ and replace empty strings with \code{NA}.
 
 \code{value_initial_cleaning()} will additionally remove all spaces and extra dots.
 }
+\note{
+When \code{fix_encoding = TRUE}, a warning will be issued if encoding repairs are made.
+}
 \examples{
-x <- c("\uFF11\uFF12\uFF13", "11..23", "\uff41\uff42\uff41\uff4e\uff44\uff4f\uff4e", 
+x <- c("\uFF11\uFF12\uFF13", "11..23", "\uff41\uff42\uff41\uff4e\uff44\uff4f\uff4e",
        "hello world ")
 value_initial_cleaning(x)
 char_initial_cleaning(x)
