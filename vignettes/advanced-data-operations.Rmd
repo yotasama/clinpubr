@@ -202,7 +202,6 @@ patient_diagnoses <- data.frame(
 Show the challenge: free-text vs standardized codes:
 
 ```{r merge-substring-view}
-cat("Sample diagnosis mapping challenge:\n")
 knitr::kable(patient_diagnoses, caption = "Free-Text Diagnoses (Before Mapping)")
 ```
 
@@ -217,8 +216,7 @@ merged_substring <- merge_by_substring(
   value_cols = c("icd_code", "category")
 )
 
-cat("\nAfter substring matching:\n")
-knitr::kable(head(merged_substring), caption = "Diagnoses with Mapped ICD Codes")
+knitr::kable(merged_substring, caption = "Diagnoses with Mapped ICD Codes")
 ```
 
 Summary of mapping success:
@@ -265,7 +263,6 @@ patient_visits <- data.frame(
     stringsAsFactors = FALSE
 )
 
-cat("Patient visits:\n")
 knitr::kable(patient_visits, caption = "Hospital Visits")
 ```
 
@@ -285,7 +282,6 @@ lab_results <- data.frame(
     stringsAsFactors = FALSE
 )
 
-cat("\nLab results:\n")
 knitr::kable(lab_results, caption = "Laboratory Results")
 ```
 
@@ -301,7 +297,6 @@ merged_range <- merge_by_range(
     y_val = "test_date"
 )
 
-cat("\nMatched lab results to visits:\n")
 knitr::kable(merged_range, caption = "Labs Matched to Visit Windows")
 ```
 
@@ -327,7 +322,6 @@ long_labs <- data.frame(
     stringsAsFactors = FALSE
 )
 
-cat("Long format (typical EHR structure):\n")
 knitr::kable(head(long_labs, 8), caption = "Laboratory Data - Long Format")
 ```
 
@@ -341,7 +335,6 @@ wide_labs <- to_wide(
     value_col = "value"
 )
 
-cat("\nWide format (for analysis):\n")
 knitr::kable(head(wide_labs), caption = "Laboratory Data - Wide Format")
 ```
 
@@ -370,7 +363,6 @@ survey_data <- data.frame(
     stringsAsFactors = FALSE
 )
 
-cat("Original multi-choice format:\n")
 knitr::kable(head(survey_data), caption = "Multi-Choice Survey Data")
 ```
 
@@ -384,7 +376,6 @@ symptoms_split <- split_multichoice(
     remove_space = FALSE
 )
 
-cat("\nAfter splitting (binary indicators):\n")
 knitr::kable(head(symptoms_split), caption = "Split Multi-Choice Data")
 ```
 
@@ -400,7 +391,6 @@ combined <- combine_multichoice(
     sep = ","
 )
 
-cat("\nCombined symptom groups:\n")
 knitr::kable(head(combined), caption = "Combined Symptom Groups")
 ```
 
@@ -440,7 +430,6 @@ list1 <- list(diabetes = 10, hypertension = 20, asthma = 5)
 list2 <- list(diabetes = 15, hypertension = 25, asthma = 8)
 combined_counts <- add_lists(list1, list2)
 
-cat("Combined condition counts:\n")
 print(combined_counts)
 ```
 
@@ -452,7 +441,6 @@ site2_conditions <- c("Hypertension", "COPD", "Diabetes", "Cancer")
 site3_conditions <- c("CKD", "Diabetes", "Stroke", "Hypertension")
 
 master_list <- merge_ordered_vectors(list(site1_conditions, site2_conditions, site3_conditions))
-cat("\nMaster condition list (ordered by first appearance):\n")
 print(master_list)
 ```
 
@@ -460,7 +448,7 @@ Replace elements based on conditions. This function was created to modify a smal
 
 ```{r list-ops-replace}
 sample_data <- data.frame(
-    group = c("A", "B", "A", "C", "B"),
+    group = c("Cntrol", "Treetment", "Placebo", "Cntrol", "Treatment",),
     value = c(1, 2, 3, 4, 5),
     stringsAsFactors = FALSE
 )
@@ -468,18 +456,15 @@ sample_data <- data.frame(
 # Recode groups to descriptive labels
 recoded <- replace_elements(
     x = sample_data$group,
-    from = c("A", "B", "C"),
-    to = c("Control", "Treatment", "Placebo")
+    from = c("Cntrol","Treetment"),
+    to = c("Control","Treatment")
 )
 
-cat("Original vs recoded:\n")
 knitr::kable(data.frame(
     Original = sample_data$group,
     Recoded = recoded
 ), caption = "Group Recoding")
 ```
-
-### Data Frame Operations
 
 Fill NA values with last valid value. This function is commonly used to handle merged cells in Excel files - when cells are merged in Excel and read into R, the merged cells become NA and can be filled using this function:
 
@@ -487,7 +472,6 @@ Fill NA values with last valid value. This function is commonly used to handle m
 time_series <- c(120, NA, NA, 125, NA, 130, NA, NA)
 filled_series <- fill_with_last(time_series)
 
-cat("\nMissing data imputation (LOCF):\n")
 knitr::kable(data.frame(
     Original = time_series,
     Filled = filled_series
@@ -505,9 +489,6 @@ Data sources: Patient demographics, admissions, diagnoses, and labs from differe
 First, create sample multi-source clinical data:
 
 ```{r workflow-setup}
-cat("=== Clinical Data Processing Workflow ===\n\n")
-cat("Step 1: Creating sample multi-source clinical data...\n")
-
 # Patient demographics table
 patient <- data.frame(
     pid = 1:50,
@@ -529,7 +510,7 @@ diagnosis <- data.frame(
     pid = c(1, 1, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
     vid = c(101, 102, 103, 104, 105, 107, 108, 109, 110, 111, 112, 113, 114, 115),
     dx_day = c(1, 30, 5, 45, 10, 15, 20, 25, 35, 40, 50, 55, 65, 70),
-    icd = c("E11", "I10", "E11", "N18", "E11", "I25", "E11", "J18", "E11", "I10", "E11", "N18", "E11", "I50"),
+    icd = c("E11", "I10", "N18", "E11", "E11", "I25", "E11", "J18", "E11", "I10", "E11", "N18", "E11", "I50"),
     stringsAsFactors = FALSE
 )
 
@@ -554,9 +535,51 @@ cat("- Labs:", nrow(lab), "results\n")
 Use `screen_data_list()` to filter the multi-table dataset. This example selects patients with diabetes (ICD code E11) and keeps only records from their first diabetes diagnosis onward:
 
 ```{r workflow-screen}
-cat("\nStep 2: Screening multi-table data with clinical criteria...\n")
-
 screened_data <- screen_data_list(
+    data_list = list(
+        patient = patient,
+        admission = admission,
+        diagnosis = diagnosis,
+        lab = lab
+    ),
+    # Entry: patients with any diabetes diagnosis
+    entry_expr = any(icd == "E11"),
+    entry_level = "patient_id",
+    # Anchor: keep records from first diabetes diagnosis onward
+    anchor_expr = icd == "E11",
+    anchor_level = "date",
+    # Column mappings
+    patient_id_map = "pid",
+    visit_id_map = c(admission = "vid", diagnosis = "vid", lab = "vid"),
+    date_map = c(admission = "admit_day", diagnosis = "dx_day", lab = "lab_day"),
+    output = "list",
+    return_audit = TRUE
+)
+
+knitr::kable(screened_data$audit$entry_scope, caption = "Entry Stage Audit")
+knitr::kable(screened_data$audit$anchor_scope, caption = "Anchor Stage Audit")
+```
+
+### Step 3: Review Filtered Data
+
+Examine the filtered data for each table:
+
+```{r workflow-review}
+knitr::kable(head(screened_data$data$patient), caption = "Filtered Patients")
+
+knitr::kable(screened_data$data$admission, caption = "Filtered Admissions")
+
+knitr::kable(screened_data$data$diagnosis, caption = "Filtered Diagnoses")
+
+knitr::kable(screened_data$data$lab, caption = "Filtered Labs")
+```
+
+### Alternative: Joined Output
+
+You can also get the output as a joined data frame instead of a list by setting `output = "joined"`:
+
+```{r workflow-joined}
+joined_result <- screen_data_list(
     data_list = list(
         patient = patient,
         admission = admission,
@@ -574,55 +597,6 @@ screened_data <- screen_data_list(
     patient_id_map = "pid",
     visit_id_map = c(admission = "vid", diagnosis = "vid", lab = "vid"),
     date_map = c(admission = "admit_day", diagnosis = "dx_day", lab = "lab_day"),
-    output = "list",
-    return_audit = TRUE
-)
-
-cat("Screening complete. Audit log:\n")
-knitr::kable(screened_data$audit$entry_scope, caption = "Entry Stage Audit")
-knitr::kable(screened_data$audit$anchor_scope, caption = "Anchor Stage Audit")
-```
-
-### Step 3: Review Filtered Data
-
-Examine the filtered data for each table:
-
-```{r workflow-review}
-cat("\nStep 3: Reviewing filtered data...\n")
-
-cat("\nFiltered patients:")
-knitr::kable(head(screened_data$data$patient), caption = "Filtered Patients")
-
-cat("\nFiltered admissions:")
-knitr::kable(screened_data$data$admission, caption = "Filtered Admissions")
-
-cat("\nFiltered diagnoses:")
-knitr::kable(screened_data$data$diagnosis, caption = "Filtered Diagnoses")
-
-cat("\nFiltered labs:")
-knitr::kable(screened_data$data$lab, caption = "Filtered Labs")
-```
-
-### Alternative: Joined Output
-
-You can also get the output as a joined data frame instead of a list:
-
-```{r workflow-joined}
-cat("\n=== Alternative: Joined Output ===\n")
-
-# For joined output, ensure join keys are unique
-# Create a version with unique keys per table
-admission_unique <- admission %>%
-    mutate(record_id = row_number())
-
-joined_result <- screen_data_list(
-    data_list = list(
-        patient = patient,
-        admission = admission_unique
-    ),
-    entry_expr = any(age > 40),
-    entry_level = "patient_id",
-    patient_id_map = "pid",
     output = "joined"
 )
 

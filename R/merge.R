@@ -12,6 +12,7 @@
 #'   Can be a single column name or a character vector of column names. Defaults to "value" if not provided.
 #' @param case_insensitive Whether to perform case-insensitive matching (default: TRUE)
 #'   Defaults to TRUE if not provided.
+#' @param ... Additional arguments passed to `stringi::stri_detect_regex()`.
 #'
 #' @return A data frame with all columns from `data` plus matched columns from `key_df`.
 #'   Unmatched rows will have NA values in the added columns.
@@ -37,7 +38,7 @@
 #'
 #' @export
 merge_by_substring <- function(data, key_df, search_col, key_col, value_cols,
-                               case_insensitive = TRUE) {
+                               case_insensitive = TRUE, ...) {
   # Validate inputs
   if (!is.data.frame(data)) {
     stop("`data` must be a data frame")
@@ -89,7 +90,8 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols,
     regex_pattern <- paste0("(?:", paste(keys_escaped, collapse = "|"), ")")
 
     # Find matches
-    matches <- stringi::stri_detect_regex(search_values, regex_pattern, case_insensitive = case_insensitive)
+    matches <- stringi::stri_detect_regex(search_values, regex_pattern,
+                                          case_insensitive = case_insensitive, ...)
     matches[is.na(matches)] <- FALSE
 
     if (any(matches)) {

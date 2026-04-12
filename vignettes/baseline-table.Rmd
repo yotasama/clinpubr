@@ -259,63 +259,6 @@ The missing data table shows the pattern of missing data by group. This is impor
 knitr::kable(baseline_result$missing, caption = "Missing Data Summary")
 ```
 
-## Normality Testing
-
-### Distribution Characteristics
-
-Understanding the distribution of your continuous variables helps determine the appropriate summary statistics:
-
-```{r normality-testing}
-# Simple skewness calculation (without moments package)
-calc_skewness <- function(x) {
-  x <- na.omit(x)
-  n <- length(x)
-  mean_x <- mean(x)
-  sd_x <- sd(x)
-  sum((x - mean_x)^3) / ((n - 1) * sd_x^3)
-}
-
-# Check distribution characteristics
-age_data <- cancer$age
-wtloss_data <- cancer$wt.loss
-
-norm_check <- data.frame(
-  Variable = c("age", "wt.loss"),
-  Mean = c(mean(age_data, na.rm = TRUE), mean(wtloss_data, na.rm = TRUE)),
-  Median = c(median(age_data, na.rm = TRUE), median(wtloss_data, na.rm = TRUE)),
-  SD = c(sd(age_data, na.rm = TRUE), sd(wtloss_data, na.rm = TRUE)),
-  Skewness = c(
-    calc_skewness(age_data),
-    calc_skewness(wtloss_data)
-  )
-)
-knitr::kable(norm_check, caption = "Distribution Characteristics")
-```
-
-### Adaptive Alpha for Large Samples
-
-With large samples, normality tests become too sensitive and may reject normality even for approximately normal distributions. The package uses an adaptive alpha that decreases with sample size.
-
-The alpha adjustment formula used in clinpubr:
-- For n < 100: alpha = 0.05
-- For n >= 100: alpha = 10^(-exp((log10(n) - 2) * 2 + log(-log10(0.05))))
-
-```{r adaptive-alpha}
-alpha_by_n <- function(n) {
-  if (n < 100) {
-    return(0.05)
-  } else {
-    return(10^(-exp((log10(n) - 2) * 2 + log(-log10(0.05)))))
-  }
-}
-
-alpha_demo <- data.frame(
-  Sample_Size = c(50, 100, 500, 1000, 5000),
-  Alpha_Used = sapply(c(50, 100, 500, 1000, 5000), alpha_by_n)
-)
-knitr::kable(alpha_demo, caption = "Adaptive Alpha by Sample Size")
-```
-
 ## Manual Override
 
 Sometimes you may want to override automatic classification based on clinical knowledge:
@@ -430,7 +373,7 @@ This vignette covered the essential functions for creating baseline characterist
 1. **Always review automatic classifications**: The automatic variable type determination is helpful but should be reviewed
 2. **Consider clinical context**: Sometimes clinical knowledge should override statistical classifications
 3. **Handle missing data transparently**: Report missing data patterns in your tables
-4. **Use appropriate tests**: Let the package choose tests automatically, but verify they make sense
+4. **Use appropriate tests**: Let the package choose tests automatically, but verify whether they make sense
 5. **Include SMD for observational studies**: Standardized mean differences help assess group balance
 
 ### Interpretation Guidelines

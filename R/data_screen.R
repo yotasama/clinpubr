@@ -80,7 +80,7 @@
 #'   data_list = list(patient = patient, admission = admission, diagnosis = diagnosis, lab = lab),
 #'   entry_expr = any(icd == "I10"),
 #'   entry_level = "patient_id",
-#'   anchor_expr = any(icd == "I10"),
+#'   anchor_expr = icd == "I10",
 #'   anchor_level = "date",
 #'   anchor_window = "from_first_anchor",
 #'   patient_id_map = "pid",
@@ -94,7 +94,7 @@
 #'   data_list = list(patient = patient, admission = admission, diagnosis = diagnosis, lab = lab),
 #'   entry_expr = any(icd == "I10"),
 #'   entry_level = "patient_id",
-#'   anchor_expr = any(Hb > 10),
+#'   anchor_expr = Hb > 10,
 #'   anchor_level = "date",
 #'   anchor_window = "from_first_anchor",
 #'   patient_id_map = "pid",
@@ -109,7 +109,7 @@ screen_data_list <- function(data_list,
                              entry_level = c("patient_id", "visit_id", "date"),
                              anchor_expr = NULL,
                              anchor_level = c("date", "visit_id"),
-                             anchor_window = c("none", "from_first_anchor"),
+                             anchor_window = c("from_first_anchor", "none"),
                              patient_id_map,
                              visit_id_map = NULL,
                              date_map = NULL,
@@ -793,7 +793,7 @@ screen_data_list <- function(data_list,
 
   if (is.null(anchor_expr) || anchor_window == "none") {
     return(list(data = data_list, scope_log = scope_log))
-  }
+  } 
 
   effective_level <- anchor_level
   if (anchor_level == "date" && is.null(date_map)) {
