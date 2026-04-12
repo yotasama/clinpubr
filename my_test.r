@@ -589,7 +589,7 @@ x <- sample(c(3:10), 1e6, replace = TRUE)
 dat <- data.frame(id = sample(1:1e5, 1e6, replace = TRUE), value = x)
 dat <- dat %>%
   group_by(id) %>%
-  mutate(end_date = cumsum(value)+5, start_date = end_date - value + 1) %>%
+  mutate(end_date = cumsum(value) + 5, start_date = end_date - value + 1) %>%
   ungroup() %>%
   arrange(id, start_date)
 head(dat)
@@ -626,15 +626,15 @@ tictoc::toc(log = TRUE)
 
 library(dplyr)
 
-df <- data.frame(pid = c(1,1,2,2), value = c(10,20,30,40), value2 = c(100,200,300,400))
+df <- data.frame(pid = c(1, 1, 2, 2), value = c(10, 20, 30, 40), value2 = c(100, 200, 300, 400))
 
 # 默认行为：返回长度 > 1 → 展开多行
 
-f1=function(x){
-  if(min(x)<30){
+f1 <- function(x) {
+  if (min(x) < 30) {
     20
-  }else{
-    c(30,40)
+  } else {
+    c(30, 40)
   }
 }
 df %>%
@@ -646,29 +646,29 @@ df %>%
 df %>%
   group_by(pid) %>%
   summarise(q = list(quantile(value, c(0.25, 0.75))))
-  
+
 library(dplyr)
 library(data.table)
 library(tictoc)
-x=data.frame(x=c(1:1e6),y=rnorm(1e6))
-tt=function(xx){
-  out=setDT(xx)%>%
-    mutate(x=x+10)%>%
-    as.data.frame
+x <- data.frame(x = c(1:1e6), y = rnorm(1e6))
+tt <- function(xx) {
+  out <- setDT(xx) %>%
+    mutate(x = x + 10) %>%
+    as.data.frame()
   out
 }
 mean(tt(x)$x)
 mean(x$x)
 class(x)
-y=list(x,x,x,x,x,x,x,x,x,x)
+y <- list(x, x, x, x, x, x, x, x, x, x)
 tic()
-z=data.table::rbindlist(y)
+z <- data.table::rbindlist(y)
 toc()
 tic()
-z=bind_rows(y)
+z <- bind_rows(y)
 toc()
 tic()
-z=rbindlist(y)
+z <- rbindlist(y)
 toc()
 df1 <- data.frame(x = 1:3)
 setDT(df1)
@@ -676,16 +676,14 @@ class(df1)
 
 library(stringi)
 library(tictoc)
-x=sample(letters,10000000,replace=TRUE)
+x <- sample(letters, 10000000, replace = TRUE)
 tic()
-tmp=stringi::stri_enc_isutf8(x)
+tmp <- stringi::stri_detect_regex(x, "b|a")
 toc()
 tic()
-tmp=validUTF8(x)
+tmp <- grepl("a|b", x)
 toc()
 
-x=iconv(c("你好"),from="UTF-8",to="GBK")
-as.numeric(x)
-y=auto_encoding_repair(x)
-y
-as.numeric(y)
+x <- iconv(c("你好", NA, "asdf"), from = "UTF-8", to = "GBK")
+validUTF8(x)
+y <- auto_encoding_repair(x)

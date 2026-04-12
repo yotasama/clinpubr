@@ -15,56 +15,110 @@
 #'
 #' # Full-width characters (UTF-8, no repair needed)
 #' auto_encoding_repair(c("\uFF11\uFF12\uFF13", "abc"))
+#'
+#' # Simulate GBK-encoded Chinese characters that need repair
+#' # (using iconv to create non-UTF-8 bytes for demonstration)
+#' if (l10n_info()$"UTF-8") {
+#'   # Create GBK-encoded bytes from UTF-8 Chinese characters
+#'   gbk_bytes <- iconv("\u4f60\u597d", from = "UTF-8", to = "GBK")
+#'   auto_encoding_repair(gbk_bytes)
+#' }
+#'
+#' # Simulate Latin-1 encoded characters
+#' if (l10n_info()$"UTF-8") {
+#'   latin1_bytes <- iconv("caf\u00e9", from = "UTF-8", to = "Latin-1")
+#'   auto_encoding_repair(latin1_bytes)
+#' }
+#'
+#' # Mixed encoding vector (UTF-8 and GBK)
+#' if (l10n_info()$"UTF-8") {
+#'   mixed <- c("hello",
+#'              iconv("\u4e2d\u6587", from = "UTF-8", to = "GBK"),
+#'              "world")
+#'   auto_encoding_repair(mixed)
+#' }
 auto_encoding_repair <- function(x, from_encoding = "auto") {
+  # Fast path: non-character input
   if (!is.character(x)) {
     return(x)
   }
 
-  # Check for non-UTF-8 elements using base::validUTF8() for performance
-  non_utf8_idx <- which(!validUTF8(x))
+  n <- length(x)
 
-  if (length(non_utf8_idx) == 0) {
+  # Fast path: empty vector
+  if (n == 0L) {
     return(x)
   }
 
-  # Try to repair encoding
-  x_repaired <- x
-  repaired_count <- 0
-
-  if (from_encoding == "auto") {
-    # Try common Chinese encodings first, then fall back to Latin-1
-    encodings_to_try <- c("GBK", "GB2312", "Latin-1", "UTF-8")
-  } else {
-    encodings_to_try <- from_encoding
+  # Fast path: check if all elements are valid UTF-8
+  # validUTF8 is implemented in C and very fast
+  utf8_valid <- validUTF8(x)
+  if (all(utf8_valid)) {
+    return(x)
   }
+
+  # Find indices of non-UTF-8 elements
+  # useNames = FALSE avoids overhead of creating names attribute
+  non_utf8_idx <- which(!utf8_valid, useNames = FALSE)
+  n_non_utf8 <- length(non_utf8_idx)
+
+  # Extract non-UTF-8 elements for processing
+  x_non_utf8 <- x[non_utf8_idx]
+
+  # Determine encodings to try
+  encodings_to_try <- if (from_encoding == "auto") {
+    c("GBK", "GB2312", "latin1", "UTF-8")
+  } else {
+    from_encoding
+  }
+
+  # Try each encoding
+  converted <- NULL
+  success <- FALSE
 
   for (enc in encodings_to_try) {
-    tryCatch({
-      converted <- stringi::stri_encode(x[non_utf8_idx], from = enc, to = "UTF-8")
-      # Verify conversion worked (no NA introduced unless original was NA)
-      if (sum(is.na(converted) & !is.na(x[non_utf8_idx])) == 0) {
-        x_repaired[non_utf8_idx] <- converted
-        repaired_count <- length(non_utf8_idx)
-        break
-      }
-    }, error = function(e) NULL)
+    converted <- tryCatch(
+      stringi::stri_encode(x_non_utf8, from = enc, to = "UTF-8"),
+      error = function(e) NULL
+    )
+
+    if (is.null(converted)) {
+      next
+    }
+
+    # Fast validation checks
+    if (any(is.na(converted)) || 
+      !all(validUTF8(converted)) ||
+      any(stringi::stri_detect_fixed(converted, "\ufffd")) ||
+      any(stringi::stri_detect_fixed(converted, "\u001a"))) {
+      next
+    }
+    # All checks passed
+    success <- TRUE
+    break
   }
 
-  # If repair failed, set non-UTF-8 elements to NA
-  failed_count <- length(non_utf8_idx) - repaired_count
-  if (failed_count > 0) {
-    x_repaired[non_utf8_idx] <- NA
-    warning(sprintf(
-      "Detected %d elements with non-UTF-8 encoding. %d elements failed to repair and were set to NA.",
-      length(non_utf8_idx),
-      failed_count
-    ))
-  } else {
+  # Prepare result
+  if (success) {
+    # Create result vector
+    x_repaired <- x
+    x_repaired[non_utf8_idx] <- converted
+
     warning(sprintf(
       "Detected and repaired %d elements with non-UTF-8 encoding.",
-      repaired_count
+      n_non_utf8
     ))
+    return(x_repaired)
   }
+
+  # Repair failed: set non-UTF-8 elements to NA
+  x_repaired <- x
+  x_repaired[non_utf8_idx] <- NA_character_
+
+  warning(sprintf(
+    "Detected %d elements with non-UTF-8 encoding. All failed to repair and were set to NA.",
+    n_non_utf8
+  ))
 
   x_repaired
 }

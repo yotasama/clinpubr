@@ -36,6 +36,60 @@ test_that("auto_encoding_repair handles empty input", {
   expect_equal(result, x)
 })
 
+test_that("auto_encoding_repair repairs GBK-encoded Chinese characters", {
+  skip_if_not(l10n_info()$"UTF-8", "Test requires UTF-8 locale")
+
+  # Create GBK-encoded bytes from UTF-8 Chinese characters "你好"
+  gbk_bytes <- iconv("\u4f60\u597d", from = "UTF-8", to = "GBK")
+
+  # Verify it's not valid UTF-8
+  skip_if(validUTF8(gbk_bytes), "iconv did not produce non-UTF-8 bytes")
+
+  # Repair should convert back to UTF-8
+  result <- suppressWarnings(auto_encoding_repair(gbk_bytes))
+  expect_equal(result, "\u4f60\u597d")
+})
+
+test_that("auto_encoding_repair repairs Latin-1 encoded characters", {
+  skip_if_not(l10n_info()$"UTF-8", "Test requires UTF-8 locale")
+
+  # Create Latin-1 encoded bytes from UTF-8 "caf\u00e9"
+  latin1_bytes <- iconv("caf\u00e9", from = "UTF-8", to = "latin1")
+
+  # Verify it's not valid UTF-8
+  skip_if(validUTF8(latin1_bytes), "iconv did not produce non-UTF-8 bytes")
+
+  # Repair should convert back to UTF-8
+  result <- auto_encoding_repair(latin1_bytes)
+  expect_equal(result, "caf\u00e9")
+})
+
+test_that("auto_encoding_repair handles mixed UTF-8 and GBK encoding", {
+  skip_if_not(l10n_info()$"UTF-8", "Test requires UTF-8 locale")
+
+  # Create a mixed vector: UTF-8 "hello", GBK "\u4e2d\u6587" (中文), UTF-8 "world"
+  gbk_chinese <- iconv("\u4e2d\u6587", from = "UTF-8", to = "GBK")
+  skip_if(validUTF8(gbk_chinese), "iconv did not produce non-UTF-8 bytes")
+
+  mixed <- c("hello", gbk_chinese, "world")
+
+  # Repair should convert GBK part to UTF-8 while keeping others unchanged
+  result <- auto_encoding_repair(mixed)
+  expect_equal(result, c("hello", "\u4e2d\u6587", "world"))
+})
+
+test_that("auto_encoding_repair with explicit from_encoding parameter", {
+  skip_if_not(l10n_info()$"UTF-8", "Test requires UTF-8 locale")
+
+  # Create GBK-encoded bytes
+  gbk_bytes <- iconv("\u4f60\u597d", from = "UTF-8", to = "GBK")
+  skip_if(validUTF8(gbk_bytes), "iconv did not produce non-UTF-8 bytes")
+
+  # Explicitly specify GBK as source encoding
+  result <- auto_encoding_repair(gbk_bytes, from_encoding = "GBK")
+  expect_equal(result, "\u4f60\u597d")
+})
+
 test_that("value_initial_cleaning works with fix_encoding = TRUE", {
   x <- c("123", "456", "789")
   result <- value_initial_cleaning(x, fix_encoding = TRUE)

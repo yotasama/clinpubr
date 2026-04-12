@@ -28,48 +28,70 @@ extract_num <- function(x, res_type = c("first", "range"), multimatch2na = FALSE
   if (is.numeric(x)) {
     return(x)
   }
+
+  # Fast path: try direct conversion for pure numeric strings
   try_res <- suppressWarnings(as.numeric(x))
   if (all(is.na(try_res) == is.na(x))) {
     return(try_res)
   }
+
   res_type <- match.arg(res_type)
-  if (!is.null(zero_regexp)) {
-    flag_zero <- grepl(zero_regexp, x)
-  }
-  if (!is.null(max_regexp)) {
-    flag_max <- grepl(max_regexp, x)
-  }
+
+  # Precompute flags
+  flag_zero <- if (!is.null(zero_regexp)) grepl(zero_regexp, x) else logical(length(x))
+  flag_max <- if (!is.null(max_regexp)) grepl(max_regexp, x) else logical(length(x))
+
   if (allow_neg) {
     if (res_type == "range") warning("`allow_neg` is `TRUE`! Make sure you do not use '-' to connect numbers!")
     my_expr <- "-?[0-9]+\\.?[0-9]*|-?\\.[0-9]+"
   } else {
     my_expr <- "[0-9]+\\.?[0-9]*|\\.[0-9]+"
   }
-  match_res <- regmatches(x, gregexpr(my_expr, x))
+
   if (res_type == "first") {
-    res <- as.numeric(sapply(match_res, `[`, 1))
+    # For "first" mode, only extract the first match - much faster
+    first_matches <- stringi::stri_extract_first_regex(x, my_expr)
+    res <- suppressWarnings(as.numeric(first_matches))
+
     if (multimatch2na) {
-      res[sapply(match_res, length) != 1] <- NA
+      # Need to check if there are multiple matches
+      all_matches <- stringi::stri_extract_all_regex(x, my_expr)
+      match_lens <- lengths(all_matches)
+      res[match_lens != 1] <- NA_real_
     }
     if (leq_1) {
-      res[res > 1] <- NA
+      res[res > 1] <- NA_real_
     }
   } else if (res_type == "range") {
-    res <- ifelse(
-      sapply(match_res, length) == 1,
-      as.numeric(sapply(match_res, `[`, 1)),
-      ifelse(
-        sapply(match_res, length) == 2,
-        (as.numeric(sapply(match_res, `[`, 1)) + as.numeric(sapply(match_res, `[`, 2))) / 2,
-        NA
-      )
-    )
+    # For "range" mode, need all matches to calculate mean of range
+    match_res <- stringi::stri_extract_all_regex(x, my_expr)
+    match_lens <- lengths(match_res)
+
+    n <- length(x)
+    res <- rep(NA_real_, n)
+
+    # Process single match
+    len1 <- match_lens == 1
+    if (any(len1)) {
+      res[len1] <- as.numeric(vapply(match_res[len1], `[`, character(1), 1))
+    }
+
+    # Process double match (range)
+    len2 <- match_lens == 2
+    if (any(len2)) {
+      firsts <- as.numeric(vapply(match_res[len2], `[`, character(1), 1))
+      seconds <- as.numeric(vapply(match_res[len2], `[`, character(1), 2))
+      res[len2] <- (firsts + seconds) / 2
+    }
   }
-  if (!is.null(max_regexp)) {
+
+  # Apply special value flags
+  if (!is.null(max_regexp) && any(flag_max)) {
     res[flag_max] <- quantile(res, max_quantile, na.rm = TRUE, names = FALSE)
   }
-  if (!is.null(zero_regexp)) {
+  if (!is.null(zero_regexp) && any(flag_zero)) {
     res[flag_zero] <- 0
   }
+
   res
 }

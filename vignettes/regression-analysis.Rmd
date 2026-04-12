@@ -63,22 +63,27 @@ Before analysis, it's important to understand your data:
 - **Predictors**: Age, sex, ECOG performance status, Karnofsky scores, weight loss, calories consumed
 - **Clinical context**: These variables are commonly used prognostic factors in lung cancer
 
+Load example data - NCCTG Lung Cancer Data. This dataset contains 228 patients with advanced lung cancer. Variables include demographics, performance status, and nutritional measures:
+
 ```{r load-data}
-# Load example data - NCCTG Lung Cancer Data
-# This dataset contains 228 patients with advanced lung cancer
-# Variables include demographics, performance status, and nutritional measures
-
 data(cancer, package = "survival")
+```
 
-# View data structure
+View data structure:
+
+```{r load-data-structure}
 str(cancer)
+```
 
-# Create a binary outcome for logistic regression demonstration
-# In clinical practice, we often analyze both survival time and binary endpoints
+Create a binary outcome for logistic regression demonstration. In clinical practice, we often analyze both survival time and binary endpoints:
+
+```{r load-data-binary}
 cancer$dead <- cancer$status == 2
+```
 
-# Prepare data with clear, interpretable labels
-# Proper labeling is crucial for publication-ready tables and figures
+Prepare data with clear, interpretable labels. Proper labeling is crucial for publication-ready tables and figures:
+
+```{r load-data-clean}
 cancer_clean <- cancer %>%
   mutate(
     sex = factor(sex, labels = c("Male", "Female")),
@@ -89,15 +94,21 @@ cancer_clean <- cancer %>%
                                    "3 - In bed >50% of time"))
   ) %>%
   na.omit()
+```
 
-# Show data dimensions after cleaning
+Show data dimensions after cleaning:
+
+```{r load-data-summary}
 knitr::kable(data.frame(
   Rows = nrow(cancer_clean),
   Columns = ncol(cancer_clean),
   Description = "Complete cases for analysis"
 ), caption = "Analysis Dataset Summary")
+```
 
-# Preview key variables
+Preview key variables:
+
+```{r load-data-preview}
 knitr::kable(head(cancer_clean[, c("age", "sex", "ph.ecog", "ph.karno", "time", "status")]), 
              caption = "Sample of Analysis Variables")
 ```
@@ -117,14 +128,13 @@ The `regression_scan()` function automatically tests multiple variable transform
 
 The Cox model is the most widely used regression method in survival analysis. It allows us to estimate hazard ratios while accounting for censoring.
 
-```{r cox-scan}
-# Scan for significant predictors in Cox model
-# This tests multiple transformations for each predictor:
-# - Original (linear) form
-# - Logarithmic transformation (if all values > 0)
-# - Categorical form (median split)
-# - Restricted cubic spline (RCS) for non-linear relationships
+Scan for significant predictors in Cox model. This tests multiple transformations for each predictor:
+- Original (linear) form
+- Logarithmic transformation (if all values > 0)
+- Categorical form (median split)
+- Restricted cubic spline (RCS) for non-linear relationships
 
+```{r cox-scan}
 cox_scan <- regression_scan(
   data = cancer_clean,
   y = "status",
@@ -134,7 +144,6 @@ cox_scan <- regression_scan(
   save_table = FALSE
 )
 
-# View full scan results
 knitr::kable(cox_scan, caption = "Cox Regression Scan Results")
 ```
 
@@ -148,9 +157,9 @@ The scan results show:
 - **rcs.nonlinear.pval**: P-value specifically testing non-linearity
 - **best.var.trans**: Transformation with smallest p-value
 
+View predictors with significant associations. We consider both linear and non-linear associations:
+
 ```{r interpret-scan}
-# View predictors with significant associations
-# We consider both linear and non-linear associations
 significant_predictors <- cox_scan %>%
   filter(original.pval < 0.05 | rcs.overall.pval < 0.05) %>%
   select(predictor, nvalid, best.var.trans, original.pval, rcs.overall.pval)
@@ -165,9 +174,6 @@ knitr::kable(significant_predictors,
 For binary outcomes (e.g., 30-day mortality, treatment response), logistic regression is appropriate:
 
 ```{r logistic-scan}
-# Scan for significant predictors in logistic model
-# Using death (yes/no) as the binary outcome
-
 logistic_scan <- regression_scan(
   data = cancer_clean,
   y = "dead",
@@ -192,13 +198,12 @@ This allows readers to assess how confounding affects the estimated association.
 
 ### Cox Model Results with Multiple Specifications
 
-```{r cox-basic-results}
-# Generate comprehensive Cox regression results for age
-# We present multiple model specifications:
-# - Crude: Age only
-# - Model1: Age adjusted for sex
-# - Model2: Age adjusted for sex, ph.karno, and pat.karno
+Generate comprehensive Cox regression results for age. We present multiple model specifications:
+- Crude: Age only
+- Model1: Age adjusted for sex
+- Model2: Age adjusted for sex, ph.karno, and pat.karno
 
+```{r cox-basic-results}
 cox_results <- regression_basic_results(
   data = cancer_clean,
   x = "age",
@@ -213,7 +218,6 @@ cox_results <- regression_basic_results(
   save_output = FALSE
 )
 
-# View the comprehensive results table
 knitr::kable(cox_results$table, caption = "Cox Regression Results for Age")
 ```
 
@@ -222,9 +226,6 @@ knitr::kable(cox_results$table, caption = "Cox Regression Results for Age")
 Clinical variables often have established cut-points (e.g., Karnofsky score < 80 indicates poor performance):
 
 ```{r logistic-basic-results}
-# Generate comprehensive logistic regression results
-# Using Karnofsky score with clinical cut-point at 80
-
 logistic_results <- regression_basic_results(
   data = cancer_clean,
   x = "ph.karno",
@@ -243,12 +244,9 @@ knitr::kable(logistic_results$table, caption = "Logistic Regression Results for 
 
 ### Using Quantile-Based Categories
 
-When clinical cut-points aren't established, quantile-based categories can be used:
+When clinical cut-points aren't established, quantile-based categories can be used. Use tertiles (33rd and 67th percentiles) instead of clinical breaks. This creates balanced groups for comparison:
 
 ```{r custom-transformations}
-# Use tertiles (33rd and 67th percentiles) instead of clinical breaks
-# This creates balanced groups for comparison
-
 custom_results <- regression_basic_results(
   data = cancer_clean,
   x = "age",
@@ -272,9 +270,6 @@ Forest plots are the standard way to display regression results in clinical publ
 Univariate analyses show the crude association between each predictor and outcome:
 
 ```{r univariate-forest}
-# Create univariate forest plot
-# Shows hazard ratios for each predictor individually
-
 uni_forest <- regression_forest(
   data = cancer_clean,
   model_vars = c("age", "ph.karno", "pat.karno", "wt.loss"),
@@ -292,9 +287,6 @@ uni_forest
 Multivariate analyses show independent effects after mutual adjustment:
 
 ```{r multivariate-forest}
-# Create multivariate forest plot with multiple models
-# Shows how hazard ratios change with increasing adjustment
-
 multi_forest <- regression_forest(
   data = cancer_clean,
   model_vars = list(
@@ -313,10 +305,9 @@ multi_forest
 
 ### Customizing Forest Plots
 
-```{r custom-forest}
-# Select specific variables and customize appearance
-# Useful when you have many predictors but want to highlight key findings
+Select specific variables and customize appearance. Useful when you have many predictors but want to highlight key findings:
 
+```{r custom-forest}
 custom_forest <- regression_forest(
   data = cancer_clean,
   model_vars = c("age", "ph.karno", "pat.karno", "wt.loss", "meal.cal"),
@@ -343,11 +334,9 @@ RCS plots are essential for visualizing non-linear relationships. Unlike simple 
 - You want to avoid arbitrary categorization
 - You need to test for non-linearity formally
 
-```{r rcs-plot}
-# Create RCS plot for age
-# Shows the non-linear relationship between age and mortality risk
-# Reference point is the median age
+Create RCS plot for age. Shows the non-linear relationship between age and mortality risk. Reference point is the median age:
 
+```{r rcs-plot}
 rcs_age <- rcs_plot(
   data = cancer_clean,
   x = "age",
@@ -365,12 +354,11 @@ rcs_age
 
 ### Predictor Effect Plot
 
-The `predictor_effect_plot()` function provides a unified interface for both continuous and categorical predictors:
+The `predictor_effect_plot()` function provides a unified interface for both continuous and categorical predictors.
+
+Effect plot for continuous predictor (linear). Shows the dose-response relationship:
 
 ```{r predictor-effect}
-# Effect plot for continuous predictor (linear)
-# Shows the dose-response relationship
-
 effect_linear <- predictor_effect_plot(
   data = cancer_clean,
   x = "age",
@@ -385,10 +373,9 @@ effect_linear <- predictor_effect_plot(
 effect_linear
 ```
 
-```{r predictor-effect-categorical}
-# Effect plot for categorical predictor
-# Shows hazard ratios for each category vs reference
+Effect plot for categorical predictor. Shows hazard ratios for each category vs reference:
 
+```{r predictor-effect-categorical}
 effect_cat <- predictor_effect_plot(
   data = cancer_clean,
   x = "sex",
@@ -404,10 +391,9 @@ effect_cat
 
 ### Customized RCS Plot
 
-```{r custom-effect}
-# Customized RCS plot with transformations
-# Useful when the relationship spans several orders of magnitude
+Customized RCS plot with transformations. Useful when the relationship spans several orders of magnitude:
 
+```{r custom-effect}
 custom_rcs <- rcs_plot(
   data = cancer_clean,
   x = "wt.loss",
@@ -436,10 +422,9 @@ Interactions (effect modification) are clinically important:
 
 ### Scanning for Interactions
 
-```{r interaction-scan}
-# Scan for significant interactions
-# Tests whether the effect of each predictor differs by sex
+Scan for significant interactions. Tests whether the effect of each predictor differs by sex:
 
+```{r interaction-scan}
 interaction_scan <- interaction_scan(
   data = cancer_clean,
   y = "status",
@@ -454,12 +439,9 @@ knitr::kable(interaction_scan, caption = "Interaction Scan Results")
 
 ### Visualizing Interactions
 
-When an interaction is present, visualization helps understand the pattern:
+When an interaction is present, visualization helps understand the pattern. Plot interaction between age and sex. Shows separate curves for males and females:
 
 ```{r interaction-plot}
-# Plot interaction between age and sex
-# Shows separate curves for males and females
-
 interaction_age_sex <- interaction_plot(
   data = cancer_clean,
   predictor = "age",
@@ -475,10 +457,9 @@ interaction_age_sex
 
 ### Calculating Interaction P-values
 
-```{r interaction-pvalue}
-# Calculate interaction p-value formally
-# This tests whether the age effect differs significantly between sexes
+Calculate interaction p-value formally. This tests whether the age effect differs significantly between sexes:
 
+```{r interaction-pvalue}
 interaction_p <- interaction_p_value(
   data = cancer_clean,
   predictor = "age",
@@ -510,10 +491,9 @@ Subgroup analysis is appropriate when:
 
 ### Subgroup Forest Plots
 
-```{r subgroup-forest}
-# Create subgroup forest plot
-# Shows the effect of age separately in males and females
+Create subgroup forest plot. Shows the effect of age separately in males and females:
 
+```{r subgroup-forest}
 subgroup_result <- subgroup_forest(
   data = cancer_clean,
   x = "age",
@@ -534,9 +514,6 @@ subgroup_result
 For custom analyses, you can fit models directly with full control:
 
 ```{r regression-fit}
-# Fit a single regression model
-# Returns comprehensive model results
-
 fit_result <- regression_fit(
   data = cancer_clean,
   y = "status",
@@ -551,10 +528,9 @@ knitr::kable(fit_result, caption = "Detailed Model Results")
 
 ### RCS Model Fitting
 
-```{r rcs-fit}
-# Fit RCS model
-# Returns both linear and non-linear components
+Fit RCS model. Returns both linear and non-linear components:
 
+```{r rcs-fit}
 rcs_fit <- regression_fit(
   data = cancer_clean,
   y = "status",
@@ -572,9 +548,9 @@ knitr::kable(rcs_fit, caption = "RCS Model Results")
 
 Here's a comprehensive workflow from data exploration to publication-ready figures:
 
-```{r complete-workflow}
-# Step 1: Data preparation
-cat("Step 1: Data preparation\n")
+Step 1: Data preparation:
+
+```{r complete-workflow-step1}
 data(cancer, package = "survival")
 cancer$dead <- cancer$status == 2
 
@@ -587,9 +563,11 @@ analysis_data <- cancer %>%
   na.omit()
 
 cat("Analysis dataset:", nrow(analysis_data), "patients\n")
+```
 
-# Step 2: Regression scan to identify significant predictors
-cat("\nStep 2: Scanning for significant predictors...\n")
+Step 2: Regression scan to identify significant predictors:
+
+```{r complete-workflow-step2}
 scan_results <- regression_scan(
   analysis_data,
   y = "status",
@@ -612,9 +590,11 @@ knitr::kable(
   caption = "Key Significant Predictors",
   digits = 4
 )
+```
 
-# Step 3: Comprehensive results for key predictor
-cat("\nStep 3: Generating comprehensive results for age...\n")
+Step 3: Comprehensive results for key predictor:
+
+```{r complete-workflow-step3}
 age_results <- regression_basic_results(
   analysis_data,
   x = "age",
@@ -628,9 +608,11 @@ age_results <- regression_basic_results(
 )
 
 knitr::kable(age_results$table, caption = "Age Effect - Multiple Model Specifications")
+```
 
-# Step 4: Forest plot of significant predictors
-cat("\nStep 4: Creating forest plot...\n")
+Step 4: Forest plot of significant predictors:
+
+```{r complete-workflow-step4}
 numeric_predictors <- top_predictors[top_predictors != "sex"]
 forest_plot <- regression_forest(
   analysis_data,
@@ -640,9 +622,11 @@ forest_plot <- regression_forest(
   as_univariate = TRUE,
   save_plot = FALSE
 )
+```
 
-# Step 5: RCS plot for continuous predictor
-cat("\nStep 5: Creating RCS plot for age...\n")
+Step 5: RCS plot for continuous predictor:
+
+```{r complete-workflow-step5}
 rcs_result <- rcs_plot(
   analysis_data,
   x = "age",
@@ -651,9 +635,11 @@ rcs_result <- rcs_plot(
   covars = c("sex", "ph.karno"),
   save_plot = FALSE
 )
+```
 
-# Step 6: Subgroup analysis
-cat("\nStep 6: Performing subgroup analysis...\n")
+Step 6: Subgroup analysis:
+
+```{r complete-workflow-step6}
 subgroup_plot <- subgroup_forest(
   analysis_data,
   x = "age",

@@ -34,7 +34,8 @@
 #' print(result)
 #'
 #' @export
-merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
+merge_by_substring <- function(data, key_df, search_col, key_col, value_cols,
+                               case_insensitive = TRUE) {
   # Validate inputs
   if (!is.data.frame(data)) {
     stop("`data` must be a data frame")
@@ -86,7 +87,7 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
     regex_pattern <- paste0("(?:", paste(keys_escaped, collapse = "|"), ")")
 
     # Find matches
-    matches <- stringi::stri_detect_regex(search_values, regex_pattern)
+    matches <- stringi::stri_detect_regex(search_values, regex_pattern, case_insensitive = case_insensitive)
     matches[is.na(matches)] <- FALSE
 
     if (any(matches)) {
@@ -414,7 +415,7 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols) {
         y_out[unmatched_y, , drop = FALSE],
         since_start = rep(NA_real_, length(unmatched_y))
       )
-      result <- data.table::rbindlist(result, unmatched_piece)
+      result <- data.table::rbindlist(list(result, unmatched_piece))
     }
   }
 

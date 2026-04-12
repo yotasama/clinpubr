@@ -315,7 +315,7 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
   }
   if (!is.null(strata) && length(na.omit(unique(data[[strata]]))) > 2) {
     g <- factor(data[[strata]])
-    pairwise_result <- data.frame()
+    pairwise_list <- list()
     for (var in vars) {
       if (var %in% exact_vars) {
         cont_table <- table(data[[var]], g)
@@ -358,14 +358,15 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
       }
       p_values_wide <- as.data.frame(pivot_wider(p_values_long, names_from = comparison, values_from = p.adj))
       if (nrow(p_values_wide) == 0) {
-        pairwise_result <- data.table::rbindlist(pairwise_result, setNames(
-          as.list(rep(NA, ncol(pairwise_result))),
-          names(pairwise_result)
-        ))
+        pairwise_list[[var]] <- setNames(
+          as.list(rep(NA, length(levels(g)) * (length(levels(g)) - 1) / 2)),
+          names(p_values_wide)
+        )
       } else {
-        pairwise_result <- data.table::rbindlist(pairwise_result, p_values_wide)
+        pairwise_list[[var]] <- p_values_wide
       }
     }
+    pairwise_result <- data.table::rbindlist(pairwise_list, fill = TRUE)
     rownames(pairwise_result) <- vars
     if (save_table) {
       write.csv(pairwise_result, file = str_replace(filename, ".csv", "_pairwise.csv"))

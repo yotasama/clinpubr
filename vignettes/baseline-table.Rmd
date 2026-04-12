@@ -54,40 +54,49 @@ The `clinpubr` package automates these decisions while allowing manual override 
 
 We'll use the NCCTG Lung Cancer dataset from the `survival` package, which is commonly used in survival analysis examples.
 
+Load example data - NCCTG Lung Cancer Data. This dataset contains survival data for patients with advanced lung cancer from the North Central Cancer Treatment Group. It's commonly used in survival analysis examples.
+
 ```{r load-data}
-# Load example data - NCCTG Lung Cancer Data
-# This dataset contains survival data for patients with advanced lung cancer
-# from the North Central Cancer Treatment Group. It's commonly used in 
-# survival analysis examples.
-
 data(cancer, package = "survival")
+```
 
-# View the data structure
+View the data structure:
+
+```{r load-data-structure}
 str(cancer)
 knitr::kable(head(cancer), caption = "Raw Data Preview")
+```
 
-# Create some derived variables for demonstration
-# Age groups are commonly used in clinical research to stratify analyses
+Create some derived variables for demonstration. Age groups are commonly used in clinical research to stratify analyses:
+
+```{r load-data-agegroup}
 cancer$age_group <- cut(cancer$age, 
                         breaks = c(0, 50, 60, 70, 100),
                         labels = c("<50", "50-60", "60-70", ">70"))
+```
 
-# ECOG performance status is a standard measure of patient functional status
-# We combine categories 2 and 3 due to small sample sizes
+ECOG performance status is a standard measure of patient functional status. We combine categories 2 and 3 due to small sample sizes:
+
+```{r load-data-ecog}
 cancer$ph.ecog_cat <- factor(cancer$ph.ecog,
                              levels = c(0:3),
                              labels = c("0", "1", ">=2", ">=2"))
+```
 
-# Add some missing values for demonstration
-# Missing data is common in clinical research due to:
-# - Patient refusal to provide certain information
-# - Lost to follow-up
-# - Data entry errors
+Add some missing values for demonstration. Missing data is common in clinical research due to:
+- Patient refusal to provide certain information
+- Lost to follow-up
+- Data entry errors
+
+```{r load-data-missing}
 set.seed(123)
 cancer$meal.cal[sample(1:nrow(cancer), 30)] <- NA
 cancer$wt.loss[sample(1:nrow(cancer), 20)] <- NA
+```
 
-# Show data after preparation
+Show data after preparation:
+
+```{r load-data-preview}
 knitr::kable(head(cancer[, c("age", "sex", "ph.ecog", "ph.karno", "meal.cal", "wt.loss")]), 
              caption = "Data After Preparation (First 6 Rows)")
 ```
@@ -105,16 +114,18 @@ The function analyzes each variable and classifies it as:
 - **Exact test variables**: Categorical variables with small cell counts requiring Fisher's exact test
 - **Omitted variables**: Variables with too many levels or other issues
 
+The `get_var_types()` function analyzes each variable and determines:
+- Whether it's categorical (factor) or continuous
+- For continuous variables: whether it's normally distributed
+- Whether Fisher's exact test is needed (small cell counts)
+
 ```{r get-var-types}
-# Automatic variable type determination
-# The get_var_types() function analyzes each variable and determines:
-# - Whether it's categorical (factor) or continuous
-# - For continuous variables: whether it's normally distributed
-# - Whether Fisher's exact test is needed (small cell counts)
-
 var_types <- get_var_types(cancer, strata = "sex")
+```
 
-# Display variable classification results
+Display variable classification results:
+
+```{r get-var-types-display}
 var_summary <- data.frame(
   Category = c("Factor Variables", "Exact Test Variables", "Non-normal Variables", "Omitted Variables"),
   Variables = c(
@@ -131,13 +142,11 @@ knitr::kable(var_summary, caption = "Variable Classification Results")
 
 You can adjust the thresholds for automatic classification:
 
-```{r customize-var-types}
-# Adjust thresholds for variable classification
-# These parameters allow you to customize the automatic classification:
-# - num_to_factor: numeric variables with <= this many unique values become factors
-# - omit_factor_above: factors with > this many levels are omitted
-# - norm_test_by_group: test normality within each stratum
+- `num_to_factor`: numeric variables with <= this many unique values become factors
+- `omit_factor_above`: factors with > this many levels are omitted
+- `norm_test_by_group`: test normality within each stratum
 
+```{r customize-var-types}
 var_types_custom <- get_var_types(
   cancer, 
   strata = "sex",
@@ -158,20 +167,15 @@ knitr::kable(var_custom_summary, caption = "Custom Variable Classification")
 
 ### Visual Inspection with QQ Plots
 
-Sometimes automatic normality tests may not align with visual inspection. You can save QQ plots for manual review:
+Sometimes automatic normality tests may not align with visual inspection. You can save QQ plots for manual review. The QQ plots are saved in the specified folder for manual inspection.
 
 ```{r save-qqplots, eval = FALSE}
-# # Save QQ plots for manual review
-# # Sometimes automatic normality tests may not align with visual inspection
-# # Saving QQ plots allows you to verify the classification
 # var_types_with_plots <- get_var_types(
 #   cancer,
 #   strata = "sex",
 #   save_qqplots = TRUE,
 #   folder_name = "qqplots_review"
 # )
-# 
-# # The QQ plots are saved in the specified folder for manual inspection
 ```
 
 ## Creating Baseline Tables
@@ -184,19 +188,12 @@ The `baseline_table()` function automatically:
 - Calculates p-values for group comparisons
 
 ```{r basic-baseline}
-# Create baseline table
-# The baseline_table() function automatically:
-# - Selects appropriate summary statistics (mean/SD vs median/IQR)
-# - Chooses appropriate statistical tests (t-test vs Mann-Whitney vs Chi-square vs Fisher)
-# - Calculates p-values for group comparisons
-
 baseline_result <- baseline_table(
   cancer,
   var_types = var_types,
   save_table = FALSE
 )
 
-# View the baseline table
 knitr::kable(baseline_result$baseline, caption = "Baseline Characteristics by Sex")
 ```
 
@@ -205,10 +202,6 @@ knitr::kable(baseline_result$baseline, caption = "Baseline Characteristics by Se
 When there are more than 2 groups, pairwise comparisons are automatically generated. This is useful for studies with multiple treatment arms or disease stages.
 
 ```{r multi-group}
-# Create baseline table with 3+ groups
-# When there are more than 2 groups, pairwise comparisons are automatically generated
-# This is useful for studies with multiple treatment arms or disease stages
-
 data(cancer, package = "survival")
 cancer$ph.ecog_cat <- factor(cancer$ph.ecog,
                              levels = c(0:3),
@@ -223,26 +216,29 @@ baseline_multi <- baseline_table(
   multiple_comparison_test = TRUE,
   p_adjust_method = "BH"  # Benjamini-Hochberg adjustment for multiple comparisons
 )
+```
 
-# View main baseline table
+View main baseline table:
+
+```{r multi-group-main}
 knitr::kable(baseline_multi$baseline, caption = "Baseline Characteristics by ECOG Status")
+```
 
-# View pairwise comparison results
+View pairwise comparison results:
+
+```{r multi-group-pairwise}
 knitr::kable(baseline_multi$pairwise, caption = "Pairwise Comparison P-values")
 ```
 
 ### Customizing the Baseline Table
 
 You can customize various aspects of the table:
+- Select specific variables to include
+- Add standardized mean differences (SMD) - useful for propensity score studies
+- Handle missing strata values
+- Set seed for reproducible Fisher's exact test simulations
 
 ```{r customize-baseline}
-# Customize the baseline table output
-# You can:
-# - Select specific variables to include
-# - Add standardized mean differences (SMD) - useful for propensity score studies
-# - Handle missing strata values
-# - Set seed for reproducible Fisher's exact test simulations
-
 baseline_custom <- baseline_table(
   cancer,
   var_types = var_types,
@@ -260,10 +256,6 @@ knitr::kable(baseline_custom$baseline, caption = "Customized Baseline Table")
 The missing data table shows the pattern of missing data by group. This is important for assessing potential bias from missing data.
 
 ```{r missing-table}
-# The missing data table is included in the results
-# This shows the pattern of missing data by group
-# Important for assessing potential bias from missing data
-
 knitr::kable(baseline_result$missing, caption = "Missing Data Summary")
 ```
 
@@ -274,18 +266,6 @@ knitr::kable(baseline_result$missing, caption = "Missing Data Summary")
 Understanding the distribution of your continuous variables helps determine the appropriate summary statistics:
 
 ```{r normality-testing}
-# Test normality for a single variable
-# The test_normality() function uses multiple tests:
-# - Shapiro-Wilk test
-# - Lilliefors test  
-# - Anderson-Darling test
-# - Jarque-Bera test
-# - Shapiro-Francia test
-
-# Check distribution characteristics using basic statistics
-age_data <- cancer$age
-wtloss_data <- cancer$wt.loss
-
 # Simple skewness calculation (without moments package)
 calc_skewness <- function(x) {
   x <- na.omit(x)
@@ -296,6 +276,9 @@ calc_skewness <- function(x) {
 }
 
 # Check distribution characteristics
+age_data <- cancer$age
+wtloss_data <- cancer$wt.loss
+
 norm_check <- data.frame(
   Variable = c("age", "wt.loss"),
   Mean = c(mean(age_data, na.rm = TRUE), mean(wtloss_data, na.rm = TRUE)),
@@ -311,18 +294,13 @@ knitr::kable(norm_check, caption = "Distribution Characteristics")
 
 ### Adaptive Alpha for Large Samples
 
-With large samples, normality tests become too sensitive and may reject normality even for approximately normal distributions. The package uses an adaptive alpha that decreases with sample size:
+With large samples, normality tests become too sensitive and may reject normality even for approximately normal distributions. The package uses an adaptive alpha that decreases with sample size.
+
+The alpha adjustment formula used in clinpubr:
+- For n < 100: alpha = 0.05
+- For n >= 100: alpha = 10^(-exp((log10(n) - 2) * 2 + log(-log10(0.05))))
 
 ```{r adaptive-alpha}
-# With small samples (n < 100), alpha = 0.05
-# With larger samples, alpha decreases according to an empirical formula
-# This addresses the problem that normality tests become too sensitive
-# with large sample sizes
-
-# The alpha adjustment formula used in clinpubr:
-# For n < 100: alpha = 0.05
-# For n >= 100: alpha = 10^(-exp((log10(n) - 2) * 2 + log(-log10(0.05))))
-
 alpha_by_n <- function(n) {
   if (n < 100) {
     return(0.05)
@@ -343,10 +321,6 @@ knitr::kable(alpha_demo, caption = "Adaptive Alpha by Sample Size")
 Sometimes you may want to override automatic classification based on clinical knowledge:
 
 ```{r manual-override}
-# Manually specify variable types
-# Sometimes you may want to override automatic classification
-# For example, when clinical knowledge suggests a different approach
-
 baseline_manual <- baseline_table(
   cancer,
   strata = "sex",
@@ -360,35 +334,29 @@ knitr::kable(baseline_manual$baseline, caption = "Baseline Table with Manual Ove
 
 ## Saving Results
 
-You can save all tables to files for further editing or submission:
+You can save all tables to files for further editing or submission. This creates three files:
+- baseline_characteristics.csv (main table)
+- baseline_characteristics_missing.csv (missing data table)
+- baseline_characteristics_pairwise.csv (pairwise comparisons, if applicable)
 
 ```{r save-results, eval = FALSE}
-# # Save all tables to files
 # baseline_saved <- baseline_table(
 #   cancer,
 #   var_types = var_types,
 #   save_table = TRUE,
 #   filename = "baseline_characteristics.csv"
 # )
-# 
-# # This creates three files:
-# # - baseline_characteristics.csv (main table)
-# # - baseline_characteristics_missing.csv (missing data table)
-# # - baseline_characteristics_pairwise.csv (pairwise comparisons, if applicable)
 ```
 
 ## Complete Workflow
 
 Here's a complete workflow from data preparation to final table:
 
-```{r complete-workflow}
-# Complete workflow from data preparation to final table
-# This demonstrates best practices for creating publication-ready tables
+Step 1: Prepare your data. Clean and prepare variables with clear, descriptive labels:
 
-# Step 1: Prepare your data
+```{r complete-workflow-step1}
 data(cancer, package = "survival")
 
-# Clean and prepare variables with clear, descriptive labels
 cancer_clean <- cancer %>%
   mutate(
     # Create categorical variables with descriptive labels
@@ -403,17 +371,21 @@ cancer_clean <- cancer %>%
     # Ensure proper factor levels for sex with descriptive labels
     sex = factor(sex, labels = c("Male", "Female"))
   )
+```
 
-# Step 2: Determine variable types
-# This step is crucial for ensuring appropriate statistical methods
+Step 2: Determine variable types. This step is crucial for ensuring appropriate statistical methods:
+
+```{r complete-workflow-step2}
 var_types <- get_var_types(
   cancer_clean,
   strata = "sex",
   num_to_factor = 5  # Be conservative with factor classification
 )
+```
 
-# Step 3: Review variable classification (optional but recommended)
-# This helps catch any misclassifications before generating the final table
+Step 3: Review variable classification (optional but recommended). This helps catch any misclassifications before generating the final table:
+
+```{r complete-workflow-step3}
 var_review <- data.frame(
   Variable_Type = c("Factor", "Non-normal", "Exact"),
   Variables = c(
@@ -423,16 +395,22 @@ var_review <- data.frame(
   )
 )
 knitr::kable(var_review, caption = "Variable Type Review")
+```
 
-# Step 4: Create baseline table with all recommended options
+Step 4: Create baseline table with all recommended options:
+
+```{r complete-workflow-step4}
 baseline_final <- baseline_table(
   cancer_clean,
   var_types = var_types,
   smd = TRUE,                      # Include SMD for balance assessment
   multiple_comparison_test = TRUE  # Enable pairwise comparisons if applicable
 )
+```
 
-# Step 5: Review results
+Step 5: Review results:
+
+```{r complete-workflow-step5}
 knitr::kable(baseline_final$baseline, caption = "Final Baseline Characteristics Table")
 knitr::kable(baseline_final$missing, caption = "Final Missing Data Summary")
 ```

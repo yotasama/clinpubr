@@ -9,13 +9,13 @@ vignette: >
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  fig.width = 7,
-  fig.height = 5,
-  warning = FALSE,
-  message = FALSE,
-  error = TRUE
+    collapse = TRUE,
+    comment = "#>",
+    fig.width = 7,
+    fig.height = 5,
+    warning = FALSE,
+    message = FALSE,
+    error = TRUE
 )
 ```
 
@@ -68,52 +68,45 @@ Clinical studies must document how the final analysis cohort was derived. This i
 
 The `exclusion_count()` function creates a standardized flow diagram automatically.
 
-```{r cohort-screening}
-# Create sample multi-table data representing a typical EHR structure
-# In real studies, these might come from different database tables
+First, create sample multi-table data representing a typical EHR structure. In real studies, these might come from different database tables.
 
+```{r cohort-screening-setup}
 set.seed(123)
 
 # Patient demographics table
 patients <- data.frame(
-  patient_id = 1:100,
-  age = round(rnorm(100, 60, 15)),
-  gender = sample(c("M", "F"), 100, replace = TRUE),
-  enrollment_date = Sys.Date() - sample(1:365, 100, replace = TRUE),
-  has_baseline_data = sample(c(TRUE, FALSE), 100, prob = c(0.9, 0.1), replace = TRUE),
-  meets_inclusion = sample(c(TRUE, FALSE), 100, prob = c(0.8, 0.2), replace = TRUE),
-  complete_followup = sample(c(TRUE, FALSE), 100, prob = c(0.85, 0.15), replace = TRUE),
-  stringsAsFactors = FALSE
+    patient_id = 1:100,
+    age = round(rnorm(100, 60, 15)),
+    gender = sample(c("M", "F"), 100, replace = TRUE),
+    enrollment_date = Sys.Date() - sample(1:365, 100, replace = TRUE),
+    has_baseline_data = sample(c(TRUE, FALSE), 100, prob = c(0.9, 0.1), replace = TRUE),
+    meets_inclusion = sample(c(TRUE, FALSE), 100, prob = c(0.8, 0.2), replace = TRUE),
+    complete_followup = sample(c(TRUE, FALSE), 100, prob = c(0.85, 0.15), replace = TRUE),
+    stringsAsFactors = FALSE
 )
+```
 
-# View initial cohort
+View the initial cohort:
+
+```{r cohort-screening-view}
 cat("Initial cohort:", nrow(patients), "patients\n")
-knitr::kable(head(patients[, c("patient_id", "age", "gender", "has_baseline_data")]), 
-             caption = "Sample of Initial Cohort Data")
+knitr::kable(head(patients),
+    caption = "Sample of Initial Cohort Data"
+)
 ```
 
 ### Multi-stage Cohort Screening
 
-Apply multiple criteria sequentially and track exclusions at each stage:
+Apply multiple criteria sequentially and track exclusions at each stage. The `exclusion_count()` function creates a CONSORT-style flow diagram automatically.
 
 ```{r multi-stage-screening}
-# Track exclusions using exclusion_count
-# This creates a CONSORT-style flow diagram automatically
-
 exclusion_summary <- exclusion_count(
-  patients,
-  age < 50,                          # Age criterion: adults >= 50
-  gender != "M",                     # Gender criterion: male only
-  !has_baseline_data,                # Data completeness
-  !meets_inclusion,                  # Study-specific inclusion
-  !complete_followup,                # Follow-up completeness
-  .criteria_names = c(
-    "Age < 50 years",
-    "Not male",
-    "Missing baseline data",
-    "Does not meet inclusion criteria",
-    "Incomplete follow-up"
-  )
+    patients,
+    age < 50, # Age criterion: adults >= 50
+    gender != "M", # Gender criterion: male only
+    !has_baseline_data, # Data completeness
+    !meets_inclusion, # Study-specific inclusion
+    !complete_followup # Follow-up completeness
 )
 
 knitr::kable(exclusion_summary, caption = "CONSORT-Style Cohort Flow")
@@ -128,8 +121,9 @@ The `exclusion_count()` output shows:
 - **Excluded**: Number of patients excluded at each step
 - **Criteria**: Description of the exclusion criterion
 
+Calculate retention statistics:
+
 ```{r screening-summary}
-# Calculate retention statistics
 initial_n <- exclusion_summary$N[1]
 final_n <- exclusion_summary$N[nrow(exclusion_summary)]
 retention_rate <- round(100 * final_n / initial_n, 1)
@@ -143,20 +137,19 @@ cat("Retention rate:", retention_rate, "%\n")
 
 ### Customizing Exclusion Criteria
 
-You can customize the exclusion criteria to match your specific study needs:
+You can customize the exclusion criteria to match your specific study needs. Here is an example for an age-restricted study with different criteria:
 
 ```{r exclusion-custom}
-# Example: Age-restricted study with different criteria
 exclusion_flow <- exclusion_count(
-  patients,
-  age < 18 | age > 80,               # Age range criterion
-  !has_baseline_data,                # Data completeness
-  !meets_inclusion,                  # Study-specific inclusion
-  .criteria_names = c(
-    "Age outside 18-80 range",
-    "Missing baseline data",
-    "Does not meet inclusion criteria"
-  )
+    patients,
+    age < 18 | age > 80, # Age range criterion
+    !has_baseline_data, # Data completeness
+    !meets_inclusion, # Study-specific inclusion
+    .criteria_names = c(
+        "Age outside 18-80 range",
+        "Missing baseline data",
+        "Does not meet inclusion criteria"
+    )
 )
 
 knitr::kable(exclusion_flow, caption = "Custom Exclusion Flow")
@@ -171,7 +164,7 @@ In real-world data, exact matching is often impossible. For example:
 - **Medication names**: Brand names vs generic names, or different abbreviations
 - **Procedure descriptions**: Varying levels of detail in procedure notes
 
-The `merge_by_substring()` function enables fuzzy matching based on text similarity.
+The `merge_by_substring()` function enables matching based on substring containment. It checks if the `search_col` string contains the `key_col` string as a substring.
 
 ```{r merge-substring}
 # Example: Mapping free-text diagnoses to standardized ICD codes
@@ -179,7 +172,7 @@ The `merge_by_substring()` function enables fuzzy matching based on text similar
 
 # Standard reference table (e.g., from a coding system)
 medical_terms <- data.frame(
-  term = c("Diabetes Mellitus Type 2", "Hypertension", "Coronary Artery Disease",
+  term = c("Type 2 Diabetes", "Hypertension", "Coronary Artery Disease",
            "Chronic Kidney Disease", "Heart Failure", "Atrial Fibrillation"),
   icd_code = c("E11", "I10", "I25", "N18", "I50", "I48"),
   category = c("Endocrine", "Cardiovascular", "Cardiovascular", 
@@ -191,25 +184,31 @@ medical_terms <- data.frame(
 patient_diagnoses <- data.frame(
   patient_id = 1:10,
   diagnosis_text = c(
-    "Type 2 Diabetes Mellitus",           # Exact match conceptually, different word order
-    "Essential Hypertension",              # Partial match
-    "CAD - Coronary Artery Disease",       # Abbreviation + full text
-    "CKD Stage 3",                         # Abbreviation
-    "Congestive Heart Failure",            # Synonym
-    "Diabetes Type 2",                     # Different word order
-    "Hypertensive disease",                # Different terminology
-    "Coronary disease",                    # Partial match
-    "Kidney disease chronic",              # Different word order
-    "Heart failure chronic"                # Different word order
+    "Severe Type 2 Diabetes",              # "Type 2 Diabetes" is substring
+    "Type 2 Diabetes Mellitus",            # "Type 2 Diabetes" is substring
+    "Type 2 Diabetes with Complications",  # "Type 2 Diabetes" is substring
+    "Essential Hypertension",              # "Hypertension" is substring
+    "Hypertensive disease",                # "Hypertension" is substring
+    "CAD - Coronary Artery Disease",       # "Coronary Artery Disease" is substring
+    "Coronary disease",                    # Partial match - may not work
+    "CKD Stage 3",                         # "Chronic Kidney Disease" not substring
+    "Congestive Heart Failure",            # "Heart Failure" is substring
+    "Heart failure chronic"                # "Heart Failure" is substring (case insensitive)
   ),
   stringsAsFactors = FALSE
 )
+```
 
-# Show the challenge: free-text vs standardized codes
+Show the challenge: free-text vs standardized codes:
+
+```{r merge-substring-view}
 cat("Sample diagnosis mapping challenge:\n")
-knitr::kable(head(patient_diagnoses, 5), caption = "Free-Text Diagnoses (Before Mapping)")
+knitr::kable(patient_diagnoses, caption = "Free-Text Diagnoses (Before Mapping)")
+```
 
-# Merge by substring matching
+Merge by substring matching:
+
+```{r merge-substring-apply}
 merged_substring <- merge_by_substring(
   data = patient_diagnoses,
   key_df = medical_terms,
@@ -220,8 +219,11 @@ merged_substring <- merge_by_substring(
 
 cat("\nAfter substring matching:\n")
 knitr::kable(head(merged_substring), caption = "Diagnoses with Mapped ICD Codes")
+```
 
-# Summary of mapping success
+Summary of mapping success:
+
+```{r merge-substring-summary}
 mapping_summary <- data.frame(
   Metric = c("Total records", "Successfully mapped", "Mapping rate (%)"),
   Value = c(
@@ -240,52 +242,63 @@ In longitudinal studies, we often need to match events that occurred within spec
 - **Medication dispensing**: Link prescriptions to clinic visits
 - **Adverse events**: Associate side effects with treatment periods
 
-```{r merge-range}
-# Example: Match lab results to hospital visits
-# This is common when analyzing inpatient data
+First, create patient visit records (admission and discharge dates):
 
-# Patient visit records (admission and discharge dates)
+```{r merge-range-visits}
 patient_visits <- data.frame(
-  patient_id = rep(1:3, each = 2),
-  visit_id = 1:6,
-  visit_start = as.Date(c("2023-01-01", "2023-06-01",
-                          "2023-02-01", "2023-07-01",
-                          "2023-03-01", "2023-08-01")),
-  visit_end = as.Date(c("2023-01-10", "2023-06-10",
-                        "2023-02-10", "2023-07-10",
-                        "2023-03-10", "2023-08-10")),
-  visit_type = c("Admission", "Follow-up", "Admission", "Follow-up", 
-                 "Admission", "Follow-up"),
-  stringsAsFactors = FALSE
+    patient_id = rep(1:3, each = 2),
+    visit_id = 1:6,
+    visit_start = as.Date(c(
+        "2023-01-01", "2023-06-01",
+        "2023-02-01", "2023-07-01",
+        "2023-03-01", "2023-08-01"
+    )),
+    visit_end = as.Date(c(
+        "2023-01-10", "2023-06-10",
+        "2023-02-10", "2023-07-10",
+        "2023-03-10", "2023-08-10"
+    )),
+    visit_type = c(
+        "Admission", "Follow-up", "Admission", "Follow-up",
+        "Admission", "Follow-up"
+    ),
+    stringsAsFactors = FALSE
 )
 
-# Lab results with collection dates
-lab_results <- data.frame(
-  lab_id = 1:6,
-  patient_id = c(1, 1, 2, 2, 3, 3),
-  test_date = as.Date(c("2023-01-05", "2023-06-05",
-                        "2023-02-03", "2023-07-08",
-                        "2023-03-15", "2023-08-05")),
-  test_name = c("Glucose", "HbA1c", "Glucose", "Creatinine", "Glucose", "Lipid panel"),
-  result = round(rnorm(6, 100, 15), 1),
-  stringsAsFactors = FALSE
-)
-
-# Show the data before merging
 cat("Patient visits:\n")
 knitr::kable(patient_visits, caption = "Hospital Visits")
+```
+
+Create lab results with collection dates:
+
+```{r merge-range-labs}
+lab_results <- data.frame(
+    lab_id = 1:6,
+    patient_id = c(1, 1, 2, 2, 3, 3),
+    test_date = as.Date(c(
+        "2023-01-05", "2023-06-05",
+        "2023-02-03", "2023-07-08",
+        "2023-03-15", "2023-08-05"
+    )),
+    test_name = c("Glucose", "HbA1c", "Glucose", "Creatinine", "Glucose", "Lipid panel"),
+    result = round(rnorm(6, 100, 15), 1),
+    stringsAsFactors = FALSE
+)
 
 cat("\nLab results:\n")
 knitr::kable(lab_results, caption = "Laboratory Results")
+```
 
-# Merge by range: find lab results within each visit window
+Merge by range: find lab results within each visit window:
+
+```{r merge-range-apply}
 merged_range <- merge_by_range(
-  x = patient_visits,
-  y = lab_results,
-  by = "patient_id",
-  x_start = "visit_start",
-  x_end = "visit_end",
-  y_val = "test_date"
+    x = patient_visits,
+    y = lab_results,
+    by = "patient_id",
+    x_start = "visit_start",
+    x_end = "visit_end",
+    y_val = "test_date"
 )
 
 cat("\nMatched lab results to visits:\n")
@@ -303,25 +316,29 @@ Clinical data is often stored in long format (one row per measurement), but many
 - **Change score calculations**: Baseline vs follow-up comparisons
 - **Pattern identification**: Visualizing trajectories across visits
 
-```{r to-wide}
-# Create long-format lab data (typical EHR structure)
+Create long-format lab data (typical EHR structure):
+
+```{r to-wide-setup}
 long_labs <- data.frame(
-  patient_id = rep(1:5, each = 3),
-  visit = rep(1:3, 5),
-  test = rep(c("glucose", "creatinine", "cholesterol"), 5),
-  value = round(rnorm(15, 100, 20), 1),
-  stringsAsFactors = FALSE
+    patient_id = rep(1:5, each = 3),
+    visit = c(1, 2, 1, 2, 1, 2, 2, 2, 2, 1, 2, 2, 1, 1, 1),
+    test = rep(c("glucose", "creatinine", "cholesterol"), 5),
+    value = round(rnorm(15, 100, 20), 1),
+    stringsAsFactors = FALSE
 )
 
 cat("Long format (typical EHR structure):\n")
 knitr::kable(head(long_labs, 8), caption = "Laboratory Data - Long Format")
+```
 
-# Convert to wide format for analysis
+Convert to wide format for analysis:
+
+```{r to-wide-apply}
 wide_labs <- to_wide(
-  df = long_labs,
-  keys = c("patient_id", "visit"),
-  item_col = "test",
-  value_col = "value"
+    df = long_labs,
+    keys = c("patient_id", "visit"),
+    item_col = "test",
+    value_col = "value"
 )
 
 cat("\nWide format (for analysis):\n")
@@ -330,98 +347,106 @@ knitr::kable(head(wide_labs), caption = "Laboratory Data - Wide Format")
 
 ### Working with Multi-choice Data
 
-Survey data and clinical assessments often use multi-choice questions (e.g., "Select all symptoms that apply"). These need special handling:
+Survey data and clinical assessments often use multi-choice questions (e.g., "Select all symptoms that apply"). These need special handling.
 
-```{r multichoice-advanced}
-# Create complex multi-choice survey data
-# Common in patient-reported outcomes and symptom assessments
+Create complex multi-choice survey data (common in patient-reported outcomes and symptom assessments):
+
+```{r multichoice-advanced-setup}
 set.seed(456)
 survey_data <- data.frame(
-  respondent_id = 1:20,
-  symptoms = sapply(1:20, function(x) {
-    paste(sample(c("fever", "cough", "headache", "fatigue", "nausea"), 
-                 sample(1:3, 1)), collapse = ",")
-  }),
-  comorbidities = sapply(1:20, function(x) {
-    paste(sample(c("diabetes", "hypertension", "asthma", "none"), 
-                 sample(1:2, 1)), collapse = ",")
-  }),
-  stringsAsFactors = FALSE
+    id = 1:20,
+    symptoms = sapply(1:20, function(x) {
+        paste(sample(
+            c("fever", "cough", "headache", "fatigue"),
+            sample(1:4, 1)
+        ), collapse = ",")
+    }),
+    comorbidities = sapply(1:20, function(x) {
+        paste(sample(
+            c("diabetes", "hypertension"),
+            sample(1:2, 1)
+        ), collapse = ",")
+    }),
+    stringsAsFactors = FALSE
 )
 
 cat("Original multi-choice format:\n")
 knitr::kable(head(survey_data), caption = "Multi-Choice Survey Data")
+```
 
-# Split multi-choice columns into binary indicators
-# This creates one column per option (TRUE/FALSE)
+Split multi-choice columns into binary indicators. This creates one column per option (TRUE/FALSE):
+
+```{r multichoice-split}
 symptoms_split <- split_multichoice(
-  survey_data,
-  quest_cols = c("symptoms", "comorbidities"),
-  split = ",",
-  remove_space = FALSE
+    survey_data,
+    quest_cols = c("symptoms", "comorbidities"),
+    split = ",",
+    remove_space = FALSE
 )
 
 cat("\nAfter splitting (binary indicators):\n")
 knitr::kable(head(symptoms_split), caption = "Split Multi-Choice Data")
+```
 
-# Combine related symptoms into composite variables
-# Useful for creating clinically meaningful groupings
+Combine related symptoms into composite variables. This is useful for creating clinically meaningful groupings:
+
+```{r multichoice-combine}
 combined <- combine_multichoice(
-  symptoms_split,
-  quest_cols = list(
-    respiratory = c("symptoms_cough", "symptoms_fatigue"),
-    systemic = c("symptoms_fever", "symptoms_headache")
-  ),
-  sep = ","
+    symptoms_split,
+    quest_cols = list(
+        respiratory = c("symptoms_cough", "symptoms_fatigue"),
+        systemic = c("symptoms_fever", "symptoms_headache")
+    ),
+    sep = ","
 )
 
 cat("\nCombined symptom groups:\n")
-knitr::kable(head(data.frame(
-  respondent_id = symptoms_split$respondent_id,
-  respiratory_symptoms = combined$respiratory,
-  systemic_symptoms = combined$systemic
-)), caption = "Combined Symptom Groups")
+knitr::kable(head(combined), caption = "Combined Symptom Groups")
 ```
 
 ## Utility Functions
 
 ### String Manipulation for Data Standardization
 
-```{r string-utils}
-# Find common prefix in file names
-# Useful when processing batches of files with similar naming
+Find common prefix in file names. This is useful when processing batches of files with similar naming:
+
+```{r string-utils-prefix}
 file_names <- c("patient_001_lab.csv", "patient_001_visit.csv", "patient_001_demo.csv")
 common_prefix(file_names)
+```
 
-# Standardize test names across different lab systems
-# Different labs may use different naming conventions
+Standardize test names across different lab systems. Different labs may use different naming conventions:
+
+```{r string-utils-replace}
 test_names <- c("Glucose_Fasting", "Glucose_Random", "Cholesterol_Total", "LDL_Calculated")
 standardized_names <- str_match_replace(
-  x = test_names,
-  to_match = c("Glucose", "Cholesterol", "LDL"),
-  to_replace = c("GLU", "CHOL", "LDL_CHOL")
+    x = test_names,
+    to_match = c("Glucose", "Cholesterol", "LDL"),
+    to_replace = c("GLU", "CHOL", "LDL_CHOL")
 )
 
 knitr::kable(data.frame(
-  Original = test_names,
-  Standardized = standardized_names
+    Original = test_names,
+    Standardized = standardized_names
 ), caption = "Test Name Standardization")
 ```
 
 ### List Operations for Complex Data Structures
 
-```{r list-ops}
-# Add lists element-wise
-# Useful for aggregating counts across multiple categories
+Add lists element-wise. This is useful for aggregating counts across multiple categories:
+
+```{r list-ops-add}
 list1 <- list(diabetes = 10, hypertension = 20, asthma = 5)
 list2 <- list(diabetes = 15, hypertension = 25, asthma = 8)
 combined_counts <- add_lists(list1, list2)
 
 cat("Combined condition counts:\n")
 print(combined_counts)
+```
 
-# Merge ordered vectors preserving order
-# Useful for creating master lists of medications or diagnoses
+Merge ordered vectors preserving order. This function was created to combine survey data from slightly varied versions:
+
+```{r list-ops-merge}
 site1_conditions <- c("Diabetes", "Hypertension", "Heart Failure", "CKD")
 site2_conditions <- c("Hypertension", "COPD", "Diabetes", "Cancer")
 site3_conditions <- c("CKD", "Diabetes", "Stroke", "Hypertension")
@@ -431,148 +456,187 @@ cat("\nMaster condition list (ordered by first appearance):\n")
 print(master_list)
 ```
 
-### Data Frame Operations
+Replace elements based on conditions. This function was created to modify a small portion of elements:
 
-```{r df-ops}
-# Replace elements based on conditions
-# Common for recoding categorical variables
+```{r list-ops-replace}
 sample_data <- data.frame(
-  group = c("A", "B", "A", "C", "B"),
-  value = c(1, 2, 3, 4, 5),
-  stringsAsFactors = FALSE
+    group = c("A", "B", "A", "C", "B"),
+    value = c(1, 2, 3, 4, 5),
+    stringsAsFactors = FALSE
 )
 
 # Recode groups to descriptive labels
 recoded <- replace_elements(
-  x = sample_data$group,
-  from = c("A", "B", "C"),
-  to = c("Control", "Treatment", "Placebo")
+    x = sample_data$group,
+    from = c("A", "B", "C"),
+    to = c("Control", "Treatment", "Placebo")
 )
 
 cat("Original vs recoded:\n")
 knitr::kable(data.frame(
-  Original = sample_data$group,
-  Recoded = recoded
+    Original = sample_data$group,
+    Recoded = recoded
 ), caption = "Group Recoding")
+```
 
-# Fill NA values with last valid value
-# Useful for carrying forward last observation in longitudinal data
+### Data Frame Operations
+
+Fill NA values with last valid value. This function is commonly used to handle merged cells in Excel files - when cells are merged in Excel and read into R, the merged cells become NA and can be filled using this function:
+
+```{r df-ops-fill}
 time_series <- c(120, NA, NA, 125, NA, 130, NA, NA)
 filled_series <- fill_with_last(time_series)
 
 cat("\nMissing data imputation (LOCF):\n")
 knitr::kable(data.frame(
-  Original = time_series,
-  Filled = filled_series
+    Original = time_series,
+    Filled = filled_series
 ), caption = "Last Observation Carried Forward")
 ```
 
 ## Complete Data Processing Workflow
 
-Here's a comprehensive workflow combining multiple advanced operations for a realistic clinical research scenario:
+Here's a comprehensive workflow combining multiple advanced operations for a realistic clinical research scenario. This workflow demonstrates how to use `screen_data_list()` to filter and join multiple tables based on clinical criteria.
 
-```{r complete-workflow}
-# Scenario: Building an analysis cohort for a diabetes study
-# Data sources: Demographics, visits, labs from different EHR tables
+### Scenario: Building an Analysis Cohort for a Multi-Table Diabetes Study
 
+Data sources: Patient demographics, admissions, diagnoses, and labs from different EHR tables.
+
+First, create sample multi-source clinical data:
+
+```{r workflow-setup}
 cat("=== Clinical Data Processing Workflow ===\n\n")
-
-# Step 1: Create sample multi-source clinical data
 cat("Step 1: Creating sample multi-source clinical data...\n")
 
-# Demographics table
-demographics <- data.frame(
-  patient_id = 1:50,
-  age = sample(25:75, 50, replace = TRUE),
-  gender = sample(c("M", "F"), 50, replace = TRUE),
-  enrollment_date = Sys.Date() - sample(1:365, 50, replace = TRUE),
-  has_baseline_data = sample(c(TRUE, FALSE), 50, prob = c(0.9, 0.1), replace = TRUE),
-  meets_inclusion = sample(c(TRUE, FALSE), 50, prob = c(0.8, 0.2), replace = TRUE),
-  stringsAsFactors = FALSE
+# Patient demographics table
+patient <- data.frame(
+    pid = 1:50,
+    age = sample(25:75, 50, replace = TRUE),
+    gender = sample(c("M", "F"), 50, replace = TRUE),
+    stringsAsFactors = FALSE
 )
 
-# Visits table (some patients have multiple visits)
-visits <- data.frame(
-  visit_id = 1:150,
-  patient_id = sample(1:50, 150, replace = TRUE),
-  visit_date = Sys.Date() - sample(1:200, 150, replace = TRUE),
-  bp_systolic = round(rnorm(150, 130, 15)),
-  bp_diastolic = round(rnorm(150, 85, 10)),
-  stringsAsFactors = FALSE
+# Admission records
+admission <- data.frame(
+    pid = c(1, 1, 2, 2, 3, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
+    vid = 101:115,
+    admit_day = c(1, 30, 5, 45, 10, 60, 15, 20, 25, 35, 40, 50, 55, 65, 70),
+    stringsAsFactors = FALSE
 )
 
-# Lab results table
-labs <- data.frame(
-  lab_id = 1:200,
-  patient_id = sample(1:50, 200, replace = TRUE),
-  collection_date = Sys.Date() - sample(1:180, 200, replace = TRUE),
-  test_type = sample(c("glucose", "hba1c", "creatinine", "ldl"), 200, replace = TRUE),
-  result = round(rnorm(200, 100, 25), 2),
-  stringsAsFactors = FALSE
+# Diagnosis records
+diagnosis <- data.frame(
+    pid = c(1, 1, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
+    vid = c(101, 102, 103, 104, 105, 107, 108, 109, 110, 111, 112, 113, 114, 115),
+    dx_day = c(1, 30, 5, 45, 10, 15, 20, 25, 35, 40, 50, 55, 65, 70),
+    icd = c("E11", "I10", "E11", "N18", "E11", "I25", "E11", "J18", "E11", "I10", "E11", "N18", "E11", "I50"),
+    stringsAsFactors = FALSE
+)
+
+# Lab results
+lab <- data.frame(
+    pid = c(1, 1, 2, 2, 3, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
+    vid = c(101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115),
+    lab_day = c(1, 30, 5, 45, 10, 60, 15, 20, 25, 35, 40, 50, 55, 65, 70),
+    HbA1c = c(8.5, 7.2, 9.1, 7.8, 8.0, 6.9, 7.5, 8.2, 7.0, 9.5, 7.8, 8.1, 7.3, 8.8, 7.6),
+    stringsAsFactors = FALSE
 )
 
 cat("Data sources created:\n")
-cat("- Demographics:", nrow(demographics), "patients\n")
-cat("- Visits:", nrow(visits), "records\n")
-cat("- Labs:", nrow(labs), "results\n")
+cat("- Patients:", nrow(patient), "patients\n")
+cat("- Admissions:", nrow(admission), "records\n")
+cat("- Diagnoses:", nrow(diagnosis), "records\n")
+cat("- Labs:", nrow(lab), "results\n")
+```
 
-# Step 2: Screen for eligible patients with CONSORT-style tracking
-cat("\nStep 2: Screening for eligible patients with exclusion tracking...\n")
+### Step 2: Screen Data Using Clinical Criteria
 
-final_cohort <- exclusion_count(
-  demographics,
-  age < 40,                          # Age criterion
-  !has_baseline_data,                # Data completeness
-  !meets_inclusion,                  # Study-specific inclusion
-  .criteria_names = c(
-    "Age < 40 years",
-    "Missing baseline data",
-    "Does not meet inclusion criteria"
-  )
+Use `screen_data_list()` to filter the multi-table dataset. This example selects patients with diabetes (ICD code E11) and keeps only records from their first diabetes diagnosis onward:
+
+```{r workflow-screen}
+cat("\nStep 2: Screening multi-table data with clinical criteria...\n")
+
+screened_data <- screen_data_list(
+    data_list = list(
+        patient = patient,
+        admission = admission,
+        diagnosis = diagnosis,
+        lab = lab
+    ),
+    # Entry: patients with any diabetes diagnosis
+    entry_expr = any(icd == "E11"),
+    entry_level = "patient_id",
+    # Anchor: keep records from first diabetes diagnosis onward
+    anchor_expr = any(icd == "E11"),
+    anchor_level = "date",
+    anchor_window = "from_first_anchor",
+    # Column mappings
+    patient_id_map = "pid",
+    visit_id_map = c(admission = "vid", diagnosis = "vid", lab = "vid"),
+    date_map = c(admission = "admit_day", diagnosis = "dx_day", lab = "lab_day"),
+    output = "list",
+    return_audit = TRUE
 )
 
-knitr::kable(final_cohort, caption = "Cohort Screening Flow")
+cat("Screening complete. Audit log:\n")
+knitr::kable(screened_data$audit$entry_scope, caption = "Entry Stage Audit")
+knitr::kable(screened_data$audit$anchor_scope, caption = "Anchor Stage Audit")
+```
 
-# Step 3: Merge visits with closest lab results
-cat("\nStep 3: Merging data sources...\n")
+### Step 3: Review Filtered Data
 
-# For each visit, find labs collected within a window
-merged_data <- merge_by_range(
-  x = visits,
-  y = labs,
-  by = "patient_id",
-  x_start = "visit_date",
-  x_end = "visit_date",
-  y_val = "collection_date",
-  suffixes = c("_visit", "_lab")
+Examine the filtered data for each table:
+
+```{r workflow-review}
+cat("\nStep 3: Reviewing filtered data...\n")
+
+cat("\nFiltered patients:")
+knitr::kable(head(screened_data$data$patient), caption = "Filtered Patients")
+
+cat("\nFiltered admissions:")
+knitr::kable(screened_data$data$admission, caption = "Filtered Admissions")
+
+cat("\nFiltered diagnoses:")
+knitr::kable(screened_data$data$diagnosis, caption = "Filtered Diagnoses")
+
+cat("\nFiltered labs:")
+knitr::kable(screened_data$data$lab, caption = "Filtered Labs")
+```
+
+### Alternative: Joined Output
+
+You can also get the output as a joined data frame instead of a list:
+
+```{r workflow-joined}
+cat("\n=== Alternative: Joined Output ===\n")
+
+# For joined output, ensure join keys are unique
+# Create a version with unique keys per table
+admission_unique <- admission %>%
+    mutate(record_id = row_number())
+
+joined_result <- screen_data_list(
+    data_list = list(
+        patient = patient,
+        admission = admission_unique
+    ),
+    entry_expr = any(age > 40),
+    entry_level = "patient_id",
+    patient_id_map = "pid",
+    output = "joined"
 )
 
-cat("Merged records (visits + labs):", nrow(merged_data), "\n")
+cat("Joined data dimensions:", nrow(joined_result), "rows,", ncol(joined_result), "columns\n")
+knitr::kable(head(joined_result), caption = "Joined Output")
+```
 
-# Step 4: Transform to wide format for analysis
-cat("\nStep 4: Transforming data...\n")
+### Workflow Summary
 
-# Summarize labs by patient and test type (average results)
-lab_summary <- labs %>%
-  group_by(patient_id, test_type) %>%
-  summarise(avg_result = mean(result, na.rm = TRUE), .groups = "drop")
-
-# Convert to wide format: one row per patient, columns for each test
-lab_wide <- to_wide(
-  df = lab_summary,
-  keys = "patient_id",
-  item_col = "test_type",
-  value_col = "avg_result"
-)
-
-cat("Wide format dimensions:", nrow(lab_wide), "rows,", ncol(lab_wide), "columns\n")
-knitr::kable(head(lab_wide, 5), caption = "Lab Data - Wide Format Summary")
-
-# Summary statistics
+```{r workflow-summary}
 cat("\n=== Workflow Summary ===\n")
-cat("Initial patients:", nrow(demographics), "\n")
-cat("Final analysis cohort:", final_cohort$N[nrow(final_cohort)], "\n")
-cat("Retention rate:", round(100 * final_cohort$N[nrow(final_cohort)] / nrow(demographics), 1), "%\n")
+cat("Initial patients:", nrow(patient), "\n")
+cat("Patients with diabetes:", nrow(screened_data$data$patient), "\n")
+cat("Retention rate:", round(100 * nrow(screened_data$data$patient) / nrow(patient), 1), "%\n")
 
 cat("\nWorkflow complete!\n")
 ```
@@ -586,7 +650,8 @@ The `clinpubr` package provides powerful tools for advanced data operations esse
 | Function | Clinical Application |
 |----------|---------------------|
 | `exclusion_count()` | CONSORT-style cohort flow documentation |
-| `merge_by_substring()` | Fuzzy matching for diagnosis/procedure coding |
+| `screen_data_list()` | Multi-table cohort screening with clinical criteria |
+| `merge_by_substring()` | Substring matching for diagnosis/procedure coding |
 | `merge_by_range()` | Time-window matching for longitudinal data |
 | `to_wide()` | Format conversion for repeated measures analysis |
 | `split_multichoice()` / `combine_multichoice()` | Survey and symptom data processing |
@@ -595,10 +660,11 @@ The `clinpubr` package provides powerful tools for advanced data operations esse
 ### Best Practices
 
 1. **Document your cohort flow**: Always use `exclusion_count()` to track how your final cohort was derived
-2. **Validate fuzzy matching**: When using `merge_by_substring()`, manually review a sample of matches
-3. **Check time windows**: Ensure your range matching captures the intended temporal relationships
-4. **Handle missing data explicitly**: Don't silently drop missing values - document them
-5. **Standardize early**: Apply string standardization and recoding at the beginning of your workflow
+2. **Use `screen_data_list()` for complex multi-table studies**: It provides audit trails and handles temporal filtering
+3. **Validate substring matching**: When using `merge_by_substring()`, manually review a sample of matches
+4. **Check time windows**: Ensure your range matching captures the intended temporal relationships
+5. **Handle missing data explicitly**: Don't silently drop missing values - document them
+6. **Standardize early**: Apply string standardization and recoding at the beginning of your workflow
 
 ### Common Pitfalls to Avoid
 

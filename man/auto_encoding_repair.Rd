@@ -30,5 +30,27 @@ auto_encoding_repair(c("hello", "world"))
 
 # Full-width characters (UTF-8, no repair needed)
 auto_encoding_repair(c("\uFF11\uFF12\uFF13", "abc"))
+
+# Simulate GBK-encoded Chinese characters that need repair
+# (using iconv to create non-UTF-8 bytes for demonstration)
+if (l10n_info()$"UTF-8") {
+  # Create GBK-encoded bytes from UTF-8 Chinese characters
+  gbk_bytes <- iconv("\u4f60\u597d", from = "UTF-8", to = "GBK")
+  auto_encoding_repair(gbk_bytes)
+}
+
+# Simulate Latin-1 encoded characters
+if (l10n_info()$"UTF-8") {
+  latin1_bytes <- iconv("caf\u00e9", from = "UTF-8", to = "Latin-1")
+  auto_encoding_repair(latin1_bytes)
+}
+
+# Mixed encoding vector (UTF-8 and GBK)
+if (l10n_info()$"UTF-8") {
+  mixed <- c("hello",
+             iconv("\u4e2d\u6587", from = "UTF-8", to = "GBK"),
+             "world")
+  auto_encoding_repair(mixed)
+}
 }
 \keyword{internal}

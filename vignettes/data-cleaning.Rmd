@@ -48,14 +48,9 @@ This vignette demonstrates how to:
 
 ## Creating Realistic Messy Data
 
-To demonstrate the data cleaning workflow, let's create a sample dataset that mimics real-world EHR data with common quality issues:
+To demonstrate the data cleaning workflow, let's create a sample dataset that mimics real-world EHR data with common quality issues. In clinical practice, we often encounter data entry errors, inconsistent formats, and missing values due to various reasons: system migrations, manual entry mistakes, or different data collection protocols across departments.
 
 ```{r create-messy-data}
-# Create a sample messy dataset similar to real-world EHR data
-# In clinical practice, we often encounter data entry errors, inconsistent formats,
-# and missing values due to various reasons: system migrations, manual entry mistakes,
-# or different data collection protocols across departments.
-
 set.seed(123)
 n <- 100
 
@@ -120,7 +115,6 @@ messy_data <- data.frame(
   stringsAsFactors = FALSE
 )
 
-# Show original messy data
 knitr::kable(head(messy_data, 10), caption = "Original Messy Data (First 10 Rows)")
 ```
 
@@ -135,11 +129,9 @@ Notice the various data quality issues in this sample:
 
 ## Data Overview
 
-The first step in data cleaning is understanding what issues exist in your dataset. The `data_overview()` function provides a comprehensive diagnostic report.
+The first step in data cleaning is understanding what issues exist in your dataset. The `data_overview()` function provides a comprehensive diagnostic report. This is the first step in any data cleaning workflow - understand what issues exist.
 
 ```{r data-overview}
-# Get comprehensive data overview
-# This is the first step in any data cleaning workflow - understand what issues exist
 overview <- data_overview(messy_data)
 knitr::kable(overview, caption = "Data Quality Overview")
 ```
@@ -162,14 +154,15 @@ Before handling missing values, it's important to understand their patterns. Mis
 - **MAR (Missing At Random)**: Missingness related to observed data
 - **MNAR (Missing Not At Random)**: Missingness related to the missing values themselves
 
-```{r missing-patterns}
-# Get maximum missing rates
-# Understanding missing data patterns helps determine the best handling strategy
-knitr::kable(max_missing_rates(messy_data), caption = "Missing Data Rates by Variable")
+Understanding missing data patterns helps determine the best handling strategy:
 
-# Get a valid subset using greedy algorithm
-# This finds the largest subset with acceptable missing rates
-# Useful when you need complete case analysis but want to maximize sample size
+```{r missing-patterns}
+knitr::kable(max_missing_rates(messy_data), caption = "Missing Data Rates by Variable")
+```
+
+Get a valid subset using greedy algorithm. This finds the largest subset with acceptable missing rates. Useful when you need complete case analysis but want to maximize sample size:
+
+```{r missing-valid-subset}
 valid_subset <- get_valid_subset(
   messy_data, 
   row_na_ratio = 0.3,  # Allow up to 30% missing per row
@@ -186,11 +179,9 @@ knitr::kable(data.frame(
 
 ### Extracting Valid Values
 
-Sometimes you need to extract non-missing values from specific variables:
+Sometimes you need to extract non-missing values from specific variables. This is useful for extracting reference values or checking data consistency:
 
 ```{r get-valid}
-# Get first valid value from a column
-# Useful for extracting reference values or checking data consistency
 first_valid <- get_valid(messy_data$gender, mode = "first")
 mid_valid <- get_valid(messy_data$gender, mode = "mid")
 last_valid <- get_valid(messy_data$gender, mode = "last")
@@ -211,23 +202,30 @@ The package provides multiple methods for outlier detection. Each method has its
 - **IQR (Interquartile Range)**: Most commonly used in clinical research
 - **Z-score**: Assumes normal distribution, use with caution for skewed data
 
-```{r outlier-detection}
-# Using MAD (Median Absolute Deviation) method
-# MAD is robust to outliers and works well for small samples
+MAD is robust to outliers and works well for small samples:
+
+```{r outlier-detection-mad}
 mad_outliers <- mad_outlier(messy_data$bmi, threshold = 3)
 mad_count <- sum(mad_outliers, na.rm = TRUE)
+```
 
-# Using IQR method
-# IQR is the most commonly used method in clinical research
+IQR is the most commonly used method in clinical research:
+
+```{r outlier-detection-iqr}
 iqr_outliers <- iqr_outlier(messy_data$bmi, threshold = 1.5)
 iqr_count <- sum(iqr_outliers, na.rm = TRUE)
+```
 
-# Using Z-score method
-# Z-score assumes normal distribution - use with caution for skewed data
+Z-score assumes normal distribution - use with caution for skewed data:
+
+```{r outlier-detection-zscore}
 zscore_outliers <- zscore_outlier(messy_data$bmi, threshold = 3)
 zscore_count <- sum(zscore_outliers, na.rm = TRUE)
+```
 
-# Comprehensive outlier detection with detailed output
+Comprehensive outlier detection with detailed output:
+
+```{r outlier-detection-summary}
 outlier_result <- detect_outliers(messy_data$bmi, method = "mad")
 
 knitr::kable(data.frame(
@@ -245,12 +243,10 @@ You can create indicator variables for outliers. This allows you to:
 3. Report how many outliers were handled
 
 ```{r mark-outliers}
-# Mark outliers in the dataset
 clean_data <- messy_data
 outlier_result <- detect_outliers(clean_data$bmi, method = "iqr")
 clean_data$bmi_outlier <- outlier_result$outlier_mask
 
-# View outlier summary
 knitr::kable(data.frame(
   Outlier_Status = c("Not Outlier", "Outlier", "Missing"),
   Count = c(
@@ -265,18 +261,21 @@ knitr::kable(data.frame(
 
 ### Cleaning Numeric Values
 
-Extract and clean numeric values from character strings. This is common when dealing with free-text entries:
+Extract and clean numeric values from character strings. This is common when dealing with free-text entries.
 
-```{r extract-num}
-# Extract numeric values from blood pressure
-# Before extraction: mixed formats with units and text
+Before extraction: mixed formats with units and text:
+
+```{r extract-num-before}
 knitr::kable(head(data.frame(
   original = messy_data$systolic_bp
 )), caption = "Blood Pressure Before Cleaning")
+```
 
+After extraction: clean numeric values:
+
+```{r extract-num-after}
 systolic_clean <- extract_num(messy_data$systolic_bp)
 
-# After extraction: clean numeric values
 knitr::kable(head(data.frame(
   original = messy_data$systolic_bp,
   cleaned = systolic_clean
@@ -285,19 +284,20 @@ knitr::kable(head(data.frame(
 
 ### Checking for Non-numeric Values
 
-For variables that should be numeric but contain non-numeric entries:
+For variables that should be numeric but contain non-numeric entries. This helps identify problematic entries before conversion:
 
 ```{r initial-cleaning}
-# Check for non-numeric values
-# This helps identify problematic entries before conversion
 nonnum_values <- check_nonnum(messy_data$systolic_bp)
 
 knitr::kable(data.frame(
   Check = c("Total Non-numeric Values", "Unique Non-numeric Values"),
   Result = c(length(nonnum_values), length(unique(nonnum_values)))
 ), caption = "Non-numeric Value Check")
+```
 
-# View all non-numeric entries in the data frame
+View all non-numeric entries in the data frame:
+
+```{r view-nonnum}
 nonnum_df <- df_view_nonnum(messy_data)
 if(nrow(nonnum_df) > 0) {
   knitr::kable(head(nonnum_df), caption = "Non-numeric Entries by Variable")
@@ -308,18 +308,21 @@ if(nrow(nonnum_df) > 0) {
 
 ### Date Conversion
 
-Convert various date formats to standard Date objects. Real-world date data often has multiple formats and invalid dates:
+Convert various date formats to standard Date objects. Real-world date data often has multiple formats and invalid dates.
 
-```{r date-conversion}
-# Convert visit dates
-# Before conversion
+Before conversion:
+
+```{r date-conversion-before}
 knitr::kable(head(data.frame(
   original_visit_date = messy_data$visit_date
 )), caption = "Visit Dates Before Conversion")
+```
 
+After conversion:
+
+```{r date-conversion-after}
 clean_data$visit_date_clean <- to_date(messy_data$visit_date)
 
-# After conversion
 knitr::kable(head(data.frame(
   original = messy_data$visit_date,
   cleaned = clean_data$visit_date_clean,
@@ -337,8 +340,9 @@ Create categorical variables from continuous ones. This is useful for:
 - Stratifying analyses
 - Creating balanced groups using quantiles
 
-```{r cut-by}
-# Cut age into clinically meaningful groups
+Cut age into clinically meaningful groups:
+
+```{r cut-by-age}
 clean_data$age <- messy_data$age  # Keep original for comparison
 clean_data$age_clean <- ifelse(messy_data$age > 100 | messy_data$age < 0, NA, messy_data$age)
 
@@ -353,8 +357,11 @@ knitr::kable(data.frame(
   Age_Group = names(table(clean_data$age_group)),
   Count = as.vector(table(clean_data$age_group))
 ), caption = "Age Group Distribution")
+```
 
-# Cut by quantiles (useful for creating balanced groups)
+Cut by quantiles (useful for creating balanced groups):
+
+```{r cut-by-quantile}
 clean_data$bmi_clean <- ifelse(messy_data$bmi == 999, NA, messy_data$bmi)
 clean_data$bmi_quartile <- cut_by(
   clean_data$bmi_clean,
@@ -373,7 +380,6 @@ knitr::kable(data.frame(
 Handle survey or form data with multiple selections. Common in symptom surveys and comorbidity assessments:
 
 ```{r multichoice}
-# Create sample multi-choice data
 symptoms_data <- data.frame(
   patient_id = 1:10,
   symptoms = c(
@@ -390,11 +396,12 @@ symptoms_data <- data.frame(
   )
 )
 
-# Show original format
 knitr::kable(symptoms_data, caption = "Multi-choice Symptoms Data (Original)")
+```
 
-# Split multi-choice into separate columns
-# This creates binary indicators for each symptom - suitable for analysis
+Split multi-choice into separate columns. This creates binary indicators for each symptom - suitable for analysis:
+
+```{r multichoice-split}
 symptoms_split <- split_multichoice(
   symptoms_data,
   quest_cols = "symptoms",
@@ -402,8 +409,11 @@ symptoms_split <- split_multichoice(
 )
 
 knitr::kable(head(symptoms_split), caption = "Multi-choice Data After Splitting")
+```
 
-# Combine back if needed (e.g., for reporting)
+Combine back if needed (e.g., for reporting):
+
+```{r multichoice-combine}
 symptoms_combined <- combine_multichoice(
   symptoms_split,
   quest_cols = list(symptoms = c("symptoms_fever", "symptoms_cough", "symptoms_headache", "symptoms_fatigue")),
@@ -417,7 +427,6 @@ knitr::kable(head(symptoms_combined), caption = "Multi-choice Data Recombined")
 For clinical laboratory data with mixed units. This is a common problem when merging data from different laboratories or when units change over time in the same institution:
 
 ```{r unit-standardization}
-# Create sample lab data with mixed units
 lab_data <- data.frame(
   subject = rep(c("Glucose", "Creatinine", "Cholesterol"), each = 10),
   value = c(
@@ -433,16 +442,16 @@ lab_data <- data.frame(
   stringsAsFactors = FALSE
 )
 
-# View unit conflicts - this shows which tests have multiple units
 knitr::kable(unit_view(lab_data, subject_col = "subject", value_col = "value", unit_col = "unit"), 
              caption = "Unit Conflicts by Test Type")
+```
 
-# Standardize units using conversion factors
-# These are standard clinical conversion factors:
-# - Glucose: mmol/L × 18 = mg/dL
-# - Creatinine: umol/L ÷ 88.4 = mg/dL
-# - Cholesterol: mmol/L × 38.67 = mg/dL
+Standardize units using conversion factors. These are standard clinical conversion factors:
+- Glucose: mmol/L × 18 = mg/dL
+- Creatinine: umol/L ÷ 88.4 = mg/dL
+- Cholesterol: mmol/L × 38.67 = mg/dL
 
+```{r unit-standardize-apply}
 change_rules <- list(
   list(subject = "Glucose", target_unit = "mg/dL", units2change = "mmol/L", coeffs = 18),
   list(subject = "Creatinine", target_unit = "mg/dL", units2change = "umol/L", coeffs = 1/88.4),
@@ -464,31 +473,41 @@ knitr::kable(head(lab_data_standardized, 15), caption = "Lab Data After Unit Sta
 
 Here's a complete workflow for cleaning clinical data - from raw data to analysis-ready data:
 
-```{r complete-pipeline}
-# Step 1: Get data overview to identify issues
+Step 1: Get data overview to identify issues:
+
+```{r complete-pipeline-step1}
 cat("Step 1: Data Overview\n")
 overview <- data_overview(messy_data)
+```
 
-# Step 2: Handle missing values - get valid subset
-# Adjust thresholds based on your analysis requirements
+Step 2: Handle missing values - get valid subset. Adjust thresholds based on your analysis requirements:
+
+```{r complete-pipeline-step2}
 cat("Step 2: Handling Missing Values\n")
 clean_data <- get_valid_subset(
   messy_data,
   row_na_ratio = 0.5,  # More lenient for this example
   col_na_ratio = 0.3
 )
+```
 
-# Step 3: Clean numeric variables
-# Extract numbers from text fields
+Step 3: Clean numeric variables - extract numbers from text fields:
+
+```{r complete-pipeline-step3}
 cat("Step 3: Cleaning Numeric Variables\n")
 clean_data$systolic_bp <- extract_num(clean_data$systolic_bp)
+```
 
-# Step 4: Convert dates to standard format
+Step 4: Convert dates to standard format:
+
+```{r complete-pipeline-step4}
 cat("Step 4: Converting Dates\n")
 clean_data$visit_date <- to_date(clean_data$visit_date)
+```
 
-# Step 5: Handle outliers
-# Replace outliers with NA for further investigation
+Step 5: Handle outliers - replace outliers with NA for further investigation:
+
+```{r complete-pipeline-step5}
 cat("Step 5: Handling Outliers\n")
 outlier_result_final <- detect_outliers(clean_data$bmi, method = "iqr")
 clean_data$bmi <- ifelse(
@@ -496,8 +515,11 @@ clean_data$bmi <- ifelse(
   NA,  # Mark outliers as NA for review
   clean_data$bmi
 )
+```
 
-# Step 6: Create derived variables
+Step 6: Create derived variables:
+
+```{r complete-pipeline-step6}
 cat("Step 6: Creating Derived Variables\n")
 clean_data$age_group <- cut_by(
   clean_data$age,
@@ -505,13 +527,19 @@ clean_data$age_group <- cut_by(
   breaks_as_quantiles = FALSE,
   labels = c("<40", "40-60", "60-80", ">80")
 )
+```
 
-# Step 7: Final check
+Step 7: Final check:
+
+```{r complete-pipeline-step7}
 cat("Step 7: Final Data Quality Check\n")
 final_overview <- data_overview(clean_data)
 knitr::kable(final_overview, caption = "Final Data Quality Overview")
+```
 
-# Summary of cleaning results
+Summary of cleaning results:
+
+```{r complete-pipeline-summary}
 cat("\n=== Data Cleaning Summary ===\n")
 cat("Original rows:", nrow(messy_data), "\n")
 cat("Final rows:", nrow(clean_data), "\n")
