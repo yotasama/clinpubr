@@ -56,7 +56,7 @@ n <- 100
 
 # Age with some unrealistic values (999 often means "unknown" in legacy systems)
 age_vals <- c(sample(18:85, 95, replace = TRUE), 999, 150, -5, 200, 999)
-age_vals <- age_vals[1:n]  # Ensure exactly n values
+age_vals <- age_vals[1:n] # Ensure exactly n values
 
 # BMI with outliers and missing values
 # In real EHR data, 999 or -99 are commonly used as missing value codes
@@ -79,26 +79,26 @@ systolic_bp_vals <- sample(c(
 # Legacy systems may have default dates like 1900-01-01 or future dates
 visit_date_vals <- sample(c(
   format(Sys.Date() - sample(1:365, 85, replace = TRUE), "%Y-%m-%d"),
-  format(Sys.Date() - sample(1:365, 5, replace = TRUE), "%m/%d/%Y"),  # US format
+  format(Sys.Date() - sample(1:365, 5, replace = TRUE), "%m/%d/%Y"), # US format
   "1900-01-01", "2030-12-31", "N/A", "", rep(NA, 8)
 ), n, replace = TRUE)
 
 # Lab values with different units
 # Creatinine is particularly problematic: mg/dL vs umol/L (1 mg/dL = 88.4 umol/L)
 creatinine_vals <- c(
-  rnorm(80, mean = 1.0, sd = 0.2),      # mg/dL
-  rnorm(15, mean = 88, sd = 15),        # umol/L - different unit!
+  round(rnorm(80, mean = 1.0, sd = 0.2), 2), # mg/dL
+  round(rnorm(15, mean = 88, sd = 15), 2), # umol/L - different unit!
   rep(NA, 5)
 )
 creatinine_vals <- creatinine_vals[1:n]
 
 # HbA1c with text entries and different decimal separators
 hba1c_vals <- c(
-  rnorm(85, mean = 6.5, sd = 1.2),
-  rep("<4.0", 3),                       # Below detection limit
-  rep(">14", 2),                        # Above detection limit
-  "6,5", "7,2",                         # European decimal comma
-  rep(NA, 8)
+  round(rnorm(85, mean = 6.5, sd = 1.2), 2),
+  rep("<4.0", 3), # Below detection limit
+  rep(">14", 2), # Above detection limit
+  "6,5", "7,2", "5..21", "8..3", # European decimal comma and extra dot
+  rep(NA, 6)
 )
 hba1c_vals <- hba1c_vals[1:n]
 
@@ -115,10 +115,11 @@ messy_data <- data.frame(
   stringsAsFactors = FALSE
 )
 
-knitr::kable(head(messy_data, 10), caption = "Original Messy Data (First 10 Rows)")
+knitr::kable(head(messy_data[sample(n), ], 10), caption = "Original Messy Data (10 random Rows)")
 ```
 
 Notice the various data quality issues in this sample:
+
 - **Age**: Contains impossible values like -5, 999, 150, 200
 - **BMI**: Has 999 as a missing code and some NA values
 - **Gender**: Multiple coding schemes (M/F, Male/Female, 1/0, different cases)
@@ -164,9 +165,9 @@ Get a valid subset using greedy algorithm. This finds the largest subset with ac
 
 ```{r missing-valid-subset}
 valid_subset <- get_valid_subset(
-  messy_data, 
-  row_na_ratio = 0.3,  # Allow up to 30% missing per row
-  col_na_ratio = 0.2   # Allow up to 20% missing per column
+  messy_data,
+  row_na_ratio = 0.3, # Allow up to 30% missing per row
+  col_na_ratio = 0.2 # Allow up to 20% missing per column
 )
 
 knitr::kable(data.frame(
@@ -299,7 +300,7 @@ View all non-numeric entries in the data frame:
 
 ```{r view-nonnum}
 nonnum_df <- df_view_nonnum(messy_data)
-if(nrow(nonnum_df) > 0) {
+if (nrow(nonnum_df) > 0) {
   knitr::kable(head(nonnum_df), caption = "Non-numeric Entries by Variable")
 } else {
   knitr::kable(data.frame(Message = "No non-numeric values found"), caption = "Non-numeric Check Result")
@@ -343,7 +344,7 @@ Create categorical variables from continuous ones. This is useful for:
 Cut age into clinically meaningful groups:
 
 ```{r cut-by-age}
-clean_data$age <- messy_data$age  # Keep original for comparison
+clean_data$age <- messy_data$age # Keep original for comparison
 clean_data$age_clean <- ifelse(messy_data$age > 100 | messy_data$age < 0, NA, messy_data$age)
 
 clean_data$age_group <- cut_by(
@@ -430,9 +431,9 @@ For clinical laboratory data with mixed units. This is a common problem when mer
 lab_data <- data.frame(
   subject = rep(c("Glucose", "Creatinine", "Cholesterol"), each = 10),
   value = c(
-    rnorm(5, 100, 15), rnorm(5, 5.5, 0.8),  # Glucose: mg/dL and mmol/L
-    rnorm(5, 1.0, 0.2), rnorm(5, 90, 15),    # Creatinine: mg/dL and umol/L
-    rnorm(5, 180, 30), rnorm(5, 4.5, 0.8)    # Cholesterol: mg/dL and mmol/L
+    rnorm(5, 100, 15), rnorm(5, 5.5, 0.8), # Glucose: mg/dL and mmol/L
+    rnorm(5, 1.0, 0.2), rnorm(5, 90, 15), # Creatinine: mg/dL and umol/L
+    rnorm(5, 180, 30), rnorm(5, 4.5, 0.8) # Cholesterol: mg/dL and mmol/L
   ),
   unit = c(
     rep("mg/dL", 5), rep("mmol/L", 5),
@@ -442,8 +443,9 @@ lab_data <- data.frame(
   stringsAsFactors = FALSE
 )
 
-knitr::kable(unit_view(lab_data, subject_col = "subject", value_col = "value", unit_col = "unit"), 
-             caption = "Unit Conflicts by Test Type")
+knitr::kable(unit_view(lab_data, subject_col = "subject", value_col = "value", unit_col = "unit"),
+  caption = "Unit Conflicts by Test Type"
+)
 ```
 
 Standardize units using conversion factors. These are standard clinical conversion factors:
@@ -454,7 +456,7 @@ Standardize units using conversion factors. These are standard clinical conversi
 ```{r unit-standardize-apply}
 change_rules <- list(
   list(subject = "Glucose", target_unit = "mg/dL", units2change = "mmol/L", coeffs = 18),
-  list(subject = "Creatinine", target_unit = "mg/dL", units2change = "umol/L", coeffs = 1/88.4),
+  list(subject = "Creatinine", target_unit = "mg/dL", units2change = "umol/L", coeffs = 1 / 88.4),
   list(subject = "Cholesterol", target_unit = "mg/dL", units2change = "mmol/L", coeffs = 38.67)
 )
 
@@ -486,7 +488,7 @@ Step 2: Handle missing values - get valid subset. Adjust thresholds based on you
 cat("Step 2: Handling Missing Values\n")
 clean_data <- get_valid_subset(
   messy_data,
-  row_na_ratio = 0.5,  # More lenient for this example
+  row_na_ratio = 0.5, # More lenient for this example
   col_na_ratio = 0.3
 )
 ```
@@ -512,7 +514,7 @@ cat("Step 5: Handling Outliers\n")
 outlier_result_final <- detect_outliers(clean_data$bmi, method = "iqr")
 clean_data$bmi <- ifelse(
   outlier_result_final$outlier_mask,
-  NA,  # Mark outliers as NA for review
+  NA, # Mark outliers as NA for review
   clean_data$bmi
 )
 ```
