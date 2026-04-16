@@ -37,14 +37,21 @@ In clinical practice, data quality issues are common due to:
 - **Inconsistent formats**: Different departments using different date formats or units
 - **Free-text entries**: Blood pressure recorded as "120 mmHg", "120", or "unknown"
 - **Unit variations**: Lab results in mg/dL vs mmol/L depending on the laboratory
+- **Semantic variations**: Different names for the same entity (e.g., "creatinine", "CREA", "Scr" all referring to serum creatinine)
 
-This vignette demonstrates how to:
+### Data Cleaning Workflow
 
-1. Get a quick overview of your data quality
-2. Handle missing values effectively
-3. Detect and manage outliers
-4. Clean and transform variables
-5. Standardize units and formats
+This vignette follows a structured data cleaning workflow:
+
+1. **Data Overview** — Get a quick overview of your data quality
+2. **Format Cleaning** — Fix formatting issues (extract numbers, convert dates, check non-numeric values)
+3. **Unit Standardization** — Standardize measurement units across sources
+4. **Missing Value Handling** — Understand and handle missing data patterns
+5. **Outlier Detection** — Detect and manage outliers
+6. **Data Transformation** — Create derived variables (grouping, multi-choice splitting)
+7. **Complete Pipeline** — Put it all together
+
+> **Why this order?** Format cleaning and unit standardization must come before outlier detection — mixed units (e.g., mg/dL vs mmol/L) can cause false outlier flags. Missing value handling and outlier detection should follow once the data is in a clean, consistent format.
 
 ## Creating Realistic Messy Data
 
@@ -78,9 +85,9 @@ systolic_bp_vals <- sample(c(
 # Visit date with various formats and impossible dates
 # Legacy systems may have default dates like 1900-01-01 or future dates
 visit_date_vals <- sample(c(
-  format(Sys.Date() - sample(1:365, 85, replace = TRUE), "%Y-%m-%d"),
-  format(Sys.Date() - sample(1:365, 5, replace = TRUE), "%m/%d/%Y"), # US format
-  "1900-01-01", "2030-12-31", "N/A", "", rep(NA, 8)
+  format(Sys.Date() - sample(1:365, 60, replace = TRUE), "%Y-%m-%d"),
+  format(Sys.Date() - sample(1:365, 30, replace = TRUE), "%Y/%m/%d"),
+  "1900-01-01", "2030-12-31", "N/A", "", rep(NA, 6)
 ), n, replace = TRUE)
 
 # Lab values with different units
@@ -128,24 +135,152 @@ Notice the various data quality issues in this sample:
 - **Creatinine**: Mix of mg/dL and umol/L values
 - **HbA1c**: Contains text entries and European decimal commas
 
-## Data Overview
+## Step 1: Data Overview
 
-The first step in data cleaning is understanding what issues exist in your dataset. The `data_overview()` function provides a comprehensive diagnostic report. This is the first step in any data cleaning workflow - understand what issues exist.
+The first step in data cleaning is understanding what issues exist in your dataset. The `data_overview()` function provides a comprehensive diagnostic report.
 
 ```{r data-overview}
 overview <- data_overview(messy_data)
-knitr::kable(overview, caption = "Data Quality Overview")
+
+# the `overview` object stores the details in different components, for example:
+print(overview$variable_types)
+print(overview$summary_stats)
+print(overview$quality_issues$numeric_as_character$hba1c)
 ```
 
-The `data_overview()` function identifies:
+The `data_overview()` function identifies the following **data quality issues** and provides recommendations:
 
-- **Variable types**: Numeric, character, date, factor
 - **Missing data patterns**: Which variables have missing values
 - **Potential outliers**: Values that seem unrealistic
-- **Suspicious values**: Values that may indicate data entry errors
+- **Suspicious values**: Values that may indicate data entry errors or datatype issues
 - **Inconsistent formats**: Mixed formats within the same variable
 
-## Handling Missing Values
+## Step 2: Format Cleaning
+
+Before performing any statistical operations, we need to fix basic formatting issues — extracting numbers from text, converting dates, and identifying non-numeric entries.
+
+### Extracting Numeric Values
+
+Extract and clean numeric values from character strings. This is common when dealing with free-text entries such as blood pressure recorded with units.
+
+Before extraction: mixed formats with units and text:
+
+```{r extract-num-before}
+knitr::kable(head(data.frame(
+  original = messy_data$systolic_bp
+)), caption = "Blood Pressure Before Cleaning")
+```
+
+After extraction: clean numeric values:
+
+```{r extract-num-after}
+systolic_clean <- extract_num(messy_data$systolic_bp)
+
+knitr::kable(head(data.frame(
+  original = messy_data$systolic_bp,
+  cleaned = systolic_clean
+)), caption = "Blood Pressure: Before vs After Cleaning")
+```
+
+### Checking for Non-numeric Values
+
+For variables that should be numeric but contain non-numeric entries. This helps identify problematic entries before conversion:
+
+```{r initial-cleaning}
+nonnum_values <- check_nonnum(messy_data$systolic_bp)
+
+knitr::kable(data.frame(
+  Check = c("Total Non-numeric Values", "Unique Non-numeric Values"),
+  Result = c(length(nonnum_values), length(unique(nonnum_values)))
+), caption = "Non-numeric Value Check")
+```
+
+View all non-numeric entries in the data frame:
+
+```{r view-nonnum}
+nonnum_df <- df_view_nonnum(messy_data)
+if (nrow(nonnum_df) > 0) {
+  knitr::kable(head(nonnum_df), caption = "Non-numeric Entries by Variable")
+} else {
+  knitr::kable(data.frame(Message = "No non-numeric values found"), caption = "Non-numeric Check Result")
+}
+```
+
+### Date Conversion
+
+Convert various date formats to standard Date objects. Real-world date data often has multiple formats and invalid dates.
+
+Before conversion:
+
+```{r date-conversion-before}
+knitr::kable(head(data.frame(
+  original_visit_date = messy_data$visit_date
+)), caption = "Visit Dates Before Conversion")
+```
+
+After conversion:
+
+```{r date-conversion-after}
+clean_data <- messy_data
+clean_data$visit_date_clean <- to_date(messy_data$visit_date)
+
+knitr::kable(head(data.frame(
+  original = messy_data$visit_date,
+  cleaned = clean_data$visit_date_clean,
+  is_valid = !is.na(clean_data$visit_date_clean)
+)), caption = "Visit Dates: Before vs After Conversion")
+```
+
+## Step 3: Unit Standardization
+
+Unit standardization should be performed **before** outlier detection — mixed units (e.g., mg/dL vs mmol/L for the same lab test) can cause valid values to be falsely flagged as outliers.
+
+For clinical laboratory data with mixed units. This is a common problem when merging data from different laboratories or when units change over time in the same institution:
+
+```{r unit-standardization}
+lab_data <- data.frame(
+  subject = rep(c("Glucose", "Creatinine", "Cholesterol"), each = 10),
+  value = c(
+    rnorm(5, 100, 15), rnorm(5, 5.5, 0.8), # Glucose: mg/dL and mmol/L
+    rnorm(5, 1.0, sd = 0.2), rnorm(5, 90, 15), # Creatinine: mg/dL and umol/L
+    rnorm(5, 180, 30), rnorm(5, 4.5, 0.8) # Cholesterol: mg/dL and mmol/L
+  ),
+  unit = c(
+    rep("mg/dL", 5), rep("mmol/L", 5),
+    rep("mg/dL", 5), rep("umol/L", 5),
+    rep("mg/dL", 5), rep("mmol/L", 5)
+  ),
+  stringsAsFactors = FALSE
+)
+
+knitr::kable(unit_view(lab_data, subject_col = "subject", value_col = "value", unit_col = "unit"),
+  caption = "Unit Conflicts by Test Type")
+```
+
+Standardize units using conversion factors. These are standard clinical conversion factors:
+- Glucose: mmol/L × 18 = mg/dL
+- Creatinine: umol/L ÷ 88.4 = mg/dL
+- Cholesterol: mmol/L × 38.67 = mg/dL
+
+```{r unit-standardize-apply}
+change_rules <- list(
+  list(subject = "Glucose", target_unit = "mg/dL", units2change = "mmol/L", coeffs = 18),
+  list(subject = "Creatinine", target_unit = "mg/dL", units2change = "umol/L", coeffs = 1 / 88.4),
+  list(subject = "Cholesterol", target_unit = "mg/dL", units2change = "mmol/L", coeffs = 38.67)
+)
+
+lab_data_standardized <- unit_standardize(
+  lab_data,
+  subject_col = "subject",
+  value_col = "value",
+  unit_col = "unit",
+  change_rules = change_rules
+)
+
+knitr::kable(head(lab_data_standardized, 15), caption = "Lab Data After Unit Standardization")
+```
+
+## Step 4: Handling Missing Values
 
 ### Understanding Missing Data Patterns
 
@@ -158,7 +293,7 @@ Before handling missing values, it's important to understand their patterns. Mis
 Understanding missing data patterns helps determine the best handling strategy:
 
 ```{r missing-patterns}
-knitr::kable(max_missing_rates(messy_data), caption = "Missing Data Rates by Variable")
+print(max_missing_rates(messy_data))
 ```
 
 Get a valid subset using greedy algorithm. This finds the largest subset with acceptable missing rates. Useful when you need complete case analysis but want to maximize sample size:
@@ -193,7 +328,9 @@ knitr::kable(data.frame(
 ), caption = "Valid Value Extraction Examples")
 ```
 
-## Outlier Detection and Handling
+## Step 5: Outlier Detection and Handling
+
+> **Important**: Outlier detection should be performed **after** format cleaning and unit standardization. Mixed formats or inconsistent units can cause valid values to be falsely flagged as outliers.
 
 ### Detecting Outliers
 
@@ -258,80 +395,7 @@ knitr::kable(data.frame(
 ), caption = "BMI Outlier Summary")
 ```
 
-## Data Cleaning Functions
-
-### Cleaning Numeric Values
-
-Extract and clean numeric values from character strings. This is common when dealing with free-text entries.
-
-Before extraction: mixed formats with units and text:
-
-```{r extract-num-before}
-knitr::kable(head(data.frame(
-  original = messy_data$systolic_bp
-)), caption = "Blood Pressure Before Cleaning")
-```
-
-After extraction: clean numeric values:
-
-```{r extract-num-after}
-systolic_clean <- extract_num(messy_data$systolic_bp)
-
-knitr::kable(head(data.frame(
-  original = messy_data$systolic_bp,
-  cleaned = systolic_clean
-)), caption = "Blood Pressure: Before vs After Cleaning")
-```
-
-### Checking for Non-numeric Values
-
-For variables that should be numeric but contain non-numeric entries. This helps identify problematic entries before conversion:
-
-```{r initial-cleaning}
-nonnum_values <- check_nonnum(messy_data$systolic_bp)
-
-knitr::kable(data.frame(
-  Check = c("Total Non-numeric Values", "Unique Non-numeric Values"),
-  Result = c(length(nonnum_values), length(unique(nonnum_values)))
-), caption = "Non-numeric Value Check")
-```
-
-View all non-numeric entries in the data frame:
-
-```{r view-nonnum}
-nonnum_df <- df_view_nonnum(messy_data)
-if (nrow(nonnum_df) > 0) {
-  knitr::kable(head(nonnum_df), caption = "Non-numeric Entries by Variable")
-} else {
-  knitr::kable(data.frame(Message = "No non-numeric values found"), caption = "Non-numeric Check Result")
-}
-```
-
-### Date Conversion
-
-Convert various date formats to standard Date objects. Real-world date data often has multiple formats and invalid dates.
-
-Before conversion:
-
-```{r date-conversion-before}
-knitr::kable(head(data.frame(
-  original_visit_date = messy_data$visit_date
-)), caption = "Visit Dates Before Conversion")
-```
-
-After conversion:
-
-```{r date-conversion-after}
-clean_data$visit_date_clean <- to_date(messy_data$visit_date)
-
-knitr::kable(head(data.frame(
-  original = messy_data$visit_date,
-  cleaned = clean_data$visit_date_clean,
-  is_valid = !is.na(clean_data$visit_date_clean)
-)), caption = "Visit Dates: Before vs After Conversion")
-```
-
-## Data Transformation
+## Step 6: Data Transformation
 
 ### Cutting Numeric Variables
 
@@ -423,57 +487,9 @@ symptoms_combined <- combine_multichoice(
 knitr::kable(head(symptoms_combined), caption = "Multi-choice Data Recombined")
 ```
 
-## Unit Standardization
-
-For clinical laboratory data with mixed units. This is a common problem when merging data from different laboratories or when units change over time in the same institution:
-
-```{r unit-standardization}
-lab_data <- data.frame(
-  subject = rep(c("Glucose", "Creatinine", "Cholesterol"), each = 10),
-  value = c(
-    rnorm(5, 100, 15), rnorm(5, 5.5, 0.8), # Glucose: mg/dL and mmol/L
-    rnorm(5, 1.0, 0.2), rnorm(5, 90, 15), # Creatinine: mg/dL and umol/L
-    rnorm(5, 180, 30), rnorm(5, 4.5, 0.8) # Cholesterol: mg/dL and mmol/L
-  ),
-  unit = c(
-    rep("mg/dL", 5), rep("mmol/L", 5),
-    rep("mg/dL", 5), rep("umol/L", 5),
-    rep("mg/dL", 5), rep("mmol/L", 5)
-  ),
-  stringsAsFactors = FALSE
-)
-
-knitr::kable(unit_view(lab_data, subject_col = "subject", value_col = "value", unit_col = "unit"),
-  caption = "Unit Conflicts by Test Type"
-)
-```
-
-Standardize units using conversion factors. These are standard clinical conversion factors:
-- Glucose: mmol/L × 18 = mg/dL
-- Creatinine: umol/L ÷ 88.4 = mg/dL
-- Cholesterol: mmol/L × 38.67 = mg/dL
-
-```{r unit-standardize-apply}
-change_rules <- list(
-  list(subject = "Glucose", target_unit = "mg/dL", units2change = "mmol/L", coeffs = 18),
-  list(subject = "Creatinine", target_unit = "mg/dL", units2change = "umol/L", coeffs = 1 / 88.4),
-  list(subject = "Cholesterol", target_unit = "mg/dL", units2change = "mmol/L", coeffs = 38.67)
-)
-
-lab_data_standardized <- unit_standardize(
-  lab_data,
-  subject_col = "subject",
-  value_col = "value",
-  unit_col = "unit",
-  change_rules = change_rules
-)
-
-knitr::kable(head(lab_data_standardized, 15), caption = "Lab Data After Unit Standardization")
-```
-
 ## Complete Cleaning Pipeline
 
-Here's a complete workflow for cleaning clinical data - from raw data to analysis-ready data:
+Here's a complete workflow for cleaning clinical data — from raw data to analysis-ready data. Notice the order: **format cleaning → unit standardization → missing values → outliers → derived variables**.
 
 Step 1: Get data overview to identify issues:
 
@@ -482,35 +498,30 @@ cat("Step 1: Data Overview\n")
 overview <- data_overview(messy_data)
 ```
 
-Step 2: Handle missing values - get valid subset. Adjust thresholds based on your analysis requirements:
+Step 2: Format cleaning — extract numbers from text fields and convert dates:
 
 ```{r complete-pipeline-step2}
-cat("Step 2: Handling Missing Values\n")
+cat("Step 2: Format Cleaning\n")
+clean_data <- messy_data
+clean_data$systolic_bp <- extract_num(clean_data$systolic_bp)
+clean_data$visit_date <- to_date(clean_data$visit_date)
+```
+
+Step 3: Handle missing values — get valid subset. Adjust thresholds based on your analysis requirements:
+
+```{r complete-pipeline-step3}
+cat("Step 3: Handling Missing Values\n")
 clean_data <- get_valid_subset(
-  messy_data,
+  clean_data,
   row_na_ratio = 0.5, # More lenient for this example
   col_na_ratio = 0.3
 )
 ```
 
-Step 3: Clean numeric variables - extract numbers from text fields:
-
-```{r complete-pipeline-step3}
-cat("Step 3: Cleaning Numeric Variables\n")
-clean_data$systolic_bp <- extract_num(clean_data$systolic_bp)
-```
-
-Step 4: Convert dates to standard format:
+Step 4: Handle outliers — replace outliers with NA for further investigation:
 
 ```{r complete-pipeline-step4}
-cat("Step 4: Converting Dates\n")
-clean_data$visit_date <- to_date(clean_data$visit_date)
-```
-
-Step 5: Handle outliers - replace outliers with NA for further investigation:
-
-```{r complete-pipeline-step5}
-cat("Step 5: Handling Outliers\n")
+cat("Step 4: Handling Outliers\n")
 outlier_result_final <- detect_outliers(clean_data$bmi, method = "iqr")
 clean_data$bmi <- ifelse(
   outlier_result_final$outlier_mask,
@@ -519,10 +530,10 @@ clean_data$bmi <- ifelse(
 )
 ```
 
-Step 6: Create derived variables:
+Step 5: Create derived variables:
 
-```{r complete-pipeline-step6}
-cat("Step 6: Creating Derived Variables\n")
+```{r complete-pipeline-step5}
+cat("Step 5: Creating Derived Variables\n")
 clean_data$age_group <- cut_by(
   clean_data$age,
   breaks = c(40, 60, 80),
@@ -531,10 +542,10 @@ clean_data$age_group <- cut_by(
 )
 ```
 
-Step 7: Final check:
+Step 6: Final check:
 
-```{r complete-pipeline-step7}
-cat("Step 7: Final Data Quality Check\n")
+```{r complete-pipeline-step6}
+cat("Step 6: Final Data Quality Check\n")
 final_overview <- data_overview(clean_data)
 knitr::kable(final_overview, caption = "Final Data Quality Overview")
 ```
@@ -550,25 +561,25 @@ cat("Rows removed:", nrow(messy_data) - nrow(clean_data), "\n")
 
 ## Summary
 
-This vignette covered the essential data cleaning functions in `clinpubr`:
+This vignette covered the essential data cleaning functions in `clinpubr`, following a structured workflow:
 
-- **`data_overview()`**: Comprehensive data quality assessment
-- **`get_valid_subset()`**: Handle missing data patterns
-- **`detect_outliers()`**: Outlier detection and handling
-- **`extract_num()`**: Extract numeric values from text
-- **`to_date()`**: Standardize date formats
-- **`cut_by()`**: Create categorical variables
-- **`split_multichoice()` / `combine_multichoice()`**: Handle multi-choice data
-- **`unit_standardize()`**: Standardize measurement units
+| Step | Function | Purpose |
+|------|----------|---------|
+| 1. Data Overview | `data_overview()` | Comprehensive data quality assessment |
+| 2. Format Cleaning | `extract_num()`, `to_date()`, `check_nonnum()` | Fix formatting issues |
+| 3. Unit Standardization | `unit_standardize()` | Standardize measurement units |
+| 4. Missing Values | `get_valid_subset()`, `get_valid()` | Handle missing data patterns |
+| 5. Outlier Detection | `detect_outliers()`, `mad_outlier()`, `iqr_outlier()` | Detect and manage outliers |
+| 6. Data Transformation | `cut_by()`, `split_multichoice()` | Create derived variables |
 
 ### Best Practices for Clinical Data Cleaning
 
 1. **Always start with data overview**: Understand the scope of data quality issues before cleaning
-2. **Document your cleaning steps**: Keep a record of what was changed and why
-3. **Handle outliers carefully**: Don't automatically remove outliers - investigate them first
-4. **Validate date conversions**: Check for impossible dates and invalid formats
-5. **Standardize units early**: Do this before any analysis to avoid confusion
-6. **Create derived variables**: Document how new variables were created
+2. **Clean formats first**: Extract numbers, convert dates — before any statistical operations
+3. **Standardize units early**: Do this before outlier detection to avoid false positives
+4. **Handle outliers carefully**: Don't automatically remove outliers — investigate them first
+5. **Document your cleaning steps**: Keep a record of what was changed and why
+6. **Create derived variables last**: Grouping and splitting should follow data cleaning
 7. **Final validation**: Run data overview again after cleaning to confirm improvements
 
 These tools form a complete pipeline for preparing clinical data for analysis, ensuring data quality and consistency for subsequent statistical modeling and visualization.
