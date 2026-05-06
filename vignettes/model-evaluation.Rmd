@@ -148,8 +148,7 @@ View performance metrics. Key metrics explained:
 - **Brier Score**: Calibration measure (lower is better)
 
 ```{r model-compare-metrics}
-metrics_df <- as.data.frame(model_comparison$metrics)
-knitr::kable(metrics_df, caption = "Model Performance Comparison")
+knitr::kable(model_comparison, caption = "Model Performance Comparison")
 ```
 
 ### Visualization of Model Performance

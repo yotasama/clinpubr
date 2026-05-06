@@ -280,55 +280,7 @@ lab_data_standardized <- unit_standardize(
 knitr::kable(head(lab_data_standardized, 15), caption = "Lab Data After Unit Standardization")
 ```
 
-## Step 4: Handling Missing Values
-
-### Understanding Missing Data Patterns
-
-Before handling missing values, it's important to understand their patterns. Missing data can be:
-
-- **MCAR (Missing Completely At Random)**: Missingness unrelated to any data
-- **MAR (Missing At Random)**: Missingness related to observed data
-- **MNAR (Missing Not At Random)**: Missingness related to the missing values themselves
-
-Understanding missing data patterns helps determine the best handling strategy:
-
-```{r missing-patterns}
-print(max_missing_rates(messy_data))
-```
-
-Get a valid subset using greedy algorithm. This finds the largest subset with acceptable missing rates. Useful when you need complete case analysis but want to maximize sample size:
-
-```{r missing-valid-subset}
-valid_subset <- get_valid_subset(
-  messy_data,
-  row_na_ratio = 0.3, # Allow up to 30% missing per row
-  col_na_ratio = 0.2 # Allow up to 20% missing per column
-)
-
-knitr::kable(data.frame(
-  Original_Rows = nrow(messy_data),
-  Valid_Rows = nrow(valid_subset),
-  Original_Cols = ncol(messy_data),
-  Valid_Cols = ncol(valid_subset)
-), caption = "Valid Subset Summary")
-```
-
-### Extracting Valid Values
-
-Sometimes you need to extract non-missing values from specific variables. This is useful for extracting reference values or checking data consistency:
-
-```{r get-valid}
-first_valid <- get_valid(messy_data$gender, mode = "first")
-mid_valid <- get_valid(messy_data$gender, mode = "mid")
-last_valid <- get_valid(messy_data$gender, mode = "last")
-
-knitr::kable(data.frame(
-  Mode = c("first", "mid", "last"),
-  Value = c(first_valid, mid_valid, last_valid)
-), caption = "Valid Value Extraction Examples")
-```
-
-## Step 5: Outlier Detection and Handling
+## Step 4: Outlier Detection and Handling
 
 > **Important**: Outlier detection should be performed **after** format cleaning and unit standardization. Mixed formats or inconsistent units can cause valid values to be falsely flagged as outliers.
 
@@ -395,7 +347,7 @@ knitr::kable(data.frame(
 ), caption = "BMI Outlier Summary")
 ```
 
-## Step 6: Data Transformation
+## Step 5: Data Transformation
 
 ### Cutting Numeric Variables
 
@@ -438,53 +390,6 @@ knitr::kable(data.frame(
   BMI_Quartile = names(table(clean_data$bmi_quartile)),
   Count = as.vector(table(clean_data$bmi_quartile))
 ), caption = "BMI Quartile Distribution")
-```
-
-### Working with Multi-choice Data
-
-Handle survey or form data with multiple selections. Common in symptom surveys and comorbidity assessments:
-
-```{r multichoice}
-symptoms_data <- data.frame(
-  patient_id = 1:10,
-  symptoms = c(
-    "fever,cough",
-    "cough,headache",
-    "fever",
-    "fever,cough,headache",
-    "none",
-    "cough",
-    "fever,headache",
-    "cough,fever",
-    "headache",
-    "fever,cough,headache,fatigue"
-  )
-)
-
-knitr::kable(symptoms_data, caption = "Multi-choice Symptoms Data (Original)")
-```
-
-Split multi-choice into separate columns. This creates binary indicators for each symptom - suitable for analysis:
-
-```{r multichoice-split}
-symptoms_split <- split_multichoice(
-  symptoms_data,
-  quest_cols = "symptoms",
-  split = ","
-)
-
-knitr::kable(head(symptoms_split), caption = "Multi-choice Data After Splitting")
-```
-
-Combine back if needed (e.g., for reporting):
-
-```{r multichoice-combine}
-symptoms_combined <- combine_multichoice(
-  symptoms_split,
-  quest_cols = list(symptoms = c("symptoms_fever", "symptoms_cough", "symptoms_headache", "symptoms_fatigue")),
-  sep = ","
-)
-knitr::kable(head(symptoms_combined), caption = "Multi-choice Data Recombined")
 ```
 
 ## Complete Cleaning Pipeline
