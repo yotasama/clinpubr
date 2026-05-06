@@ -27,105 +27,50 @@ library(survival)
 
 ## Introduction
 
-Baseline characteristics tables are essential in clinical research. They provide a comprehensive summary of patient demographics and clinical features at study entry, allowing readers to assess the comparability of study groups and the generalizability of findings.
-
-### Why Baseline Tables Matter
-
-In clinical trials and observational studies, baseline tables serve several critical purposes:
-
-- **Group comparability**: Assess whether randomization was successful (in RCTs) or whether groups are balanced (in observational studies)
-- **Sample description**: Help readers understand the study population
-- **Generalizability**: Allow assessment of whether results apply to specific patient populations
-- **Statistical planning**: Inform the choice of appropriate statistical methods
-
-### Challenges in Creating Baseline Tables
-
-Creating publication-ready baseline tables involves several challenges:
-
-1. **Variable type determination**: Deciding whether to treat a variable as continuous or categorical
-2. **Normality assessment**: Choosing between mean/SD and median/IQR for continuous variables
-3. **Statistical test selection**: Selecting appropriate tests (t-test vs Mann-Whitney, Chi-square vs Fisher's exact)
-4. **Missing data handling**: Deciding how to report missing values
-5. **Multiple comparisons**: Adjusting for multiple testing when comparing more than two groups
-
-The `clinpubr` package automates these decisions while allowing manual override when needed.
+Baseline characteristics tables (Table 1) summarize patient demographics and clinical features at study entry. The `clinpubr` package automates the key decisions: variable type classification, normality assessment, statistical test selection, and missing data reporting.
 
 ## Loading and Preparing Data
 
-We'll use the NCCTG Lung Cancer dataset from the `survival` package, which is commonly used in survival analysis examples.
-
-Load example data - NCCTG Lung Cancer Data. This dataset contains survival data for patients with advanced lung cancer from the North Central Cancer Treatment Group. It's commonly used in survival analysis examples.
+We'll use the NCCTG Lung Cancer dataset from the `survival` package:
 
 ```{r load-data}
 data(cancer, package = "survival")
-```
-
-View the data structure:
-
-```{r load-data-structure}
 str(cancer)
 knitr::kable(head(cancer), caption = "Raw Data Preview")
 ```
 
-Create some derived variables for demonstration. Age groups are commonly used in clinical research to stratify analyses:
+Create derived variables for demonstration:
 
-```{r load-data-agegroup}
-cancer$age_group <- cut(cancer$age, 
-                        breaks = c(0, 50, 60, 70, 100),
+```{r prepare-data}
+cancer$age_group <- cut(cancer$age, breaks = c(0, 50, 60, 70, 100),
                         labels = c("<50", "50-60", "60-70", ">70"))
-```
 
-ECOG performance status is a standard measure of patient functional status. We combine categories 2 and 3 due to small sample sizes:
-
-```{r load-data-ecog}
+# Combine sparse ECOG categories
 cancer$ph.ecog_cat <- factor(cancer$ph.ecog,
                              levels = c(0:3),
                              labels = c("0", "1", ">=2", ">=2"))
-```
 
-Add some missing values for demonstration. Missing data is common in clinical research due to:
-- Patient refusal to provide certain information
-- Lost to follow-up
-- Data entry errors
-
-```{r load-data-missing}
+# Add missing values for demonstration
 set.seed(123)
 cancer$meal.cal[sample(1:nrow(cancer), 30)] <- NA
 cancer$wt.loss[sample(1:nrow(cancer), 20)] <- NA
-```
 
-Show data after preparation:
-
-```{r load-data-preview}
-knitr::kable(head(cancer[, c("age", "sex", "ph.ecog", "ph.karno", "meal.cal", "wt.loss")]), 
+knitr::kable(head(cancer[, c("age", "sex", "ph.ecog", "ph.karno", "meal.cal", "wt.loss")]),
              caption = "Data After Preparation (First 6 Rows)")
 ```
 
 ## Automatic Variable Type Determination
 
-Before creating a baseline table, we need to determine how each variable should be summarized. The `get_var_types()` function automates this process.
+Before creating a baseline table, `get_var_types()` classifies each variable as:
 
-### How Variable Types Are Determined
-
-The function analyzes each variable and classifies it as:
-
-- **Factor variables**: Categorical variables (factors or numeric with few unique values)
-- **Non-normal variables**: Continuous variables that fail normality tests
-- **Exact test variables**: Categorical variables with small cell counts requiring Fisher's exact test
-- **Omitted variables**: Variables with too many levels or other issues
-
-The `get_var_types()` function analyzes each variable and determines:
-- Whether it's categorical (factor) or continuous
-- For continuous variables: whether it's normally distributed
-- Whether Fisher's exact test is needed (small cell counts)
+- **Factor variables**: Categorical (factors or numeric with few unique values)
+- **Non-normal variables**: Continuous variables failing normality tests
+- **Exact test variables**: Categorical variables with small cell counts (Fisher's exact test)
+- **Omitted variables**: Variables with too many levels
 
 ```{r get-var-types}
 var_types <- get_var_types(cancer, strata = "sex")
-```
 
-Display variable classification results:
-
-```{r get-var-types-display}
 var_summary <- data.frame(
   Category = c("Factor Variables", "Exact Test Variables", "Non-normal Variables", "Omitted Variables"),
   Variables = c(
@@ -138,43 +83,34 @@ var_summary <- data.frame(
 knitr::kable(var_summary, caption = "Variable Classification Results")
 ```
 
-### Customizing Variable Classification
+### Customizing Classification
 
-You can adjust the thresholds for automatic classification:
-
-- `num_to_factor`: numeric variables with <= this many unique values become factors
-- `omit_factor_above`: factors with > this many levels are omitted
-- `norm_test_by_group`: test normality within each stratum
+Adjust thresholds for automatic classification:
 
 ```{r customize-var-types}
 var_types_custom <- get_var_types(
-  cancer, 
+  cancer,
   strata = "sex",
   num_to_factor = 10,        # Numeric vars with <=10 unique values treated as factor
   omit_factor_above = 15,    # Omit factors with >15 levels
   norm_test_by_group = TRUE  # Test normality within each stratum
 )
 
-var_custom_summary <- data.frame(
+knitr::kable(data.frame(
   Category = c("Factor Variables", "Non-normal Variables"),
   Variables = c(
     paste(var_types_custom$factor_vars, collapse = ", "),
     paste(var_types_custom$nonnormal_vars, collapse = ", ")
   )
-)
-knitr::kable(var_custom_summary, caption = "Custom Variable Classification")
+), caption = "Custom Variable Classification")
 ```
 
-### Visual Inspection with QQ Plots
-
-Sometimes automatic normality tests may not align with visual inspection. You can save QQ plots for manual review. The QQ plots are saved in the specified folder for manual inspection.
+Save QQ plots for manual review (optional):
 
 ```{r save-qqplots, eval = FALSE}
 # var_types_with_plots <- get_var_types(
-#   cancer,
-#   strata = "sex",
-#   save_qqplots = TRUE,
-#   folder_name = "qqplots_review"
+#   cancer, strata = "sex",
+#   save_qqplots = TRUE, folder_name = "qqplots_review"
 # )
 ```
 
@@ -182,10 +118,7 @@ Sometimes automatic normality tests may not align with visual inspection. You ca
 
 ### Basic Baseline Table
 
-The `baseline_table()` function automatically:
-- Selects appropriate summary statistics (mean/SD vs median/IQR)
-- Chooses appropriate statistical tests (t-test vs Mann-Whitney vs Chi-square vs Fisher)
-- Calculates p-values for group comparisons
+`baseline_table()` automatically selects summary statistics (mean/SD vs median/IQR) and statistical tests (t-test vs Mann-Whitney vs Chi-square vs Fisher):
 
 ```{r basic-baseline}
 baseline_result <- baseline_table(
@@ -199,7 +132,7 @@ knitr::kable(baseline_result$baseline, caption = "Baseline Characteristics by Se
 
 ### Multi-Group Comparisons
 
-When there are more than 2 groups, pairwise comparisons are automatically generated. This is useful for studies with multiple treatment arms or disease stages.
+With more than 2 groups, pairwise comparisons are automatically generated with optional multiple testing correction:
 
 ```{r multi-group}
 data(cancer, package = "survival")
@@ -214,38 +147,25 @@ baseline_multi <- baseline_table(
   var_types = var_types_ecog,
   save_table = FALSE,
   multiple_comparison_test = TRUE,
-  p_adjust_method = "BH"  # Benjamini-Hochberg adjustment for multiple comparisons
+  p_adjust_method = "BH"
 )
-```
 
-View main baseline table:
-
-```{r multi-group-main}
 knitr::kable(baseline_multi$baseline, caption = "Baseline Characteristics by ECOG Status")
-```
-
-View pairwise comparison results:
-
-```{r multi-group-pairwise}
 knitr::kable(baseline_multi$pairwise, caption = "Pairwise Comparison P-values")
 ```
 
-### Customizing the Baseline Table
+### Customizing the Table
 
-You can customize various aspects of the table:
-- Select specific variables to include
-- Add standardized mean differences (SMD) - useful for propensity score studies
-- Handle missing strata values
-- Set seed for reproducible Fisher's exact test simulations
+Select specific variables, add SMD, handle missing strata:
 
 ```{r customize-baseline}
 baseline_custom <- baseline_table(
   cancer,
   var_types = var_types,
-  vars = c("age", "wt.loss", "meal.cal", "ph.ecog"),  # Select specific variables
-  smd = TRUE,                                          # Include standardized mean difference
-  omit_missing_strata = TRUE,                          # Remove rows with missing strata
-  seed = 123                                           # For reproducible Fisher's exact test
+  vars = c("age", "wt.loss", "meal.cal", "ph.ecog"),
+  smd = TRUE,
+  omit_missing_strata = TRUE,
+  seed = 123
 )
 
 knitr::kable(baseline_custom$baseline, caption = "Customized Baseline Table")
@@ -253,23 +173,21 @@ knitr::kable(baseline_custom$baseline, caption = "Customized Baseline Table")
 
 ### Missing Data Summary
 
-The missing data table shows the pattern of missing data by group. This is important for assessing potential bias from missing data.
-
 ```{r missing-table}
 knitr::kable(baseline_result$missing, caption = "Missing Data Summary")
 ```
 
 ## Manual Override
 
-Sometimes you may want to override automatic classification based on clinical knowledge:
+Override automatic classification based on clinical knowledge:
 
 ```{r manual-override}
 baseline_manual <- baseline_table(
   cancer,
   strata = "sex",
-  factor_vars = c("ph.ecog", "pat.karno"),  # Force these as factors
-  nonnormal_vars = c("age"),                 # Force age as non-normal
-  exact_vars = c("ph.ecog")                  # Force Fisher's exact test
+  factor_vars = c("ph.ecog", "pat.karno"),
+  nonnormal_vars = c("age"),
+  exact_vars = c("ph.ecog")
 )
 
 knitr::kable(baseline_manual$baseline, caption = "Baseline Table with Manual Overrides")
@@ -277,112 +195,68 @@ knitr::kable(baseline_manual$baseline, caption = "Baseline Table with Manual Ove
 
 ## Saving Results
 
-You can save all tables to files for further editing or submission. This creates three files:
-- baseline_characteristics.csv (main table)
-- baseline_characteristics_missing.csv (missing data table)
-- baseline_characteristics_pairwise.csv (pairwise comparisons, if applicable)
+Save all tables to CSV files:
 
 ```{r save-results, eval = FALSE}
 # baseline_saved <- baseline_table(
-#   cancer,
-#   var_types = var_types,
-#   save_table = TRUE,
-#   filename = "baseline_characteristics.csv"
+#   cancer, var_types = var_types,
+#   save_table = TRUE, filename = "baseline_characteristics.csv"
 # )
 ```
 
 ## Complete Workflow
 
-Here's a complete workflow from data preparation to final table:
+A streamlined 5-step workflow from data preparation to final table:
 
-Step 1: Prepare your data. Clean and prepare variables with clear, descriptive labels:
-
-```{r complete-workflow-step1}
+```{r complete-workflow}
+# Step 1: Prepare data
 data(cancer, package = "survival")
-
 cancer_clean <- cancer %>%
   mutate(
-    # Create categorical variables with descriptive labels
-    age_group = cut(age, breaks = c(0, 50, 60, 70, 100), 
+    age_group = cut(age, breaks = c(0, 50, 60, 70, 100),
                     labels = c("<50", "50-60", "60-70", ">70")),
-    
-    # Recode ECOG performance status - combine rare categories
-    ph.ecog_cat = factor(ph.ecog,
-                         levels = c(0:3),
+    ph.ecog_cat = factor(ph.ecog, levels = c(0:3),
                          labels = c("0", "1", ">=2", ">=2")),
-    
-    # Ensure proper factor levels for sex with descriptive labels
     sex = factor(sex, labels = c("Male", "Female"))
   )
-```
 
-Step 2: Determine variable types. This step is crucial for ensuring appropriate statistical methods:
+# Step 2: Determine variable types
+var_types <- get_var_types(cancer_clean, strata = "sex", num_to_factor = 5)
 
-```{r complete-workflow-step2}
-var_types <- get_var_types(
-  cancer_clean,
-  strata = "sex",
-  num_to_factor = 5  # Be conservative with factor classification
-)
-```
-
-Step 3: Review variable classification (optional but recommended). This helps catch any misclassifications before generating the final table:
-
-```{r complete-workflow-step3}
-var_review <- data.frame(
+# Step 3: Review classification
+knitr::kable(data.frame(
   Variable_Type = c("Factor", "Non-normal", "Exact"),
   Variables = c(
     paste(var_types$factor_vars, collapse = ", "),
     paste(var_types$nonnormal_vars, collapse = ", "),
     paste(var_types$exact_vars, collapse = ", ")
   )
-)
-knitr::kable(var_review, caption = "Variable Type Review")
-```
+), caption = "Variable Type Review")
 
-Step 4: Create baseline table with all recommended options:
-
-```{r complete-workflow-step4}
+# Step 4: Create baseline table
 baseline_final <- baseline_table(
-  cancer_clean,
-  var_types = var_types,
-  smd = TRUE,                      # Include SMD for balance assessment
-  multiple_comparison_test = TRUE  # Enable pairwise comparisons if applicable
+  cancer_clean, var_types = var_types,
+  smd = TRUE, multiple_comparison_test = TRUE
 )
-```
 
-Step 5: Review results:
-
-```{r complete-workflow-step5}
+# Step 5: Review results
 knitr::kable(baseline_final$baseline, caption = "Final Baseline Characteristics Table")
 knitr::kable(baseline_final$missing, caption = "Final Missing Data Summary")
 ```
 
 ## Summary
 
-This vignette covered the essential functions for creating baseline characteristics tables in `clinpubr`:
-
 ### Key Functions
 
-- **`get_var_types()`**: Automatic variable type determination
-- **`baseline_table()`**: Create comprehensive baseline tables
-- **`test_normality()`**: Assess distribution normality
+- **`get_var_types()`**: Automatic variable type determination with customizable thresholds
+- **`baseline_table()`**: Create comprehensive baseline tables with automatic test selection
 
 ### Best Practices
 
-1. **Always review automatic classifications**: The automatic variable type determination is helpful but should be reviewed
-2. **Consider clinical context**: Sometimes clinical knowledge should override statistical classifications
-3. **Handle missing data transparently**: Report missing data patterns in your tables
-4. **Use appropriate tests**: Let the package choose tests automatically, but verify whether they make sense
-5. **Include SMD for observational studies**: Standardized mean differences help assess group balance
-
-### Interpretation Guidelines
-
-- **P-values**: Values < 0.05 suggest statistically significant differences between groups
-- **SMD**: Values > 0.1 indicate potentially meaningful imbalance (commonly used threshold)
-- **Missing data**: High missing rates in specific groups may indicate selection bias
-
-These tools help create publication-ready baseline tables that meet the standards of top medical journals.
+1. **Review automatic classifications** --- clinical knowledge should override statistical defaults when appropriate
+2. **Include SMD for observational studies** --- standardized mean differences help assess group balance
+3. **Handle missing data transparently** --- report missing patterns in your tables
+4. **Use BH correction** for multi-group pairwise comparisons
 
 ## Further Reading
 

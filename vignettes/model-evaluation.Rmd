@@ -28,150 +28,72 @@ library(ggplot2)
 
 ## Introduction
 
-Evaluating clinical prediction models is crucial for ensuring they are reliable, accurate, and clinically useful. Unlike standard statistical models, clinical prediction models must meet higher standards because they directly impact patient care decisions.
+Evaluating clinical prediction models requires assessing discrimination, calibration, and clinical utility. This vignette demonstrates a comprehensive evaluation workflow:
 
-### Why Model Evaluation Matters
+1. **Model Comparison** --- Compare multiple models using discrimination and calibration metrics
+2. **Time-Dependent ROC** --- Evaluate survival prediction models at specific time points
+3. **C-Index** --- Global discrimination measure for survival models
+4. **Variable Importance** --- Identify key predictive features
 
-In clinical practice, prediction models are used for:
+## Preparing Data
 
-- **Risk stratification**: Identifying high-risk patients who may benefit from intensive monitoring
-- **Treatment selection**: Guiding personalized treatment decisions
-- **Prognosis**: Providing patients with realistic expectations about outcomes
-- **Resource allocation**: Optimizing healthcare resource distribution
-
-Poorly evaluated models can lead to:
-- **Under-treatment**: Missing patients who would benefit from intervention
-- **Over-treatment**: Subjecting low-risk patients to unnecessary procedures
-- **False reassurance**: Missing serious conditions due to poor sensitivity
-- **Unnecessary anxiety**: False positives causing psychological distress
-
-### Key Evaluation Dimensions
-
-A comprehensive model evaluation should assess:
-
-1. **Discrimination**: Can the model distinguish between different outcomes?
-2. **Calibration**: Do predicted probabilities match observed frequencies?
-3. **Clinical utility**: Does using the model improve patient outcomes?
-4. **Generalizability**: Does the model work in different populations?
-
-## Preparing Data for Model Evaluation
-
-We'll use the NCCTG Lung Cancer dataset to demonstrate model evaluation techniques.
-
-Load survival data - NCCTG Lung Cancer Data. This dataset is commonly used for demonstrating survival analysis and predictive model evaluation in clinical research:
+We'll use the NCCTG Lung Cancer dataset and fit three logistic regression models of increasing complexity:
 
 ```{r prepare-data}
 data(cancer, package = "survival")
-```
-
-Prepare data for binary classification. In clinical prediction modeling, we often predict binary outcomes such as death, disease progression, or treatment response:
-
-```{r prepare-data-binary}
 cancer$dead <- cancer$status == 2
-```
-
-For survival analysis, convert status to 0/1 (1 = event):
-
-```{r prepare-data-survival}
 cancer$event <- ifelse(cancer$status == 2, 1, 0)
-```
 
-Clean data with proper factor labels:
-
-```{r prepare-data-clean}
 cancer_clean <- cancer %>%
-  mutate(
-    sex = factor(sex, labels = c("Male", "Female"))
-  ) %>%
+  mutate(sex = factor(sex, labels = c("Male", "Female"))) %>%
   na.omit()
-```
 
-Create some example predictions for demonstration. In real research, these would come from your trained models. We simulate predictions from different models with increasing complexity:
-
-Model 1: Basic model with age, sex, and performance status:
-
-```{r prepare-data-model1}
-n <- nrow(cancer_clean)
+# Fit three models with increasing complexity
 cancer_clean$pred_model1 <- predict(
   glm(dead ~ age + sex + ph.karno, data = cancer_clean, family = binomial),
   type = "response"
 )
-```
-
-Model 2: Extended model adding patient Karnofsky score. This tests whether additional variables improve prediction:
-
-```{r prepare-data-model2}
 cancer_clean$pred_model2 <- predict(
   glm(dead ~ age + sex + ph.karno + pat.karno, data = cancer_clean, family = binomial),
   type = "response"
 )
-```
-
-Model 3: Alternative model with weight loss instead of pat.karno. This allows comparison of different variable combinations:
-
-```{r prepare-data-model3}
 cancer_clean$pred_model3 <- predict(
   glm(dead ~ age + sex + ph.karno + wt.loss, data = cancer_clean, family = binomial),
   type = "response"
 )
-```
 
-Show predictions vs actual outcomes:
-
-```{r prepare-data-preview}
 knitr::kable(head(cancer_clean[, c("dead", "pred_model1", "pred_model2", "pred_model3")]),
              caption = "Model Predictions vs Actual Outcomes (First 6 Rows)")
 ```
 
 ## Model Comparison
 
-### Comparing Multiple Models
+`classif_model_compare()` provides a comprehensive comparison using multiple metrics (AUC, Accuracy, Sensitivity, Specificity, PPV, NPV, PRAUC, Brier Score) and generates ROC, PR, calibration, and DCA plots:
 
-The `classif_model_compare()` function provides a comprehensive comparison of multiple models using various metrics:
-
-```{r model-compare-basic}
+```{r model-compare}
 model_comparison <- classif_model_compare(
   data = cancer_clean,
   target_var = "dead",
   model_names = c("pred_model1", "pred_model2", "pred_model3"),
   save_output = FALSE
 )
+
+knitr::kable(model_comparison$metric_table, caption = "Model Performance Comparison")
 ```
 
-View performance metrics. Key metrics explained:
-- **AUC**: Area under ROC curve (discrimination ability)
-- **Accuracy**: Overall correct classification rate
-- **Sensitivity**: Ability to detect true positives
-- **Specificity**: Ability to detect true negatives
-- **PPV/NPV**: Predictive values at default threshold
-- **PRAUC**: Precision-recall AUC (useful for imbalanced data)
-- **Brier Score**: Calibration measure (lower is better)
-
-```{r model-compare-metrics}
-knitr::kable(model_comparison, caption = "Model Performance Comparison")
-```
-
-### Visualization of Model Performance
-
-ROC curves show discrimination ability at different thresholds. A curve closer to the top-left corner indicates better performance:
+### Visualization
 
 ```{r model-plots-roc}
 model_comparison$roc_plot
 ```
 
-Precision-Recall curves are useful for imbalanced datasets. They show the trade-off between precision and recall:
-
 ```{r model-plots-pr}
 model_comparison$pr_plot
 ```
 
-Calibration plots assess how well predicted probabilities match observed frequencies. Points closer to the diagonal line indicate better calibration:
-
 ```{r model-plots-calibration}
 model_comparison$calibration_plot
 ```
-
-Decision curve analysis evaluates clinical utility. It shows the net benefit of using the model at different threshold probabilities:
 
 ```{r model-plots-dca}
 model_comparison$dca_plot
@@ -179,15 +101,9 @@ model_comparison$dca_plot
 
 ## Time-Dependent ROC Analysis
 
-For survival outcomes, standard ROC analysis doesn't account for the timing of events. Time-dependent ROC analysis is essential for evaluating survival prediction models.
+For survival outcomes, time-dependent ROC accounts for the timing of events:
 
-### Basic Time-Dependent ROC
-
-Time-dependent ROC analysis for survival outcomes. Unlike standard ROC, this accounts for the timing of events. It's essential for evaluating survival prediction models.
-
-Calculate time-dependent ROC at 200 and 365 days. These time points might correspond to clinically meaningful milestones:
-
-```{r time-roc-basic}
+```{r time-roc}
 time_roc_result <- time_roc_plot(
   data = cancer_clean,
   event_var = "event",
@@ -200,139 +116,49 @@ time_roc_result <- time_roc_plot(
 time_roc_result
 ```
 
-### Comparing Models at Different Time Points
+## C-Index
 
-Compare multiple markers at different time points. This helps identify which model performs best at specific time points:
-
-```{r time-roc-compare}
-time_roc_compare <- time_roc_plot(
-  data = cancer_clean,
-  event_var = "event",
-  time_var = "time",
-  marker_var = "pred_model1",
-  times = c(200, 365),
-  save_plot = FALSE
-)
-
-time_roc_compare
-```
-
-## C-Index for Survival Models
-
-The C-index (concordance index) is a global measure of discrimination for survival models.
-
-### Understanding C-Index
-
-The C-index represents the probability that for two randomly chosen patients, the one with higher predicted risk experiences the event first.
-
-**Interpretation:**
-- **0.5**: No discrimination (random prediction)
-- **0.6-0.7**: Poor discrimination
-- **0.7-0.8**: Acceptable discrimination
-- **0.8-0.9**: Excellent discrimination
-- **>0.9**: Outstanding discrimination (rare in practice)
-
-Calculate C-index for different models. The C-index (concordance index) is a global measure of discrimination for survival models. It represents the probability that:
-- For two randomly chosen patients, the one with higher predicted risk experiences the event first
-
-C-index interpretation:
-- 0.5: No discrimination (random prediction)
-- 0.6-0.7: Poor discrimination
-- 0.7-0.8: Acceptable discrimination
-- 0.8-0.9: Excellent discrimination
-- >0.9: Outstanding discrimination (rare in practice)
+The C-index (concordance index) measures discrimination for survival models. Interpretation: 0.5 = no discrimination, 0.7-0.8 = acceptable, >0.8 = excellent.
 
 ```{r c-index}
-cindex_model1 <- calc_cindex(
-  data = cancer_clean,
-  time_var = "time",
-  event_var = "event",
-  marker_var = "pred_model1"
-)
-
-cindex_model2 <- calc_cindex(
-  data = cancer_clean,
-  time_var = "time",
-  event_var = "event",
-  marker_var = "pred_model2"
-)
-
-knitr::kable(data.frame(
-  Model = c("Model 1 (Basic)", "Model 2 (Extended)"),
-  C_Index = c(round(cindex_model1, 3), round(cindex_model2, 3)),
-  Interpretation = c(
-    ifelse(cindex_model1 > 0.7, "Acceptable", "Poor"),
-    ifelse(cindex_model2 > 0.7, "Acceptable", "Poor")
-  )
-), caption = "C-index Comparison")
-```
-
-### Comparing C-Indices Across All Models
-
-Compare C-indices across multiple models. This provides a comprehensive view of model discrimination:
-
-```{r compare-cindex}
 models <- c("pred_model1", "pred_model2", "pred_model3")
-cindex_results <- sapply(models, function(model) {
-  calc_cindex(cancer_clean, "time", "event", model)
+cindex_results <- sapply(models, function(m) {
+  calc_cindex(cancer_clean, "time", "event", m)
 })
 
-cindex_comparison <- data.frame(
+knitr::kable(data.frame(
   Model = c("Basic (Age+Sex+Karnofsky)", "Extended (+Pat.Karnofsky)", "Alternative (+Weight Loss)"),
   C_index = round(cindex_results, 3),
-  Rank = rank(-cindex_results)  # Higher C-index = better rank
-)
-
-knitr::kable(cindex_comparison, caption = "C-index Comparison Across All Models")
+  Rank = rank(-cindex_results)
+), caption = "C-index Comparison Across All Models")
 ```
 
 ## Variable Importance
 
-Understanding which variables drive predictions is crucial for:
-- **Model interpretation**: Explaining predictions to clinicians
-- **Feature selection**: Identifying the most important predictors
-- **Clinical insights**: Understanding disease mechanisms
-
-### Creating Importance Plots
-
-Create example importance scores. In practice, these would come from your model (e.g., random forest, logistic regression coefficients). Variable importance helps identify which factors drive predictions:
-
 ```{r importance-plot}
 importance_scores <- c(
-  Age = 0.25,
-  Sex = 0.15,
-  Karnofsky = 0.30,
-  WeightLoss = 0.12,
-  Calories = 0.08,
-  PatKarnofsky = 0.10
+  Age = 0.25, Sex = 0.15, Karnofsky = 0.30,
+  WeightLoss = 0.12, Calories = 0.08, PatKarnofsky = 0.10
 )
 
-importance_plot(
-  x = importance_scores,
-  x_lab = "Variable Importance"
-)
+importance_plot(x = importance_scores, x_lab = "Variable Importance")
 ```
 
-### Customizing Importance Plots
-
-Customized importance plot. You can customize appearance to match publication requirements:
+Show only top variables with custom styling:
 
 ```{r custom-importance}
 importance_plot(
   x = importance_scores,
   x_lab = "Relative Importance",
-  top_n = 4,                    # Show only top 4 variables
+  top_n = 4,
   color = "steelblue"
 )
 ```
 
 ## Complete Evaluation Workflow
 
-Here's a comprehensive workflow for evaluating clinical prediction models:
-
-Step 1: Data preparation:
-
-```{r complete-evaluation-step1}
+```{r complete-evaluation}
+# Step 1: Data preparation
 data(cancer, package = "survival")
 eval_data <- cancer %>%
   mutate(
@@ -341,156 +167,63 @@ eval_data <- cancer %>%
     sex = factor(sex, labels = c("Male", "Female"))
   ) %>%
   na.omit()
-```
 
-Step 2: Fit multiple models and generate predictions:
+# Step 2: Fit models
+eval_data$pred_m1 <- predict(glm(dead ~ age + sex, data = eval_data, family = binomial), type = "response")
+eval_data$pred_m2 <- predict(glm(dead ~ age + sex + ph.karno, data = eval_data, family = binomial), type = "response")
+eval_data$pred_m3 <- predict(glm(dead ~ age + sex + ph.karno + pat.karno + wt.loss,
+                                  data = eval_data, family = binomial), type = "response")
 
-```{r complete-evaluation-step2}
-cat("Step 2: Fitting models...\n")
-
-# Model 1: Basic model
-model1 <- glm(dead ~ age + sex, data = eval_data, family = binomial)
-eval_data$pred_m1 <- predict(model1, type = "response")
-
-# Model 2: With performance status
-model2 <- glm(dead ~ age + sex + ph.karno, data = eval_data, family = binomial)
-eval_data$pred_m2 <- predict(model2, type = "response")
-
-# Model 3: Full model
-model3 <- glm(dead ~ age + sex + ph.karno + pat.karno + wt.loss, 
-              data = eval_data, family = binomial)
-eval_data$pred_m3 <- predict(model3, type = "response")
-```
-
-Step 3: Comprehensive model comparison:
-
-```{r complete-evaluation-step3}
-cat("\nStep 3: Comparing models...\n")
+# Step 3: Model comparison
 comparison <- classif_model_compare(
-  eval_data,
-  target_var = "dead",
+  eval_data, target_var = "dead",
   model_names = c("pred_m1", "pred_m2", "pred_m3"),
   save_output = FALSE
 )
 
-comparison_metrics <- as.data.frame(comparison$metrics)
+comparison_metrics <- comparison$metric_table
 knitr::kable(comparison_metrics, caption = "Comprehensive Model Comparison")
-```
 
-Step 4: Time-dependent ROC (for survival outcome):
-
-```{r complete-evaluation-step4}
-cat("\nStep 4: Time-dependent ROC analysis...\n")
+# Step 4: Time-dependent ROC
 time_roc <- time_roc_plot(
-  eval_data,
-  event_var = "event",
-  time_var = "time",
-  marker_var = "pred_m3",
-  times = c(200, 365),
+  eval_data, event_var = "event", time_var = "time",
+  marker_var = "pred_m3", times = c(200, 365),
   save_plot = FALSE
 )
-```
 
-Step 5: C-index calculation:
+# Step 5: C-index
+cindex_vals <- sapply(c("pred_m1", "pred_m2", "pred_m3"), function(m) {
+  calc_cindex(eval_data, "time", "event", m)
+})
 
-```{r complete-evaluation-step5}
-cat("\nStep 5: Calculating C-index...\n")
-cindex_m1 <- calc_cindex(eval_data, "time", "event", "pred_m1")
-cindex_m2 <- calc_cindex(eval_data, "time", "event", "pred_m2")
-cindex_m3 <- calc_cindex(eval_data, "time", "event", "pred_m3")
-
-cindex_summary <- data.frame(
+knitr::kable(data.frame(
   Model = c("Basic (Age+Sex)", "With Performance Status", "Full Model"),
-  C_Index = c(round(cindex_m1, 3), round(cindex_m2, 3), round(cindex_m3, 3))
-)
-knitr::kable(cindex_summary, caption = "C-index Summary")
-```
+  C_Index = round(cindex_vals, 3)
+), caption = "C-index Summary")
 
-Step 6: Summary and recommendations:
-
-```{r complete-evaluation-step6}
-cat("\nStep 6: Evaluation Summary\n")
-cat("=======================\n")
-
-# Find best model by AUC (check if AUC column exists and has valid values)
-if("AUC" %in% names(comparison_metrics) && length(comparison_metrics$AUC) > 0 && !all(is.na(comparison_metrics$AUC))) {
-  best_auc_idx <- which.max(comparison_metrics$AUC)
-  best_auc_model <- as.character(comparison_metrics$Model[best_auc_idx])
-  best_auc_value <- comparison_metrics$AUC[best_auc_idx]
-} else {
-  best_auc_model <- "N/A"
-  best_auc_value <- NA
-}
-
-# Find best model by C-index
-best_cindex_idx <- which.max(cindex_summary$C_Index)
-best_cindex_model <- cindex_summary$Model[best_cindex_idx]
-best_cindex_value <- cindex_summary$C_Index[best_cindex_idx]
-
-# Create summary table
-summary_table <- data.frame(
-  Metric = c("Best AUC Model", "Best AUC Value", "Best C-index Model", "Best C-index Value"),
-  Value = c(best_auc_model, ifelse(is.na(best_auc_value), "N/A", round(best_auc_value, 3)), best_cindex_model, best_cindex_value)
-)
-knitr::kable(summary_table, caption = "Model Evaluation Summary")
-
-# Provide recommendations
-cat("\nRecommendations:\n")
-cat("- For discrimination:", best_cindex_model, "performs best (C-index =", best_cindex_value, ")\n")
-cat("- For clinical utility: Review decision curve analysis\n")
-cat("- For calibration: Review calibration plots\n")
-cat("- Consider external validation before clinical implementation\n")
+# Step 6: Summary
+cat("\nBest C-index:", names(which.max(cindex_vals)),
+    "(C-index =", round(max(cindex_vals), 3), ")\n")
 ```
 
 ## Summary
 
-This vignette covered the essential functions for evaluating clinical prediction models in `clinpubr`:
-
 ### Key Functions
 
-- **`classif_model_compare()`**: Comprehensive model comparison with multiple metrics and visualizations
+- **`classif_model_compare()`**: Comprehensive model comparison with ROC, PR, calibration, and DCA plots
 - **`time_roc_plot()`**: Time-dependent ROC analysis for survival outcomes
 - **`calc_cindex()`**: Calculate concordance index for survival models
 - **`importance_plot()`**: Visualize variable importance
 
 ### Evaluation Checklist
 
-When evaluating a clinical prediction model, ensure you report:
-
-1. **Discrimination metrics**:
-   - AUC (for binary outcomes)
-   - C-index (for survival outcomes)
-   - Sensitivity and specificity at clinically relevant thresholds
-
-2. **Calibration metrics**:
-   - Calibration plots
-   - Brier score
-   - Hosmer-Lemeshow test (if applicable)
-
-3. **Clinical utility**:
-   - Decision curve analysis
-   - Net benefit at relevant threshold probabilities
-
-4. **Model stability**:
-   - Bootstrap confidence intervals
-   - Cross-validation results
-
-5. **External validation**:
-   - Performance in independent datasets
-   - Performance in different populations
-
-### Best Practices
-
-1. **Report multiple metrics**: No single metric captures all aspects of model performance
-2. **Use clinically relevant thresholds**: Don't just report AUC - show performance at thresholds that matter clinically
-3. **Validate externally**: Internal validation is necessary but not sufficient
-4. **Assess calibration**: Good discrimination doesn't guarantee good calibration
-5. **Consider clinical utility**: Statistical performance doesn't always translate to clinical benefit
-
-These tools help ensure that clinical prediction models are rigorously evaluated before being implemented in practice, protecting patient safety and improving healthcare outcomes.
+1. **Discrimination**: AUC (binary) or C-index (survival), sensitivity/specificity at clinical thresholds
+2. **Calibration**: Calibration plots, Brier score
+3. **Clinical utility**: Decision curve analysis, net benefit at relevant thresholds
+4. **External validation**: Performance in independent populations
 
 ## Further Reading
 
 - `vignette("data-cleaning")`: Data cleaning and preparation
-- `vignette("baseline-table")`: Creating publication-ready baseline tables
+- `vignette("baseline-table")`: Creating baseline characteristics tables
 - `vignette("regression-analysis")`: Regression analysis and visualization

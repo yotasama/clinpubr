@@ -28,111 +28,54 @@ library(ggplot2)
 
 ## Introduction
 
-Regression analysis is fundamental to clinical research for understanding relationships between predictors and outcomes. Whether you're investigating risk factors for disease progression, treatment effects, or prognostic indicators, robust regression methods are essential.
+The `clinpubr` package provides a comprehensive suite for regression analysis in clinical research, supporting Cox proportional hazards, logistic, and linear regression with publication-ready visualizations. This vignette covers the typical analysis workflow:
 
-### Clinical Applications of Regression Analysis
-
-In medical research, regression analysis is used for:
-
-- **Risk factor identification**: Determining which patient characteristics predict adverse outcomes
-- **Treatment effect estimation**: Quantifying the impact of interventions while adjusting for confounders
-- **Prognostic modeling**: Developing tools to predict patient outcomes
-- **Subgroup analysis**: Identifying patient groups who may benefit most from treatments
-- **Interaction assessment**: Testing whether treatment effects vary by patient characteristics
-
-### Challenges in Clinical Regression Analysis
-
-Clinical data presents unique challenges for regression analysis:
-
-1. **Non-linear relationships**: Many clinical relationships are not linear (e.g., BMI and mortality follow a J-shaped curve)
-2. **Variable transformations**: Deciding whether to use linear, logarithmic, or categorical forms of predictors
-3. **Model specification**: Choosing which covariates to include and how to specify them
-4. **Visualization**: Creating clear, publication-ready figures that communicate results effectively
-5. **Multiple testing**: Controlling for Type I error when testing many predictors
-
-The `clinpubr` package provides a comprehensive suite of tools addressing these challenges, supporting logistic regression, Cox proportional hazards models, and linear regression with various visualization options.
+1. **Regression Scan** --- Screen predictors with multiple transformations
+2. **Comprehensive Results** --- Generate multi-model specification tables
+3. **Forest Plots** --- Visualize effect sizes
+4. **Predictor Effects** --- RCS plots and effect plots
+5. **Interaction Analysis** --- Test and visualize effect modification
+6. **Subgroup Analysis** --- Subgroup forest plots
 
 ## Data Preparation
 
-We'll use the NCCTG Lung Cancer dataset from the `survival` package. This dataset contains survival data for patients with advanced lung cancer and is widely used in survival analysis examples.
-
-### Understanding the Data
-
-Before analysis, it's important to understand your data:
-- **Outcome**: Survival time and status (dead/censored)
-- **Predictors**: Age, sex, ECOG performance status, Karnofsky scores, weight loss, calories consumed
-- **Clinical context**: These variables are commonly used prognostic factors in lung cancer
-
-Load example data - NCCTG Lung Cancer Data. This dataset contains 228 patients with advanced lung cancer. Variables include demographics, performance status, and nutritional measures:
+We'll use the NCCTG Lung Cancer dataset (228 patients with advanced lung cancer):
 
 ```{r load-data}
 data(cancer, package = "survival")
-```
-
-View data structure:
-
-```{r load-data-structure}
-str(cancer)
-```
-
-Create a binary outcome for logistic regression demonstration. In clinical practice, we often analyze both survival time and binary endpoints:
-
-```{r load-data-binary}
 cancer$dead <- cancer$status == 2
-```
 
-Prepare data with clear, interpretable labels. Proper labeling is crucial for publication-ready tables and figures:
-
-```{r load-data-clean}
 cancer_clean <- cancer %>%
   mutate(
     sex = factor(sex, labels = c("Male", "Female")),
-    ph.ecog_cat = factor(ph.ecog, levels = 0:3, 
-                         labels = c("0 - Asymptomatic", 
+    ph.ecog_cat = factor(ph.ecog, levels = 0:3,
+                         labels = c("0 - Asymptomatic",
                                    "1 - Symptomatic but ambulatory",
-                                   "2 - In bed <50% of time", 
+                                   "2 - In bed <50% of time",
                                    "3 - In bed >50% of time"))
   ) %>%
   na.omit()
-```
 
-Show data dimensions after cleaning:
-
-```{r load-data-summary}
 knitr::kable(data.frame(
   Rows = nrow(cancer_clean),
   Columns = ncol(cancer_clean),
   Description = "Complete cases for analysis"
 ), caption = "Analysis Dataset Summary")
-```
 
-Preview key variables:
-
-```{r load-data-preview}
-knitr::kable(head(cancer_clean[, c("age", "sex", "ph.ecog", "ph.karno", "time", "status")]), 
+knitr::kable(head(cancer_clean[, c("age", "sex", "ph.ecog", "ph.karno", "time", "status")]),
              caption = "Sample of Analysis Variables")
 ```
 
 ## Regression Scan
 
-### Why Scan for Variable Transformations?
+`regression_scan()` automatically tests multiple variable transformations for each predictor:
 
-In clinical research, the relationship between predictors and outcomes is often complex:
-- **Age**: Risk may increase linearly, or there may be threshold effects
-- **Lab values**: Log transformation may be needed for skewed distributions
-- **Performance status**: May have non-linear effects on outcomes
+- **Original** (linear) form
+- **Logarithmic** transformation (if all values > 0)
+- **Categorical** form (median split)
+- **RCS** (Restricted Cubic Spline) for non-linear relationships
 
-The `regression_scan()` function automatically tests multiple variable transformations to identify the best predictors, saving time and reducing subjective decision-making.
-
-### Cox Proportional Hazards Model Scan
-
-The Cox model is the most widely used regression method in survival analysis. It allows us to estimate hazard ratios while accounting for censoring.
-
-Scan for significant predictors in Cox model. This tests multiple transformations for each predictor:
-- Original (linear) form
-- Logarithmic transformation (if all values > 0)
-- Categorical form (median split)
-- Restricted cubic spline (RCS) for non-linear relationships
+### Cox Proportional Hazards Model
 
 ```{r cox-scan}
 cox_scan <- regression_scan(
@@ -147,31 +90,21 @@ cox_scan <- regression_scan(
 knitr::kable(cox_scan, caption = "Cox Regression Scan Results")
 ```
 
-### Interpreting Scan Results
+The scan reports `original.pval` (linear), `logarithm.pval` (log-transformed), `categorized.pval` (median split), `rcs.overall.pval` (RCS overall), and `best.var.trans` (best transformation).
 
-The scan results show:
-- **original.pval**: P-value for linear relationship
-- **logarithm.pval**: P-value for log-transformed predictor
-- **categorized.pval**: P-value for median-split categorical form
-- **rcs.overall.pval**: Overall p-value for non-linear (RCS) relationship
-- **rcs.nonlinear.pval**: P-value specifically testing non-linearity
-- **best.var.trans**: Transformation with smallest p-value
-
-View predictors with significant associations. We consider both linear and non-linear associations:
+View significant predictors:
 
 ```{r interpret-scan}
 significant_predictors <- cox_scan %>%
   filter(original.pval < 0.05 | rcs.overall.pval < 0.05) %>%
   select(predictor, nvalid, best.var.trans, original.pval, rcs.overall.pval)
 
-knitr::kable(significant_predictors, 
+knitr::kable(significant_predictors,
              caption = "Significant Predictors (p < 0.05)",
              digits = 4)
 ```
 
 ### Logistic Regression Scan
-
-For binary outcomes (e.g., 30-day mortality, treatment response), logistic regression is appropriate:
 
 ```{r logistic-scan}
 logistic_scan <- regression_scan(
@@ -187,21 +120,9 @@ knitr::kable(logistic_scan, caption = "Logistic Regression Scan Results")
 
 ## Comprehensive Regression Results
 
-### Why Multiple Model Specifications?
+In clinical publications, it's standard to present multiple model specifications (Crude, Partially adjusted, Fully adjusted) to show how confounding affects the estimated association.
 
-In clinical publications, it's standard practice to present:
-- **Crude model**: Unadjusted association
-- **Partially adjusted model**: Controlling for key confounders
-- **Fully adjusted model**: Controlling for all relevant variables
-
-This allows readers to assess how confounding affects the estimated association.
-
-### Cox Model Results with Multiple Specifications
-
-Generate comprehensive Cox regression results for age. We present multiple model specifications:
-- Crude: Age only
-- Model1: Age adjusted for sex
-- Model2: Age adjusted for sex, ph.karno, and pat.karno
+### Cox Model with Multiple Specifications
 
 ```{r cox-basic-results}
 cox_results <- regression_basic_results(
@@ -214,7 +135,7 @@ cox_results <- regression_basic_results(
     Model1 = c("sex"),
     Model2 = c("sex", "ph.karno", "pat.karno")
   ),
-  pers = c(1, 5, 10),  # Report per 1, 5, and 10 years
+  pers = c(1, 5, 10),
   save_output = FALSE
 )
 
@@ -222,8 +143,6 @@ knitr::kable(cox_results$table, caption = "Cox Regression Results for Age")
 ```
 
 ### Logistic Model with Clinical Cut-points
-
-Clinical variables often have established cut-points (e.g., Karnofsky score < 80 indicates poor performance):
 
 ```{r logistic-basic-results}
 logistic_results <- regression_basic_results(
@@ -234,7 +153,7 @@ logistic_results <- regression_basic_results(
     Crude = c(),
     Adjusted = c("age", "sex")
   ),
-  factor_breaks = c(80),  # Categorize at Karnofsky score 80
+  factor_breaks = c(80),
   factor_labels = c("<80", ">=80"),
   save_output = FALSE
 )
@@ -242,9 +161,9 @@ logistic_results <- regression_basic_results(
 knitr::kable(logistic_results$table, caption = "Logistic Regression Results for Performance Status")
 ```
 
-### Using Quantile-Based Categories
+### Quantile-Based Categories
 
-When clinical cut-points aren't established, quantile-based categories can be used. Use tertiles (33rd and 67th percentiles) instead of clinical breaks. This creates balanced groups for comparison:
+When clinical cut-points aren't established, use tertiles for balanced group comparison:
 
 ```{r custom-transformations}
 custom_results <- regression_basic_results(
@@ -252,9 +171,9 @@ custom_results <- regression_basic_results(
   x = "age",
   y = "status",
   time = "time",
-  quantile_breaks = c(0.33, 0.67),  # Tertiles
+  quantile_breaks = c(0.33, 0.67),
   quantile_labels = c("Youngest Third", "Middle Third", "Oldest Third"),
-  label_with_range = TRUE,  # Show actual age ranges
+  label_with_range = TRUE,
   save_output = FALSE
 )
 
@@ -263,11 +182,7 @@ knitr::kable(custom_results$table, caption = "Cox Regression Results - Age Terti
 
 ## Forest Plots
 
-Forest plots are the standard way to display regression results in clinical publications. They allow readers to quickly compare effect sizes across multiple variables or models.
-
 ### Univariate Forest Plot
-
-Univariate analyses show the crude association between each predictor and outcome:
 
 ```{r univariate-forest}
 uni_forest <- regression_forest(
@@ -283,8 +198,6 @@ uni_forest
 ```
 
 ### Multivariate Forest Plot
-
-Multivariate analyses show independent effects after mutual adjustment:
 
 ```{r multivariate-forest}
 multi_forest <- regression_forest(
@@ -305,8 +218,6 @@ multi_forest
 
 ### Customizing Forest Plots
 
-Select specific variables and customize appearance. Useful when you have many predictors but want to highlight key findings:
-
 ```{r custom-forest}
 custom_forest <- regression_forest(
   data = cancer_clean,
@@ -314,9 +225,9 @@ custom_forest <- regression_forest(
   y = "status",
   time = "time",
   as_univariate = TRUE,
-  show_vars = c("age", "ph.karno", "pat.karno"),  # Only show selected variables
-  est_nsmall = 2,                           # 2 decimal places for estimates
-  p_nsmall = 4,                             # 4 decimal places for p-values
+  show_vars = c("age", "ph.karno", "pat.karno"),
+  est_nsmall = 2,
+  p_nsmall = 4,
   save_plot = FALSE
 )
 
@@ -325,16 +236,9 @@ custom_forest
 
 ## Predictor Effect Visualization
 
-### Restricted Cubic Spline (RCS) Plots
+### RCS Plots
 
-RCS plots are essential for visualizing non-linear relationships. Unlike simple categorization, RCS preserves the continuous nature of the data while allowing for flexible curve fitting.
-
-**When to use RCS:**
-- You suspect a non-linear relationship
-- You want to avoid arbitrary categorization
-- You need to test for non-linearity formally
-
-Create RCS plot for age. Shows the non-linear relationship between age and mortality risk. Reference point is the median age:
+RCS plots visualize non-linear relationships while preserving the continuous nature of the data:
 
 ```{r rcs-plot}
 rcs_age <- rcs_plot(
@@ -343,9 +247,9 @@ rcs_age <- rcs_plot(
   y = "status",
   time = "time",
   covars = c("sex", "ph.karno"),
-  knot = 4,                    # Number of knots for flexibility
-  ref = "x_median",            # Reference at median
-  add_hist = TRUE,             # Add histogram to show data distribution
+  knot = 4,
+  ref = "x_median",
+  add_hist = TRUE,
   save_plot = FALSE
 )
 
@@ -354,9 +258,7 @@ rcs_age
 
 ### Predictor Effect Plot
 
-The `predictor_effect_plot()` function provides a unified interface for both continuous and categorical predictors.
-
-Effect plot for continuous predictor (linear). Shows the dose-response relationship:
+A unified interface for both continuous and categorical predictors:
 
 ```{r predictor-effect}
 effect_linear <- predictor_effect_plot(
@@ -372,8 +274,6 @@ effect_linear <- predictor_effect_plot(
 
 effect_linear
 ```
-
-Effect plot for categorical predictor. Shows hazard ratios for each category vs reference:
 
 ```{r predictor-effect-categorical}
 effect_cat <- predictor_effect_plot(
@@ -391,8 +291,6 @@ effect_cat
 
 ### Customized RCS Plot
 
-Customized RCS plot with transformations. Useful when the relationship spans several orders of magnitude:
-
 ```{r custom-effect}
 custom_rcs <- rcs_plot(
   data = cancer_clean,
@@ -401,10 +299,10 @@ custom_rcs <- rcs_plot(
   time = "time",
   covars = c("age", "sex"),
   knot = 5,
-  ref = 0,                     # Reference at 0 (no weight loss)
-  add_hist = FALSE,            # Disable histogram for cleaner look
-  trans = "log10",             # Log10 transformation of y-axis
-  y_lim = c(0.5, 5),           # Custom y-axis limits
+  ref = 0,
+  add_hist = FALSE,
+  trans = "log10",
+  y_lim = c(0.5, 5),
   save_plot = FALSE
 )
 
@@ -413,16 +311,7 @@ custom_rcs
 
 ## Interaction Analysis
 
-### Why Test for Interactions?
-
-Interactions (effect modification) are clinically important:
-- **Personalized medicine**: Does treatment effect vary by patient characteristics?
-- **Risk stratification**: Are some subgroups at particularly high risk?
-- **Biological insights**: Do different mechanisms operate in different groups?
-
 ### Scanning for Interactions
-
-Scan for significant interactions. Tests whether the effect of each predictor differs by sex:
 
 ```{r interaction-scan}
 interaction_scan <- interaction_scan(
@@ -439,8 +328,6 @@ knitr::kable(interaction_scan, caption = "Interaction Scan Results")
 
 ### Visualizing Interactions
 
-When an interaction is present, visualization helps understand the pattern. Plot interaction between age and sex. Shows separate curves for males and females:
-
 ```{r interaction-plot}
 interaction_age_sex <- interaction_plot(
   data = cancer_clean,
@@ -455,9 +342,7 @@ interaction_age_sex <- interaction_plot(
 interaction_age_sex
 ```
 
-### Calculating Interaction P-values
-
-Calculate interaction p-value formally. This tests whether the age effect differs significantly between sexes:
+### Interaction P-value
 
 ```{r interaction-pvalue}
 interaction_p <- interaction_p_value(
@@ -472,26 +357,13 @@ interaction_p <- interaction_p_value(
 knitr::kable(data.frame(
   Interaction = "age * sex",
   P_Value = round(interaction_p, 4),
-  Interpretation = ifelse(interaction_p < 0.05, 
-                         "Significant interaction", 
+  Interpretation = ifelse(interaction_p < 0.05,
+                         "Significant interaction",
                          "No significant interaction")
 ), caption = "Interaction Test Result")
 ```
 
 ## Subgroup Analysis
-
-### When to Perform Subgroup Analysis?
-
-Subgroup analysis is appropriate when:
-- You have a priori hypotheses about specific subgroups
-- You want to assess generalizability across patient types
-- Regulatory agencies require evidence in specific populations
-
-**Caution**: Post-hoc subgroup analyses can be misleading due to multiple testing and small sample sizes.
-
-### Subgroup Forest Plots
-
-Create subgroup forest plot. Shows the effect of age separately in males and females:
 
 ```{r subgroup-forest}
 subgroup_result <- subgroup_forest(
@@ -507,11 +379,9 @@ subgroup_result <- subgroup_forest(
 subgroup_result
 ```
 
-## Model Fitting Functions
+## Model Fitting
 
-### Direct Model Fitting
-
-For custom analyses, you can fit models directly with full control:
+For custom analyses, fit models directly with full control:
 
 ```{r regression-fit}
 fit_result <- regression_fit(
@@ -527,8 +397,6 @@ knitr::kable(fit_result, caption = "Detailed Model Results")
 ```
 
 ### RCS Model Fitting
-
-Fit RCS model. Returns both linear and non-linear components:
 
 ```{r rcs-fit}
 rcs_fit <- regression_fit(
@@ -546,11 +414,8 @@ knitr::kable(rcs_fit, caption = "RCS Model Results")
 
 ## Complete Analysis Workflow
 
-Here's a comprehensive workflow from data exploration to publication-ready figures:
-
-Step 1: Data preparation:
-
-```{r complete-workflow-step1}
+```{r complete-workflow}
+# Step 1: Data preparation
 data(cancer, package = "survival")
 cancer$dead <- cancer$status == 2
 
@@ -563,11 +428,8 @@ analysis_data <- cancer %>%
   na.omit()
 
 cat("Analysis dataset:", nrow(analysis_data), "patients\n")
-```
 
-Step 2: Regression scan to identify significant predictors:
-
-```{r complete-workflow-step2}
+# Step 2: Regression scan
 scan_results <- regression_scan(
   analysis_data,
   y = "status",
@@ -576,7 +438,6 @@ scan_results <- regression_scan(
   save_table = FALSE
 )
 
-# Identify top predictors (p < 0.05)
 top_predictors <- scan_results %>%
   filter(original.pval < 0.05) %>%
   pull(predictor)
@@ -584,17 +445,14 @@ top_predictors <- scan_results %>%
 cat("Significant predictors:", paste(top_predictors, collapse = ", "), "\n")
 
 knitr::kable(
-  scan_results %>% 
+  scan_results %>%
     filter(predictor %in% top_predictors) %>%
     select(predictor, best.var.trans, original.pval),
   caption = "Key Significant Predictors",
   digits = 4
 )
-```
 
-Step 3: Comprehensive results for key predictor:
-
-```{r complete-workflow-step3}
+# Step 3: Comprehensive results for key predictor
 age_results <- regression_basic_results(
   analysis_data,
   x = "age",
@@ -608,11 +466,8 @@ age_results <- regression_basic_results(
 )
 
 knitr::kable(age_results$table, caption = "Age Effect - Multiple Model Specifications")
-```
 
-Step 4: Forest plot of significant predictors:
-
-```{r complete-workflow-step4}
+# Step 4: Forest plot
 numeric_predictors <- top_predictors[top_predictors != "sex"]
 forest_plot <- regression_forest(
   analysis_data,
@@ -622,11 +477,8 @@ forest_plot <- regression_forest(
   as_univariate = TRUE,
   save_plot = FALSE
 )
-```
 
-Step 5: RCS plot for continuous predictor:
-
-```{r complete-workflow-step5}
+# Step 5: RCS plot
 rcs_result <- rcs_plot(
   analysis_data,
   x = "age",
@@ -635,11 +487,8 @@ rcs_result <- rcs_plot(
   covars = c("sex", "ph.karno"),
   save_plot = FALSE
 )
-```
 
-Step 6: Subgroup analysis:
-
-```{r complete-workflow-step6}
+# Step 6: Subgroup analysis
 subgroup_plot <- subgroup_forest(
   analysis_data,
   x = "age",
@@ -651,17 +500,10 @@ subgroup_plot <- subgroup_forest(
 )
 
 cat("\n=== Analysis Complete ===\n")
-cat("Key findings:\n")
-cat("-", length(top_predictors), "significant predictors identified\n")
-cat("- Age shows", ifelse(any(grep("rcs", scan_results$best.var.trans[scan_results$predictor=="age"])), "non-linear", "linear"), "relationship with outcome\n")
-cat("- Forest plot and RCS plot generated for visualization\n")
+cat(length(top_predictors), "significant predictors identified\n")
 ```
 
 ## Summary
-
-The `clinpubr` package provides a comprehensive suite for regression analysis in clinical research:
-
-### Key Functions
 
 | Function | Purpose |
 |----------|---------|
@@ -672,24 +514,6 @@ The `clinpubr` package provides a comprehensive suite for regression analysis in
 | `interaction_scan()` / `interaction_plot()` | Interaction analysis and visualization |
 | `subgroup_forest()` | Subgroup analysis with forest plots |
 | `regression_fit()` | Direct model fitting with full control |
-
-### Best Practices
-
-1. **Start with regression_scan()**: Let the data guide your choice of variable transformations
-2. **Present multiple model specifications**: Show crude, partially adjusted, and fully adjusted results
-3. **Use RCS for continuous variables**: Avoid arbitrary categorization when possible
-4. **Test for interactions**: Important for personalized medicine applications
-5. **Create publication-ready figures**: Use forest plots and effect plots for clear communication
-6. **Report comprehensively**: Include HR/OR, confidence intervals, and p-values
-
-### Common Pitfalls to Avoid
-
-- **Overfitting**: Don't include too many predictors relative to events
-- **Arbitrary categorization**: Use RCS or clinical cut-points, not just median splits
-- **Multiple testing**: Adjust for multiple comparisons when scanning many predictors
-- **Post-hoc subgroups**: Pre-specify subgroup hypotheses to avoid false positives
-
-These tools streamline the process from exploratory analysis to publication-ready results, ensuring rigorous and reproducible clinical research.
 
 ## Further Reading
 
