@@ -133,14 +133,12 @@ Identify non-numeric entries before converting to numeric:
 
 ```{r check-nonnum}
 nonnum_df <- df_view_nonnum(messy_data)
-if (nrow(nonnum_df) > 0) {
-  knitr::kable(head(nonnum_df), caption = "Non-numeric Entries by Variable")
-}
+knitr::kable(head(nonnum_df), caption = "Non-numeric Entries by Variable")
 ```
 
 ### Date Conversion
 
-Convert various date formats to standard `Date` objects:
+Convert various date formats of `string` type to standard `Date` objects:
 
 ```{r date-conversion}
 clean_data <- messy_data
@@ -148,8 +146,7 @@ clean_data$visit_date_clean <- to_date(messy_data$visit_date)
 
 knitr::kable(head(data.frame(
   original = messy_data$visit_date,
-  cleaned = clean_data$visit_date_clean,
-  is_valid = !is.na(clean_data$visit_date_clean)
+  cleaned = clean_data$visit_date_clean
 )), caption = "Visit Dates: Before vs After Conversion")
 ```
 
@@ -202,7 +199,7 @@ For missing data filtering by row/column missing rate, use `get_valid_subset()` 
 clean_data <- get_valid_subset(
   messy_data,
   row_na_ratio = 0.5,
-  col_na_ratio = 0.3
+  col_na_ratio = 0.02
 )
 cat("Rows:", nrow(messy_data), "->", nrow(clean_data), "\n")
 ```

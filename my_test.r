@@ -687,3 +687,20 @@ toc()
 x <- iconv(c("你好", NA, "asdf"), from = "UTF-8", to = "GBK")
 validUTF8(x)
 y <- auto_encoding_repair(x)
+
+library(clinpubr)
+set.seed(123)
+n=1e3
+x=data.frame(matrix(sample(c(0,1),n*n,replace=TRUE,prob=c(0.9,0.1)),ncol=n))
+dim(x)
+x[x==1]=NA
+library(tictoc)
+tic()
+clean_data <- get_valid_subset(
+  x,
+  row_na_ratio = 0.1,
+  col_na_ratio = 0.1,
+  row_priority = 1#, adaptive_scoring = TRUE
+)
+toc()
+dim(clean_data)

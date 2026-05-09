@@ -366,7 +366,7 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
         pairwise_list[[var]] <- p_values_wide
       }
     }
-    pairwise_result <- data.table::rbindlist(pairwise_list, fill = TRUE)
+    pairwise_result <- as.data.frame(data.table::rbindlist(pairwise_list, fill = TRUE))
     rownames(pairwise_result) <- vars
     if (save_table) {
       write.csv(pairwise_result, file = str_replace(filename, ".csv", "_pairwise.csv"))

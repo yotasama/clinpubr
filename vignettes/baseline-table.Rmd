@@ -55,8 +55,7 @@ set.seed(123)
 cancer$meal.cal[sample(1:nrow(cancer), 30)] <- NA
 cancer$wt.loss[sample(1:nrow(cancer), 20)] <- NA
 
-knitr::kable(head(cancer[, c("age", "sex", "ph.ecog", "ph.karno", "meal.cal", "wt.loss")]),
-             caption = "Data After Preparation (First 6 Rows)")
+knitr::kable(head(cancer), caption = "Data After Preparation")
 ```
 
 ## Automatic Variable Type Determination
@@ -71,16 +70,7 @@ Before creating a baseline table, `get_var_types()` classifies each variable as:
 ```{r get-var-types}
 var_types <- get_var_types(cancer, strata = "sex")
 
-var_summary <- data.frame(
-  Category = c("Factor Variables", "Exact Test Variables", "Non-normal Variables", "Omitted Variables"),
-  Variables = c(
-    paste(var_types$factor_vars, collapse = ", "),
-    paste(var_types$exact_vars, collapse = ", "),
-    paste(var_types$nonnormal_vars, collapse = ", "),
-    paste(var_types$omit_vars, collapse = ", ")
-  )
-)
-knitr::kable(var_summary, caption = "Variable Classification Results")
+var_types
 ```
 
 ### Customizing Classification
@@ -96,16 +86,10 @@ var_types_custom <- get_var_types(
   norm_test_by_group = TRUE  # Test normality within each stratum
 )
 
-knitr::kable(data.frame(
-  Category = c("Factor Variables", "Non-normal Variables"),
-  Variables = c(
-    paste(var_types_custom$factor_vars, collapse = ", "),
-    paste(var_types_custom$nonnormal_vars, collapse = ", ")
-  )
-), caption = "Custom Variable Classification")
+var_types_custom
 ```
 
-Save QQ plots for manual review (optional):
+Save QQ plots for manual review of normality tests (optional):
 
 ```{r save-qqplots, eval = FALSE}
 # var_types_with_plots <- get_var_types(
@@ -179,7 +163,8 @@ knitr::kable(baseline_result$missing, caption = "Missing Data Summary")
 
 ## Manual Override
 
-Override automatic classification based on clinical knowledge:
+Override automatic classification based on clinical knowledge or manual review:
+:
 
 ```{r manual-override}
 baseline_manual <- baseline_table(
@@ -236,7 +221,7 @@ knitr::kable(data.frame(
 # Step 4: Create baseline table
 baseline_final <- baseline_table(
   cancer_clean, var_types = var_types,
-  smd = TRUE, multiple_comparison_test = TRUE
+  smd = TRUE
 )
 
 # Step 5: Review results

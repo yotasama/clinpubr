@@ -92,34 +92,43 @@ knitr::kable(exclusion_flow, caption = "Custom Exclusion Flow")
 
 ```{r merge-substring}
 medical_terms <- data.frame(
-  term = c("Type 2 Diabetes", "Hypertension", "Coronary Artery Disease",
-           "Chronic Kidney Disease", "Heart Failure", "Atrial Fibrillation"),
-  icd_code = c("E11", "I10", "I25", "N18", "I50", "I48"),
-  category = c("Endocrine", "Cardiovascular", "Cardiovascular",
-               "Renal", "Cardiovascular", "Cardiovascular"),
-  stringsAsFactors = FALSE
+    match_term = c(
+        "Type 2 Diabetes", "Hypertension", "Coronary Artery Disease",
+        "Coronary Disease", "Chronic Kidney Disease", "Heart Failure", "Atrial Fibrillation"
+    ),
+    standard_term = c(
+        "Type 2 Diabetes Mellitus", "Hypertension", "Coronary Artery Disease",
+        "Coronary Artery Disease", "Chronic Kidney Disease", "Heart Failure", "Atrial Fibrillation"
+    ),
+    icd_code = c("E11", "I10", "I25", "N18", "I50", "I48"),
+    category = c(
+        "Endocrine", "Cardiovascular", "Cardiovascular",
+        "Renal", "Cardiovascular", "Cardiovascular"
+    ),
+    stringsAsFactors = FALSE
 )
 
 patient_diagnoses <- data.frame(
-  patient_id = 1:10,
-  diagnosis_text = c(
-    "Severe Type 2 Diabetes", "Type 2 Diabetes Mellitus",
-    "Type 2 Diabetes with Complications", "Essential Hypertension",
-    "Hypertensive disease", "CAD - Coronary Artery Disease",
-    "Coronary disease", "CKD Stage 3",
-    "Congestive Heart Failure", "Heart failure chronic"
-  ),
-  stringsAsFactors = FALSE
+    patient_id = 1:10,
+    diagnosis_text = c(
+        "Severe Type 2 Diabetes", "Type 2 Diabetes Mellitus",
+        "Type 2 Diabetes with Complications", "Essential Hypertension",
+        "Hypertensive disease", "CAD - Coronary Artery Disease",
+        "Coronary disease", "CKD Stage 3",
+        "Congestive Heart Failure", "Heart failure chronic"
+    ),
+    stringsAsFactors = FALSE
 )
 
 merged_substring <- merge_by_substring(
-  data = patient_diagnoses,
-  key_df = medical_terms,
-  search_col = "diagnosis_text",
-  key_col = "term",
-  value_cols = c("icd_code", "category")
+    data = patient_diagnoses,
+    key_df = medical_terms,
+    search_col = "diagnosis_text",
+    key_col = "term",
+    value_cols = c("icd_code", "category")
 )
 
+knitr::kable(medical_terms, caption = "Medical Terms Table")
 knitr::kable(merged_substring, caption = "Diagnoses with Mapped ICD Codes")
 ```
 
@@ -131,18 +140,24 @@ knitr::kable(merged_substring, caption = "Diagnoses with Mapped ICD Codes")
 patient_visits <- data.frame(
     patient_id = rep(1:3, each = 2),
     visit_id = 1:6,
-    visit_start = as.Date(c("2023-01-01", "2023-06-01", "2023-02-01",
-                            "2023-07-01", "2023-03-01", "2023-08-01")),
-    visit_end = as.Date(c("2023-01-10", "2023-06-10", "2023-02-10",
-                          "2023-07-10", "2023-03-10", "2023-08-10")),
+    visit_start = as.Date(c(
+        "2023-01-01", "2023-06-01", "2023-02-01",
+        "2023-07-01", "2023-03-01", "2023-08-01"
+    )),
+    visit_end = as.Date(c(
+        "2023-01-10", "2023-06-10", "2023-02-10",
+        "2023-07-10", "2023-03-10", "2023-08-10"
+    )),
     stringsAsFactors = FALSE
 )
 
 lab_results <- data.frame(
     lab_id = 1:6,
     patient_id = c(1, 1, 2, 2, 3, 3),
-    test_date = as.Date(c("2023-01-05", "2023-06-05", "2023-02-03",
-                          "2023-07-08", "2023-03-15", "2023-08-05")),
+    test_date = as.Date(c(
+        "2023-01-05", "2023-06-05", "2023-02-03",
+        "2023-07-08", "2023-03-15", "2023-08-05"
+    )),
     test_name = c("Glucose", "HbA1c", "Glucose", "Creatinine", "Glucose", "Lipid panel"),
     result = round(rnorm(6, 100, 15), 1),
     stringsAsFactors = FALSE
@@ -162,7 +177,7 @@ knitr::kable(merged_range, caption = "Labs Matched to Visit Windows")
 
 ### Long to Wide Format
 
-`to_wide()` converts long-format data (one row per measurement) to wide format (one row per patient):
+`to_wide()` converts long-format data (one row per measurement) to wide format (one row per patient) to facilitate analysis:
 
 ```{r to-wide}
 long_labs <- data.frame(
@@ -180,6 +195,7 @@ wide_labs <- to_wide(
     value_col = "value"
 )
 
+knitr::kable(head(long_labs), caption = "Laboratory Data - Long Format")
 knitr::kable(head(wide_labs), caption = "Laboratory Data - Wide Format")
 ```
 
@@ -192,12 +208,16 @@ set.seed(456)
 survey_data <- data.frame(
     id = 1:20,
     symptoms = sapply(1:20, function(x) {
-        paste(sample(c("fever", "cough", "headache", "fatigue"),
-                     sample(1:4, 1)), collapse = ",")
+        paste(sample(
+            c("fever", "cough", "headache", "fatigue"),
+            sample(1:4, 1)
+        ), collapse = ",")
     }),
     comorbidities = sapply(1:20, function(x) {
-        paste(sample(c("diabetes", "hypertension"),
-                     sample(1:2, 1)), collapse = ",")
+        paste(sample(
+            c("diabetes", "hypertension"),
+            sample(1:2, 1)
+        ), collapse = ",")
     }),
     stringsAsFactors = FALSE
 )
@@ -208,6 +228,8 @@ symptoms_split <- split_multichoice(
     split = ",",
     remove_space = FALSE
 )
+
+knitr::kable(head(survey_data), caption = "Multi-Choice Data")
 
 knitr::kable(head(symptoms_split), caption = "Split Multi-Choice Data")
 
@@ -227,12 +249,16 @@ knitr::kable(head(combined), caption = "Combined Symptom Groups")
 
 ### String Manipulation
 
-```{r string-utils}
-# Find common prefix in file names
+`common_prefix()` extracts the common prefix from a character vector, could be used when processing hospital exports to identify files from the same patient or batch processing multi-site survey data by site prefix.
+
+```{r string-utils-prefix}
 file_names <- c("patient_001_lab.csv", "patient_001_visit.csv", "patient_001_demo.csv")
 common_prefix(file_names)
+```
 
-# Standardize test names
+`str_match_replace()` replaces matched patterns in strings with specified replacements, could be used when standardizing lab test names across hospitals or unifying option labels across translated questionnaires.
+
+```{r string-utils-replace}
 test_names <- c("Glucose_Fasting", "Glucose_Random", "Cholesterol_Total", "LDL_Calculated")
 standardized <- str_match_replace(
     x = test_names,
@@ -241,26 +267,34 @@ standardized <- str_match_replace(
 )
 
 knitr::kable(data.frame(Original = test_names, Standardized = standardized),
-             caption = "Test Name Standardization")
+    caption = "Test Name Standardization"
+)
 ```
 
 ### List and Data Frame Operations
 
-```{r list-ops}
-# Add lists element-wise
+`add_lists()` adds corresponding elements of two lists element-wise, could be used when aggregating disease incidence counts across time periods or summing response frequencies across survey sites.
+
+```{r list-ops-add}
 list1 <- list(diabetes = 10, hypertension = 20, asthma = 5)
 list2 <- list(diabetes = 15, hypertension = 25, asthma = 8)
 add_lists(list1, list2)
+```
 
-# Merge ordered vectors (e.g., combining survey items from different sites)
+`merge_ordered_vectors()` merges multiple ordered vectors preserving unique elements and original ordering, could be used when combining inclusion criteria lists from multi-site studies or merging question orders across questionnaire versions.
+
+```{r list-ops-merge}
 sites <- list(
-  c("Diabetes", "Hypertension", "Heart Failure", "CKD"),
-  c("Hypertension", "COPD", "Diabetes", "Cancer"),
-  c("CKD", "Diabetes", "Stroke", "Hypertension")
+    c("Diabetes", "Hypertension", "Heart Failure", "CKD"),
+    c("Hypertension", "COPD", "Diabetes", "Cancer"),
+    c("CKD", "Diabetes", "Stroke", "Hypertension")
 )
 merge_ordered_vectors(sites)
+```
 
-# Replace elements (e.g., fix typos in group labels)
+`replace_elements()` replaces specified elements in a vector with new values, could be used when correcting data entry errors in clinical data or harmonizing option codes across survey interviewers.
+
+```{r list-ops-replace}
 sample_data <- data.frame(
     group = c("Cntrol", "Treetment", "Placebo", "Cntrol", "Treatment"),
     value = 1:5, stringsAsFactors = FALSE
@@ -271,12 +305,17 @@ recoded <- replace_elements(
     to = c("Control", "Treatment")
 )
 knitr::kable(data.frame(Original = sample_data$group, Recoded = recoded),
-             caption = "Group Recoding")
+    caption = "Group Recoding"
+)
+```
 
-# Fill NA with last valid value (common for merged Excel cells)
+`fill_with_last()` fills missing values with the last valid observation (LOCF), could be used when handling merged cells from Excel imports of EMR data or filling respondent demographics across repeated survey measures.
+
+```{r list-ops-fill}
 time_series <- c(120, NA, NA, 125, NA, 130, NA, NA)
 knitr::kable(data.frame(Original = time_series, Filled = fill_with_last(time_series)),
-             caption = "Last Observation Carried Forward")
+    caption = "Last Observation Carried Forward"
+)
 ```
 
 ## Multi-Table Cohort Screening
