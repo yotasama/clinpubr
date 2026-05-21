@@ -127,8 +127,7 @@ test_that("regression_scan returns expected structure", {
       "predictor", "nvalid", "original.HR", "original.pval", "original.padj",
       "logarithm.HR", "logarithm.pval", "logarithm.padj", "categorized.HR",
       "categorized.pval", "categorized.padj", "rcs.overall.pval",
-      "rcs.overall.padj", "rcs.nonlinear.pval", "rcs.nonlinear.padj",
-      "best.var.trans"
+      "rcs.overall.padj", "rcs.nonlinear.p", "best.var.trans"
     ) %in% colnames(res)))
     expect_snapshot(res)
     check_file_exists("cox_regression_scan_status.csv")

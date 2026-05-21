@@ -1,5 +1,6 @@
-# clinpubr 1.3.1
+# clinpubr 1.4.0
 
+* Added vignettes.
 * Added `merge_by_range()` that merges data frames by keys and range matching. Can be used to merge data frames by time ranges, such as merging patient visits with exam results.
 * Improved return type consistency of `first_mode()`.
 * Minor bug fixes and improvements.

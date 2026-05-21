@@ -28,7 +28,7 @@ extract_num <- function(x, res_type = c("first", "range"), multimatch2na = FALSE
   if (is.numeric(x)) {
     return(x)
   }
-
+  x <- value_initial_cleaning(x)
   # Fast path: try direct conversion for pure numeric strings
   try_res <- suppressWarnings(as.numeric(x))
   if (all(is.na(try_res) == is.na(x))) {

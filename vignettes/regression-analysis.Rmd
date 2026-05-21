@@ -47,12 +47,7 @@ cancer$dead <- cancer$status == 2
 
 cancer_clean <- cancer %>%
   mutate(
-    sex = factor(sex, labels = c("Male", "Female")),
-    ph.ecog_cat = factor(ph.ecog, levels = 0:3,
-                         labels = c("0 - Asymptomatic",
-                                   "1 - Symptomatic but ambulatory",
-                                   "2 - In bed <50% of time",
-                                   "3 - In bed >50% of time"))
+    sex = factor(sex, labels = c("Male", "Female")))
   ) %>%
   na.omit()
 
@@ -62,8 +57,7 @@ knitr::kable(data.frame(
   Description = "Complete cases for analysis"
 ), caption = "Analysis Dataset Summary")
 
-knitr::kable(head(cancer_clean[, c("age", "sex", "ph.ecog", "ph.karno", "time", "status")]),
-             caption = "Sample of Analysis Variables")
+knitr::kable(head(cancer_clean), caption = "Sample of Analysis Variables")
 ```
 
 ## Regression Scan
@@ -90,7 +84,7 @@ cox_scan <- regression_scan(
 knitr::kable(cox_scan, caption = "Cox Regression Scan Results")
 ```
 
-The scan reports `original.pval` (linear), `logarithm.pval` (log-transformed), `categorized.pval` (median split), `rcs.overall.pval` (RCS overall), and `best.var.trans` (best transformation).
+The scan reports the effect size, p-value, adjusted p-value (BH correction by default), and the best transformation.
 
 View significant predictors:
 
@@ -197,6 +191,19 @@ uni_forest <- regression_forest(
 uni_forest
 ```
 
+The univariate forest plot displays:
+
+- **Left panel**: Variable names with sample sizes in parentheses
+- **Center**: Forest plot with hazard ratios (HR) and 95% confidence intervals
+  - Each square represents the point estimate (HR)
+  - Horizontal lines represent 95% confidence intervals
+  - The vertical dashed line at HR=1.0 indicates no effect
+  - Squares to the left of 1.0 indicate protective effects (HR < 1)
+  - Squares to the right of 1.0 indicate risk-increasing effects (HR > 1)
+- **Right panel**: Numerical values of HR (95% CI) and p-values
+
+In this example, `pat.karno` shows a significant protective effect (HR ≈ 0.98, p < 0.01), while `age`, `ph.karno`, and `wt.loss` do not reach statistical significance in univariate analysis.
+
 ### Multivariate Forest Plot
 
 ```{r multivariate-forest}
@@ -216,6 +223,17 @@ multi_forest <- regression_forest(
 multi_forest
 ```
 
+The multivariate forest plot compares different model specifications:
+
+- **Model1**: Contains only `age` (crude model)
+- **Model2**: Contains `age` and `ph.karno` (partially adjusted)
+- **Model3**: Contains `age`, `ph.karno`, and `pat.karno` (fully adjusted)
+
+Key observations:
+- As more covariates are added, the effect estimate for `age` changes slightly
+- The confidence intervals may widen or narrow depending on the correlation between predictors
+- This visualization helps assess confounding effects and model stability
+
 ### Customizing Forest Plots
 
 ```{r custom-forest}
@@ -233,6 +251,14 @@ custom_forest <- regression_forest(
 
 custom_forest
 ```
+
+The customized forest plot demonstrates several formatting options:
+
+- **`show_vars`**: Limits displayed variables to `age`, `ph.karno`, and `pat.karno`
+- **`est_nsmall = 2`**: Displays effect estimates with 2 decimal places
+- **`p_nsmall = 4`**: Displays p-values with 4 decimal places
+
+This allows focused presentation of key predictors with precise numerical formatting suitable for publication.
 
 ## Predictor Effect Visualization
 
@@ -256,6 +282,20 @@ rcs_age <- rcs_plot(
 rcs_age
 ```
 
+The RCS (Restricted Cubic Spline) plot visualizes the non-linear relationship between age and survival:
+
+- **X-axis**: Age (continuous predictor)
+- **Y-axis**: Hazard Ratio (HR) with reference at the median age
+- **Solid line**: Estimated HR across age values
+- **Shaded area**: 95% confidence interval
+- **Histogram (top)**: Distribution of age in the dataset
+
+Key features:
+- The spline with 4 knots (`knot = 4`) allows flexible modeling of non-linear relationships
+- Reference point (`ref = "x_median"`) is set at the median age (HR = 1.0)
+- The plot shows how the hazard changes relative to the median age
+- The relatively flat curve suggests a roughly linear relationship between age and hazard in this dataset
+
 ### Predictor Effect Plot
 
 A unified interface for both continuous and categorical predictors:
@@ -275,6 +315,15 @@ effect_linear <- predictor_effect_plot(
 effect_linear
 ```
 
+The linear predictor effect plot shows:
+
+- **X-axis**: Age values
+- **Y-axis**: Predicted effect (log hazard ratio)
+- **Solid line**: Linear fit with 95% confidence interval (shaded area)
+- **Rug plot (bottom)**: Individual data point distribution
+
+This plot assumes a linear relationship between the predictor and outcome, useful for confirming linearity assumptions or presenting simple linear effects.
+
 ```{r predictor-effect-categorical}
 effect_cat <- predictor_effect_plot(
   data = cancer_clean,
@@ -288,6 +337,15 @@ effect_cat <- predictor_effect_plot(
 
 effect_cat
 ```
+
+The categorical predictor effect plot displays:
+
+- **X-axis**: Categories of the predictor (Male vs Female)
+- **Y-axis**: Hazard Ratio with 95% confidence intervals
+- **Reference line**: HR = 1.0 (dashed line)
+- **Error bars**: 95% confidence intervals for each category
+
+In this example, females show a significantly lower hazard compared to males (HR ≈ 0.62, 95% CI does not include 1.0), indicating better survival outcomes for female patients after adjusting for age and performance status.
 
 ### Customized RCS Plot
 
@@ -308,6 +366,16 @@ custom_rcs <- rcs_plot(
 
 custom_rcs
 ```
+
+The customized RCS plot demonstrates advanced options:
+
+- **`knot = 5`**: Uses 5 knots for more flexible curve fitting
+- **`ref = 0`**: Sets reference point at weight loss = 0 (no weight loss)
+- **`trans = "log10"`**: Applies log10 transformation to the y-axis
+- **`y_lim = c(0.5, 5)`**: Custom y-axis limits for better visualization
+- **`add_hist = FALSE`**: Excludes the histogram for cleaner presentation
+
+This plot examines the relationship between weight loss and survival, with the reference at zero weight loss. The log-scale y-axis helps visualize effect sizes across a wide range.
 
 ## Interaction Analysis
 
@@ -341,6 +409,21 @@ interaction_age_sex <- interaction_plot(
 
 interaction_age_sex
 ```
+
+The interaction plot displays two panels:
+
+**Linear Interaction Plot (`$lin`)**:
+- Shows the effect of age on survival separately for males and females
+- Different colored lines represent different sex groups
+- Parallel lines suggest no interaction; diverging/converging lines suggest interaction
+- Shaded areas represent 95% confidence intervals
+
+**RCS Interaction Plot (`$rcs`)**:
+- Shows non-linear effects of age within each sex group
+- Allows detection of non-linear interactions
+- Each curve represents the HR relative to the reference point for that sex
+
+In this example, the lines appear roughly parallel, suggesting no significant interaction between age and sex (confirmed by p-value > 0.05).
 
 ### Interaction P-value
 
@@ -378,6 +461,24 @@ subgroup_result <- subgroup_forest(
 
 subgroup_result
 ```
+
+The subgroup forest plot displays the effect of age on survival stratified by sex:
+
+- **Overall**: Effect estimate for the entire cohort
+- **Male**: Effect estimate for male patients only
+- **Female**: Effect estimate for female patients only
+
+Each row shows:
+- Sample size for that subgroup
+- Hazard ratio with 95% confidence interval
+- P-value for statistical significance
+
+This visualization helps assess:
+- Whether the effect is consistent across subgroups
+- Potential effect modification by the stratifying variable
+- Heterogeneity between subgroups
+
+In this example, the effect of age appears similar between males and females, with overlapping confidence intervals, suggesting no substantial subgroup differences.
 
 ## Model Fitting
 

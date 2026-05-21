@@ -581,7 +581,7 @@ regression_forest <- function(data, model_vars, y, time = NULL, time2 = NULL, cl
 #'   correlated responses from cluster samples using `rms::robcov()`.
 #' @param num_to_factor An integer. Numerical variables with number of unique values below or equal
 #'   to this value would be considered a factor.
-#' @param p_adjust_method The method to use for p-value adjustment for pairwise comparison. Default is "BH".
+#' @param p_adjust_method The method to use for p-value adjustment. Default is "BH".
 #'   See `?p.adjust.methods`. Note that the p-value adjustment is only applied column wise, not applied among
 #'   all available p-values in the table.
 #' @param save_table A logical value indicating whether to save the results as a table.
@@ -639,17 +639,17 @@ regression_scan <- function(data, y, time = NULL, time2 = NULL, predictors = NUL
       " are not in the data"
     ))
   }
-
-  res_df <- data.frame(matrix(NA, nrow = length(predictors), ncol = 16))
-  colnames(res_df) <- c(
+  c_names <- c(
     "predictor", "nvalid",
     paste(rep(c("original", "logarithm", "categorized"), each = 3),
       c(coef_type, "pval", "padj"),
       sep = "."
     ),
-    paste("rcs", rep(c("overall", "nonlinear"), each = 2), c("pval", "padj"), sep = "."),
+    paste("rcs", c("overall", "overall", "nonlinear"), c("pval", "padj", "p"), sep = "."),
     "best.var.trans"
   )
+  res_df <- data.frame(matrix(NA, nrow = length(predictors), ncol = length(c_names)))
+  colnames(res_df) <- c_names
 
   res_df$predictor <- predictors
   for (i in seq_along(predictors)) {
@@ -693,7 +693,7 @@ regression_scan <- function(data, y, time = NULL, time2 = NULL, predictors = NUL
             covars = covars, cluster = cluster, rcs_knots = rcs_knots, returned = "predictor_combined"
           )
           if (var_trans == "rcs") {
-            res_df[i, paste(var_trans, c("overall.pval", "nonlinear.pval"), sep = ".")] <-
+            res_df[i, paste(var_trans, c("overall.pval", "nonlinear.p"), sep = ".")] <-
               c(res$p_overall, res$p_nonlinear)
           } else {
             res_df[i, paste(var_trans, coef_type, sep = ".")] <- res$estimate
@@ -707,7 +707,7 @@ regression_scan <- function(data, y, time = NULL, time2 = NULL, predictors = NUL
     }
   }
   res_df <- res_df[order(res_df$original.pval, decreasing = FALSE), ]
-  p_types <- c("original", "logarithm", "categorized", "rcs.overall", "rcs.nonlinear")
+  p_types <- c("original", "logarithm", "categorized", "rcs.overall")
   for (p_type in p_types) {
     res_df[[paste(p_type, "padj", sep = ".")]] <- p.adjust(
       res_df[[paste(p_type, "pval", sep = ".")]],

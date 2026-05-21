@@ -109,26 +109,26 @@
       7   0.6128094775    0.612809477      0.8620604     0.3957557555
       8             NA             NA      1.3190185     0.0909098385
       9             NA             NA             NA               NA
-        categorized.padj rcs.overall.pval rcs.overall.padj rcs.nonlinear.pval
-      4      0.001223676               NA               NA                 NA
-      6      0.002643079      0.002584773       0.01550864         0.59089516
-      3      0.003976611               NA               NA                 NA
-      5      0.015533914      0.012846171       0.03853851         0.23079609
-      2      0.395755755      0.082544702       0.16508940         0.34241226
-      1      0.346671959      0.817527653       0.87071306         0.98397049
-      7      0.395755755      0.870713064       0.87071306         0.82272559
-      8      0.145455742      0.112890717       0.16933608         0.05149364
-      9               NA               NA               NA                 NA
-        rcs.nonlinear.padj best.var.trans
-      4                 NA       original
-      6          0.8863427       original
-      3                 NA    categorized
-      5          0.6848245       original
-      2          0.6848245       original
-      1          0.9839705    categorized
-      7          0.9839705    categorized
-      8          0.3089618  rcs.nonlinear
-      9                 NA       original
+        categorized.padj rcs.overall.pval rcs.overall.padj rcs.nonlinear.p
+      4      0.001223676               NA               NA              NA
+      6      0.002643079      0.002584773       0.01550864      0.59089516
+      3      0.003976611               NA               NA              NA
+      5      0.015533914      0.012846171       0.03853851      0.23079609
+      2      0.395755755      0.082544702       0.16508940      0.34241226
+      1      0.346671959      0.817527653       0.87071306      0.98397049
+      7      0.395755755      0.870713064       0.87071306      0.82272559
+      8      0.145455742      0.112890717       0.16933608      0.05149364
+      9               NA               NA               NA              NA
+        best.var.trans
+      4       original
+      6       original
+      3    categorized
+      5       original
+      2       original
+      1    categorized
+      7    categorized
+      8    categorized
+      9       original
 
 # regression_fit returns model results
 

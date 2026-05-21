@@ -279,7 +279,7 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules,
       if (is.na(unit_to_change)) {
         unit_idx <- is.na(subject_units)
       } else {
-        unit_idx <- subject_units == unit_to_change
+        unit_idx <- na2false(subject_units == unit_to_change)
       }
 
       if (length(unit_idx) == 0 || all(!unit_idx, na.rm = TRUE)) next

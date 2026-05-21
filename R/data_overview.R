@@ -132,6 +132,11 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL,
   # Check for numeric variables stored as characters
   numeric_as_char <- list()
   for (var in variable_types$character) {
+    if (is.factor(df[[var]])) {
+      # Skip factor variables
+      next
+    }
+    
     # Try to convert to numeric
     x <- df[[var]]
     x_no_na <- x[!is.na(x)]

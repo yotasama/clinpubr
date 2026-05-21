@@ -32,6 +32,8 @@ calc_cindex <- function(data, time_var, event_var, marker_var) {
 #' @param event_var A string specifying the name of the event indicator variable in the data frame.
 #' @param marker_var A string specifying the name of the marker variable in the data frame.
 #' @param times A numeric vector of times at which to compute the time-dependent ROC curves.
+#' @param time_unit A character string specifying the unit of the time variable, recommended to be in
+#'   plural form. Default is "months".
 #' @param weighting A character string specifying the weighting method. Default is "marginal".
 #'   See `timeROC::timeROC()` for details.
 #' @param cause The value of the event indicator that denotes the event of interest. Default is `1`.
@@ -47,14 +49,14 @@ calc_cindex <- function(data, time_var, event_var, marker_var) {
 #' # Plot time-dependent ROC curves using lung dataset from survival package
 #' library(survival)
 #' data(cancer, package = "survival")
-#' # Use age as the marker variable, plot at 6, 12, and 24 months
+#' # Use age as the marker variable, plot at 180, 365, and 730 days
 #' lung$status <- lung$status == 2
-#' result <- time_roc_plot(lung, "time", "status", "age", times = c(180, 365, 730))
+#' result <- time_roc_plot(lung, "time", "status", "age", times = c(180, 365, 730), time_unit = "days")
 #' result$plot
 #'
 #' # Save the plot to a file
-#' # time_roc_plot(lung, "time", "status", "age", times = c(180, 365, 730), save_plot = TRUE)
-time_roc_plot <- function(data, time_var, event_var, marker_var, times = c(12, 36, 60),
+#' # time_roc_plot(lung, "time", "status", "age", times = c(180, 365, 730), time_unit = "days", save_plot = TRUE)
+time_roc_plot <- function(data, time_var, event_var, marker_var, times = c(12, 36, 60), time_unit = "months",
                           weighting = "marginal", cause = 1, colors = NULL, title = FALSE,
                           save_plot = FALSE, filename = "time_roc.png") {
   check_package("timeROC", "time-dependent ROC curve calculations")
@@ -108,17 +110,17 @@ time_roc_plot <- function(data, time_var, event_var, marker_var, times = c(12, 3
     roc_data <- data.frame(
       fpr = fpr_values,
       tpr = tpr_values,
-      time = rep(paste0(valid_time_roc_times[i], " months"), length(fpr_values))
+      time = rep(paste0(valid_time_roc_times[i], " ", time_unit), length(fpr_values))
     )
     roc_data_list[[i]] <- roc_data
   }
 
   # Combine all ROC data
   roc_data_all <- data.table::rbindlist(roc_data_list)
-  roc_data_all$time <- factor(roc_data_all$time, levels = paste0(valid_time_roc_times, " months"))
+  roc_data_all$time <- factor(roc_data_all$time, levels = paste0(valid_time_roc_times, " ", time_unit))
 
   # Add legend with AUC values
-  auc_labels <- paste0(valid_time_roc_times, " months AUC=", sprintf("%.3f", valid_time_roc_auc))
+  auc_labels <- paste0(valid_time_roc_times, " ", time_unit, " AUC=", sprintf("%.3f", valid_time_roc_auc))
 
   # Create ggplot with proper color scale
   p <- ggplot2::ggplot(roc_data_all, aes(x = fpr, y = tpr, color = time)) +

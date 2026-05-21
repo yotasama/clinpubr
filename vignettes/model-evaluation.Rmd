@@ -101,15 +101,24 @@ model_comparison$dca_plot
 
 ## Time-Dependent ROC Analysis
 
-For survival outcomes, time-dependent ROC accounts for the timing of events:
+For survival outcomes, time-dependent ROC accounts for the timing of events. First, we fit a Cox proportional hazards model and obtain risk scores:
+
+```{r fit-survival-model}
+# Fit Cox model for survival prediction
+cox_model <- coxph(Surv(time, event) ~ age + sex + ph.karno, data = cancer_clean)
+cancer_clean$risk_score <- predict(cox_model, type = "risk")
+```
+
+Now we can evaluate the model using time-dependent ROC at specific time points:
 
 ```{r time-roc}
 time_roc_result <- time_roc_plot(
   data = cancer_clean,
   event_var = "event",
   time_var = "time",
-  marker_var = "pred_model1",
+  marker_var = "risk_score",
   times = c(200, 365),
+  time_unit = "days",
   save_plot = FALSE
 )
 
@@ -121,20 +130,13 @@ time_roc_result
 The C-index (concordance index) measures discrimination for survival models. Interpretation: 0.5 = no discrimination, 0.7-0.8 = acceptable, >0.8 = excellent.
 
 ```{r c-index}
-models <- c("pred_model1", "pred_model2", "pred_model3")
-cindex_results <- sapply(models, function(m) {
-  calc_cindex(cancer_clean, "time", "event", m)
-})
-
-knitr::kable(data.frame(
-  Model = c("Basic (Age+Sex+Karnofsky)", "Extended (+Pat.Karnofsky)", "Alternative (+Weight Loss)"),
-  C_index = round(cindex_results, 3),
-  Rank = rank(-cindex_results)
-), caption = "C-index Comparison Across All Models")
+c_index <- calc_cindex(cancer_clean, "time", "event", "risk_score")
+c_index
 ```
 
 ## Variable Importance
-
+The variable importance list could be obtained from the different models like random forest, gradient boosting machine, etc.
+Here, we assume we have the variable importance scores from some random model.
 ```{r importance-plot}
 importance_scores <- c(
   Age = 0.25, Sex = 0.15, Karnofsky = 0.30,
@@ -153,57 +155,6 @@ importance_plot(
   top_n = 4,
   color = "steelblue"
 )
-```
-
-## Complete Evaluation Workflow
-
-```{r complete-evaluation}
-# Step 1: Data preparation
-data(cancer, package = "survival")
-eval_data <- cancer %>%
-  mutate(
-    dead = status == 2,
-    event = ifelse(status == 2, 1, 0),
-    sex = factor(sex, labels = c("Male", "Female"))
-  ) %>%
-  na.omit()
-
-# Step 2: Fit models
-eval_data$pred_m1 <- predict(glm(dead ~ age + sex, data = eval_data, family = binomial), type = "response")
-eval_data$pred_m2 <- predict(glm(dead ~ age + sex + ph.karno, data = eval_data, family = binomial), type = "response")
-eval_data$pred_m3 <- predict(glm(dead ~ age + sex + ph.karno + pat.karno + wt.loss,
-                                  data = eval_data, family = binomial), type = "response")
-
-# Step 3: Model comparison
-comparison <- classif_model_compare(
-  eval_data, target_var = "dead",
-  model_names = c("pred_m1", "pred_m2", "pred_m3"),
-  save_output = FALSE
-)
-
-comparison_metrics <- comparison$metric_table
-knitr::kable(comparison_metrics, caption = "Comprehensive Model Comparison")
-
-# Step 4: Time-dependent ROC
-time_roc <- time_roc_plot(
-  eval_data, event_var = "event", time_var = "time",
-  marker_var = "pred_m3", times = c(200, 365),
-  save_plot = FALSE
-)
-
-# Step 5: C-index
-cindex_vals <- sapply(c("pred_m1", "pred_m2", "pred_m3"), function(m) {
-  calc_cindex(eval_data, "time", "event", m)
-})
-
-knitr::kable(data.frame(
-  Model = c("Basic (Age+Sex)", "With Performance Status", "Full Model"),
-  C_Index = round(cindex_vals, 3)
-), caption = "C-index Summary")
-
-# Step 6: Summary
-cat("\nBest C-index:", names(which.max(cindex_vals)),
-    "(C-index =", round(max(cindex_vals), 3), ")\n")
 ```
 
 ## Summary

@@ -7,7 +7,8 @@
 #'   with `1` indicating equal priority for rows and columns.
 #' @param adaptive_scoring A logical, whether to use adaptive scoring that considers the improvement in 
 #'   missing rates for the other dimension. When TRUE, the score reflects how much removing a row/column
-#'   helps the columns/rows get closer to their thresholds. Default is FALSE for backward compatibility.
+#'   helps the columns/rows get closer to their thresholds. Setting `adaptive_scoring = TRUE` would allow the algorithm 
+#'   to search in a wider range of candidates, but significantly increases the running time. Default is FALSE.
 #' @param speedup_ratio A numerical in `[0, 1]`. Controls how many rows/columns to remove per iteration.
 #'   `0` removes one at a time (most precise), `1` removes all candidates at once (most aggressive).
 #' @param return_index A logical, whether to return only the row and column indices of the subset.

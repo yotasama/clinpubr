@@ -49,13 +49,13 @@ to_date <- function(x, from_excel = TRUE, verbose = TRUE,
     still_na <- is.na(result)
     if (!any(still_na, na.rm = TRUE)) break
 
-    parsed <- suppressWarnings(as.Date(x, format = fmt))
-    result[is.na(result)] <- parsed[still_na]
+    parsed <- suppressWarnings(as.Date(x[still_na], format = fmt))
+    result[still_na] <- parsed
   }
-
+  still_na <- is.na(result)
   # Report unconverted values if verbose
   if (verbose) {
-    failed_idx <- is.na(result) & !is.na(x)
+    failed_idx <- still_na & !is.na(x)
     if (any(failed_idx, na.rm = TRUE)) {
       failed_values <- unique(x[failed_idx])
       for (val in failed_values) {
