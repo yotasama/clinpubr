@@ -1,6 +1,11 @@
 # clinpubr 1.4.0
 
-* Added vignettes.
+* Added vignettes:
+  - Creating Baseline Characteristics Tables
+  - Data Cleaning and Preparation
+  - Regression Analysis and Visualization
+  - Model Evaluation and Comparison
+  - Advanced Data Operations
 * Added `merge_by_range()` that merges data frames by keys and range matching. Can be used to merge data frames by time ranges, such as merging patient visits with exam results.
 * Improved return type consistency of `first_mode()`.
 * Minor bug fixes and improvements.
