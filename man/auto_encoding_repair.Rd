@@ -39,12 +39,6 @@ if (l10n_info()$"UTF-8") {
   auto_encoding_repair(gbk_bytes)
 }
 
-# Simulate Latin-1 encoded characters
-if (l10n_info()$"UTF-8") {
-  latin1_bytes <- iconv("caf\u00e9", from = "UTF-8", to = "Latin-1")
-  auto_encoding_repair(latin1_bytes)
-}
-
 # Mixed encoding vector (UTF-8 and GBK)
 if (l10n_info()$"UTF-8") {
   mixed <- c("hello",

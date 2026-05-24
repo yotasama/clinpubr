@@ -9,6 +9,7 @@
 #' @returns A character vector with repaired encoding.
 #' @note This function will warn when encoding repairs are made.
 #' @keywords internal
+#' @export
 #' @examples
 #' # UTF-8 input (no repair needed)
 #' auto_encoding_repair(c("hello", "world"))
@@ -22,12 +23,6 @@
 #'   # Create GBK-encoded bytes from UTF-8 Chinese characters
 #'   gbk_bytes <- iconv("\u4f60\u597d", from = "UTF-8", to = "GBK")
 #'   auto_encoding_repair(gbk_bytes)
-#' }
-#'
-#' # Simulate Latin-1 encoded characters
-#' if (l10n_info()$"UTF-8") {
-#'   latin1_bytes <- iconv("caf\u00e9", from = "UTF-8", to = "Latin-1")
-#'   auto_encoding_repair(latin1_bytes)
 #' }
 #'
 #' # Mixed encoding vector (UTF-8 and GBK)

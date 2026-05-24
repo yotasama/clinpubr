@@ -193,8 +193,7 @@ str_contains_merge_stringi <- function(df, match_df, col_name = "name", ori_col 
 
         result_list[[length(result_list) + 1]] <- data.frame(
           name = matched_names,
-          group_info,
-          stringsAsFactors = FALSE
+          group_info
         )
       }
     }
@@ -207,7 +206,7 @@ str_contains_merge_stringi <- function(df, match_df, col_name = "name", ori_col 
     rownames(group_results) <- NULL
     return(group_results)
   } else {
-    return(data.frame(name = character(), stringsAsFactors = FALSE))
+    return(data.frame(name = character()))
   }
 }
 

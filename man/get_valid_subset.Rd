@@ -9,6 +9,7 @@ get_valid_subset(
   row_na_ratio = 0.5,
   col_na_ratio = 0.2,
   row_priority = 1,
+  adaptive_scoring = FALSE,
   speedup_ratio = 0,
   return_index = FALSE
 )
@@ -16,15 +17,20 @@ get_valid_subset(
 \arguments{
 \item{df}{A data frame.}
 
-\item{row_na_ratio}{The maximum acceptable missing rate of rows.}
+\item{row_na_ratio}{The maximum acceptable missing rate of rows. Should be in range of \verb{[0, 1]}.}
 
-\item{col_na_ratio}{The maximum acceptable missing rate of columns.}
+\item{col_na_ratio}{The maximum acceptable missing rate of columns. Should be in range of \verb{[0, 1]}.}
 
 \item{row_priority}{A positive numerical, the priority to keep rows. The higher the value, the higher the priority,
 with \code{1} indicating equal priority for rows and columns.}
 
-\item{speedup_ratio}{A positive numerical, the ratio of speedup. The higher the value, the greedier the algorithm.
-Should be in range of \verb{[0, 1]}.}
+\item{adaptive_scoring}{A logical, whether to use adaptive scoring that considers the improvement in
+missing rates for the other dimension. When TRUE, the score reflects how much removing a row/column
+helps the columns/rows get closer to their thresholds. Setting \code{adaptive_scoring = TRUE} would allow the algorithm
+to search in a wider range of candidates, but significantly increases the running time. Default is FALSE.}
+
+\item{speedup_ratio}{A numerical in \verb{[0, 1]}. Controls how many rows/columns to remove per iteration.
+\code{0} removes one at a time (most precise), \code{1} removes all candidates at once (most aggressive).}
 
 \item{return_index}{A logical, whether to return only the row and column indices of the subset.}
 }
@@ -40,6 +46,15 @@ the highest excessive missing rate weighted by the inverse of \code{row_priority
 of all rows and columns are below the specified threshold. Then it reversely tries to add rows and columns that
 do not break the conditions back and finalize the subset. The result depends on the \code{row_priority} parameter
 drastically, so it's recommended to try different \code{row_priority} values to find the most satisfying one.
+
+When \code{adaptive_scoring = TRUE}, the scoring considers how much removing a row/column improves the
+missing rates of the other dimension. The score is calculated as:
+\itemize{
+\item For rows: sum of improvements in column missing rates (how much closer columns get to col_na_ratio)
+\item For columns: sum of improvements in row missing rates (how much closer rows get to row_na_ratio)
+This allows the algorithm to consider removing rows/columns even if they don't exceed thresholds,
+if doing so helps other dimensions satisfy their thresholds.
+}
 }
 \examples{
 data(cancer, package = "survival")

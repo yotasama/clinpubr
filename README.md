@@ -88,8 +88,7 @@ messy_data <- data.frame(
   age = c(
     "25", "26", "27", "28", "29", "30", "31", "32", "33", "34",
     "35", "unknown", "36", "37", "38"
-  ),
-  stringsAsFactors = FALSE
+  )
 )
 
 overview <- data_overview(messy_data)

@@ -63,7 +63,8 @@ cancer_clean$pred_model3 <- predict(
 )
 
 knitr::kable(head(cancer_clean[, c("dead", "pred_model1", "pred_model2", "pred_model3")]),
-             caption = "Model Predictions vs Actual Outcomes (First 6 Rows)")
+  caption = "Model Predictions vs Actual Outcomes (First 6 Rows)"
+)
 ```
 
 ## Model Comparison
@@ -172,9 +173,3 @@ importance_plot(
 2. **Calibration**: Calibration plots, Brier score
 3. **Clinical utility**: Decision curve analysis, net benefit at relevant thresholds
 4. **External validation**: Performance in independent populations
-
-## Further Reading
-
-- `vignette("data-cleaning")`: Data cleaning and preparation
-- `vignette("baseline-table")`: Creating baseline characteristics tables
-- `vignette("regression-analysis")`: Regression analysis and visualization

@@ -42,13 +42,16 @@ knitr::kable(head(cancer), caption = "Raw Data Preview")
 Create derived variables for demonstration:
 
 ```{r prepare-data}
-cancer$age_group <- cut(cancer$age, breaks = c(0, 50, 60, 70, 100),
-                        labels = c("<50", "50-60", "60-70", ">70"))
+cancer$age_group <- cut(cancer$age,
+  breaks = c(0, 50, 60, 70, 100),
+  labels = c("<50", "50-60", "60-70", ">70")
+)
 
 # Combine sparse ECOG categories
 cancer$ph.ecog_cat <- factor(cancer$ph.ecog,
-                             levels = c(0:3),
-                             labels = c("0", "1", ">=2", ">=2"))
+  levels = c(0:3),
+  labels = c("0", "1", ">=2", ">=2")
+)
 
 # Add missing values for demonstration
 set.seed(123)
@@ -81,9 +84,9 @@ Adjust thresholds for automatic classification:
 var_types_custom <- get_var_types(
   cancer,
   strata = "sex",
-  num_to_factor = 10,        # Numeric vars with <=10 unique values treated as factor
-  omit_factor_above = 15,    # Omit factors with >15 levels
-  norm_test_by_group = TRUE  # Test normality within each stratum
+  num_to_factor = 10, # Numeric vars with <=10 unique values treated as factor
+  omit_factor_above = 15, # Omit factors with >15 levels
+  norm_test_by_group = TRUE # Test normality within each stratum
 )
 
 var_types_custom
@@ -121,8 +124,9 @@ With more than 2 groups, pairwise comparisons are automatically generated with o
 ```{r multi-group}
 data(cancer, package = "survival")
 cancer$ph.ecog_cat <- factor(cancer$ph.ecog,
-                             levels = c(0:3),
-                             labels = c("0", "1", ">=2", ">=2"))
+  levels = c(0:3),
+  labels = c("0", "1", ">=2", ">=2")
+)
 
 var_types_ecog <- get_var_types(cancer, strata = "ph.ecog_cat")
 
@@ -198,10 +202,14 @@ A streamlined 5-step workflow from data preparation to final table:
 data(cancer, package = "survival")
 cancer_clean <- cancer %>%
   mutate(
-    age_group = cut(age, breaks = c(0, 50, 60, 70, 100),
-                    labels = c("<50", "50-60", "60-70", ">70")),
-    ph.ecog_cat = factor(ph.ecog, levels = c(0:3),
-                         labels = c("0", "1", ">=2", ">=2")),
+    age_group = cut(age,
+      breaks = c(0, 50, 60, 70, 100),
+      labels = c("<50", "50-60", "60-70", ">70")
+    ),
+    ph.ecog_cat = factor(ph.ecog,
+      levels = c(0:3),
+      labels = c("0", "1", ">=2", ">=2")
+    ),
     sex = factor(sex, labels = c("Male", "Female"))
   )
 
@@ -220,7 +228,8 @@ knitr::kable(data.frame(
 
 # Step 4: Create baseline table
 baseline_final <- baseline_table(
-  cancer_clean, var_types = var_types,
+  cancer_clean,
+  var_types = var_types,
   smd = TRUE
 )
 
@@ -242,9 +251,3 @@ knitr::kable(baseline_final$missing, caption = "Final Missing Data Summary")
 2. **Include SMD for observational studies** --- standardized mean differences help assess group balance
 3. **Handle missing data transparently** --- report missing patterns in your tables
 4. **Use BH correction** for multi-group pairwise comparisons
-
-## Further Reading
-
-- `vignette("data-cleaning")`: Data cleaning and preparation
-- `vignette("regression-analysis")`: Regression analysis and visualization
-- `vignette("model-evaluation")`: Model comparison and evaluation

@@ -73,8 +73,7 @@ test_that("data_overview detects quality issues correctly", {
     # Constant variable
     constant = rep("same", 10),
     # Logical with missing values
-    active = sample(c(TRUE, FALSE, NA), 10, replace = TRUE),
-    stringsAsFactors = FALSE
+    active = sample(c(TRUE, FALSE, NA), 10, replace = TRUE)
   )
 
   # Add duplicate rows
@@ -127,8 +126,7 @@ test_that("data_overview handles different data types", {
     factor_col = factor(rep(c("A", "B"), 5)),
     logical_col = c(TRUE, FALSE, rep(NA, 8)),
     date_col = as.Date("2020-01-01") + 0:9,
-    posixct_col = as.POSIXct("2020-01-01 12:00:00") + 0:9 * 3600,
-    stringsAsFactors = FALSE
+    posixct_col = as.POSIXct("2020-01-01 12:00:00") + 0:9 * 3600
   )
 
   result <- data_overview(test_df)
@@ -151,8 +149,7 @@ test_that("data_overview provides meaningful recommendations", {
     id = 1:10,
     income = c(rnorm(8, 50000, 10000), 200000, 300000),
     constant = rep("same", 10),
-    gender = sample(c("M", "F", NA), 10, replace = TRUE, prob = c(0.4, 0.4, 0.2)),
-    stringsAsFactors = FALSE
+    gender = sample(c("M", "F", NA), 10, replace = TRUE, prob = c(0.4, 0.4, 0.2))
   )
 
   result <- data_overview(test_df)
@@ -170,8 +167,7 @@ test_that("data_overview detects negative values in predominantly positive varia
   test_df <- data.frame(
     id = 1:11,
     age = c(20, 21, 22, 23, 24, 25, 26, 27, 28, 29, -5),
-    height = c(170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180),
-    stringsAsFactors = FALSE
+    height = c(170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180)
   )
 
   result <- data_overview(test_df)
@@ -186,8 +182,7 @@ test_that("data_overview detects empty columns", {
   test_df <- data.frame(
     id = 1:10,
     normal = 1:10,
-    empty_col = rep(NA, 10),
-    stringsAsFactors = FALSE
+    empty_col = rep(NA, 10)
   )
 
   result <- data_overview(test_df)
@@ -200,8 +195,7 @@ test_that("data_overview detects empty columns", {
 test_that("data_overview detects empty rows", {
   test_df <- data.frame(
     id = 1:10,
-    value = 1:10,
-    stringsAsFactors = FALSE
+    value = 1:10
   )
   test_df <- rbind(test_df, data.frame(id = NA, value = NA))
   test_df <- rbind(test_df, data.frame(id = NA, value = NA))
@@ -224,8 +218,7 @@ test_that("data_overview detects suspicious dates", {
       "1800-12-31",  # Too old
       as.Date(paste(current_year + 1, "06-15", sep = "-")),  # Future date
       rep("1995-01-01", 5)
-    )),
-    stringsAsFactors = FALSE
+    ))
   )
 
   result <- data_overview(test_df)
@@ -241,8 +234,7 @@ test_that("data_overview detects low cardinality variables", {
     id = 1:10,
     education = c(1, 2, 3, 1, 2, 3, 1, 2, 3, 1),
     gender = c("M", "F", "M", "F", "M", "F", "M", "F", "M", "F"),
-    score = round(rnorm(10, 75, 10)),
-    stringsAsFactors = FALSE
+    score = round(rnorm(10, 75, 10))
   )
 
   result <- data_overview(test_df)
@@ -261,8 +253,7 @@ test_that("data_overview detects case inconsistency issues", {
       "Boston", "BOSTON", "boston",
       "Chicago", "CHICAGO", "Chicago",
       "Miami", "MIAMI", "Miami"
-    ),
-    stringsAsFactors = FALSE
+    )
   )
 
   result <- data_overview(test_df)

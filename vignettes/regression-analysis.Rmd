@@ -37,6 +37,9 @@ The `clinpubr` package provides a comprehensive suite for regression analysis in
 5. **Interaction Analysis** --- Test and visualize effect modification
 6. **Subgroup Analysis** --- Subgroup forest plots
 
+The `clinpubr` package supports frequently used regression models: **Cox Proportional Hazards**, **Logistic Regression**, **Linear Regression**, and provides unified interface for them. The model used would be infered based on the settings of the `y` and `time` arguments. If `y` is binary and `time` is given, the model would be Cox Proportional Hazards; if `y` is a binary variable, and `time` not given, the model would be Logistic Regression; if `y` is a continuous variable, the model would be Linear Regression.
+
+
 ## Data Preparation
 
 We'll use the NCCTG Lung Cancer dataset (228 patients with advanced lung cancer):
@@ -47,7 +50,7 @@ cancer$dead <- cancer$status == 2
 
 cancer_clean <- cancer %>%
   mutate(
-    sex = factor(sex, labels = c("Male", "Female")))
+    sex = factor(sex, labels = c("Male", "Female"))
   ) %>%
   na.omit()
 
@@ -76,6 +79,8 @@ cox_scan <- regression_scan(
   data = cancer_clean,
   y = "status",
   time = "time",
+  # set predictors = NULL to scan all available variables
+  # predictors = NULL,
   predictors = c("age", "sex", "ph.karno", "pat.karno", "wt.loss", "meal.cal"),
   covars = NULL,
   save_table = FALSE
@@ -85,18 +90,6 @@ knitr::kable(cox_scan, caption = "Cox Regression Scan Results")
 ```
 
 The scan reports the effect size, p-value, adjusted p-value (BH correction by default), and the best transformation.
-
-View significant predictors:
-
-```{r interpret-scan}
-significant_predictors <- cox_scan %>%
-  filter(original.pval < 0.05 | rcs.overall.pval < 0.05) %>%
-  select(predictor, nvalid, best.var.trans, original.pval, rcs.overall.pval)
-
-knitr::kable(significant_predictors,
-             caption = "Significant Predictors (p < 0.05)",
-             digits = 4)
-```
 
 ### Logistic Regression Scan
 
@@ -184,7 +177,7 @@ uni_forest <- regression_forest(
   model_vars = c("age", "ph.karno", "pat.karno", "wt.loss"),
   y = "status",
   time = "time",
-  as_univariate = TRUE,
+  as_univariate = TRUE, # Generate univariate forest plot
   save_plot = FALSE
 )
 
@@ -193,14 +186,13 @@ uni_forest
 
 The univariate forest plot displays:
 
-- **Left panel**: Variable names with sample sizes in parentheses
-- **Center**: Forest plot with hazard ratios (HR) and 95% confidence intervals
-  - Each square represents the point estimate (HR)
+- **Left panel**: Variable names
+- **Center**: Forest plot with effect estimates and 95% confidence intervals
+  - The function automatically estimates the effect size (HR for Cox model, odds ratio for logistic model, and beta coefficient for linear model)
+  - Each square represents the point estimate
   - Horizontal lines represent 95% confidence intervals
-  - The vertical dashed line at HR=1.0 indicates no effect
-  - Squares to the left of 1.0 indicate protective effects (HR < 1)
-  - Squares to the right of 1.0 indicate risk-increasing effects (HR > 1)
-- **Right panel**: Numerical values of HR (95% CI) and p-values
+  - The vertical dashed line is the reference line, where HR=1.0 (for Cox model) or odds ratio=1.0 (for logistic model) or beta coefficient=0 (for linear model), which indicates no effect
+- **Right panel**: Numerical values of effect estimates (95% CI) and p-values
 
 In this example, `pat.karno` shows a significant protective effect (HR ≈ 0.98, p < 0.01), while `age`, `ph.karno`, and `wt.loss` do not reach statistical significance in univariate analysis.
 
@@ -216,7 +208,7 @@ multi_forest <- regression_forest(
   ),
   y = "status",
   time = "time",
-  as_univariate = FALSE,
+  as_univariate = FALSE, # Generate multivariate forest plot
   save_plot = FALSE
 )
 
@@ -262,40 +254,6 @@ This allows focused presentation of key predictors with precise numerical format
 
 ## Predictor Effect Visualization
 
-### RCS Plots
-
-RCS plots visualize non-linear relationships while preserving the continuous nature of the data:
-
-```{r rcs-plot}
-rcs_age <- rcs_plot(
-  data = cancer_clean,
-  x = "age",
-  y = "status",
-  time = "time",
-  covars = c("sex", "ph.karno"),
-  knot = 4,
-  ref = "x_median",
-  add_hist = TRUE,
-  save_plot = FALSE
-)
-
-rcs_age
-```
-
-The RCS (Restricted Cubic Spline) plot visualizes the non-linear relationship between age and survival:
-
-- **X-axis**: Age (continuous predictor)
-- **Y-axis**: Hazard Ratio (HR) with reference at the median age
-- **Solid line**: Estimated HR across age values
-- **Shaded area**: 95% confidence interval
-- **Histogram (top)**: Distribution of age in the dataset
-
-Key features:
-- The spline with 4 knots (`knot = 4`) allows flexible modeling of non-linear relationships
-- Reference point (`ref = "x_median"`) is set at the median age (HR = 1.0)
-- The plot shows how the hazard changes relative to the median age
-- The relatively flat curve suggests a roughly linear relationship between age and hazard in this dataset
-
 ### Predictor Effect Plot
 
 A unified interface for both continuous and categorical predictors:
@@ -317,10 +275,13 @@ effect_linear
 
 The linear predictor effect plot shows:
 
-- **X-axis**: Age values
-- **Y-axis**: Predicted effect (log hazard ratio)
-- **Solid line**: Linear fit with 95% confidence interval (shaded area)
-- **Rug plot (bottom)**: Individual data point distribution
+- **X-axis**: Age (continuous predictor)
+- **Y-axis**: Hazard Ratio (HR) with reference at the median age
+- **Solid line**: Estimated HR across age values
+- **Shaded area**: 95% confidence interval
+- **Histogram**: Distribution of age in the dataset, with the relative frequency on the right y-axis
+- **P-overall**: Overall p-value for the model, indicating the significance of the predictor effect
+- **P-proportional**: Only exists for Cox model, p-value for the proportional hazard assumption test
 
 This plot assumes a linear relationship between the predictor and outcome, useful for confirming linearity assumptions or presenting simple linear effects.
 
@@ -343,9 +304,41 @@ The categorical predictor effect plot displays:
 - **X-axis**: Categories of the predictor (Male vs Female)
 - **Y-axis**: Hazard Ratio with 95% confidence intervals
 - **Reference line**: HR = 1.0 (dashed line)
-- **Error bars**: 95% confidence intervals for each category
+- **Error crossbars**: Point estimates and 95% confidence intervals for each category
+- **Bar plot**: Distribution of categories in the dataset, with the percentage on the right y-axis
+- **P-overall**: Overall p-value for the model, indicating the significance of the predictor effect
+- **P-proportional**: Only exists for Cox model, p-value for the proportional hazard assumption test
 
 In this example, females show a significantly lower hazard compared to males (HR ≈ 0.62, 95% CI does not include 1.0), indicating better survival outcomes for female patients after adjusting for age and performance status.
+
+### RCS Plots
+
+RCS plots visualize non-linear relationships while preserving the continuous nature of the data, the plot can also be generated using `predictor_effect_plot()` with `method = "rcs"`:
+
+```{r rcs-plot}
+rcs_age <- rcs_plot(
+  data = cancer_clean,
+  x = "age",
+  y = "status",
+  time = "time",
+  covars = c("sex", "ph.karno"),
+  knot = 4,
+  ref = "x_median",
+  add_hist = TRUE,
+  save_plot = FALSE
+)
+
+rcs_age
+```
+
+The RCS (Restricted Cubic Spline) plot visualizes the non-linear relationship between age and survival, the element interpretation is similar to the linear plot. There is one additional element:
+
+- **P-non-linear**: Non-linear p-value for the model, indicating the significance of the non-linear effect
+
+Key features:
+- The spline with 4 knots (`knot = 4`) allows flexible modeling of non-linear relationships
+- Reference point (`ref = "x_median"`) is set at the median age (HR = 1.0)
+- The plot shows how the hazard changes relative to the median age
 
 ### Customized RCS Plot
 
@@ -371,15 +364,26 @@ The customized RCS plot demonstrates advanced options:
 
 - **`knot = 5`**: Uses 5 knots for more flexible curve fitting
 - **`ref = 0`**: Sets reference point at weight loss = 0 (no weight loss)
-- **`trans = "log10"`**: Applies log10 transformation to the y-axis
+- **`trans = "log10"`**: Applies log10 transformation to the y-axis. To enable log-scale y-axis, `add_hist` must be `FALSE`
 - **`y_lim = c(0.5, 5)`**: Custom y-axis limits for better visualization
 - **`add_hist = FALSE`**: Excludes the histogram for cleaner presentation
 
 This plot examines the relationship between weight loss and survival, with the reference at zero weight loss. The log-scale y-axis helps visualize effect sizes across a wide range.
 
-## Interaction Analysis
+## Subgroup Analysis
 
 ### Scanning for Interactions
+
+Interaction analysis is essential in clinical research to assess whether the effect of a predictor variable on the outcome differs across subgroups defined by another variable (effect modification). In medical papers, this is commonly referred to as **subgroup analysis with interaction testing**.
+
+The `interaction_scan()` function systematically evaluates potential interactions between multiple predictors and grouping variables:
+
+- **Linear interaction (`linear.p.int`)**: Tests whether the linear effect of a predictor differs across subgroups
+- **RCS interaction (`rcs.p.int`)**: Tests for non-linear interactions using restricted cubic splines (4 knots)
+- **Adjusted p-values**: Both raw and Benjamini-Hochberg (BH) adjusted p-values are provided to control for multiple comparisons
+- **Sample size (`nvalid`)**: Reports the number of complete cases for each interaction test
+
+**Clinical interpretation**: A significant interaction p-value (typically < 0.05) indicates that the effect of the predictor on the outcome is modified by the grouping variable, suggesting that treatment effects or risk associations may differ between subgroups.
 
 ```{r interaction-scan}
 interaction_scan <- interaction_scan(
@@ -387,12 +391,24 @@ interaction_scan <- interaction_scan(
   y = "status",
   time = "time",
   predictors = c("age", "ph.karno", "pat.karno"),
-  group_vars = c("sex"),
+  group_vars = c("sex", "ph.karno"), # continuous variables will be split by median into subgroups
   save_table = FALSE
 )
 
 knitr::kable(interaction_scan, caption = "Interaction Scan Results")
 ```
+
+**Understanding the output columns:**
+
+| Column | Description |
+|--------|-------------|
+| `predictor` | The continuous or categorical variable being tested for effect modification |
+| `group.by` | The subgroup variable (e.g., sex) that may modify the predictor's effect |
+| `nvalid` | Number of complete observations used in the interaction test |
+| `linear.p.int` | Raw p-value for linear interaction effect |
+| `linear.p.adj` | BH-adjusted p-value for linear interaction |
+| `rcs.p.int` | Raw p-value for non-linear (RCS) interaction effect |
+| `rcs.p.adj` | BH-adjusted p-value for RCS interaction |
 
 ### Visualizing Interactions
 
@@ -425,28 +441,7 @@ The interaction plot displays two panels:
 
 In this example, the lines appear roughly parallel, suggesting no significant interaction between age and sex (confirmed by p-value > 0.05).
 
-### Interaction P-value
-
-```{r interaction-pvalue}
-interaction_p <- interaction_p_value(
-  data = cancer_clean,
-  predictor = "age",
-  y = "status",
-  time = "time",
-  group_var = "sex",
-  covars = c("ph.karno")
-)
-
-knitr::kable(data.frame(
-  Interaction = "age * sex",
-  P_Value = round(interaction_p, 4),
-  Interpretation = ifelse(interaction_p < 0.05,
-                         "Significant interaction",
-                         "No significant interaction")
-), caption = "Interaction Test Result")
-```
-
-## Subgroup Analysis
+### Subgroup Forest Plot
 
 ```{r subgroup-forest}
 subgroup_result <- subgroup_forest(
@@ -454,7 +449,7 @@ subgroup_result <- subgroup_forest(
   x = "age",
   y = "status",
   time = "time",
-  subgroup_vars = c("sex"),
+  subgroup_vars = c("sex", "pat.karno"),
   covars = c("ph.karno"),
   save_plot = FALSE
 )
@@ -462,147 +457,20 @@ subgroup_result <- subgroup_forest(
 subgroup_result
 ```
 
-The subgroup forest plot displays the effect of age on survival stratified by sex:
+The subgroup forest plot displays the effect of age on survival stratified by groups:
 
 - **Overall**: Effect estimate for the entire cohort
-- **Male**: Effect estimate for male patients only
-- **Female**: Effect estimate for female patients only
+- **Sex**: Effect estimate for each sex group
+- **Pat.Karno**: Effect estimate for each patient's Karno score group
 
 Each row shows:
 - Sample size for that subgroup
-- Hazard ratio with 95% confidence interval
-- P-value for statistical significance
+- Effect estimate with 95% confidence interval
+- P-value of interaction
 
 This visualization helps assess:
 - Whether the effect is consistent across subgroups
 - Potential effect modification by the stratifying variable
-- Heterogeneity between subgroups
-
-In this example, the effect of age appears similar between males and females, with overlapping confidence intervals, suggesting no substantial subgroup differences.
-
-## Model Fitting
-
-For custom analyses, fit models directly with full control:
-
-```{r regression-fit}
-fit_result <- regression_fit(
-  data = cancer_clean,
-  y = "status",
-  predictor = "age",
-  time = "time",
-  covars = c("sex", "ph.karno"),
-  returned = "full"
-)
-
-knitr::kable(fit_result, caption = "Detailed Model Results")
-```
-
-### RCS Model Fitting
-
-```{r rcs-fit}
-rcs_fit <- regression_fit(
-  data = cancer_clean,
-  y = "status",
-  predictor = "age",
-  time = "time",
-  covars = c("sex"),
-  rcs_knots = 4,
-  returned = "predictor_combined"
-)
-
-knitr::kable(rcs_fit, caption = "RCS Model Results")
-```
-
-## Complete Analysis Workflow
-
-```{r complete-workflow}
-# Step 1: Data preparation
-data(cancer, package = "survival")
-cancer$dead <- cancer$status == 2
-
-analysis_data <- cancer %>%
-  mutate(
-    sex = factor(sex, labels = c("Male", "Female")),
-    ph.ecog_cat = factor(ph.ecog, levels = 0:3,
-                         labels = c("0", "1", "2", "3"))
-  ) %>%
-  na.omit()
-
-cat("Analysis dataset:", nrow(analysis_data), "patients\n")
-
-# Step 2: Regression scan
-scan_results <- regression_scan(
-  analysis_data,
-  y = "status",
-  time = "time",
-  predictors = c("age", "sex", "ph.karno", "pat.karno", "wt.loss", "meal.cal"),
-  save_table = FALSE
-)
-
-top_predictors <- scan_results %>%
-  filter(original.pval < 0.05) %>%
-  pull(predictor)
-
-cat("Significant predictors:", paste(top_predictors, collapse = ", "), "\n")
-
-knitr::kable(
-  scan_results %>%
-    filter(predictor %in% top_predictors) %>%
-    select(predictor, best.var.trans, original.pval),
-  caption = "Key Significant Predictors",
-  digits = 4
-)
-
-# Step 3: Comprehensive results for key predictor
-age_results <- regression_basic_results(
-  analysis_data,
-  x = "age",
-  y = "status",
-  time = "time",
-  model_covs = list(
-    Crude = c(),
-    Adjusted = c("sex", "ph.karno", "pat.karno")
-  ),
-  save_output = FALSE
-)
-
-knitr::kable(age_results$table, caption = "Age Effect - Multiple Model Specifications")
-
-# Step 4: Forest plot
-numeric_predictors <- top_predictors[top_predictors != "sex"]
-forest_plot <- regression_forest(
-  analysis_data,
-  model_vars = numeric_predictors,
-  y = "status",
-  time = "time",
-  as_univariate = TRUE,
-  save_plot = FALSE
-)
-
-# Step 5: RCS plot
-rcs_result <- rcs_plot(
-  analysis_data,
-  x = "age",
-  y = "status",
-  time = "time",
-  covars = c("sex", "ph.karno"),
-  save_plot = FALSE
-)
-
-# Step 6: Subgroup analysis
-subgroup_plot <- subgroup_forest(
-  analysis_data,
-  x = "age",
-  y = "status",
-  time = "time",
-  subgroup_vars = c("sex"),
-  covars = c("ph.karno"),
-  save_plot = FALSE
-)
-
-cat("\n=== Analysis Complete ===\n")
-cat(length(top_predictors), "significant predictors identified\n")
-```
 
 ## Summary
 
@@ -614,10 +482,3 @@ cat(length(top_predictors), "significant predictors identified\n")
 | `rcs_plot()` / `predictor_effect_plot()` | Flexible visualization of predictor effects |
 | `interaction_scan()` / `interaction_plot()` | Interaction analysis and visualization |
 | `subgroup_forest()` | Subgroup analysis with forest plots |
-| `regression_fit()` | Direct model fitting with full control |
-
-## Further Reading
-
-- `vignette("data-cleaning")`: Data cleaning and preparation
-- `vignette("baseline-table")`: Creating baseline characteristics tables
-- `vignette("model-evaluation")`: Model comparison and evaluation

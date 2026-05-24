@@ -1,13 +1,11 @@
 test_that("merge_by_substring works with basic dataset", {
   df <- data.frame(
     name = c("AB", "B,C", "A..", "ACD"),
-    value = c(1, 2, 3, 4),
-    stringsAsFactors = FALSE
+    value = c(1, 2, 3, 4)
   )
   match_df <- data.frame(
     ori = c("A", "B", "C", "ACD", "AB"),
-    category = c("cat1", "cat2", "cat3", "cat4", "cat1"),
-    stringsAsFactors = FALSE
+    category = c("cat1", "cat2", "cat3", "cat4", "cat1")
   )
 
   result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "category")
@@ -23,14 +21,12 @@ test_that("merge_by_substring works with basic dataset", {
 test_that("merge_by_substring works with multiple new columns", {
   df <- data.frame(
     name = c("AB", "B,C", "A..", "ACD"),
-    value = c(1, 2, 3, 4),
-    stringsAsFactors = FALSE
+    value = c(1, 2, 3, 4)
   )
   match_df <- data.frame(
     ori = c("A", "B", "C", "ACD", "AB"),
     category = c("cat1", "cat2", "cat3", "cat4", "cat1"),
-    code = c("001", "002", "003", "004", "001"),
-    stringsAsFactors = FALSE
+    code = c("001", "002", "003", "004", "001")
   )
 
   result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = c("category", "code"))
@@ -46,13 +42,11 @@ test_that("merge_by_substring works with multiple new columns", {
 test_that("merge_by_substring handles unmatched rows with NA", {
   df <- data.frame(
     name = c("AB", "XYZ", "A.."),
-    value = c(1, 2, 3),
-    stringsAsFactors = FALSE
+    value = c(1, 2, 3)
   )
   match_df <- data.frame(
     ori = c("A", "AB"),
-    category = c("cat1", "cat2"),
-    stringsAsFactors = FALSE
+    category = c("cat1", "cat2")
   )
 
   result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "category")
@@ -65,13 +59,11 @@ test_that("merge_by_substring handles unmatched rows with NA", {
 test_that("merge_by_substring handles empty match_df", {
   df <- data.frame(
     name = c("AB", "B,C"),
-    value = c(1, 2),
-    stringsAsFactors = FALSE
+    value = c(1, 2)
   )
   match_df <- data.frame(
     ori = character(0),
-    category = character(0),
-    stringsAsFactors = FALSE
+    category = character(0)
   )
 
   result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "category")
@@ -84,13 +76,11 @@ test_that("merge_by_substring handles empty match_df", {
 test_that("merge_by_substring handles duplicate patterns in same group", {
   df <- data.frame(
     name = c("AB", "B,C", "A.."),
-    value = c(1, 2, 3),
-    stringsAsFactors = FALSE
+    value = c(1, 2, 3)
   )
   match_df <- data.frame(
     ori = c("A", "A", "A", "B"),
-    category = c("cat1", "cat1", "cat1", "cat2"),
-    stringsAsFactors = FALSE
+    category = c("cat1", "cat1", "cat1", "cat2")
   )
 
   result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "category")
@@ -103,13 +93,11 @@ test_that("merge_by_substring handles duplicate patterns in same group", {
 test_that("merge_by_substring works with default column names", {
   df <- data.frame(
     name = c("AB", "B,C", "A.."),
-    value = c(1, 2, 3),
-    stringsAsFactors = FALSE
+    value = c(1, 2, 3)
   )
   match_df <- data.frame(
     ori = c("A", "B", "AB"),
-    new = c("cat1", "cat2", "cat3"),
-    stringsAsFactors = FALSE
+    new = c("cat1", "cat2", "cat3")
   )
 
   result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "new")
@@ -133,13 +121,11 @@ test_that("merge_by_substring validates input parameters", {
 test_that("merge_by_substring handles NA patterns", {
   df <- data.frame(
     name = c("AB", "B,C", "A.."),
-    value = c(1, 2, 3),
-    stringsAsFactors = FALSE
+    value = c(1, 2, 3)
   )
   match_df <- data.frame(
     ori = c("A", NA, "AB"),
-    category = c("cat1", "cat2", "cat3"),
-    stringsAsFactors = FALSE
+    category = c("cat1", "cat2", "cat3")
   )
 
   result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "category")
@@ -151,13 +137,11 @@ test_that("merge_by_substring handles NA patterns", {
 test_that("merge_by_substring works with special regex characters", {
   df <- data.frame(
     name = c("A.B", "A+B", "A?B", "A*B"),
-    value = c(1, 2, 3, 4),
-    stringsAsFactors = FALSE
+    value = c(1, 2, 3, 4)
   )
   match_df <- data.frame(
     ori = c("A.B", "A+B"),
-    category = c("cat1", "cat2"),
-    stringsAsFactors = FALSE
+    category = c("cat1", "cat2")
   )
 
   result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "category")
@@ -173,15 +157,13 @@ test_that("merge_by_range matches exact keys and returns since_start", {
     visit_id = c("A", "B", "A"),
     date_start = as.Date(c("2024-01-01", "2024-02-01", "2024-03-01")),
     date_end = as.Date(c("2024-01-10", "2024-02-10", "2024-03-05")),
-    ward = c("W1", "W2", "W3"),
-    stringsAsFactors = FALSE
+    ward = c("W1", "W2", "W3")
   )
   examinations <- data.frame(
     patient_id = c(1, 1, 1, 2),
     visit_id = c("A", "B", "B", "A"),
     exam_date = as.Date(c("2024-01-01", "2024-02-10", "2024-02-11", "2024-03-03")),
-    exam_name = c("CT", "MRI", "US", "XR"),
-    stringsAsFactors = FALSE
+    exam_name = c("CT", "MRI", "US", "XR")
   )
 
   result <- merge_by_range(
@@ -205,13 +187,11 @@ test_that("merge_by_range supports x_end = NULL and range_relax", {
   x <- data.frame(
     id = 1,
     visit_start = as.Date("2024-01-10"),
-    label = "visit",
-    stringsAsFactors = FALSE
+    label = "visit"
   )
   y <- data.frame(
     id = c(1, 1, 1),
-    event_date = as.Date(c("2024-01-09", "2024-01-10", "2024-01-11")),
-    stringsAsFactors = FALSE
+    event_date = as.Date(c("2024-01-09", "2024-01-10", "2024-01-11"))
   )
 
   result <- merge_by_range(
@@ -234,14 +214,12 @@ test_that("merge_by_range supports different by columns and keeps unmatched y ro
     patient_id = c(1, 2),
     range_start = c(10, 20),
     range_end = c(15, 25),
-    admission_type = c("A", "B"),
-    stringsAsFactors = FALSE
+    admission_type = c("A", "B")
   )
   y <- data.frame(
     pid = c(1, 3),
     event_value = c(12, 99),
-    admission_type = c("same_name", "other"),
-    stringsAsFactors = FALSE
+    admission_type = c("same_name", "other")
   )
 
   result <- merge_by_range(
@@ -293,13 +271,11 @@ test_that("merge_by_range clips relax-only overlap to a single neighboring range
     id = c(1, 1),
     start = c(1, 6),
     end = c(4, 8),
-    label = c("left", "right"),
-    stringsAsFactors = FALSE
+    label = c("left", "right")
   )
   y <- data.frame(
     id = 1,
-    value = 5,
-    stringsAsFactors = FALSE
+    value = 5
   )
 
   result <- merge_by_range(
@@ -324,13 +300,11 @@ test_that("merge_by_range keeps duplicates for fully overlapping core ranges and
     id = c(1, 1),
     start = c(1, 1),
     end = c(4, 4),
-    label = c("left", "right"),
-    stringsAsFactors = FALSE
+    label = c("left", "right")
   )
   y <- data.frame(
     id = 1,
-    value = 2,
-    stringsAsFactors = FALSE
+    value = 2
   )
 
   expect_warning(
@@ -357,13 +331,11 @@ test_that("merge_by_range clips x_end NULL extensions before retaining true dupl
   x <- data.frame(
     id = c(1, 1, 1, 1),
     start = c(1, 4, 4, 8),
-    label = c("a", "b1", "b2", "c"),
-    stringsAsFactors = FALSE
+    label = c("a", "b1", "b2", "c")
   )
   y <- data.frame(
     id = c(1, 1, 1, 1),
-    value = c(2, 4, 5, 8),
-    stringsAsFactors = FALSE
+    value = c(2, 4, 5, 8)
   )
 
   expect_warning(

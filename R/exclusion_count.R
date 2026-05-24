@@ -47,8 +47,7 @@ exclusion_count <- function(.df, ..., .criteria_names = NULL, .na_exclude = TRUE
   initial_n <- nrow(.df)
   results <- data.frame(
     Criteria = "Initial N",
-    N = initial_n,
-    stringsAsFactors = FALSE
+    N = initial_n
   )
 
   current_df <- .df
@@ -79,16 +78,14 @@ exclusion_count <- function(.df, ..., .criteria_names = NULL, .na_exclude = TRUE
 
     results <- rbind(results, data.frame(
       Criteria = .criteria_names[i],
-      N = n_excluded,
-      stringsAsFactors = FALSE
+      N = n_excluded
     ))
   }
 
   final_n <- nrow(current_df)
   results <- rbind(results, data.frame(
     Criteria = "Final N",
-    N = final_n,
-    stringsAsFactors = FALSE
+    N = final_n
   ))
 
   return(results)

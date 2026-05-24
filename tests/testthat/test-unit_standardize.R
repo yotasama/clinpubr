@@ -2,8 +2,7 @@
 test_data <- data.frame(
   subject = c("a", "a", "a", "b", "b", "b", "c", "c", "c"),
   value = c(1, 2, 3, 10, 20, 30, 100, 200, 300),
-  unit = c(NA, "mg", "mg", "mL", "dL", "dL", "mm", "cm", "cm"),
-  stringsAsFactors = FALSE
+  unit = c(NA, "mg", "mg", "mL", "dL", "dL", "mm", "cm", "cm")
 )
 
 # Test 1: Explicit target unit with NA conversion

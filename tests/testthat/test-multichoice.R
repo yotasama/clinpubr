@@ -5,8 +5,7 @@ set.seed(1)
 test_that("combine_multichoice handles backward compatibility with vector input", {
   df <- data.frame(
     q1 = c(TRUE, FALSE, TRUE, NA),
-    q2 = c(FALSE, FALSE, TRUE, TRUE),
-    stringsAsFactors = FALSE
+    q2 = c(FALSE, FALSE, TRUE, TRUE)
   )
   result <- combine_multichoice(df,
     quest_cols = c("q1", "q2"),
@@ -18,8 +17,7 @@ test_that("combine_multichoice handles backward compatibility with vector input"
 test_that("combine_multichoice creates multiple columns with named list", {
   df <- data.frame(
     a1 = c(TRUE, FALSE, TRUE), a2 = c(FALSE, TRUE, TRUE),
-    b1 = c(TRUE, TRUE, FALSE), b2 = c(FALSE, FALSE, TRUE),
-    stringsAsFactors = FALSE
+    b1 = c(TRUE, TRUE, FALSE), b2 = c(FALSE, FALSE, TRUE)
   )
   result <- combine_multichoice(df,
     quest_cols = list(groupA = c("a1", "a2"), groupB = c("b1", "b2")),
@@ -33,8 +31,7 @@ test_that("combine_multichoice creates multiple columns with named list", {
 test_that("remove_prefix removes common prefixes from column names", {
   df <- data.frame(
     Q1_a = c(TRUE, FALSE, TRUE), Q1_b = c(FALSE, TRUE, TRUE),
-    Q2_x = c(TRUE, TRUE, FALSE), Q2_y = c(FALSE, FALSE, TRUE),
-    stringsAsFactors = FALSE
+    Q2_x = c(TRUE, TRUE, FALSE), Q2_y = c(FALSE, FALSE, TRUE)
   )
   result <- combine_multichoice(
     df,
@@ -47,7 +44,7 @@ test_that("remove_prefix removes common prefixes from column names", {
 test_that("remove_prefix handles no common prefix scenario", {
   df <- data.frame(
     apple = c(TRUE, FALSE), banana = c(FALSE, TRUE),
-    cherry = c(TRUE, TRUE), stringsAsFactors = FALSE
+    cherry = c(TRUE, TRUE)
   )
   result <- combine_multichoice(
     df,
@@ -59,8 +56,7 @@ test_that("remove_prefix handles no common prefix scenario", {
 
 test_that("remove_prefix preserves original names when trimming results in empty strings", {
   df <- data.frame(
-    ID1 = c(TRUE, FALSE), ID2 = c(FALSE, TRUE),
-    stringsAsFactors = FALSE
+    ID1 = c(TRUE, FALSE), ID2 = c(FALSE, TRUE)
   )
   result <- combine_multichoice(
     df,

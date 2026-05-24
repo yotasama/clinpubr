@@ -41,8 +41,7 @@ test_that("df_view_nonnum returns correct non-numeric entries", {
   # Create test data frame with non-numeric values
   df <- data.frame(
     col1 = c("12.3", "45..6", "78a9", NA, "987"),
-    col2 = c("valid", "12.3a", "\uFF11\uFF12", "ok", "45..6"),
-    stringsAsFactors = FALSE
+    col2 = c("valid", "12.3a", "\uFF11\uFF12", "ok", "45..6")
   )
 
   # Test default parameters (max_count=20, random_sample=FALSE)

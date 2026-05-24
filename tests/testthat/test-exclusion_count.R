@@ -28,8 +28,7 @@ test_that("exclusion_count works with specified criteria names", {
       "History of dementia",
       "Final N"
     ),
-    N = c(6, 1, 2, 1, 2),
-    stringsAsFactors = FALSE
+    N = c(6, 1, 2, 1, 2)
   )
 
   expect_equal(result, expected)
@@ -49,8 +48,7 @@ test_that("exclusion_count works with default criteria names", {
       "is.na(value)",
       "Final N"
     ),
-    N = c(6, 1, 2, 3),
-    stringsAsFactors = FALSE
+    N = c(6, 1, 2, 3)
   )
   expect_equal(result, expected)
 })
@@ -60,8 +58,7 @@ test_that("exclusion_count handles NA in criteria correctly", {
   expect_warning(result <- exclusion_count(df_na, x > 2, .criteria_names = "X > 2"))
   expected <- data.frame(
     Criteria = c("Initial N", "X > 2", "Final N"),
-    N = c(4, 2, 2),
-    stringsAsFactors = FALSE
+    N = c(4, 2, 2)
   )
   expect_equal(result, expected)
 })

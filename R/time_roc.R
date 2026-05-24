@@ -55,7 +55,8 @@ calc_cindex <- function(data, time_var, event_var, marker_var) {
 #' result$plot
 #'
 #' # Save the plot to a file
-#' # time_roc_plot(lung, "time", "status", "age", times = c(180, 365, 730), time_unit = "days", save_plot = TRUE)
+#' # time_roc_plot(lung, "time", "status", "age", times = c(180, 365, 730), 
+#' #               time_unit = "days", save_plot = TRUE)
 time_roc_plot <- function(data, time_var, event_var, marker_var, times = c(12, 36, 60), time_unit = "months",
                           weighting = "marginal", cause = 1, colors = NULL, title = FALSE,
                           save_plot = FALSE, filename = "time_roc.png") {

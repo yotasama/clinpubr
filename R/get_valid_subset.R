@@ -152,16 +152,14 @@ get_valid_subset <- function(df, row_na_ratio = 0.5, col_na_ratio = 0.2, row_pri
           cand_rows <- current_rows[scores$row_scores > 0]
           score_list <- c(score_list, list(data.frame(
             type = "row", id = cand_rows,
-            score = scores$row_scores[scores$row_scores > 0],
-            stringsAsFactors = FALSE
+            score = scores$row_scores[scores$row_scores > 0]
           )))
         }
         if (any(scores$col_scores > 0)) {
           cand_cols <- current_cols[scores$col_scores > 0]
           score_list <- c(score_list, list(data.frame(
             type = "col", id = cand_cols,
-            score = scores$col_scores[scores$col_scores > 0],
-            stringsAsFactors = FALSE
+            score = scores$col_scores[scores$col_scores > 0]
           )))
         }
         if (length(score_list) == 0) break  # No beneficial removal found
@@ -173,16 +171,14 @@ get_valid_subset <- function(df, row_na_ratio = 0.5, col_na_ratio = 0.2, row_pri
           cand_rows <- current_rows[cand_row_logical]
           score_list <- c(score_list, list(data.frame(
             type = "row", id = cand_rows,
-            score = (row_miss[cand_row_logical] - row_na_ratio) / row_priority,
-            stringsAsFactors = FALSE
+            score = (row_miss[cand_row_logical] - row_na_ratio) / row_priority
           )))
         }
         if (sum(cand_col_logical) > 0) {
           cand_cols <- current_cols[cand_col_logical]
           score_list <- c(score_list, list(data.frame(
             type = "col", id = cand_cols,
-            score = col_miss[cand_col_logical] - col_na_ratio,
-            stringsAsFactors = FALSE
+            score = col_miss[cand_col_logical] - col_na_ratio
           )))
         }
       }
@@ -247,16 +243,14 @@ get_valid_subset <- function(df, row_na_ratio = 0.5, col_na_ratio = 0.2, row_pri
         cand_rows <- removed_rows[cand_row_logical]
         score_list <- c(score_list, list(data.frame(
           type = "row", id = cand_rows,
-          score = (row_miss_removed[cand_row_logical] - row_na_ratio) / row_priority,
-          stringsAsFactors = FALSE
+          score = (row_miss_removed[cand_row_logical] - row_na_ratio) / row_priority
         )))
       }
       if (sum(cand_col_logical) > 0) {
         cand_cols <- removed_cols[cand_col_logical]
         score_list <- c(score_list, list(data.frame(
           type = "col", id = cand_cols,
-          score = col_miss_removed[cand_col_logical] - col_na_ratio,
-          stringsAsFactors = FALSE
+          score = col_miss_removed[cand_col_logical] - col_na_ratio
         )))
       }
       tmp_df <- do.call(rbind, score_list)

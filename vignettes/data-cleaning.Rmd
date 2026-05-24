@@ -51,48 +51,48 @@ patient_ids <- paste0("P", sprintf("%03d", 1:n))
 # Glucose: mix of mg/dL and mmol/L (1 mmol/L = 18 mg/dL)
 # Also include some outliers and missing values
 glucose_vals <- c(
-  rnorm(35, mean = 100, sd = 15),      # mg/dL normal range
-  rnorm(30, mean = 5.5, sd = 0.8),     # mmol/L normal range
-  rnorm(10, mean = 200, sd = 20),      # mg/dL high (outliers)
-  rnorm(10, mean = 15, sd = 2),        # mmol/L high (outliers)
-  rep(NA, 10),                         # missing values
-  999, 888, 0, -50, 500                # erroneous values
+  rnorm(35, mean = 100, sd = 15), # mg/dL normal range
+  rnorm(30, mean = 5.5, sd = 0.8), # mmol/L normal range
+  rnorm(10, mean = 200, sd = 20), # mg/dL high (outliers)
+  rnorm(10, mean = 15, sd = 2), # mmol/L high (outliers)
+  rep(NA, 10), # missing values
+  999, 888, 0, -50, 500 # erroneous values
 )
-glucose_vals <- round(sample(glucose_vals,n),1)
+glucose_vals <- round(sample(glucose_vals, n), 1)
 
 glucose_units <- sample(c("mg/dL", "mmol/L", NA), n, replace = TRUE, prob = c(0.5, 0.4, 0.1))
 
 # Creatinine: mix of mg/dL and umol/L (1 mg/dL = 88.4 umol/L)
 creatinine_vals <- c(
-  rnorm(35, mean = 1.0, sd = 0.2),     # mg/dL normal range
-  rnorm(30, mean = 88, sd = 15),       # umol/L normal range
-  rnorm(10, mean = 3.0, sd = 0.5),     # mg/dL high (outliers)
-  rnorm(10, mean = 265, sd = 44),      # umol/L high (outliers)
-  rep(NA, 10),                         # missing values
-  999, 0, -10, 1000, 0.001             # erroneous values
+  rnorm(35, mean = 1.0, sd = 0.2), # mg/dL normal range
+  rnorm(30, mean = 88, sd = 15), # umol/L normal range
+  rnorm(10, mean = 3.0, sd = 0.5), # mg/dL high (outliers)
+  rnorm(10, mean = 265, sd = 44), # umol/L high (outliers)
+  rep(NA, 10), # missing values
+  999, 0, -10, 1000, 0.001 # erroneous values
 )
-creatinine_vals <- round(sample(creatinine_vals,n),2)
+creatinine_vals <- round(sample(creatinine_vals, n), 2)
 
 creatinine_units <- sample(c("mg/dL", "umol/L", NA), n, replace = TRUE, prob = c(0.5, 0.4, 0.1))
 
 # Cholesterol: mix of mg/dL and mmol/L (1 mmol/L = 38.67 mg/dL)
 cholesterol_vals <- c(
-  rnorm(35, mean = 180, sd = 30),      # mg/dL normal range
-  rnorm(30, mean = 4.5, sd = 0.8),     # mmol/L normal range
-  rnorm(10, mean = 350, sd = 40),      # mg/dL high (outliers)
-  rnorm(10, mean = 9, sd = 1),         # mmol/L high (outliers)
-  rep(NA, 10),                         # missing values
-  888, 999, 50, 600, 0                 # erroneous values
+  rnorm(35, mean = 180, sd = 30), # mg/dL normal range
+  rnorm(30, mean = 4.5, sd = 0.8), # mmol/L normal range
+  rnorm(10, mean = 350, sd = 40), # mg/dL high (outliers)
+  rnorm(10, mean = 9, sd = 1), # mmol/L high (outliers)
+  rep(NA, 10), # missing values
+  888, 999, 50, 600, 0 # erroneous values
 )
-cholesterol_vals <- round(sample(cholesterol_vals,n),2)
+cholesterol_vals <- round(sample(cholesterol_vals, n), 2)
 
 cholesterol_units <- sample(c("mg/dL", "mmol/L", NA), n, replace = TRUE, prob = c(0.5, 0.4, 0.1))
 
 # Test dates with various formats and impossible dates
 test_date_vals <- sample(c(
-  format(Sys.Date() - sample(1:365, 60, replace = TRUE), "%Y-%m-%d"),   # ISO format
-  format(Sys.Date() - sample(1:365, 30, replace = TRUE), "%Y/%m/%d"),   # Slash format
-  "1900-01-01", "2030-12-31", "N/A", "", "unknown", "pending",        # Invalid dates
+  format(Sys.Date() - sample(1:365, 60, replace = TRUE), "%Y-%m-%d"), # ISO format
+  format(Sys.Date() - sample(1:365, 30, replace = TRUE), "%Y/%m/%d"), # Slash format
+  "1900-01-01", "2030-12-31", "N/A", "", "unknown", "pending", # Invalid dates
   rep(NA, 10)
 ), n * 3, replace = TRUE)
 
@@ -102,8 +102,7 @@ lab_data <- data.frame(
   test = rep(c("Glucose", "Creatinine", "Cholesterol"), each = n),
   value = c(glucose_vals, creatinine_vals, cholesterol_vals),
   unit = c(glucose_units, creatinine_units, cholesterol_units),
-  test_date = test_date_vals,
-  stringsAsFactors = FALSE
+  test_date = test_date_vals
 )
 
 # Add messy string values that need cleaning
@@ -131,7 +130,8 @@ lab_data$value[messy_cholesterol_idx] <- sample(c(
 ), length(messy_cholesterol_idx), replace = TRUE)
 
 knitr::kable(head(lab_data[sample(nrow(lab_data)), ], 10),
-             caption = "Original Messy Lab Data (10 random rows)")
+  caption = "Original Messy Lab Data (10 random rows)"
+)
 ```
 
 ## Step 1: Data Overview
@@ -152,7 +152,8 @@ Check for unit conflicts across different test types:
 
 ```{r check-units}
 knitr::kable(unit_view(lab_data, subject_col = "test", value_col = "value", unit_col = "unit"),
-  caption = "Unit Conflicts by Test Type")
+  caption = "Unit Conflicts by Test Type"
+)
 ```
 
 ## Step 2: Format Cleaning
@@ -259,7 +260,8 @@ change_rules <- list(
 )
 
 lab_data_std <- unit_standardize(
-  lab_data, subject_col = "test", value_col = "value",
+  lab_data,
+  subject_col = "test", value_col = "value",
   unit_col = "unit", change_rules = change_rules
 )
 
@@ -270,7 +272,8 @@ Verify that units are now standardized:
 
 ```{r verify-standardization}
 knitr::kable(unit_view(lab_data_std, subject_col = "test", value_col = "value", unit_col = "unit"),
-  caption = "Units After Standardization")
+  caption = "Units After Standardization"
+)
 ```
 
 ## Step 4: Outlier Detection
@@ -294,9 +297,9 @@ lab_data_clean <- lab_data_std
 # Detect outliers for each test
 for (test_name in c("Glucose", "Creatinine", "Cholesterol")) {
   test_data <- lab_data_std$value[lab_data_std$test == test_name]
-  
+
   outlier_res <- detect_outliers(test_data, method = "iqr")
-  
+
   cat("\n", test_name, ":\n")
   cat("  Total values:", length(test_data), "\n")
   cat("  Outliers detected:", sum(outlier_res$outlier_mask, na.rm = TRUE), "\n")
@@ -331,9 +334,9 @@ lab_data_final <- lab_data_std
 for (test_name in c("Glucose", "Creatinine", "Cholesterol")) {
   test_idx <- lab_data_std$test == test_name
   test_values <- lab_data_std$value[test_idx]
-  
+
   outlier_res <- detect_outliers(test_values, method = "iqr")
-  
+
   # Set outliers to NA
   lab_data_final$value[test_idx][outlier_res$outlier_mask] <- NA
 }
@@ -375,10 +378,10 @@ For missing data filtering by row/column missing rate, use `get_valid_subset()` 
 # Convert to wide format preserving all test dates
 # This creates a longitudinal cohort dataset
 lab_wide <- lab_data_final %>%
-  filter(!is.na(test_date)) %>%  # Remove records without valid dates
+  filter(!is.na(test_date)) %>% # Remove records without valid dates
   select(patient_id, test_date, test, value) %>%
   tidyr::pivot_wider(
-    names_from = test, 
+    names_from = test,
     values_from = value,
     names_sort = TRUE
   )
@@ -422,14 +425,18 @@ Filter records with too much missing data:
 ```{r filter-missing}
 lab_wide_clean <- get_valid_subset(
   lab_wide,
-  row_na_ratio = 0.5,    # Allow up to 50% missing per record
-  col_na_ratio = 0.3     # Allow up to 30% missing per test type
+  row_na_ratio = 0.5, # Allow up to 50% missing per record
+  col_na_ratio = 0.3 # Allow up to 30% missing per test type
 )
 
-cat("Dimensions:", nrow(lab_wide), "records",
-    "->", nrow(lab_wide_clean), "records\n")
-cat("Unique patients:", length(unique(lab_wide$patient_id)),
-    "->", length(unique(lab_wide_clean$patient_id)), "\n")
+cat(
+  "Dimensions:", nrow(lab_wide), "records",
+  "->", nrow(lab_wide_clean), "records\n"
+)
+cat(
+  "Unique patients:", length(unique(lab_wide$patient_id)),
+  "->", length(unique(lab_wide_clean$patient_id)), "\n"
+)
 ```
 
 ## Step 6: Data Transformation
@@ -495,8 +502,10 @@ View a single patient's trajectory over time:
 # Select one patient with multiple visits for demonstration
 patient_trajectory <- lab_wide_clean %>%
   filter(patient_id == unique(patient_id)[1]) %>%
-  select(patient_id, test_date, Glucose, Creatinine, Cholesterol, 
-         glucose_category, renal_function) %>%
+  select(
+    patient_id, test_date, Glucose, Creatinine, Cholesterol,
+    glucose_category, renal_function
+  ) %>%
   arrange(test_date)
 
 knitr::kable(patient_trajectory, caption = "Example: Single Patient's Lab Trajectory")
@@ -523,7 +532,8 @@ change_rules <- list(
 )
 
 clean <- unit_standardize(
-  clean, subject_col = "test", value_col = "value",
+  clean,
+  subject_col = "test", value_col = "value",
   unit_col = "unit", change_rules = change_rules
 )
 
@@ -556,11 +566,15 @@ clean_wide$glucose_category <- cut_by(
 final_overview <- data_overview(clean_wide)
 knitr::kable(final_overview$summary_stats, caption = "Final Data Quality Overview")
 
-cat("\nOriginal records:", nrow(lab_data),
-    "| Final records:", nrow(clean_wide),
-    "| Removed:", nrow(lab_data) - nrow(clean_wide), "\n")
-cat("Unique patients:", length(unique(lab_data$patient_id)),
-    "->", length(unique(clean_wide$patient_id)), "\n")
+cat(
+  "\nOriginal records:", nrow(lab_data),
+  "| Final records:", nrow(clean_wide),
+  "| Removed:", nrow(lab_data) - nrow(clean_wide), "\n"
+)
+cat(
+  "Unique patients:", length(unique(lab_data$patient_id)),
+  "->", length(unique(clean_wide$patient_id)), "\n"
+)
 ```
 
 ## Summary
@@ -580,9 +594,3 @@ cat("Unique patients:", length(unique(lab_data$patient_id)),
 2. **Verify outliers clinically**: Some extreme values are clinically meaningful
 3. **Track data loss**: Document how many observations are removed at each step
 4. **Preserve raw data**: Never overwrite original data; create cleaned copies
-
-## Further Reading
-
-- `vignette("baseline-table")`: Creating publication-ready baseline tables
-- `vignette("regression-analysis")`: Regression analysis and visualization
-- `vignette("model-evaluation")`: Model comparison and evaluation

@@ -4,7 +4,15 @@
 \alias{merge_by_substring}
 \title{Merge Data Frame by String Key Matching}
 \usage{
-merge_by_substring(data, key_df, search_col, key_col, value_cols)
+merge_by_substring(
+  data,
+  key_df,
+  search_col,
+  key_col,
+  value_cols,
+  case_insensitive = TRUE,
+  ...
+)
 }
 \arguments{
 \item{data}{The primary data frame to be enhanced with additional columns}
@@ -16,7 +24,12 @@ merge_by_substring(data, key_df, search_col, key_col, value_cols)
 \item{key_col}{Column name in \code{key_df} containing keys to match (default: "key")}
 
 \item{value_cols}{Column name(s) in \code{key_df} to add to \code{data} (default: "value")
-Can be a single column name or a character vector of column names}
+Can be a single column name or a character vector of column names. Defaults to "value" if not provided.}
+
+\item{case_insensitive}{Whether to perform case-insensitive matching (default: TRUE)
+Defaults to TRUE if not provided.}
+
+\item{...}{Additional arguments passed to \code{stringi::stri_detect_regex()}.}
 }
 \value{
 A data frame with all columns from \code{data} plus matched columns from \code{key_df}.
@@ -31,14 +44,12 @@ and adds corresponding columns from \code{key_df} to \code{data}.
 # Basic usage
 main_data <- data.frame(
   name = c("AB", "B,C", "A..", "ACD"),
-  value = c(1, 2, 3, 4),
-  stringsAsFactors = FALSE
+  value = c(1, 2, 3, 4)
 )
 key_lookup <- data.frame(
   key = c("A", "B", "C", "ACD", "AB"),
   category = c("cat1", "cat2", "cat3", "cat4", "cat1"),
-  code = c("001", "002", "003", "004", "001"),
-  stringsAsFactors = FALSE
+  code = c("001", "002", "003", "004", "001")
 )
 result <- merge_by_substring(main_data, key_lookup,
   search_col = "name",
