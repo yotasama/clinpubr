@@ -1,0 +1,433 @@
+---
+title: "clinpubr 高级数据操作：队列筛选、数据合并与转换"
+output: html_document
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  warning = FALSE,
+  message = FALSE,
+  error = TRUE
+)
+```
+
+```{r setup}
+library(clinpubr)
+library(dplyr)
+library(survival)
+```
+
+> **写在前面**
+>
+> 临床研究中的数据操作远比教科书上的示例复杂——你可能需要整合多个数据源、处理模糊匹配、按时间窗口对齐数据、在长格式和宽格式之间反复转换……这些"脏活累活"往往占据了数据分析 60% 以上的时间。
+>
+> 本文将介绍 `clinpubr` 包中一系列**高级数据操作工具**，覆盖队列筛选、数据合并、格式转换和实用工具函数，帮助你高效地完成这些繁琐的数据处理任务。无论你是在做回顾性 EHR 研究，还是多中心前瞻性研究，这些工具都能派上用场。
+
+## 功能概览
+
+| 功能模块 | 核心函数 | 典型应用场景 |
+|---------|---------|-------------|
+| 队列筛选 | `exclusion_count()` | CONSORT 流程图数据准备 |
+| 多表筛选 | `screen_data_list()` | 回顾性 EHR 队列构建 |
+| 子串匹配合并 | `merge_by_substring()` | 诊断名称 → ICD 编码映射 |
+| 时间窗口合并 | `merge_by_range()` | 住院期间的检验结果匹配 |
+| 长宽转换 | `to_wide()` | 纵向数据格式转换 |
+| 多选题处理 | `split_multichoice()` / `combine_multichoice()` | 问卷和症状数据处理 |
+| 工具函数 | `common_prefix()`, `fill_with_last()` 等 | 字符串标准化、列表操作 |
+
+## CONSORT 风格的队列筛选
+
+`exclusion_count()` 可以生成 CONSORT 流程图所需的数据，追踪每一步排除的患者数量：
+
+```{r cohort-screening}
+set.seed(123)
+
+patients <- data.frame(
+  patient_id = 1:100,
+  age = round(rnorm(100, 60, 15)),
+  gender = sample(c("M", "F"), 100, replace = TRUE),
+  has_baseline_data = sample(c(TRUE, FALSE), 100, prob = c(0.9, 0.1), replace = TRUE),
+  meets_inclusion = sample(c(TRUE, FALSE), 100, prob = c(0.8, 0.2), replace = TRUE),
+  complete_followup = sample(c(TRUE, FALSE), 100, prob = c(0.85, 0.15), replace = TRUE)
+)
+
+exclusion_summary <- exclusion_count(
+  patients,
+  age < 50,
+  gender != "M",
+  !has_baseline_data,
+  !meets_inclusion,
+  !complete_followup
+)
+
+knitr::kable(exclusion_summary, caption = "CONSORT 风格的队列流程")
+
+cat("纳入率:", round(100 * exclusion_summary$N[nrow(exclusion_summary)] / exclusion_summary$N[1], 1), "%\n")
+```
+
+自定义排除标准的名称，让流程图更清晰：
+
+```{r exclusion-custom}
+exclusion_flow <- exclusion_count(
+  patients,
+  age < 18 | age > 80,
+  !has_baseline_data,
+  !meets_inclusion,
+  .criteria_names = c(
+    "年龄不在 18-80 范围内",
+    "缺失基线数据",
+    "不符合纳入标准"
+  )
+)
+
+knitr::kable(exclusion_flow, caption = "自定义排除流程")
+```
+
+## 数据合并策略
+
+### 子串匹配合并
+
+当精确标识符无法对齐时（例如将自由文本诊断映射到 ICD 编码），`merge_by_substring()` 可以通过子串匹配实现模糊合并：
+
+```{r merge-substring}
+medical_terms <- data.frame(
+  match_term = c(
+    "Type 2 Diabetes", "Hypertension", "Coronary Artery Disease",
+    "Coronary Disease", "Chronic Kidney Disease", "Heart Failure", "Atrial Fibrillation"
+  ),
+  standard_term = c(
+    "Type 2 Diabetes Mellitus", "Hypertension", "Coronary Artery Disease",
+    "Coronary Artery Disease", "Chronic Kidney Disease", "Heart Failure", "Atrial Fibrillation"
+  ),
+  icd_code = c("E11", "I10", "I25", "I25", "N18", "I50", "I48"),
+  category = c(
+    "Endocrine", "Cardiovascular", "Cardiovascular", "Cardiovascular",
+    "Renal", "Cardiovascular", "Cardiovascular"
+  )
+)
+
+patient_diagnoses <- data.frame(
+  patient_id = 1:10,
+  diagnosis_text = c(
+    "Severe Type 2 Diabetes", "Type 2 Diabetes Mellitus",
+    "Type 2 Diabetes with Complications", "Essential Hypertension",
+    "Hypertensive disease", "CAD - Coronary Artery Disease",
+    "Coronary disease", "CKD Stage 3",
+    "Congestive Heart Failure", "Heart failure chronic"
+  )
+)
+
+merged_substring <- merge_by_substring(
+  data = patient_diagnoses,
+  key_df = medical_terms,
+  search_col = "diagnosis_text",
+  key_col = "match_term",
+  value_cols = c("standard_term", "icd_code", "category")
+)
+
+knitr::kable(medical_terms, caption = "标准医学术语表")
+knitr::kable(merged_substring, caption = "诊断名称映射到 ICD 编码")
+```
+
+### 时间范围合并（时间窗口匹配）
+
+`merge_by_range()` 可以在特定时间窗口内匹配事件（例如匹配住院期间的检验结果）：
+
+```{r merge-range}
+patient_visits <- data.frame(
+  patient_id = rep(1:3, each = 2),
+  visit_id = 1:6,
+  visit_start = as.Date(c(
+    "2023-01-01", "2023-06-01", "2023-02-01",
+    "2023-07-01", "2023-03-01", "2023-08-01"
+  )),
+  visit_end = as.Date(c(
+    "2023-01-10", "2023-06-10", "2023-02-10",
+    "2023-07-10", "2023-03-10", "2023-08-10"
+  ))
+)
+
+lab_results <- data.frame(
+  lab_id = 1:6,
+  patient_id = c(1, 1, 2, 2, 3, 3),
+  test_date = as.Date(c(
+    "2023-01-05", "2023-06-05", "2023-02-03",
+    "2023-07-08", "2023-03-15", "2023-08-05"
+  )),
+  test_name = c("Glucose", "HbA1c", "Glucose", "Creatinine", "Glucose", "Lipid panel"),
+  result = round(rnorm(6, 100, 15), 1)
+)
+
+merged_range <- merge_by_range(
+  x = patient_visits, y = lab_results,
+  by = "patient_id",
+  x_start = "visit_start", x_end = "visit_end",
+  y_val = "test_date"
+)
+
+knitr::kable(merged_range, caption = "匹配到就诊时间窗口的检验结果")
+```
+
+## 数据转换
+
+### 长格式转宽格式
+
+`to_wide()` 将长格式数据（每行一个测量值）转换为宽格式（每行一个患者），便于后续分析：
+
+```{r to-wide}
+long_labs <- data.frame(
+  patient_id = rep(1:5, each = 3),
+  visit = rep(c(1, 2), times = c(8, 7)),
+  test = rep(c("glucose", "creatinine", "cholesterol"), 5),
+  value = round(rnorm(15, 100, 20), 1)
+)
+
+wide_labs <- to_wide(
+  df = long_labs,
+  keys = c("patient_id", "visit"),
+  item_col = "test",
+  value_col = "value"
+)
+
+knitr::kable(head(long_labs), caption = "实验室数据 - 长格式")
+knitr::kable(head(wide_labs), caption = "实验室数据 - 宽格式")
+```
+
+### 多选题数据处理
+
+`split_multichoice()` 将逗号分隔的多选题列拆分为二值指示变量；`combine_multichoice()` 则可以将它们重新组合：
+
+```{r multichoice}
+set.seed(456)
+survey_data <- data.frame(
+  id = 1:20,
+  symptoms = sapply(1:20, function(x) {
+    paste(sample(
+      c("fever", "cough", "headache", "fatigue"),
+      sample(1:4, 1)
+    ), collapse = ",")
+  }),
+  comorbidities = sapply(1:20, function(x) {
+    paste(sample(
+      c("diabetes", "hypertension"),
+      sample(1:2, 1)
+    ), collapse = ",")
+  })
+)
+
+symptoms_split <- split_multichoice(
+  survey_data,
+  quest_cols = c("symptoms", "comorbidities"),
+  split = ",",
+  remove_space = FALSE
+)
+
+knitr::kable(head(survey_data), caption = "多选题原始数据")
+
+knitr::kable(head(symptoms_split), caption = "拆分后的多选题数据")
+
+combined <- combine_multichoice(
+  symptoms_split,
+  quest_cols = list(
+    respiratory = c("symptoms_cough", "symptoms_fatigue"),
+    systemic = c("symptoms_fever", "symptoms_headache")
+  ),
+  sep = ","
+)
+
+knitr::kable(head(combined), caption = "合并后的症状分组")
+```
+
+## 实用工具函数
+
+### 字符串操作
+
+`common_prefix()` 提取字符向量的公共前缀，适用于处理医院导出文件时识别同一患者或批次的文件：
+
+```{r string-utils-prefix}
+file_names <- c("patient_001_lab.csv", "patient_001_visit.csv", "patient_001_demo.csv")
+common_prefix(file_names)
+```
+
+`str_match_replace()` 替换字符串中匹配的模式，适用于跨医院统一检验名称或问卷选项标签：
+
+```{r string-utils-replace}
+test_names <- c("Glucose_Fasting", "Glucose_Random", "Cholesterol_Total", "LDL_Calculated")
+standardized <- str_match_replace(
+  x = test_names,
+  to_match = c("Glucose", "Cholesterol", "LDL"),
+  to_replace = c("GLU", "CHOL", "LDL_CHOL")
+)
+
+knitr::kable(data.frame(Original = test_names, Standardized = standardized),
+  caption = "检验名称标准化"
+)
+```
+
+### 列表和数据框操作
+
+`add_lists()` 逐元素相加两个列表，适用于汇总不同时间段的疾病发病率或多个调查站点的响应频率：
+
+```{r list-ops-add}
+list1 <- list(diabetes = 10, hypertension = 20, asthma = 5)
+list2 <- list(diabetes = 15, hypertension = 25, asthma = 8)
+add_lists(list1, list2)
+```
+
+`merge_ordered_vectors()` 合并多个有序向量并保留唯一元素和原始顺序，适用于整合多中心研究的纳入标准列表：
+
+```{r list-ops-merge}
+sites <- list(
+  c("Diabetes", "Hypertension", "Heart Failure", "CKD"),
+  c("Hypertension", "COPD", "Diabetes", "Cancer"),
+  c("CKD", "Diabetes", "Stroke", "Hypertension")
+)
+merge_ordered_vectors(sites)
+```
+
+`replace_elements()` 替换向量中的指定元素，适用于纠正临床数据中的录入错误：
+
+```{r list-ops-replace}
+sample_data <- data.frame(
+  group = c("Cntrol", "Treetment", "Placebo", "Cntrol", "Treatment"),
+  value = 1:5
+)
+recoded <- replace_elements(
+  x = sample_data$group,
+  from = c("Cntrol", "Treetment"),
+  to = c("Control", "Treatment")
+)
+knitr::kable(data.frame(Original = sample_data$group, Recoded = recoded),
+  caption = "分组重编码"
+)
+```
+
+`fill_with_last()` 用最后一个有效观测值填充缺失值（LOCF），适用于处理 EMR 数据从 Excel 导入时的合并单元格：
+
+```{r list-ops-fill}
+time_series <- c(120, NA, NA, 125, NA, 130, NA, NA)
+knitr::kable(data.frame(Original = time_series, Filled = fill_with_last(time_series)),
+  caption = "末次观测值前推填充"
+)
+```
+
+## 多表队列筛选
+
+`screen_data_list()` 可以基于临床标准对多个关联表进行筛选和合并，并保留完整的审计轨迹。这对于回顾性 EHR 研究尤为关键。
+
+### 场景：构建糖尿病队列
+
+```{r workflow-setup}
+# 患者人口学信息
+patient <- data.frame(
+  pid = 1:50,
+  age = sample(25:75, 50, replace = TRUE),
+  gender = sample(c("M", "F"), 50, replace = TRUE)
+)
+
+# 住院记录
+admission <- data.frame(
+  pid = c(1, 1, 2, 2, 3, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
+  vid = 101:115,
+  admit_day = c(1, 30, 5, 45, 10, 60, 15, 20, 25, 35, 40, 50, 55, 65, 70)
+)
+
+# 诊断记录
+diagnosis <- data.frame(
+  pid = c(1, 1, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
+  vid = c(101, 102, 103, 104, 105, 107, 108, 109, 110, 111, 112, 113, 114, 115),
+  dx_day = c(1, 30, 5, 45, 10, 15, 20, 25, 35, 40, 50, 55, 65, 70),
+  icd = c("E11", "I10", "N18", "E11", "E11", "I25", "E11", "J18", "E11", "I10", "E11", "N18", "E11", "I50")
+)
+
+# 检验结果
+lab <- data.frame(
+  pid = c(1, 1, 2, 2, 3, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
+  vid = c(101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115),
+  lab_day = c(1, 30, 5, 45, 10, 60, 15, 20, 25, 35, 40, 50, 55, 65, 70),
+  HbA1c = c(8.5, 7.2, 9.1, 7.8, 8.0, 6.9, 7.5, 8.2, 7.0, 9.5, 7.8, 8.1, 7.3, 8.8, 7.6)
+)
+```
+
+### 筛选与过滤
+
+筛选患有糖尿病（ICD: E11）的患者，保留首次糖尿病诊断之后的记录：
+
+```{r workflow-screen}
+screened_data <- screen_data_list(
+  data_list = list(
+    patient = patient, admission = admission,
+    diagnosis = diagnosis, lab = lab
+  ),
+  entry_expr = any(icd == "E11"),
+  entry_level = "patient_id",
+  anchor_expr = icd == "E11",
+  anchor_level = "date",
+  patient_id_map = "pid",
+  visit_id_map = c(admission = "vid", diagnosis = "vid", lab = "vid"),
+  date_map = c(admission = "admit_day", diagnosis = "dx_day", lab = "lab_day"),
+  output = "list",
+  return_audit = TRUE
+)
+
+knitr::kable(screened_data$audit$entry_scope, caption = "入组阶段审计")
+knitr::kable(screened_data$audit$anchor_scope, caption = "锚定阶段审计")
+```
+
+### 查看筛选后的数据
+
+```{r workflow-review}
+knitr::kable(head(screened_data$data$patient), caption = "筛选后的患者")
+knitr::kable(screened_data$data$diagnosis, caption = "筛选后的诊断")
+knitr::kable(screened_data$data$lab, caption = "筛选后的检验")
+```
+
+### 合并输出
+
+也可以获取单个合并后的数据框：
+
+```{r workflow-joined}
+joined_result <- screen_data_list(
+  data_list = list(
+    patient = patient, admission = admission,
+    diagnosis = diagnosis, lab = lab
+  ),
+  entry_expr = any(icd == "E11"),
+  entry_level = "patient_id",
+  anchor_expr = any(icd == "E11"),
+  anchor_level = "date",
+  anchor_window = "from_first_anchor",
+  patient_id_map = "pid",
+  visit_id_map = c(admission = "vid", diagnosis = "vid", lab = "vid"),
+  date_map = c(admission = "admit_day", diagnosis = "dx_day", lab = "lab_day"),
+  output = "joined"
+)
+
+cat("合并后数据:", nrow(joined_result), "行,", ncol(joined_result), "列\n")
+knitr::kable(head(joined_result), caption = "合并后的输出")
+```
+
+## 小结
+
+| 函数 | 临床应用场景 |
+|------|-------------|
+| `exclusion_count()` | CONSORT 流程图数据准备 |
+| `screen_data_list()` | 多表队列筛选，带完整审计轨迹 |
+| `merge_by_substring()` | 诊断/手术编码的子串匹配 |
+| `merge_by_range()` | 纵向数据的时间窗口匹配 |
+| `to_wide()` | 长格式转宽格式 |
+| `split_multichoice()` / `combine_multichoice()` | 问卷和症状数据处理 |
+| 工具函数 | 字符串标准化、列表操作、NA 填充 |
+
+---
+
+> **相关文章推荐**
+>
+> - [数据清洗实战：从杂乱的实验室数据到分析就绪数据集](data-cleaning.html)
+> - [基线特征表（Table 1）一键生成指南](baseline-table.html)
+>
+> **安装 clinpubr**：`devtools::install_github("niuyu1993/clinpubr")`

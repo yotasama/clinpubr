@@ -1,0 +1,497 @@
+---
+title: "clinpubr 回归分析与可视化完全指南"
+output: html_document
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  warning = FALSE,
+  message = FALSE,
+  error = TRUE
+)
+```
+
+```{r setup}
+library(clinpubr)
+library(dplyr)
+library(survival)
+library(ggplot2)
+```
+
+> **写在前面**
+>
+> 回归分析是临床研究中最核心的统计方法之一。无论是探索预后因素（Cox 回归）、研究危险因素（Logistic 回归），还是分析连续结局（线性回归），你都需要经历一系列繁琐的步骤：变量筛选、变换尝试、多模型比较、结果可视化……
+>
+> `clinpubr` 提供了一套**统一的回归分析接口**，覆盖 Cox 比例风险模型、Logistic 回归和线性回归，并内置了发表级别的可视化功能。本文将通过完整的实战案例，带你掌握以下核心技能：
+>
+> - 自动化变量扫描与变换筛选
+> - 多模型规格的结果汇总表
+> - 发表级森林图
+> - RCS 曲线与预测变量效应图
+> - 交互作用分析与亚组森林图
+>
+> **适用场景**：预后研究、危险因素分析、预测模型开发等。
+
+## 模型类型自动推断
+
+`clinpubr` 的回归分析函数采用**统一接口**，会根据 `y` 和 `time` 参数的设置自动推断模型类型：
+
+| `y` 类型 | `time` 参数 | 推断模型 |
+|---------|------------|---------|
+| 二分类（0/1） | 提供 | Cox 比例风险模型 |
+| 二分类（0/1） | 不提供 | Logistic 回归 |
+| 连续变量 | — | 线性回归 |
+
+这意味着你只需要更换数据，而无需记忆不同的函数名。
+
+## 数据准备
+
+我们使用 NCCTG 肺癌数据集（228 例晚期肺癌患者）：
+
+```{r load-data}
+data(cancer, package = "survival")
+cancer$dead <- cancer$status == 2
+
+cancer_clean <- cancer %>%
+  mutate(
+    sex = factor(sex, labels = c("Male", "Female"))
+  ) %>%
+  na.omit()
+
+knitr::kable(data.frame(
+  Rows = nrow(cancer_clean),
+  Columns = ncol(cancer_clean),
+  Description = "用于分析的完整病例"
+), caption = "分析数据集概览")
+
+knitr::kable(head(cancer_clean), caption = "分析变量样本")
+```
+
+## 回归扫描
+
+`regression_scan()` 可以自动对每个预测变量进行多种变换的测试：
+
+- **原始（线性）** 形式
+- **对数** 变换（当所有值 > 0 时）
+- **分类** 形式（中位数切分）
+- **RCS**（限制性立方样条）用于非线性关系
+
+### Cox 比例风险模型
+
+```{r cox-scan}
+cox_scan <- regression_scan(
+  data = cancer_clean,
+  y = "status",
+  time = "time",
+  # 设置 predictors = NULL 可扫描所有可用变量
+  # predictors = NULL,
+  predictors = c("age", "sex", "ph.karno", "pat.karno", "wt.loss", "meal.cal"),
+  covars = NULL,
+  save_table = FALSE
+)
+
+knitr::kable(cox_scan, caption = "Cox 回归扫描结果")
+```
+
+扫描结果报告了效应量、P 值、校正后 P 值（默认 BH 校正）以及最佳变换方式。
+
+### Logistic 回归扫描
+
+```{r logistic-scan}
+logistic_scan <- regression_scan(
+  data = cancer_clean,
+  y = "dead",
+  predictors = c("age", "sex", "ph.karno", "pat.karno", "wt.loss"),
+  covars = NULL,
+  save_table = FALSE
+)
+
+knitr::kable(logistic_scan, caption = "Logistic 回归扫描结果")
+```
+
+## 多模型规格结果表
+
+在临床论文中，通常需要展示多种模型规格（粗模型、部分调整、完全调整）以说明混杂因素对估计关联的影响。
+
+### Cox 模型多规格
+
+```{r cox-basic-results}
+cox_results <- regression_basic_results(
+  data = cancer_clean,
+  x = "age",
+  y = "status",
+  time = "time",
+  model_covs = list(
+    Crude = c(),
+    Model1 = c("sex"),
+    Model2 = c("sex", "ph.karno", "pat.karno")
+  ),
+  pers = c(1, 5, 10),
+  save_output = FALSE
+)
+
+knitr::kable(cox_results$table, caption = "年龄的 Cox 回归结果")
+```
+
+### Logistic 模型 + 临床切点
+
+```{r logistic-basic-results}
+logistic_results <- regression_basic_results(
+  data = cancer_clean,
+  x = "ph.karno",
+  y = "dead",
+  model_covs = list(
+    Crude = c(),
+    Adjusted = c("age", "sex")
+  ),
+  factor_breaks = c(80),
+  factor_labels = c("<80", ">=80"),
+  save_output = FALSE
+)
+
+knitr::kable(logistic_results$table, caption = "体能状态的 Logistic 回归结果")
+```
+
+### 基于分位数的分类
+
+当没有公认的临床切点时，可以使用三分位数进行均衡的组间比较：
+
+```{r custom-transformations}
+custom_results <- regression_basic_results(
+  data = cancer_clean,
+  x = "age",
+  y = "status",
+  time = "time",
+  quantile_breaks = c(0.33, 0.67),
+  quantile_labels = c("Youngest Third", "Middle Third", "Oldest Third"),
+  label_with_range = TRUE,
+  save_output = FALSE
+)
+
+knitr::kable(custom_results$table, caption = "Cox 回归结果——年龄三分位数")
+```
+
+## 森林图
+
+### 单因素森林图
+
+```{r univariate-forest}
+uni_forest <- regression_forest(
+  data = cancer_clean,
+  model_vars = c("age", "ph.karno", "pat.karno", "wt.loss"),
+  y = "status",
+  time = "time",
+  as_univariate = TRUE, # 生成单因素森林图
+  save_plot = FALSE
+)
+
+uni_forest
+```
+
+单因素森林图包含以下元素：
+
+- **左侧面板**：变量名称
+- **中间**：森林图，展示效应估计值和 95% 置信区间
+  - 函数自动估计效应量（Cox 模型为 HR，Logistic 模型为 OR，线性模型为 β 系数）
+  - 每个方块代表点估计值
+  - 水平线代表 95% 置信区间
+  - 垂直虚线为参考线（Cox/Logistic 模型 HR/OR=1.0，线性模型 β=0）
+- **右侧面板**：效应估计值的数值（95% CI）和 P 值
+
+在本例中，`pat.karno` 显示出显著的保护效应（HR ≈ 0.98, p < 0.01），而 `age`、`ph.karno` 和 `wt.loss` 在单因素分析中未达到统计学显著性。
+
+### 多因素森林图
+
+```{r multivariate-forest}
+multi_forest <- regression_forest(
+  data = cancer_clean,
+  model_vars = list(
+    Model1 = c("age"),
+    Model2 = c("age", "ph.karno"),
+    Model3 = c("age", "ph.karno", "pat.karno")
+  ),
+  y = "status",
+  time = "time",
+  as_univariate = FALSE, # 生成多因素森林图
+  save_plot = FALSE
+)
+
+multi_forest
+```
+
+多因素森林图对比了不同的模型规格：
+
+- **Model1**：仅包含 `age`（粗模型）
+- **Model2**：包含 `age` 和 `ph.karno`（部分调整）
+- **Model3**：包含 `age`、`ph.karno` 和 `pat.karno`（完全调整）
+
+要点：
+- 随着协变量的增加，`age` 的效应估计值略有变化
+- 置信区间可能因预测变量之间的相关性而变宽或变窄
+- 该可视化有助于评估混杂效应和模型稳定性
+
+### 自定义森林图
+
+```{r custom-forest}
+custom_forest <- regression_forest(
+  data = cancer_clean,
+  model_vars = c("age", "ph.karno", "pat.karno", "wt.loss", "meal.cal"),
+  y = "status",
+  time = "time",
+  as_univariate = TRUE,
+  show_vars = c("age", "ph.karno", "pat.karno"),
+  est_nsmall = 2,
+  p_nsmall = 4,
+  save_plot = FALSE
+)
+
+custom_forest
+```
+
+自定义森林图展示了几个格式化选项：
+
+- **`show_vars`**：仅显示 `age`、`ph.karno` 和 `pat.karno`
+- **`est_nsmall = 2`**：效应估计值保留 2 位小数
+- **`p_nsmall = 4`**：P 值保留 4 位小数
+
+这允许你聚焦展示关键预测变量，并使用适合发表的精确数值格式。
+
+## 预测变量效应可视化
+
+### 效应图
+
+统一的连续和分类预测变量接口：
+
+```{r predictor-effect}
+effect_linear <- predictor_effect_plot(
+  data = cancer_clean,
+  x = "age",
+  y = "status",
+  time = "time",
+  covars = c("sex"),
+  method = "linear",
+  add_hist = TRUE,
+  save_plot = FALSE
+)
+
+effect_linear
+```
+
+线性预测变量效应图包含：
+
+- **X 轴**：年龄（连续预测变量）
+- **Y 轴**：风险比（HR），以年龄中位数为参考
+- **实线**：各年龄值的估计 HR
+- **阴影区域**：95% 置信区间
+- **直方图**：数据集中年龄的分布，右侧 Y 轴为相对频率
+- **P-overall**：模型整体 P 值，表示预测变量效应的显著性
+- **P-proportional**：仅 Cox 模型有，比例风险假设检验的 P 值
+
+```{r predictor-effect-categorical}
+effect_cat <- predictor_effect_plot(
+  data = cancer_clean,
+  x = "sex",
+  y = "status",
+  time = "time",
+  covars = c("age", "ph.karno"),
+  method = "categorical",
+  save_plot = FALSE
+)
+
+effect_cat
+```
+
+分类预测变量效应图包含：
+
+- **X 轴**：预测变量的分类（Male vs Female）
+- **Y 轴**：带 95% 置信区间的风险比
+- **参考线**：HR = 1.0（虚线）
+- **误差十字**：每个分类的点估计值和 95% 置信区间
+- **条形图**：数据集中各分类的分布，右侧 Y 轴为百分比
+- **P-overall**：模型整体 P 值
+- **P-proportional**：仅 Cox 模型有，比例风险假设检验的 P 值
+
+在本例中，调整年龄和体能状态后，女性显示出显著更低的死亡风险（HR ≈ 0.62, 95% CI 不包含 1.0）。
+
+### RCS 图
+
+RCS 图在保留数据连续性的同时可视化非线性关系，也可以通过 `predictor_effect_plot()` 并设置 `method = "rcs"` 来生成：
+
+```{r rcs-plot}
+rcs_age <- rcs_plot(
+  data = cancer_clean,
+  x = "age",
+  y = "status",
+  time = "time",
+  covars = c("sex", "ph.karno"),
+  knot = 4,
+  ref = "x_median",
+  add_hist = TRUE,
+  save_plot = FALSE
+)
+
+rcs_age
+```
+
+RCS（限制性立方样条）图可视化年龄与生存之间的非线性关系，各元素解读与线性图类似，额外包含：
+
+- **P-non-linear**：非线性 P 值，表示非线性效应的显著性
+
+要点：
+- 4 个节点的样条（`knot = 4`）允许灵活地建模非线性关系
+- 参考点（`ref = "x_median"`）设在中位年龄（HR = 1.0）
+- 图中展示了相对于中位年龄的风险变化
+
+### 自定义 RCS 图
+
+```{r custom-effect}
+custom_rcs <- rcs_plot(
+  data = cancer_clean,
+  x = "wt.loss",
+  y = "status",
+  time = "time",
+  covars = c("age", "sex"),
+  knot = 5,
+  ref = 0,
+  add_hist = FALSE,
+  trans = "log10",
+  y_lim = c(0.5, 5),
+  save_plot = FALSE
+)
+
+custom_rcs
+```
+
+自定义 RCS 图展示了高级选项：
+
+- **`knot = 5`**：使用 5 个节点，更灵活地拟合曲线
+- **`ref = 0`**：参考点设为体重减轻 = 0（无体重减轻）
+- **`trans = "log10"`**：对 Y 轴应用 log10 变换。启用 log 刻度 Y 轴时，`add_hist` 必须为 `FALSE`
+- **`y_lim = c(0.5, 5)`**：自定义 Y 轴范围
+- **`add_hist = FALSE`**：不显示直方图，使展示更简洁
+
+## 交互作用与亚组分析
+
+### 交互作用扫描
+
+交互作用分析在临床研究中至关重要，用于评估预测变量对结局的效应是否因另一个变量的不同分组而异（效应修饰）。在医学论文中，这通常被称为**带交互检验的亚组分析**。
+
+`interaction_scan()` 函数系统性地评估多个预测变量与分组变量之间的潜在交互作用：
+
+- **线性交互（`linear.p.int`）**：检验预测变量的线性效应是否在各亚组间不同
+- **RCS 交互（`rcs.p.int`）**：使用限制性立方样条（4 个节点）检验非线性交互
+- **校正后 P 值**：同时提供原始 P 值和 Benjamini-Hochberg（BH）校正后 P 值
+- **样本量（`nvalid`）**：报告每个交互检验的完整病例数
+
+**临床解读**：显著的交互 P 值（通常 < 0.05）表明预测变量对结局的效应被分组变量所修饰，提示治疗效应或风险关联可能因亚组而异。
+
+```{r interaction-scan}
+interaction_scan <- interaction_scan(
+  data = cancer_clean,
+  y = "status",
+  time = "time",
+  predictors = c("age", "ph.karno", "pat.karno"),
+  group_vars = c("sex", "ph.karno"), # 连续变量将按中位数切分为亚组
+  save_table = FALSE
+)
+
+knitr::kable(interaction_scan, caption = "交互作用扫描结果")
+```
+
+**输出列解读：**
+
+| 列名 | 含义 |
+|------|------|
+| `predictor` | 被检验效应修饰的连续或分类变量 |
+| `group.by` | 亚组变量（如性别），可能修饰预测变量的效应 |
+| `nvalid` | 交互检验中使用的完整观测数 |
+| `linear.p.int` | 线性交互效应的原始 P 值 |
+| `linear.p.adj` | 线性交互的 BH 校正 P 值 |
+| `rcs.p.int` | 非线性（RCS）交互效应的原始 P 值 |
+| `rcs.p.adj` | RCS 交互的 BH 校正 P 值 |
+
+### 交互作用可视化
+
+```{r interaction-plot}
+interaction_age_sex <- interaction_plot(
+  data = cancer_clean,
+  predictor = "age",
+  y = "status",
+  time = "time",
+  group_var = "sex",
+  covars = c("ph.karno"),
+  save_plot = FALSE
+)
+
+interaction_age_sex
+```
+
+交互作用图包含两个面板：
+
+**线性交互图（`$lin`）**：
+- 分别展示男性和女性中年龄对生存的效应
+- 不同颜色的线代表不同的性别组
+- 平行线提示无交互作用；发散/收敛线提示存在交互作用
+- 阴影区域代表 95% 置信区间
+
+**RCS 交互图（`$rcs`）**：
+- 展示每个性别组内年龄的非线性效应
+- 允许检测非线性交互
+- 每条曲线代表相对于该性别参考点的 HR
+
+在本例中，两条线大致平行，提示年龄与性别之间无显著交互作用（P 值 > 0.05 已确认）。
+
+### 亚组森林图
+
+```{r subgroup-forest}
+subgroup_result <- subgroup_forest(
+  data = cancer_clean,
+  x = "age",
+  y = "status",
+  time = "time",
+  subgroup_vars = c("sex", "pat.karno"),
+  covars = c("ph.karno"),
+  save_plot = FALSE
+)
+
+subgroup_result
+```
+
+亚组森林图展示了按分组层级的年龄对生存的效应：
+
+- **Overall**：整个队列的效应估计
+- **Sex**：各性别组的效应估计
+- **Pat.Karno**：各 Karno 评分组的效应估计
+
+每一行展示：
+- 该亚组的样本量
+- 带有 95% 置信区间的效应估计
+- 交互作用 P 值
+
+该可视化有助于评估：
+- 效应在各亚组间是否一致
+- 分层变量是否存在潜在的效应修饰
+
+## 小结
+
+| 函数 | 用途 |
+|------|------|
+| `regression_scan()` | 自动化多变换预测变量筛选 |
+| `regression_basic_results()` | 多模型规格的综合结果表 |
+| `regression_forest()` | 发表级森林图 |
+| `rcs_plot()` / `predictor_effect_plot()` | 灵活的预测变量效应可视化 |
+| `interaction_scan()` / `interaction_plot()` | 交互作用分析与可视化 |
+| `subgroup_forest()` | 亚组分析森林图 |
+
+---
+
+> **相关文章推荐**
+>
+> - [模型评估与比较：从 AUC 到 DCA 的全面指南](model-evaluation.html)
+> - [基线特征表（Table 1）一键生成指南](baseline-table.html)
+>
+> **安装 clinpubr**：`devtools::install_github("niuyu1993/clinpubr")`

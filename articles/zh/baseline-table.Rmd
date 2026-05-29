@@ -1,0 +1,259 @@
+---
+title: "clinpubr 基线特征表（Table 1）一键生成指南"
+output: html_document
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  warning = FALSE,
+  message = FALSE,
+  error = TRUE
+)
+```
+
+```{r setup}
+library(clinpubr)
+library(dplyr)
+library(survival)
+```
+
+> **写在前面**
+>
+> 写过临床论文的朋友一定对 **Table 1**（基线特征表）不陌生——它是几乎所有临床研究论文的第一张表格，用于展示各组患者在入组时的基本特征对比。然而，手工制作这张表格往往非常繁琐：需要判断每个变量是连续型还是分类型、决定用均数±标准差还是中位数（四分位距）、选择合适的统计检验方法（t 检验？Mann-Whitney？卡方检验？Fisher 精确检验？）……
+>
+> `clinpubr` 包的 `baseline_table()` 函数可以**自动化完成上述所有决策**，让你只需几行代码就能生成一张规范的、可直接用于发表的基线特征表。本文将手把手带你走完整个流程。
+
+## 数据准备
+
+我们将使用 `survival` 包自带的 NCCTG 肺癌数据集进行演示：
+
+```{r load-data}
+data(cancer, package = "survival")
+str(cancer)
+knitr::kable(head(cancer), caption = "原始数据预览")
+```
+
+创建一些衍生变量用于演示：
+
+```{r prepare-data}
+cancer$age_group <- cut(cancer$age,
+  breaks = c(0, 50, 60, 70, 100),
+  labels = c("<50", "50-60", "60-70", ">70")
+)
+
+# 合并稀疏的 ECOG 分类
+cancer$ph.ecog_cat <- factor(cancer$ph.ecog,
+  levels = c(0:3),
+  labels = c("0", "1", ">=2", ">=2")
+)
+
+# 添加缺失值用于演示
+set.seed(123)
+cancer$meal.cal[sample(1:nrow(cancer), 30)] <- NA
+cancer$wt.loss[sample(1:nrow(cancer), 20)] <- NA
+
+knitr::kable(head(cancer), caption = "准备后的数据")
+```
+
+## 自动变量类型判定
+
+在创建基线表之前，`get_var_types()` 会自动将每个变量分类为：
+
+- **因子变量（Factor）**：分类变量（因子型或唯一值较少的数值型变量）
+- **非正态变量（Non-normal）**：未通过正态性检验的连续变量
+- **精确检验变量（Exact）**：单元格计数较小的分类变量（使用 Fisher 精确检验）
+- **省略变量（Omitted）**：水平数过多的变量
+
+```{r get-var-types}
+var_types <- get_var_types(cancer, strata = "sex")
+
+var_types
+```
+
+### 自定义分类阈值
+
+你可以调整自动分类的阈值参数：
+
+```{r customize-var-types}
+var_types_custom <- get_var_types(
+  cancer,
+  strata = "sex",
+  num_to_factor = 10, # 唯一值 <=10 的数值变量视为因子
+  omit_factor_above = 15, # 水平数 >15 的因子将被省略
+  norm_test_by_group = TRUE # 在每个分层内进行正态性检验
+)
+
+var_types_custom
+```
+
+保存 QQ 图用于人工审核正态性检验（可选）：
+
+```{r save-qqplots, eval = FALSE}
+# var_types_with_plots <- get_var_types(
+#   cancer, strata = "sex",
+#   save_qqplots = TRUE, folder_name = "qqplots_review"
+# )
+```
+
+## 创建基线表
+
+### 基础基线表
+
+`baseline_table()` 会自动选择汇总统计量（均数±标准差 vs 中位数/IQR）和统计检验方法（t 检验 vs Mann-Whitney vs 卡方 vs Fisher）：
+
+```{r basic-baseline}
+baseline_result <- baseline_table(
+  cancer,
+  var_types = var_types,
+  save_table = FALSE
+)
+
+knitr::kable(baseline_result$baseline, caption = "按性别分组的基线特征表")
+```
+
+### 多组比较
+
+当分组超过 2 组时，会自动生成两两比较结果，并可选地进行多重检验校正：
+
+```{r multi-group}
+data(cancer, package = "survival")
+cancer$ph.ecog_cat <- factor(cancer$ph.ecog,
+  levels = c(0:3),
+  labels = c("0", "1", ">=2", ">=2")
+)
+
+var_types_ecog <- get_var_types(cancer, strata = "ph.ecog_cat")
+
+baseline_multi <- baseline_table(
+  cancer,
+  var_types = var_types_ecog,
+  save_table = FALSE,
+  multiple_comparison_test = TRUE,
+  p_adjust_method = "BH"
+)
+
+knitr::kable(baseline_multi$baseline, caption = "按 ECOG 评分分组的基线特征表")
+knitr::kable(baseline_multi$pairwise, caption = "两两比较 P 值")
+```
+
+### 自定义表格
+
+选择特定变量、添加标准化均数差（SMD）、处理缺失分层：
+
+```{r customize-baseline}
+baseline_custom <- baseline_table(
+  cancer,
+  var_types = var_types,
+  vars = c("age", "wt.loss", "meal.cal", "ph.ecog"),
+  smd = TRUE,
+  omit_missing_strata = TRUE,
+  seed = 123
+)
+
+knitr::kable(baseline_custom$baseline, caption = "自定义基线特征表")
+```
+
+### 缺失数据汇总
+
+```{r missing-table}
+knitr::kable(baseline_result$missing, caption = "缺失数据汇总")
+```
+
+## 人工覆盖自动分类
+
+基于临床知识或人工审核，你可以覆盖自动分类结果：
+
+```{r manual-override}
+baseline_manual <- baseline_table(
+  cancer,
+  strata = "sex",
+  factor_vars = c("ph.ecog", "pat.karno"),
+  nonnormal_vars = c("age"),
+  exact_vars = c("ph.ecog")
+)
+
+knitr::kable(baseline_manual$baseline, caption = "人工覆盖后的基线特征表")
+```
+
+## 保存结果
+
+将所有表格保存为 CSV 文件：
+
+```{r save-results, eval = FALSE}
+# baseline_saved <- baseline_table(
+#   cancer, var_types = var_types,
+#   save_table = TRUE, filename = "baseline_characteristics.csv"
+# )
+```
+
+## 完整工作流
+
+从数据准备到最终表格的精简 5 步工作流：
+
+```{r complete-workflow}
+# 第 1 步：准备数据
+data(cancer, package = "survival")
+cancer_clean <- cancer %>%
+  mutate(
+    age_group = cut(age,
+      breaks = c(0, 50, 60, 70, 100),
+      labels = c("<50", "50-60", "60-70", ">70")
+    ),
+    ph.ecog_cat = factor(ph.ecog,
+      levels = c(0:3),
+      labels = c("0", "1", ">=2", ">=2")
+    ),
+    sex = factor(sex, labels = c("Male", "Female"))
+  )
+
+# 第 2 步：判定变量类型
+var_types <- get_var_types(cancer_clean, strata = "sex", num_to_factor = 5)
+
+# 第 3 步：审核分类结果
+knitr::kable(data.frame(
+  Variable_Type = c("Factor", "Non-normal", "Exact"),
+  Variables = c(
+    paste(var_types$factor_vars, collapse = ", "),
+    paste(var_types$nonnormal_vars, collapse = ", "),
+    paste(var_types$exact_vars, collapse = ", ")
+  )
+), caption = "变量类型审核")
+
+# 第 4 步：创建基线表
+baseline_final <- baseline_table(
+  cancer_clean,
+  var_types = var_types,
+  smd = TRUE
+)
+
+# 第 5 步：查看结果
+knitr::kable(baseline_final$baseline, caption = "最终基线特征表")
+knitr::kable(baseline_final$missing, caption = "最终缺失数据汇总")
+```
+
+## 小结
+
+### 核心函数
+
+- **`get_var_types()`**：自动变量类型判定，支持自定义阈值
+- **`baseline_table()`**：创建全面的基线特征表，自动选择统计检验方法
+
+### 最佳实践
+
+1. **审核自动分类结果**——临床知识应当优先于统计默认值
+2. **观察性研究中纳入 SMD**——标准化均数差有助于评估组间均衡性
+3. **透明地处理缺失数据**——在表格中报告缺失模式
+4. **多组两两比较时使用 BH 校正**——控制假阳性率
+
+---
+
+> **相关文章推荐**
+>
+> - [数据清洗实战：从杂乱的实验室数据到分析就绪数据集](data-cleaning.html)
+> - [回归分析与可视化完全指南](regression-analysis.html)
+>
+> **安装 clinpubr**：`devtools::install_github("niuyu1993/clinpubr")`

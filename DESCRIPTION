@@ -27,6 +27,7 @@ Collate:
     'data_overview.R'
     'data_screen.R'
     'exclusion_count.R'
+    'extract_history.R'
     'extract_num.R'
     'get_valid.R'
     'get_valid_subset.R'

@@ -1,0 +1,612 @@
+---
+title: "clinpubr 数据清洗实战：从杂乱的实验室数据到分析就绪数据集"
+output: html_document
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  warning = FALSE,
+  message = FALSE,
+  error = TRUE
+)
+```
+
+```{r setup}
+library(clinpubr)
+library(dplyr)
+```
+
+> **写在前面**
+>
+> 做过临床研究的朋友都知道，从医院信息系统（EHR）里导出的原始数据往往"惨不忍睹"——单位不统一、日期格式五花八门、数值里混着文字注释、缺失值和异常值随处可见……如果你也曾在数据清洗上耗费数周甚至数月的时间，那么这篇文章正是为你准备的。
+>
+> 本文将带你走完一整套**结构化的临床数据清洗流程**，使用 R 包 `clinpubr` 中的工具函数，覆盖从数据概览、格式清洗、单位标准化、异常值检测到缺失值处理的完整链路。每个步骤都有可复现的代码示例，你可以直接套用到自己的项目中。
+>
+> **适用场景**：实验室检验数据、EHR 导出数据、多中心研究数据整合等。
+
+## 清洗流程总览
+
+整个清洗工作流分为 **6 个步骤**，顺序很重要——先做格式清洗和单位标准化，再做异常值检测，否则混合单位（如 mg/dL 和 mmol/L 混在一起）会导致大量"假阳性"异常值。
+
+| 步骤 | 内容 | 核心函数 |
+|:---:|------|---------|
+| 1 | 数据概览 | `data_overview()` |
+| 2 | 格式清洗 | `extract_num()`, `to_date()`, `df_view_nonnum()` |
+| 3 | 单位标准化 | `unit_standardize()` |
+| 4 | 异常值检测 | `detect_outliers()`, `iqr_outlier()` |
+| 5 | 缺失值处理 | `get_valid_subset()` |
+| 6 | 数据转换 | `cut_by()` |
+
+> **为什么这个顺序？** 格式清洗和单位标准化必须在异常值检测之前完成——混合单位（例如 mg/dL 与 mmol/L）会导致虚假的异常值标记。
+
+## 构造一份"真实"的脏数据
+
+为了演示，我们先构造一份模拟实验室数据集，尽量还原真实 EHR 数据中的常见质量问题：混合单位、文字注释、异常日期、缺失值和离群值。
+
+```{r create-messy-data}
+set.seed(123)
+n <- 100
+
+# 患者编号
+patient_ids <- paste0("P", sprintf("%03d", 1:n))
+
+# 葡萄糖：mg/dL 和 mmol/L 混合（1 mmol/L = 18 mg/dL）
+# 同时包含异常值和缺失值
+glucose_vals <- c(
+  rnorm(35, mean = 100, sd = 15), # mg/dL 正常范围
+  rnorm(30, mean = 5.5, sd = 0.8), # mmol/L 正常范围
+  rnorm(10, mean = 200, sd = 20), # mg/dL 偏高（异常值）
+  rnorm(10, mean = 15, sd = 2), # mmol/L 偏高（异常值）
+  rep(NA, 10), # 缺失值
+  999, 888, 0, -50, 500 # 错误值
+)
+glucose_vals <- round(sample(glucose_vals, n), 1)
+
+glucose_units <- sample(c("mg/dL", "mmol/L", NA), n, replace = TRUE, prob = c(0.5, 0.4, 0.1))
+
+# 肌酐：mg/dL 和 umol/L 混合（1 mg/dL = 88.4 umol/L）
+creatinine_vals <- c(
+  rnorm(35, mean = 1.0, sd = 0.2), # mg/dL 正常范围
+  rnorm(30, mean = 88, sd = 15), # umol/L 正常范围
+  rnorm(10, mean = 3.0, sd = 0.5), # mg/dL 偏高（异常值）
+  rnorm(10, mean = 265, sd = 44), # umol/L 偏高（异常值）
+  rep(NA, 10), # 缺失值
+  999, 0, -10, 1000, 0.001 # 错误值
+)
+creatinine_vals <- round(sample(creatinine_vals, n), 2)
+
+creatinine_units <- sample(c("mg/dL", "umol/L", NA), n, replace = TRUE, prob = c(0.5, 0.4, 0.1))
+
+# 胆固醇：mg/dL 和 mmol/L 混合（1 mmol/L = 38.67 mg/dL）
+cholesterol_vals <- c(
+  rnorm(35, mean = 180, sd = 30), # mg/dL 正常范围
+  rnorm(30, mean = 4.5, sd = 0.8), # mmol/L 正常范围
+  rnorm(10, mean = 350, sd = 40), # mg/dL 偏高（异常值）
+  rnorm(10, mean = 9, sd = 1), # mmol/L 偏高（异常值）
+  rep(NA, 10), # 缺失值
+  888, 999, 50, 600, 0 # 错误值
+)
+cholesterol_vals <- round(sample(cholesterol_vals, n), 2)
+
+cholesterol_units <- sample(c("mg/dL", "mmol/L", NA), n, replace = TRUE, prob = c(0.5, 0.4, 0.1))
+
+# 检验日期：多种格式，包含不可能的日期
+test_date_vals <- sample(c(
+  format(Sys.Date() - sample(1:365, 60, replace = TRUE), "%Y-%m-%d"), # ISO 格式
+  format(Sys.Date() - sample(1:365, 30, replace = TRUE), "%Y/%m/%d"), # 斜杠格式
+  "1900-01-01", "2030-12-31", "N/A", "", "unknown", "pending", # 无效日期
+  rep(NA, 10)
+), n * 3, replace = TRUE)
+
+# 创建长格式的实验室数据
+lab_data <- data.frame(
+  patient_id = rep(patient_ids, 3),
+  test = rep(c("Glucose", "Creatinine", "Cholesterol"), each = n),
+  value = c(glucose_vals, creatinine_vals, cholesterol_vals),
+  unit = c(glucose_units, creatinine_units, cholesterol_units),
+  test_date = test_date_vals
+)
+
+# 添加需要清洗的字符串值
+# 葡萄糖中混入文字标注和欧洲小数逗号
+messy_glucose_idx <- sample(which(lab_data$test == "Glucose"), 15)
+lab_data$value[messy_glucose_idx] <- sample(c(
+  "<40", ">500", "5.2", "6.8", "120 mg/dL", "89 mmol/L",
+  "5.2 (fasting)", "180 (post-meal)", "N/A", "pending",
+  "6..5", "7..2", "8.5.1", "normal range", "see comment"
+), length(messy_glucose_idx), replace = TRUE)
+
+# 肌酐中混入文字标注
+messy_creatinine_idx <- sample(which(lab_data$test == "Creatinine"), 12)
+lab_data$value[messy_creatinine_idx] <- sample(c(
+  "<0.5", ">5.0", "1.1", "0.9", "1.2 mg/dL", "110 umol/L",
+  "1.5 (dialysis)", "2.8 (critical)", "N/A", " hemolyzed",
+  "1.3 ", " 1.4", "(1.2)", "1.0*", "see note"
+), length(messy_creatinine_idx), replace = TRUE)
+
+# 胆固醇中混入文字标注
+messy_cholesterol_idx <- sample(which(lab_data$test == "Cholesterol"), 10)
+lab_data$value[messy_cholesterol_idx] <- sample(c(
+  "<100", ">400", "4.5", "5.2", "200 mg/dL", "5.5 mmol/L",
+  "180 (fasting)", "250 (borderline)", "N/A", "lipemic"
+), length(messy_cholesterol_idx), replace = TRUE)
+
+knitr::kable(head(lab_data[sample(nrow(lab_data)), ], 10),
+  caption = "原始脏数据（随机抽取 10 行）"
+)
+```
+
+## 第一步：数据概览
+
+**使用数据**：`lab_data`（上面构造的脏数据）
+
+拿到数据的第一件事，不是急着清洗，而是先**摸清家底**。`data_overview()` 可以一键生成数据质量诊断报告：
+
+```{r data-overview}
+overview <- data_overview(lab_data)
+
+print(overview$variable_types)
+print(overview$summary_stats)
+print(overview$quality_issues$missing_values)
+```
+
+检查不同检验项目的单位冲突情况：
+
+```{r check-units}
+knitr::kable(unit_view(lab_data, subject_col = "test", value_col = "value", unit_col = "unit"),
+  caption = "各检验项目的单位冲突情况"
+)
+```
+
+## 第二步：格式清洗
+
+**使用数据**：`lab_data`
+
+格式清洗是所有数值分析的前提。实验室数据中经常出现混合格式、文字注释和不一致的日期表示。
+
+### 2.1 检查非数值条目
+
+首先，找出哪些记录无法转换为数值：
+
+```{r check-nonnum}
+nonnum_df <- df_view_nonnum(lab_data)
+knitr::kable(head(nonnum_df, 15), caption = "各变量中的非数值条目")
+```
+
+### 2.2 提取数值
+
+使用 `extract_num()` 清洗混乱的数值字符串。这个函数能处理：
+
+- 文字注释（如 `"120 mg/dL"` → `120`）
+- 范围指示符（如 `"<40"`, `">500"`）
+- 多余的小数点（如 `"5..2"` → `5.2`）
+- 多余的空格和标点符号
+
+```{r extract-numeric}
+# 创建副本用于清洗
+lab_data_cleaned <- lab_data
+
+# 从混乱的 value 列中提取数值
+lab_data_cleaned$value_numeric <- extract_num(lab_data$value)
+
+# 展示清洗前后对比
+comparison <- data.frame(
+  test = lab_data$test,
+  original = lab_data$value,
+  cleaned = lab_data_cleaned$value_numeric,
+  unit = lab_data$unit
+) %>%
+  dplyr::filter(original != cleaned | is.na(cleaned)) %>%
+  head(15)
+
+knitr::kable(comparison, caption = "数值清洗：前后对比")
+```
+
+### 2.3 日期转换
+
+实验室数据中的检验日期格式五花八门。使用 `to_date()` 进行标准化：
+
+```{r date-conversion}
+# 将各种日期格式转换为标准 Date 对象
+lab_data_cleaned$test_date_clean <- to_date(lab_data$test_date)
+
+# 展示日期转换结果
+date_comparison <- data.frame(
+  original = lab_data$test_date,
+  cleaned = lab_data_cleaned$test_date_clean
+) %>%
+  dplyr::filter(!is.na(original)) %>%
+  head(15)
+
+knitr::kable(date_comparison, caption = "日期转换：前后对比")
+```
+
+检查无法解析的无效日期：
+
+```{r check-invalid-dates}
+invalid_dates <- lab_data_cleaned %>%
+  dplyr::filter(!is.na(test_date) & is.na(test_date_clean)) %>%
+  dplyr::select(patient_id, test, test_date) %>%
+  head(10)
+
+knitr::kable(invalid_dates, caption = "无效日期条目（无法解析）")
+```
+
+### 2.4 更新数据
+
+用清洗后的列替换原始脏数据列：
+
+```{r update-cleaned-data}
+lab_data <- lab_data_cleaned %>%
+  dplyr::mutate(
+    value = value_numeric,
+    test_date = test_date_clean
+  ) %>%
+  dplyr::select(-value_numeric, -test_date_clean)
+```
+
+## 第三步：单位标准化
+
+**使用数据**：`lab_data`
+
+单位标准化必须在异常值检测**之前**完成。这在整合不同实验室的数据时尤为关键。我们将所有数值统一为常用单位：
+
+- **葡萄糖**：mg/dL（mmol/L × 18 = mg/dL）
+- **肌酐**：mg/dL（umol/L ÷ 88.4 = mg/dL）
+- **胆固醇**：mg/dL（mmol/L × 38.67 = mg/dL）
+
+```{r unit-standardize-apply}
+change_rules <- list(
+  list(subject = "Glucose", target_unit = "mg/dL", units2change = "mmol/L", coeffs = 18),
+  list(subject = "Creatinine", target_unit = "mg/dL", units2change = "umol/L", coeffs = 1 / 88.4),
+  list(subject = "Cholesterol", target_unit = "mg/dL", units2change = "mmol/L", coeffs = 38.67)
+)
+
+lab_data_std <- unit_standardize(
+  lab_data,
+  subject_col = "test", value_col = "value",
+  unit_col = "unit", change_rules = change_rules
+)
+
+knitr::kable(head(lab_data_std, 15), caption = "单位标准化后的实验室数据")
+```
+
+验证单位是否已统一：
+
+```{r verify-standardization}
+knitr::kable(unit_view(lab_data_std, subject_col = "test", value_col = "value", unit_col = "unit"),
+  caption = "标准化后的单位情况"
+)
+```
+
+## 第四步：异常值检测
+
+**使用数据**：`lab_data_std`（已标准化的数据）
+
+> **重要提示**：异常值检测在单位标准化**之后**进行，以确保所有测量值处于一致的量纲上。
+
+`clinpubr` 提供了三种检测方法，各有优劣：
+
+- **MAD**（中位数绝对偏差）：对异常值鲁棒，适合小样本
+- **IQR**（四分位距）：临床研究中最常用
+- **Z-score**：假设正态分布，对偏态数据需谨慎使用
+
+使用 IQR 方法对各检验项目进行异常值检测：
+
+```{r outlier-detection}
+# 按检验项目拆分数据进行异常值检测
+lab_data_clean <- lab_data_std
+
+# 对每个检验项目检测异常值
+for (test_name in c("Glucose", "Creatinine", "Cholesterol")) {
+  test_data <- lab_data_std$value[lab_data_std$test == test_name]
+
+  outlier_res <- detect_outliers(test_data, method = "iqr")
+
+  cat("\n", test_name, ":\n")
+  cat("  总值数量:", length(test_data), "\n")
+  cat("  检出异常值:", sum(outlier_res$outlier_mask, na.rm = TRUE), "\n")
+  cat("  缺失值:", sum(is.na(test_data)), "\n")
+}
+```
+
+对比不同异常值检测方法（以葡萄糖为例）：
+
+```{r compare-methods}
+glucose_values <- lab_data_std$value[lab_data_std$test == "Glucose"]
+
+knitr::kable(data.frame(
+  Method = c("MAD", "IQR", "Z-score"),
+  Outlier_Count = c(
+    sum(mad_outlier(glucose_values, threshold = 3), na.rm = TRUE),
+    sum(iqr_outlier(glucose_values, threshold = 1.5), na.rm = TRUE),
+    sum(zscore_outlier(glucose_values, threshold = 3), na.rm = TRUE)
+  )
+), caption = "不同方法的异常值检测结果（葡萄糖）")
+```
+
+### 处理异常值
+
+在本次演示中，我们将异常值设为 NA。**实际工作中，异常值应当逐条人工核实**——它们可能代表真实的极端值（如糖尿病酮症酸中毒时的血糖 > 400 mg/dL），而非数据错误。
+
+```{r handle-outliers}
+# 创建副本用于异常值处理
+lab_data_final <- lab_data_std
+
+# 对每个检验项目将异常值设为 NA
+for (test_name in c("Glucose", "Creatinine", "Cholesterol")) {
+  test_idx <- lab_data_std$test == test_name
+  test_values <- lab_data_std$value[test_idx]
+
+  outlier_res <- detect_outliers(test_values, method = "iqr")
+
+  # 将异常值设为 NA
+  lab_data_final$value[test_idx][outlier_res$outlier_mask] <- NA
+}
+
+# 对比异常值处理前后
+comparison_df <- data.frame(
+  Test = rep(c("Glucose", "Creatinine", "Cholesterol"), each = 2),
+  Stage = rep(c("处理前", "处理后"), 3),
+  N = c(
+    sum(!is.na(lab_data_std$value[lab_data_std$test == "Glucose"])),
+    sum(!is.na(lab_data_final$value[lab_data_final$test == "Glucose"])),
+    sum(!is.na(lab_data_std$value[lab_data_std$test == "Creatinine"])),
+    sum(!is.na(lab_data_final$value[lab_data_final$test == "Creatinine"])),
+    sum(!is.na(lab_data_std$value[lab_data_std$test == "Cholesterol"])),
+    sum(!is.na(lab_data_final$value[lab_data_final$test == "Cholesterol"]))
+  ),
+  Mean = c(
+    mean(lab_data_std$value[lab_data_std$test == "Glucose"], na.rm = TRUE),
+    mean(lab_data_final$value[lab_data_final$test == "Glucose"], na.rm = TRUE),
+    mean(lab_data_std$value[lab_data_std$test == "Creatinine"], na.rm = TRUE),
+    mean(lab_data_final$value[lab_data_final$test == "Creatinine"], na.rm = TRUE),
+    mean(lab_data_std$value[lab_data_std$test == "Cholesterol"], na.rm = TRUE),
+    mean(lab_data_final$value[lab_data_final$test == "Cholesterol"], na.rm = TRUE)
+  )
+)
+
+knitr::kable(comparison_df, caption = "异常值处理前后对比", digits = 2)
+```
+
+> **临床提示**：删除异常值之前务必进行临床核实。某些"异常值"可能具有重要的临床意义（如血糖 > 400 mg/dL 提示糖尿病酮症酸中毒）。建议创建异常值指示变量用于敏感性分析，而非直接删除。
+
+## 第五步：缺失值处理
+
+**使用数据**：`lab_data_final`（标准化和异常值处理后的数据）
+
+对于按行/列缺失率筛选缺失数据，可以使用 `get_valid_subset()` 获取足够完整的数据子集。首先，将数据转换为宽格式，创建一个纵向队列数据集（每行代表一个患者-日期组合）：
+
+```{r wide-format}
+# 转换为宽格式，保留所有检验日期
+# 创建纵向队列数据集
+lab_wide <- lab_data_final %>%
+  filter(!is.na(test_date)) %>% # 移除没有有效日期的记录
+  select(patient_id, test_date, test, value) %>%
+  tidyr::pivot_wider(
+    names_from = test,
+    values_from = value,
+    names_sort = TRUE
+  )
+
+# 按患者和日期排序，便于纵向查看
+lab_wide <- lab_wide %>%
+  arrange(patient_id, test_date)
+
+knitr::kable(head(lab_wide, 10), caption = "纵向实验室数据（前 10 条记录）")
+```
+
+查看队列结构——每位患者的检验次数：
+
+```{r cohort-structure}
+cohort_summary <- lab_wide %>%
+  group_by(patient_id) %>%
+  summarise(
+    n_visits = n(),
+    first_date = min(test_date),
+    last_date = max(test_date)
+  ) %>%
+  head(10)
+
+knitr::kable(cohort_summary, caption = "队列结构：每位患者的就诊次数")
+```
+
+评估缺失数据模式：
+
+```{r missing-patterns}
+missing_summary <- data.frame(
+  Variable = names(lab_wide)[-1],
+  Missing_Count = sapply(lab_wide[-1], function(x) sum(is.na(x))),
+  Missing_Percent = round(sapply(lab_wide[-1], function(x) sum(is.na(x)) / length(x) * 100, 2))
+)
+
+knitr::kable(missing_summary, caption = "各检验项目的缺失数据汇总")
+```
+
+筛选缺失过多的记录：
+
+```{r filter-missing}
+lab_wide_clean <- get_valid_subset(
+  lab_wide,
+  row_na_ratio = 0.5, # 每条记录最多允许 50% 缺失
+  col_na_ratio = 0.3 # 每个检验项目最多允许 30% 缺失
+)
+
+cat(
+  "维度变化:", nrow(lab_wide), "条记录",
+  "->", nrow(lab_wide_clean), "条记录\n"
+)
+cat(
+  "唯一患者数:", length(unique(lab_wide$patient_id)),
+  "->", length(unique(lab_wide_clean$patient_id)), "\n"
+)
+```
+
+## 第六步：数据转换
+
+**使用数据**：`lab_wide_clean`（清洗后的纵向队列数据）
+
+### 创建临床分类变量
+
+根据临床切点，将连续的实验室值转换为分类变量。在纵向数据中，每次就诊可以有不同的分类：
+
+```{r clinical-categories}
+# 葡萄糖分类
+lab_wide_clean$glucose_category <- cut_by(
+  lab_wide_clean$Glucose,
+  breaks = c(100, 126),
+  labels = c("Normal", "Prediabetes", "Diabetes"),
+  label_with_range = FALSE
+)
+
+# 肌酐分类（eGFR 近似）
+lab_wide_clean$renal_function <- cut_by(
+  lab_wide_clean$Creatinine,
+  breaks = c(1.2, 2.0, 4.0),
+  labels = c("Normal", "Mild", "Moderate", "Severe"),
+  label_with_range = FALSE
+)
+
+# 胆固醇分类
+lab_wide_clean$cholesterol_category <- cut_by(
+  lab_wide_clean$Cholesterol,
+  breaks = c(200, 240),
+  labels = c("Desirable", "Borderline", "High"),
+  label_with_range = FALSE
+)
+
+# 所有就诊的分类汇总
+cat_summary <- data.frame(
+  Category = c(
+    rep("Glucose", length(table(lab_wide_clean$glucose_category))),
+    rep("Renal Function", length(table(lab_wide_clean$renal_function))),
+    rep("Cholesterol", length(table(lab_wide_clean$cholesterol_category)))
+  ),
+  Level = c(
+    names(table(lab_wide_clean$glucose_category)),
+    names(table(lab_wide_clean$renal_function)),
+    names(table(lab_wide_clean$cholesterol_category))
+  ),
+  Count = c(
+    as.vector(table(lab_wide_clean$glucose_category)),
+    as.vector(table(lab_wide_clean$renal_function)),
+    as.vector(table(lab_wide_clean$cholesterol_category))
+  )
+)
+
+knitr::kable(cat_summary, caption = "临床分类分布（所有就诊）")
+```
+
+### 纵向视图示例
+
+查看单个患者的检验轨迹：
+
+```{r longitudinal-view}
+# 选择一位有多次就诊的患者进行展示
+patient_trajectory <- lab_wide_clean %>%
+  filter(patient_id == unique(patient_id)[1]) %>%
+  select(
+    patient_id, test_date, Glucose, Creatinine, Cholesterol,
+    glucose_category, renal_function
+  ) %>%
+  arrange(test_date)
+
+knitr::kable(patient_trajectory, caption = "示例：单患者的实验室检验轨迹")
+```
+
+## 完整清洗流水线
+
+以下是从原始实验室数据到分析就绪数据的完整工作流：
+
+```{r complete-pipeline}
+# 第 1 步：数据概览
+overview <- data_overview(lab_data)
+
+# 第 2 步：格式清洗——提取数值和转换日期
+clean <- lab_data
+clean$value <- extract_num(lab_data$value)
+clean$test_date <- to_date(lab_data$test_date)
+
+# 第 3 步：单位标准化
+change_rules <- list(
+  list(subject = "Glucose", target_unit = "mg/dL", units2change = "mmol/L", coeffs = 18),
+  list(subject = "Creatinine", target_unit = "mg/dL", units2change = "umol/L", coeffs = 1 / 88.4),
+  list(subject = "Cholesterol", target_unit = "mg/dL", units2change = "mmol/L", coeffs = 38.67)
+)
+
+clean <- unit_standardize(
+  clean,
+  subject_col = "test", value_col = "value",
+  unit_col = "unit", change_rules = change_rules
+)
+
+# 第 4 步：异常值检测和处理
+for (test_name in c("Glucose", "Creatinine", "Cholesterol")) {
+  test_idx <- clean$test == test_name
+  test_values <- clean$value[test_idx]
+  outlier_res <- detect_outliers(test_values, method = "iqr")
+  clean$value[test_idx][outlier_res$outlier_mask] <- NA
+}
+
+# 第 5 步：转换为宽格式（纵向队列数据）
+clean_wide <- clean %>%
+  filter(!is.na(test_date)) %>%
+  select(patient_id, test_date, test, value) %>%
+  tidyr::pivot_wider(names_from = test, values_from = value) %>%
+  arrange(patient_id, test_date)
+
+# 第 6 步：缺失值筛选
+clean_wide <- get_valid_subset(clean_wide, row_na_ratio = 0.5, col_na_ratio = 0.3)
+
+# 第 7 步：创建临床分类变量
+clean_wide$glucose_category <- cut_by(
+  clean_wide$Glucose,
+  breaks = c(100, 126),
+  labels = c("Normal", "Prediabetes", "Diabetes")
+)
+
+# 第 8 步：最终检查
+final_overview <- data_overview(clean_wide)
+knitr::kable(final_overview$summary_stats, caption = "最终数据质量概览")
+
+cat(
+  "\n原始记录数:", nrow(lab_data),
+  "| 最终记录数:", nrow(clean_wide),
+  "| 移除:", nrow(lab_data) - nrow(clean_wide), "\n"
+)
+cat(
+  "唯一患者数:", length(unique(lab_data$patient_id)),
+  "->", length(unique(clean_wide$patient_id)), "\n"
+)
+```
+
+## 小结
+
+| 步骤 | 函数 | 用途 | 使用数据 |
+|:---:|------|------|---------|
+| 1. 数据概览 | `data_overview()` | 全面的数据质量评估 | 原始数据 |
+| 2. 格式清洗 | `extract_num()`, `to_date()`, `df_view_nonnum()` | 清洗混乱字符串、转换日期 | 原始数据 |
+| 3. 单位标准化 | `unit_standardize()` | 统一计量单位 | 格式清洗后的数据 |
+| 4. 异常值检测 | `detect_outliers()`, `iqr_outlier()` | 检测和处理异常值 | 标准化后的数据 |
+| 5. 缺失值处理 | `get_valid_subset()` | 按缺失率筛选 | 异常值处理后的数据 |
+| 6. 数据转换 | `cut_by()` | 创建衍生变量 | 清洗后的数据 |
+
+### 核心原则
+
+1. **先标准化，再检测异常值**：混合单位会导致虚假的异常值标记
+2. **临床核实异常值**：某些极端值可能具有重要的临床意义
+3. **追踪数据损失**：记录每一步移除了多少观测值
+4. **保留原始数据**：永远不要覆盖原始数据；创建清洗后的副本
+
+---
+
+> **相关文章推荐**
+>
+> - [基线特征表（Table 1）一键生成指南](baseline-table.html)
+> - [高级数据操作：队列筛选、数据合并与转换](advanced-data-operations.html)
+>
+> **安装 clinpubr**：`devtools::install_github("niuyu1993/clinpubr")`

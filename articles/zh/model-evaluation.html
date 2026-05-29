@@ -1,0 +1,614 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>clinpubr 模型评估与比较：从 AUC 到 DCA 的全面指南</title>
+  <style type="text/css">
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<div id="header">
+<h1 class="title">clinpubr 模型评估与比较：从 AUC 到 DCA 的全面指南</h1>
+</div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(clinpubr)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">library</span>(survival)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span></code></pre></div>
+<blockquote>
+<p><strong>写在前面</strong></p>
+<p>在临床预测模型的研究中，仅仅报告”模型的 AUC 为
+0.85”是远远不够的。一个完整的模型评估需要从<strong>判别力</strong>（Discrimination）、<strong>校准度</strong>（Calibration）和<strong>临床实用性</strong>（Clinical
+Utility）三个维度进行全面考量。审稿人也越来越倾向于看到多角度的模型评估证据。</p>
+<p><code>clinpubr</code>
+提供了一站式的模型评估工具，涵盖分类模型比较、时间依赖性 ROC、C-Index
+计算和变量重要性可视化。本文将通过实战案例，带你完成从模型拟合到全面评估的全流程。</p>
+<p><strong>适用场景</strong>：预测模型开发、模型比较研究、临床决策支持系统评估等。</p>
+</blockquote>
+<div id="评估维度概览" class="section level2">
+<h2>评估维度概览</h2>
+<table>
+<thead>
+<tr>
+<th>评估维度</th>
+<th>指标</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>判别力</strong></td>
+<td>AUC / C-index</td>
+<td>模型区分阳性/阴性个体的能力</td>
+</tr>
+<tr>
+<td></td>
+<td>灵敏度 / 特异度</td>
+<td>在特定阈值下的分类性能</td>
+</tr>
+<tr>
+<td></td>
+<td>PRAUC</td>
+<td>对不平衡数据更鲁棒的判别指标</td>
+</tr>
+<tr>
+<td><strong>校准度</strong></td>
+<td>校准图</td>
+<td>预测概率与实际概率的一致性</td>
+</tr>
+<tr>
+<td></td>
+<td>Brier Score</td>
+<td>预测概率的整体准确度（越小越好）</td>
+</tr>
+<tr>
+<td><strong>临床实用性</strong></td>
+<td>DCA（决策曲线分析）</td>
+<td>在不同阈值下的临床净获益</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="数据准备" class="section level2">
+<h2>数据准备</h2>
+<p>我们使用 NCCTG 肺癌数据集，拟合三个复杂度递增的 Logistic
+回归模型：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">data</span>(cancer, <span class="at">package =</span> <span class="st">&quot;survival&quot;</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>cancer<span class="sc">$</span>dead <span class="ot">&lt;-</span> cancer<span class="sc">$</span>status <span class="sc">==</span> <span class="dv">2</span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>cancer<span class="sc">$</span>event <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(cancer<span class="sc">$</span>status <span class="sc">==</span> <span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>cancer_clean <span class="ot">&lt;-</span> cancer <span class="sc">%&gt;%</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">sex =</span> <span class="fu">factor</span>(sex, <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">&quot;Male&quot;</span>, <span class="st">&quot;Female&quot;</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>  <span class="fu">na.omit</span>()</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="co"># 拟合三个复杂度递增的模型</span></span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>cancer_clean<span class="sc">$</span>pred_model1 <span class="ot">&lt;-</span> <span class="fu">predict</span>(</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>  <span class="fu">glm</span>(dead <span class="sc">~</span> age <span class="sc">+</span> sex <span class="sc">+</span> ph.karno, <span class="at">data =</span> cancer_clean, <span class="at">family =</span> binomial),</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">&quot;response&quot;</span></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>)</span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>cancer_clean<span class="sc">$</span>pred_model2 <span class="ot">&lt;-</span> <span class="fu">predict</span>(</span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>  <span class="fu">glm</span>(dead <span class="sc">~</span> age <span class="sc">+</span> sex <span class="sc">+</span> ph.karno <span class="sc">+</span> pat.karno, <span class="at">data =</span> cancer_clean, <span class="at">family =</span> binomial),</span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">&quot;response&quot;</span></span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a>)</span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a>cancer_clean<span class="sc">$</span>pred_model3 <span class="ot">&lt;-</span> <span class="fu">predict</span>(</span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a>  <span class="fu">glm</span>(dead <span class="sc">~</span> age <span class="sc">+</span> sex <span class="sc">+</span> ph.karno <span class="sc">+</span> wt.loss, <span class="at">data =</span> cancer_clean, <span class="at">family =</span> binomial),</span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">&quot;response&quot;</span></span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a>)</span>
+<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a></span>
+<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="fu">head</span>(cancer_clean[, <span class="fu">c</span>(<span class="st">&quot;dead&quot;</span>, <span class="st">&quot;pred_model1&quot;</span>, <span class="st">&quot;pred_model2&quot;</span>, <span class="st">&quot;pred_model3&quot;</span>)]),</span>
+<span id="cb2-24"><a href="#cb2-24" tabindex="-1"></a>  <span class="at">caption =</span> <span class="st">&quot;模型预测值 vs 实际结局（前 6 行）&quot;</span></span>
+<span id="cb2-25"><a href="#cb2-25" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>模型预测值 vs 实际结局（前 6 行）</caption>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left">dead</th>
+<th align="right">pred_model1</th>
+<th align="right">pred_model2</th>
+<th align="right">pred_model3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">2</td>
+<td align="left">TRUE</td>
+<td align="right">0.7868731</td>
+<td align="right">0.7661243</td>
+<td align="right">0.7858287</td>
+</tr>
+<tr>
+<td align="left">4</td>
+<td align="left">TRUE</td>
+<td align="right">0.7436147</td>
+<td align="right">0.8215218</td>
+<td align="right">0.7434448</td>
+</tr>
+<tr>
+<td align="left">6</td>
+<td align="left">FALSE</td>
+<td align="right">0.9260244</td>
+<td align="right">0.8954047</td>
+<td align="right">0.9273628</td>
+</tr>
+<tr>
+<td align="left">7</td>
+<td align="left">TRUE</td>
+<td align="right">0.7052554</td>
+<td align="right">0.7566565</td>
+<td align="right">0.7049340</td>
+</tr>
+<tr>
+<td align="left">8</td>
+<td align="left">TRUE</td>
+<td align="right">0.7704063</td>
+<td align="right">0.7279677</td>
+<td align="right">0.7724185</td>
+</tr>
+<tr>
+<td align="left">9</td>
+<td align="left">TRUE</td>
+<td align="right">0.8207969</td>
+<td align="right">0.8021612</td>
+<td align="right">0.8203195</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="模型比较" class="section level2">
+<h2>模型比较</h2>
+<p><code>classif_model_compare()</code>
+使用多个指标（AUC、准确率、灵敏度、特异度、PPV、NPV、PRAUC、Brier
+Score）进行全面的模型比较，并自动生成 ROC、PR、校准和 DCA 图：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>model_comparison <span class="ot">&lt;-</span> <span class="fu">classif_model_compare</span>(</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  <span class="at">data =</span> cancer_clean,</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="at">target_var =</span> <span class="st">&quot;dead&quot;</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">model_names =</span> <span class="fu">c</span>(<span class="st">&quot;pred_model1&quot;</span>, <span class="st">&quot;pred_model2&quot;</span>, <span class="st">&quot;pred_model3&quot;</span>),</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="at">save_output =</span> <span class="cn">FALSE</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>)</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(model_comparison<span class="sc">$</span>metric_table, <span class="at">caption =</span> <span class="st">&quot;模型性能比较&quot;</span>)</span></code></pre></div>
+<table>
+<caption>模型性能比较</caption>
+<colgroup>
+<col width="2%" />
+<col width="8%" />
+<col width="14%" />
+<col width="4%" />
+<col width="6%" />
+<col width="8%" />
+<col width="8%" />
+<col width="10%" />
+<col width="10%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+</colgroup>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left">Model</th>
+<th align="left">AUC</th>
+<th align="right">PRAUC</th>
+<th align="right">Accuracy</th>
+<th align="right">Sensitivity</th>
+<th align="right">Specificity</th>
+<th align="right">Pos Pred Value</th>
+<th align="right">Neg Pred Value</th>
+<th align="right">F1</th>
+<th align="right">Kappa</th>
+<th align="right">Brier</th>
+<th align="right">cutoff</th>
+<th align="right">Youden</th>
+<th align="right">HosLem</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">3</td>
+<td align="left">pred_model3</td>
+<td align="left">0.684 (0.594, 0.774)</td>
+<td align="right">0.820</td>
+<td align="right">0.581</td>
+<td align="right">0.50</td>
+<td align="right">0.787</td>
+<td align="right">0.857</td>
+<td align="right">0.381</td>
+<td align="right">0.632</td>
+<td align="right">0.217</td>
+<td align="right">0.185</td>
+<td align="right">0.777</td>
+<td align="right">0.287</td>
+<td align="right">0.985</td>
+</tr>
+<tr>
+<td align="left">1</td>
+<td align="left">pred_model1</td>
+<td align="left">0.684 (0.594, 0.774)</td>
+<td align="right">0.817</td>
+<td align="right">0.557</td>
+<td align="right">0.45</td>
+<td align="right">0.830</td>
+<td align="right">0.871</td>
+<td align="right">0.371</td>
+<td align="right">0.593</td>
+<td align="right">0.203</td>
+<td align="right">0.185</td>
+<td align="right">0.786</td>
+<td align="right">0.280</td>
+<td align="right">0.967</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td align="left">pred_model2</td>
+<td align="left">0.684 (0.590, 0.777)</td>
+<td align="right">0.821</td>
+<td align="right">0.605</td>
+<td align="right">0.55</td>
+<td align="right">0.745</td>
+<td align="right">0.846</td>
+<td align="right">0.393</td>
+<td align="right">0.667</td>
+<td align="right">0.232</td>
+<td align="right">0.182</td>
+<td align="right">0.765</td>
+<td align="right">0.295</td>
+<td align="right">0.353</td>
+</tr>
+</tbody>
+</table>
+<div id="可视化" class="section level3">
+<h3>可视化</h3>
+<p><strong>ROC 曲线</strong>——展示不同阈值下的灵敏度与特异度权衡：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>model_comparison<span class="sc">$</span>roc_plot</span></code></pre></div>
+<div class="float">
+<img src="figure/model-plots-roc-1.png"
+alt="plot of chunk model-plots-roc" />
+<div class="figcaption">plot of chunk model-plots-roc</div>
+</div>
+<p><strong>PR 曲线</strong>——对不平衡数据更灵敏的性能评估：</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>model_comparison<span class="sc">$</span>pr_plot</span></code></pre></div>
+<div class="float">
+<img src="figure/model-plots-pr-1.png"
+alt="plot of chunk model-plots-pr" />
+<div class="figcaption">plot of chunk model-plots-pr</div>
+</div>
+<p><strong>校准图</strong>——评估预测概率与实际概率的一致性：</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>model_comparison<span class="sc">$</span>calibration_plot</span></code></pre></div>
+<div class="float">
+<img src="figure/model-plots-calibration-1.png"
+alt="plot of chunk model-plots-calibration" />
+<div class="figcaption">plot of chunk model-plots-calibration</div>
+</div>
+<p><strong>决策曲线分析（DCA）</strong>——评估不同阈值下的临床净获益：</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>model_comparison<span class="sc">$</span>dca_plot</span></code></pre></div>
+<div class="float">
+<img src="figure/model-plots-dca-1.png"
+alt="plot of chunk model-plots-dca" />
+<div class="figcaption">plot of chunk model-plots-dca</div>
+</div>
+</div>
+</div>
+<div id="时间依赖性-roc-分析" class="section level2">
+<h2>时间依赖性 ROC 分析</h2>
+<p>对于生存结局，时间依赖性 ROC 考虑了事件发生的时间。首先，我们拟合 Cox
+比例风险模型并获取风险评分：</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># 拟合 Cox 模型用于生存预测</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>cox_model <span class="ot">&lt;-</span> <span class="fu">coxph</span>(<span class="fu">Surv</span>(time, event) <span class="sc">~</span> age <span class="sc">+</span> sex <span class="sc">+</span> ph.karno, <span class="at">data =</span> cancer_clean)</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>cancer_clean<span class="sc">$</span>risk_score <span class="ot">&lt;-</span> <span class="fu">predict</span>(cox_model, <span class="at">type =</span> <span class="st">&quot;risk&quot;</span>)</span></code></pre></div>
+<p>现在我们可以在特定时间点评估模型：</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>time_roc_result <span class="ot">&lt;-</span> <span class="fu">time_roc_plot</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  <span class="at">data =</span> cancer_clean,</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="at">event_var =</span> <span class="st">&quot;event&quot;</span>,</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="at">time_var =</span> <span class="st">&quot;time&quot;</span>,</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>  <span class="at">marker_var =</span> <span class="st">&quot;risk_score&quot;</span>,</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>  <span class="at">times =</span> <span class="fu">c</span>(<span class="dv">200</span>, <span class="dv">365</span>),</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>  <span class="at">time_unit =</span> <span class="st">&quot;days&quot;</span>,</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>  <span class="at">save_plot =</span> <span class="cn">FALSE</span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>)</span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co">#&gt; Error in time_roc_plot(data = cancer_clean, event_var = &quot;event&quot;, time_var = &quot;time&quot;, : unused argument (time_unit = &quot;days&quot;)</span></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>time_roc_result</span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co">#&gt; Error: object &#39;time_roc_result&#39; not found</span></span></code></pre></div>
+</div>
+<div id="c-index" class="section level2">
+<h2>C-Index</h2>
+<p>C-index（一致性指数）衡量生存模型的判别能力。解读标准：0.5 =
+无判别力，0.7-0.8 = 可接受，&gt;0.8 = 优秀。</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>c_index <span class="ot">&lt;-</span> <span class="fu">calc_cindex</span>(cancer_clean, <span class="st">&quot;time&quot;</span>, <span class="st">&quot;event&quot;</span>, <span class="st">&quot;risk_score&quot;</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>c_index</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="co">#&gt;   C Index </span></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="co">#&gt; 0.6243374</span></span></code></pre></div>
+</div>
+<div id="变量重要性" class="section level2">
+<h2>变量重要性</h2>
+<p>变量重要性列表可以从随机森林、梯度提升机等不同模型中获取。这里我们假设从某个模型中获得了变量重要性评分：</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>importance_scores <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>  <span class="at">Age =</span> <span class="fl">0.25</span>, <span class="at">Sex =</span> <span class="fl">0.15</span>, <span class="at">Karnofsky =</span> <span class="fl">0.30</span>,</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>  <span class="at">WeightLoss =</span> <span class="fl">0.12</span>, <span class="at">Calories =</span> <span class="fl">0.08</span>, <span class="at">PatKarnofsky =</span> <span class="fl">0.10</span></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>)</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="fu">importance_plot</span>(<span class="at">x =</span> importance_scores, <span class="at">x_lab =</span> <span class="st">&quot;Variable Importance&quot;</span>)</span></code></pre></div>
+<div class="float">
+<img src="figure/importance-plot-1.png"
+alt="plot of chunk importance-plot" />
+<div class="figcaption">plot of chunk importance-plot</div>
+</div>
+<p>仅展示排名前 N 的变量，并自定义样式：</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">importance_plot</span>(</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>  <span class="at">x =</span> importance_scores,</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>  <span class="at">x_lab =</span> <span class="st">&quot;Relative Importance&quot;</span>,</span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>  <span class="at">top_n =</span> <span class="dv">4</span>,</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>  <span class="at">color =</span> <span class="st">&quot;steelblue&quot;</span></span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a>)</span></code></pre></div>
+<div class="float">
+<img src="figure/custom-importance-1.png"
+alt="plot of chunk custom-importance" />
+<div class="figcaption">plot of chunk custom-importance</div>
+</div>
+</div>
+<div id="小结" class="section level2">
+<h2>小结</h2>
+<div id="核心函数" class="section level3">
+<h3>核心函数</h3>
+<ul>
+<li><strong><code>classif_model_compare()</code></strong>：全面的模型比较，含
+ROC、PR、校准和 DCA 图</li>
+<li><strong><code>time_roc_plot()</code></strong>：生存结局的时间依赖性
+ROC 分析</li>
+<li><strong><code>calc_cindex()</code></strong>：计算生存模型的一致性指数</li>
+<li><strong><code>importance_plot()</code></strong>：可视化变量重要性</li>
+</ul>
+</div>
+<div id="模型评估清单" class="section level3">
+<h3>模型评估清单</h3>
+<ol style="list-style-type: decimal">
+<li><strong>判别力</strong>：AUC（二分类）或
+C-index（生存模型），临床阈值处的灵敏度/特异度</li>
+<li><strong>校准度</strong>：校准图、Brier 评分</li>
+<li><strong>临床实用性</strong>：决策曲线分析，相关阈值处的净获益</li>
+<li><strong>外部验证</strong>：在独立人群中的表现</li>
+</ol>
+<hr />
+<blockquote>
+<p><strong>相关文章推荐</strong></p>
+<ul>
+<li><a href="regression-analysis.html">回归分析与可视化完全指南</a></li>
+<li><a
+href="data-cleaning.html">数据清洗实战：从杂乱的实验室数据到分析就绪数据集</a></li>
+</ul>
+<p><strong>安装
+clinpubr</strong>：<code>devtools::install_github("niuyu1993/clinpubr")</code></p>
+</blockquote>
+</div>
+</div>
+</body>
+</html>

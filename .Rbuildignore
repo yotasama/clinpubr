@@ -2,6 +2,7 @@
 ^\.Rproj\.user$
 ^LICENSE\.md$
 ^\.lintr$
+^\articles$
 ^\.VSCodeCounter$
 ^sample_plots$
 ^my_test.r$

@@ -1,0 +1,1844 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>clinpubr 回归分析与可视化完全指南</title>
+  <style type="text/css">
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<div id="header">
+<h1 class="title">clinpubr 回归分析与可视化完全指南</h1>
+</div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(clinpubr)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">library</span>(survival)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span></code></pre></div>
+<blockquote>
+<p><strong>写在前面</strong></p>
+<p>回归分析是临床研究中最核心的统计方法之一。无论是探索预后因素（Cox
+回归）、研究危险因素（Logistic
+回归），还是分析连续结局（线性回归），你都需要经历一系列繁琐的步骤：变量筛选、变换尝试、多模型比较、结果可视化……</p>
+<p><code>clinpubr</code>
+提供了一套<strong>统一的回归分析接口</strong>，覆盖 Cox
+比例风险模型、Logistic
+回归和线性回归，并内置了发表级别的可视化功能。本文将通过完整的实战案例，带你掌握以下核心技能：</p>
+<ul>
+<li>自动化变量扫描与变换筛选</li>
+<li>多模型规格的结果汇总表</li>
+<li>发表级森林图</li>
+<li>RCS 曲线与预测变量效应图</li>
+<li>交互作用分析与亚组森林图</li>
+</ul>
+<p><strong>适用场景</strong>：预后研究、危险因素分析、预测模型开发等。</p>
+</blockquote>
+<div id="模型类型自动推断" class="section level2">
+<h2>模型类型自动推断</h2>
+<p><code>clinpubr</code>
+的回归分析函数采用<strong>统一接口</strong>，会根据 <code>y</code> 和
+<code>time</code> 参数的设置自动推断模型类型：</p>
+<table>
+<thead>
+<tr>
+<th><code>y</code> 类型</th>
+<th><code>time</code> 参数</th>
+<th>推断模型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>二分类（0/1）</td>
+<td>提供</td>
+<td>Cox 比例风险模型</td>
+</tr>
+<tr>
+<td>二分类（0/1）</td>
+<td>不提供</td>
+<td>Logistic 回归</td>
+</tr>
+<tr>
+<td>连续变量</td>
+<td>—</td>
+<td>线性回归</td>
+</tr>
+</tbody>
+</table>
+<p>这意味着你只需要更换数据，而无需记忆不同的函数名。</p>
+</div>
+<div id="数据准备" class="section level2">
+<h2>数据准备</h2>
+<p>我们使用 NCCTG 肺癌数据集（228 例晚期肺癌患者）：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">data</span>(cancer, <span class="at">package =</span> <span class="st">&quot;survival&quot;</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>cancer<span class="sc">$</span>dead <span class="ot">&lt;-</span> cancer<span class="sc">$</span>status <span class="sc">==</span> <span class="dv">2</span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>cancer_clean <span class="ot">&lt;-</span> cancer <span class="sc">%&gt;%</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>    <span class="at">sex =</span> <span class="fu">factor</span>(sex, <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">&quot;Male&quot;</span>, <span class="st">&quot;Female&quot;</span>))</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>  <span class="fu">na.omit</span>()</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="fu">data.frame</span>(</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>  <span class="at">Rows =</span> <span class="fu">nrow</span>(cancer_clean),</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>  <span class="at">Columns =</span> <span class="fu">ncol</span>(cancer_clean),</span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>  <span class="at">Description =</span> <span class="st">&quot;用于分析的完整病例&quot;</span></span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>), <span class="at">caption =</span> <span class="st">&quot;分析数据集概览&quot;</span>)</span></code></pre></div>
+<table>
+<caption>分析数据集概览</caption>
+<thead>
+<tr>
+<th align="right">Rows</th>
+<th align="right">Columns</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">167</td>
+<td align="right">11</td>
+<td align="left">用于分析的完整病例</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="fu">head</span>(cancer_clean), <span class="at">caption =</span> <span class="st">&quot;分析变量样本&quot;</span>)</span></code></pre></div>
+<table style="width:100%;">
+<caption>分析变量样本</caption>
+<colgroup>
+<col width="3%" />
+<col width="6%" />
+<col width="6%" />
+<col width="8%" />
+<col width="4%" />
+<col width="8%" />
+<col width="9%" />
+<col width="11%" />
+<col width="12%" />
+<col width="11%" />
+<col width="9%" />
+<col width="7%" />
+</colgroup>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="right">inst</th>
+<th align="right">time</th>
+<th align="right">status</th>
+<th align="right">age</th>
+<th align="left">sex</th>
+<th align="right">ph.ecog</th>
+<th align="right">ph.karno</th>
+<th align="right">pat.karno</th>
+<th align="right">meal.cal</th>
+<th align="right">wt.loss</th>
+<th align="left">dead</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">2</td>
+<td align="right">3</td>
+<td align="right">455</td>
+<td align="right">2</td>
+<td align="right">68</td>
+<td align="left">Male</td>
+<td align="right">0</td>
+<td align="right">90</td>
+<td align="right">90</td>
+<td align="right">1225</td>
+<td align="right">15</td>
+<td align="left">TRUE</td>
+</tr>
+<tr>
+<td align="left">4</td>
+<td align="right">5</td>
+<td align="right">210</td>
+<td align="right">2</td>
+<td align="right">57</td>
+<td align="left">Male</td>
+<td align="right">1</td>
+<td align="right">90</td>
+<td align="right">60</td>
+<td align="right">1150</td>
+<td align="right">11</td>
+<td align="left">TRUE</td>
+</tr>
+<tr>
+<td align="left">6</td>
+<td align="right">12</td>
+<td align="right">1022</td>
+<td align="right">1</td>
+<td align="right">74</td>
+<td align="left">Male</td>
+<td align="right">1</td>
+<td align="right">50</td>
+<td align="right">80</td>
+<td align="right">513</td>
+<td align="right">0</td>
+<td align="left">FALSE</td>
+</tr>
+<tr>
+<td align="left">7</td>
+<td align="right">7</td>
+<td align="right">310</td>
+<td align="right">2</td>
+<td align="right">68</td>
+<td align="left">Female</td>
+<td align="right">2</td>
+<td align="right">70</td>
+<td align="right">60</td>
+<td align="right">384</td>
+<td align="right">10</td>
+<td align="left">TRUE</td>
+</tr>
+<tr>
+<td align="left">8</td>
+<td align="right">11</td>
+<td align="right">361</td>
+<td align="right">2</td>
+<td align="right">71</td>
+<td align="left">Female</td>
+<td align="right">2</td>
+<td align="right">60</td>
+<td align="right">80</td>
+<td align="right">538</td>
+<td align="right">1</td>
+<td align="left">TRUE</td>
+</tr>
+<tr>
+<td align="left">9</td>
+<td align="right">1</td>
+<td align="right">218</td>
+<td align="right">2</td>
+<td align="right">53</td>
+<td align="left">Male</td>
+<td align="right">1</td>
+<td align="right">70</td>
+<td align="right">80</td>
+<td align="right">825</td>
+<td align="right">16</td>
+<td align="left">TRUE</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="回归扫描" class="section level2">
+<h2>回归扫描</h2>
+<p><code>regression_scan()</code>
+可以自动对每个预测变量进行多种变换的测试：</p>
+<ul>
+<li><strong>原始（线性）</strong> 形式</li>
+<li><strong>对数</strong> 变换（当所有值 &gt; 0 时）</li>
+<li><strong>分类</strong> 形式（中位数切分）</li>
+<li><strong>RCS</strong>（限制性立方样条）用于非线性关系</li>
+</ul>
+<div id="cox-比例风险模型" class="section level3">
+<h3>Cox 比例风险模型</h3>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>cox_scan <span class="ot">&lt;-</span> <span class="fu">regression_scan</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="at">data =</span> cancer_clean,</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;status&quot;</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;time&quot;</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="co"># 设置 predictors = NULL 可扫描所有可用变量</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>  <span class="co"># predictors = NULL,</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>  <span class="at">predictors =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;sex&quot;</span>, <span class="st">&quot;ph.karno&quot;</span>, <span class="st">&quot;pat.karno&quot;</span>, <span class="st">&quot;wt.loss&quot;</span>, <span class="st">&quot;meal.cal&quot;</span>),</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>  <span class="at">covars =</span> <span class="cn">NULL</span>,</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>  <span class="at">save_table =</span> <span class="cn">FALSE</span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>)</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(cox_scan, <span class="at">caption =</span> <span class="st">&quot;Cox 回归扫描结果&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Cox 回归扫描结果</caption>
+<colgroup>
+<col width="1%" />
+<col width="4%" />
+<col width="2%" />
+<col width="5%" />
+<col width="5%" />
+<col width="5%" />
+<col width="5%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="7%" />
+<col width="7%" />
+<col width="7%" />
+<col width="7%" />
+<col width="7%" />
+<col width="7%" />
+<col width="6%" />
+</colgroup>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left">predictor</th>
+<th align="right">nvalid</th>
+<th align="right">original.HR</th>
+<th align="right">original.pval</th>
+<th align="right">original.padj</th>
+<th align="right">logarithm.HR</th>
+<th align="right">logarithm.pval</th>
+<th align="right">logarithm.padj</th>
+<th align="right">categorized.HR</th>
+<th align="right">categorized.pval</th>
+<th align="right">categorized.padj</th>
+<th align="right">rcs.overall.pval</th>
+<th align="right">rcs.overall.padj</th>
+<th align="right">rcs.nonlinear.pval</th>
+<th align="right">rcs.nonlinear.padj</th>
+<th align="left">best.var.trans</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">4</td>
+<td align="left">pat.karno</td>
+<td align="right">167</td>
+<td align="right">0.9812708</td>
+<td align="right">0.0021995</td>
+<td align="right">0.0131971</td>
+<td align="right">0.2933451</td>
+<td align="right">0.0024286</td>
+<td align="right">0.0097142</td>
+<td align="right">0.5831016</td>
+<td align="right">0.0038615</td>
+<td align="right">0.0193076</td>
+<td align="right">0.0210379</td>
+<td align="right">0.0698049</td>
+<td align="right">0.9680713</td>
+<td align="right">0.9680713</td>
+<td align="left">original</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td align="left">sex</td>
+<td align="right">167</td>
+<td align="right">0.6192558</td>
+<td align="right">0.0147907</td>
+<td align="right">0.0443721</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="left">original</td>
+</tr>
+<tr>
+<td align="left">1</td>
+<td align="left">age</td>
+<td align="right">167</td>
+<td align="right">1.0200874</td>
+<td align="right">0.0641959</td>
+<td align="right">0.1029532</td>
+<td align="right">3.2622315</td>
+<td align="right">0.0688278</td>
+<td align="right">0.1275780</td>
+<td align="right">1.3335186</td>
+<td align="right">0.1177009</td>
+<td align="right">0.1471261</td>
+<td align="right">0.1464013</td>
+<td align="right">0.1830016</td>
+<td align="right">0.4447903</td>
+<td align="right">0.7413172</td>
+<td align="left">original</td>
+</tr>
+<tr>
+<td align="left">3</td>
+<td align="left">ph.karno</td>
+<td align="right">167</td>
+<td align="right">0.9878729</td>
+<td align="right">0.0686354</td>
+<td align="right">0.1029532</td>
+<td align="right">0.4378243</td>
+<td align="right">0.0956835</td>
+<td align="right">0.1275780</td>
+<td align="right">0.6274233</td>
+<td align="right">0.0184766</td>
+<td align="right">0.0461915</td>
+<td align="right">0.0279220</td>
+<td align="right">0.0698049</td>
+<td align="right">0.0803601</td>
+<td align="right">0.2009002</td>
+<td align="left">categorized</td>
+</tr>
+<tr>
+<td align="left">6</td>
+<td align="left">meal.cal</td>
+<td align="right">167</td>
+<td align="right">0.9998804</td>
+<td align="right">0.6209701</td>
+<td align="right">0.7451641</td>
+<td align="right">0.8967025</td>
+<td align="right">0.5548170</td>
+<td align="right">0.5548170</td>
+<td align="right">0.8640874</td>
+<td align="right">0.4291805</td>
+<td align="right">0.4291805</td>
+<td align="right">0.7222351</td>
+<td align="right">0.7222351</td>
+<td align="right">0.6013624</td>
+<td align="right">0.7517029</td>
+<td align="left">categorized</td>
+</tr>
+<tr>
+<td align="left">5</td>
+<td align="left">wt.loss</td>
+<td align="right">167</td>
+<td align="right">1.0001532</td>
+<td align="right">0.9817372</td>
+<td align="right">0.9817372</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">1.4330287</td>
+<td align="right">0.0527764</td>
+<td align="right">0.0879607</td>
+<td align="right">0.1053526</td>
+<td align="right">0.1755877</td>
+<td align="right">0.0466637</td>
+<td align="right">0.2009002</td>
+<td align="left">rcs.nonlinear</td>
+</tr>
+</tbody>
+</table>
+<p>扫描结果报告了效应量、P 值、校正后 P 值（默认 BH
+校正）以及最佳变换方式。</p>
+</div>
+<div id="logistic-回归扫描" class="section level3">
+<h3>Logistic 回归扫描</h3>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>logistic_scan <span class="ot">&lt;-</span> <span class="fu">regression_scan</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  <span class="at">data =</span> cancer_clean,</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;dead&quot;</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="at">predictors =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;sex&quot;</span>, <span class="st">&quot;ph.karno&quot;</span>, <span class="st">&quot;pat.karno&quot;</span>, <span class="st">&quot;wt.loss&quot;</span>),</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="at">covars =</span> <span class="cn">NULL</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  <span class="at">save_table =</span> <span class="cn">FALSE</span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>)</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(logistic_scan, <span class="at">caption =</span> <span class="st">&quot;Logistic 回归扫描结果&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Logistic 回归扫描结果</caption>
+<colgroup>
+<col width="1%" />
+<col width="4%" />
+<col width="2%" />
+<col width="5%" />
+<col width="5%" />
+<col width="5%" />
+<col width="5%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="7%" />
+<col width="7%" />
+<col width="7%" />
+<col width="7%" />
+<col width="7%" />
+<col width="7%" />
+<col width="6%" />
+</colgroup>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left">predictor</th>
+<th align="right">nvalid</th>
+<th align="right">original.OR</th>
+<th align="right">original.pval</th>
+<th align="right">original.padj</th>
+<th align="right">logarithm.OR</th>
+<th align="right">logarithm.pval</th>
+<th align="right">logarithm.padj</th>
+<th align="right">categorized.OR</th>
+<th align="right">categorized.pval</th>
+<th align="right">categorized.padj</th>
+<th align="right">rcs.overall.pval</th>
+<th align="right">rcs.overall.padj</th>
+<th align="right">rcs.nonlinear.pval</th>
+<th align="right">rcs.nonlinear.padj</th>
+<th align="left">best.var.trans</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">2</td>
+<td align="left">sex</td>
+<td align="right">167</td>
+<td align="right">0.3742964</td>
+<td align="right">0.0053682</td>
+<td align="right">0.0268408</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="left">original</td>
+</tr>
+<tr>
+<td align="left">4</td>
+<td align="left">pat.karno</td>
+<td align="right">167</td>
+<td align="right">0.9701901</td>
+<td align="right">0.0184097</td>
+<td align="right">0.0460243</td>
+<td align="right">0.1480629</td>
+<td align="right">0.0465029</td>
+<td align="right">0.0465029</td>
+<td align="right">0.4427438</td>
+<td align="right">0.0373640</td>
+<td align="right">0.0498187</td>
+<td align="right">0.0689533</td>
+<td align="right">0.1457501</td>
+<td align="right">0.5271516</td>
+<td align="right">0.5271516</td>
+<td align="left">original</td>
+</tr>
+<tr>
+<td align="left">3</td>
+<td align="left">ph.karno</td>
+<td align="right">167</td>
+<td align="right">0.9703678</td>
+<td align="right">0.0396626</td>
+<td align="right">0.0528173</td>
+<td align="right">0.0984975</td>
+<td align="right">0.0461388</td>
+<td align="right">0.0465029</td>
+<td align="right">0.3157895</td>
+<td align="right">0.0161386</td>
+<td align="right">0.0475296</td>
+<td align="right">0.0995735</td>
+<td align="right">0.1457501</td>
+<td align="right">0.2382474</td>
+<td align="right">0.4764948</td>
+<td align="left">categorized</td>
+</tr>
+<tr>
+<td align="left">1</td>
+<td align="left">age</td>
+<td align="right">167</td>
+<td align="right">1.0389903</td>
+<td align="right">0.0422538</td>
+<td align="right">0.0528173</td>
+<td align="right">10.2713218</td>
+<td align="right">0.0335189</td>
+<td align="right">0.0465029</td>
+<td align="right">1.7416268</td>
+<td align="right">0.1120568</td>
+<td align="right">0.1120568</td>
+<td align="right">0.1457501</td>
+<td align="right">0.1457501</td>
+<td align="right">0.5010354</td>
+<td align="right">0.5271516</td>
+<td align="left">logarithm</td>
+</tr>
+<tr>
+<td align="left">5</td>
+<td align="left">wt.loss</td>
+<td align="right">167</td>
+<td align="right">1.0084347</td>
+<td align="right">0.5300552</td>
+<td align="right">0.5300552</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">2.2308546</td>
+<td align="right">0.0237648</td>
+<td align="right">0.0475296</td>
+<td align="right">0.1176075</td>
+<td align="right">0.1457501</td>
+<td align="right">0.0679239</td>
+<td align="right">0.2716957</td>
+<td align="left">categorized</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="多模型规格结果表" class="section level2">
+<h2>多模型规格结果表</h2>
+<p>在临床论文中，通常需要展示多种模型规格（粗模型、部分调整、完全调整）以说明混杂因素对估计关联的影响。</p>
+<div id="cox-模型多规格" class="section level3">
+<h3>Cox 模型多规格</h3>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>cox_results <span class="ot">&lt;-</span> <span class="fu">regression_basic_results</span>(</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  <span class="at">data =</span> cancer_clean,</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  <span class="at">x =</span> <span class="st">&quot;age&quot;</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;status&quot;</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;time&quot;</span>,</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>  <span class="at">model_covs =</span> <span class="fu">list</span>(</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>    <span class="at">Crude =</span> <span class="fu">c</span>(),</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>    <span class="at">Model1 =</span> <span class="fu">c</span>(<span class="st">&quot;sex&quot;</span>),</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>    <span class="at">Model2 =</span> <span class="fu">c</span>(<span class="st">&quot;sex&quot;</span>, <span class="st">&quot;ph.karno&quot;</span>, <span class="st">&quot;pat.karno&quot;</span>)</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>  ),</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>  <span class="at">pers =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">10</span>),</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>  <span class="at">save_output =</span> <span class="cn">FALSE</span></span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>)</span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(cox_results<span class="sc">$</span>table, <span class="at">caption =</span> <span class="st">&quot;年龄的 Cox 回归结果&quot;</span>)</span></code></pre></div>
+<table>
+<caption>年龄的 Cox 回归结果</caption>
+<colgroup>
+<col width="24%" />
+<col width="6%" />
+<col width="17%" />
+<col width="6%" />
+<col width="17%" />
+<col width="7%" />
+<col width="16%" />
+<col width="7%" />
+</colgroup>
+<thead>
+<tr>
+<th align="left">Terms</th>
+<th align="right">Count</th>
+<th align="left">Crude</th>
+<th align="left">Crude</th>
+<th align="left">Model1</th>
+<th align="left">Model1</th>
+<th align="left">Model2</th>
+<th align="left">Model2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">age (All)</td>
+<td align="right">167</td>
+<td align="left">HR</td>
+<td align="left">P</td>
+<td align="left">HR</td>
+<td align="left">P</td>
+<td align="left">HR</td>
+<td align="left">P</td>
+</tr>
+<tr>
+<td align="left">Continuous</td>
+<td align="right">NA</td>
+<td align="left">1.02(1.00,1.04)</td>
+<td align="left">0.064</td>
+<td align="left">1.02(1.00,1.04)</td>
+<td align="left">0.109</td>
+<td align="left">1.01(0.99,1.03)</td>
+<td align="left">0.352</td>
+</tr>
+<tr>
+<td align="left">Continuous, per 1</td>
+<td align="right">NA</td>
+<td align="left">1.02(1.00,1.04)</td>
+<td align="left">0.064</td>
+<td align="left">1.02(1.00,1.04)</td>
+<td align="left">0.109</td>
+<td align="left">1.01(0.99,1.03)</td>
+<td align="left">0.352</td>
+</tr>
+<tr>
+<td align="left">Continuous, per 5</td>
+<td align="right">NA</td>
+<td align="left">1.10(0.99,1.23)</td>
+<td align="left">0.064</td>
+<td align="left">1.09(0.98,1.21)</td>
+<td align="left">0.109</td>
+<td align="left">1.06(0.94,1.18)</td>
+<td align="left">0.352</td>
+</tr>
+<tr>
+<td align="left">Continuous, per 10</td>
+<td align="right">NA</td>
+<td align="left">1.22(0.99,1.51)</td>
+<td align="left">0.064</td>
+<td align="left">1.19(0.96,1.47)</td>
+<td align="left">0.109</td>
+<td align="left">1.11(0.89,1.40)</td>
+<td align="left">0.352</td>
+</tr>
+<tr>
+<td align="left">Continuous, per 1 SD</td>
+<td align="right">NA</td>
+<td align="left">1.20(0.99,1.46)</td>
+<td align="left">0.064</td>
+<td align="left">1.17(0.97,1.43)</td>
+<td align="left">0.109</td>
+<td align="left">1.10(0.90,1.36)</td>
+<td align="left">0.352</td>
+</tr>
+<tr>
+<td align="left">Continuous, logarithm</td>
+<td align="right">NA</td>
+<td align="left">3.26(0.91,11.66)</td>
+<td align="left">0.069</td>
+<td align="left">2.79(0.78,10.06)</td>
+<td align="left">0.116</td>
+<td align="left">1.89(0.49,7.34)</td>
+<td align="left">0.359</td>
+</tr>
+<tr>
+<td align="left">Grouped by Quartiles</td>
+<td align="right">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr>
+<td align="left">Q1</td>
+<td align="right">41</td>
+<td align="left">1 (Reference)</td>
+<td align="left">NA</td>
+<td align="left">1 (Reference)</td>
+<td align="left">NA</td>
+<td align="left">1 (Reference)</td>
+<td align="left">NA</td>
+</tr>
+<tr>
+<td align="left">Q2</td>
+<td align="right">42</td>
+<td align="left">0.79(0.46,1.34)</td>
+<td align="left">0.373</td>
+<td align="left">0.72(0.42,1.23)</td>
+<td align="left">0.228</td>
+<td align="left">0.71(0.42,1.22)</td>
+<td align="left">0.215</td>
+</tr>
+<tr>
+<td align="left">Q3</td>
+<td align="right">40</td>
+<td align="left">1.03(0.61,1.73)</td>
+<td align="left">0.905</td>
+<td align="left">0.98(0.58,1.65)</td>
+<td align="left">0.941</td>
+<td align="left">0.87(0.51,1.49)</td>
+<td align="left">0.613</td>
+</tr>
+<tr>
+<td align="left">Q4</td>
+<td align="right">44</td>
+<td align="left">1.34(0.81,2.20)</td>
+<td align="left">0.256</td>
+<td align="left">1.23(0.75,2.04)</td>
+<td align="left">0.414</td>
+<td align="left">1.08(0.64,1.83)</td>
+<td align="left">0.775</td>
+</tr>
+<tr>
+<td align="left">P for trend</td>
+<td align="right">NA</td>
+<td align="left">NA</td>
+<td align="left">0.144</td>
+<td align="left">NA</td>
+<td align="left">0.208</td>
+<td align="left">NA</td>
+<td align="left">0.561</td>
+</tr>
+<tr>
+<td align="left">Grouped by Median Value</td>
+<td align="right">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr>
+<td align="left">Low</td>
+<td align="right">83</td>
+<td align="left">1 (Reference)</td>
+<td align="left">NA</td>
+<td align="left">1 (Reference)</td>
+<td align="left">NA</td>
+<td align="left">1 (Reference)</td>
+<td align="left">NA</td>
+</tr>
+<tr>
+<td align="left">High</td>
+<td align="right">84</td>
+<td align="left">1.33(0.93,1.91)</td>
+<td align="left">0.118</td>
+<td align="left">1.31(0.92,1.88)</td>
+<td align="left">0.138</td>
+<td align="left">1.16(0.79,1.71)</td>
+<td align="left">0.437</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="logistic-模型-临床切点" class="section level3">
+<h3>Logistic 模型 + 临床切点</h3>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>logistic_results <span class="ot">&lt;-</span> <span class="fu">regression_basic_results</span>(</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  <span class="at">data =</span> cancer_clean,</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="at">x =</span> <span class="st">&quot;ph.karno&quot;</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;dead&quot;</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="at">model_covs =</span> <span class="fu">list</span>(</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>    <span class="at">Crude =</span> <span class="fu">c</span>(),</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>    <span class="at">Adjusted =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;sex&quot;</span>)</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>  ),</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>  <span class="at">factor_breaks =</span> <span class="fu">c</span>(<span class="dv">80</span>),</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>  <span class="at">factor_labels =</span> <span class="fu">c</span>(<span class="st">&quot;&lt;80&quot;</span>, <span class="st">&quot;&gt;=80&quot;</span>),</span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>  <span class="at">save_output =</span> <span class="cn">FALSE</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>)</span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(logistic_results<span class="sc">$</span>table, <span class="at">caption =</span> <span class="st">&quot;体能状态的 Logistic 回归结果&quot;</span>)</span></code></pre></div>
+<table>
+<caption>体能状态的 Logistic 回归结果</caption>
+<colgroup>
+<col width="32%" />
+<col width="7%" />
+<col width="20%" />
+<col width="7%" />
+<col width="20%" />
+<col width="11%" />
+</colgroup>
+<thead>
+<tr>
+<th align="left">Terms</th>
+<th align="right">Count</th>
+<th align="left">Crude</th>
+<th align="left">Crude</th>
+<th align="left">Adjusted</th>
+<th align="left">Adjusted</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">ph.karno (All)</td>
+<td align="right">167</td>
+<td align="left">OR</td>
+<td align="left">P</td>
+<td align="left">OR</td>
+<td align="left">P</td>
+</tr>
+<tr>
+<td align="left">Continuous</td>
+<td align="right">NA</td>
+<td align="left">0.97(0.94,1.00)</td>
+<td align="left">0.040</td>
+<td align="left">0.97(0.94,1.00)</td>
+<td align="left">0.085</td>
+</tr>
+<tr>
+<td align="left">Continuous, per 0.1</td>
+<td align="right">NA</td>
+<td align="left">1.00(0.99,1.00)</td>
+<td align="left">0.040</td>
+<td align="left">1.00(0.99,1.00)</td>
+<td align="left">0.085</td>
+</tr>
+<tr>
+<td align="left">Continuous, per 10</td>
+<td align="right">NA</td>
+<td align="left">0.74(0.55,0.98)</td>
+<td align="left">0.040</td>
+<td align="left">0.76(0.55,1.03)</td>
+<td align="left">0.085</td>
+</tr>
+<tr>
+<td align="left">Continuous, per 100</td>
+<td align="right">NA</td>
+<td align="left">0.05(0.003,0.80)</td>
+<td align="left">0.040</td>
+<td align="left">0.07(0.003,1.36)</td>
+<td align="left">0.085</td>
+</tr>
+<tr>
+<td align="left">Continuous, per 1 SD</td>
+<td align="right">NA</td>
+<td align="left">0.68(0.47,0.97)</td>
+<td align="left">0.040</td>
+<td align="left">0.71(0.47,1.04)</td>
+<td align="left">0.085</td>
+</tr>
+<tr>
+<td align="left">Continuous, logarithm</td>
+<td align="right">NA</td>
+<td align="left">0.10(0.009,0.87)</td>
+<td align="left">0.046</td>
+<td align="left">0.12(0.009,1.34)</td>
+<td align="left">0.097</td>
+</tr>
+<tr>
+<td align="left">Grouped by Quartiles</td>
+<td align="right">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr>
+<td align="left">Q1</td>
+<td align="right">20</td>
+<td align="left">1 (Reference)</td>
+<td align="left">NA</td>
+<td align="left">1 (Reference)</td>
+<td align="left">NA</td>
+</tr>
+<tr>
+<td align="left">Q2</td>
+<td align="right">24</td>
+<td align="left">2.75(0.48,21.64)</td>
+<td align="left">0.275</td>
+<td align="left">2.58(0.43,20.67)</td>
+<td align="left">0.314</td>
+</tr>
+<tr>
+<td align="left">Q3</td>
+<td align="right">47</td>
+<td align="left">0.53(0.14, 1.76)</td>
+<td align="left">0.326</td>
+<td align="left">0.56(0.14, 1.99)</td>
+<td align="left">0.393</td>
+</tr>
+<tr>
+<td align="left">Q4</td>
+<td align="right">76</td>
+<td align="left">0.48(0.13, 1.47)</td>
+<td align="left">0.229</td>
+<td align="left">0.50(0.12, 1.69)</td>
+<td align="left">0.291</td>
+</tr>
+<tr>
+<td align="left">P for trend</td>
+<td align="right">NA</td>
+<td align="left">NA</td>
+<td align="left">0.039</td>
+<td align="left">NA</td>
+<td align="left">0.077</td>
+</tr>
+<tr>
+<td align="left">Grouped by Median Value</td>
+<td align="right">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr>
+<td align="left">Low</td>
+<td align="right">44</td>
+<td align="left">1 (Reference)</td>
+<td align="left">NA</td>
+<td align="left">1 (Reference)</td>
+<td align="left">NA</td>
+</tr>
+<tr>
+<td align="left">High</td>
+<td align="right">123</td>
+<td align="left">0.32(0.11,0.76)</td>
+<td align="left">0.016</td>
+<td align="left">0.34(0.12,0.88)</td>
+<td align="left">0.035</td>
+</tr>
+<tr>
+<td align="left">Grouped by Clinical Value</td>
+<td align="right">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr>
+<td align="left">&lt;80</td>
+<td align="right">44</td>
+<td align="left">1 (Reference)</td>
+<td align="left">NA</td>
+<td align="left">1 (Reference)</td>
+<td align="left">NA</td>
+</tr>
+<tr>
+<td align="left">&gt;=80</td>
+<td align="right">123</td>
+<td align="left">0.32(0.11,0.76)</td>
+<td align="left">0.016</td>
+<td align="left">0.34(0.12,0.88)</td>
+<td align="left">0.035</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="基于分位数的分类" class="section level3">
+<h3>基于分位数的分类</h3>
+<p>当没有公认的临床切点时，可以使用三分位数进行均衡的组间比较：</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>custom_results <span class="ot">&lt;-</span> <span class="fu">regression_basic_results</span>(</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  <span class="at">data =</span> cancer_clean,</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="at">x =</span> <span class="st">&quot;age&quot;</span>,</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;status&quot;</span>,</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;time&quot;</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>  <span class="at">quantile_breaks =</span> <span class="fu">c</span>(<span class="fl">0.33</span>, <span class="fl">0.67</span>),</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>  <span class="at">quantile_labels =</span> <span class="fu">c</span>(<span class="st">&quot;Youngest Third&quot;</span>, <span class="st">&quot;Middle Third&quot;</span>, <span class="st">&quot;Oldest Third&quot;</span>),</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>  <span class="at">label_with_range =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>  <span class="at">save_output =</span> <span class="cn">FALSE</span></span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>)</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(custom_results<span class="sc">$</span>table, <span class="at">caption =</span> <span class="st">&quot;Cox 回归结果——年龄三分位数&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Cox 回归结果——年龄三分位数</caption>
+<thead>
+<tr>
+<th align="left">Terms</th>
+<th align="right">Count</th>
+<th align="left">Crude</th>
+<th align="left">Crude</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">age (All)</td>
+<td align="right">167</td>
+<td align="left">HR</td>
+<td align="left">P</td>
+</tr>
+<tr>
+<td align="left">Continuous</td>
+<td align="right">NA</td>
+<td align="left">1.02(1.00,1.04)</td>
+<td align="left">0.064</td>
+</tr>
+<tr>
+<td align="left">Continuous, per 0.1</td>
+<td align="right">NA</td>
+<td align="left">1.00(1.00,1.00)</td>
+<td align="left">0.064</td>
+</tr>
+<tr>
+<td align="left">Continuous, per 10</td>
+<td align="right">NA</td>
+<td align="left">1.22(0.99,1.51)</td>
+<td align="left">0.064</td>
+</tr>
+<tr>
+<td align="left">Continuous, per 100</td>
+<td align="right">NA</td>
+<td align="left">7.31(0.89,60.04)</td>
+<td align="left">0.064</td>
+</tr>
+<tr>
+<td align="left">Continuous, per 1 SD</td>
+<td align="right">NA</td>
+<td align="left">1.20(0.99,1.46)</td>
+<td align="left">0.064</td>
+</tr>
+<tr>
+<td align="left">Continuous, logarithm</td>
+<td align="right">NA</td>
+<td align="left">3.26(0.91,11.66)</td>
+<td align="left">0.069</td>
+</tr>
+<tr>
+<td align="left">Grouped by Quartiles</td>
+<td align="right">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr>
+<td align="left">Q1 [39,57)</td>
+<td align="right">41</td>
+<td align="left">1 (Reference)</td>
+<td align="left">NA</td>
+</tr>
+<tr>
+<td align="left">Q2 [57,64)</td>
+<td align="right">42</td>
+<td align="left">0.79(0.46,1.34)</td>
+<td align="left">0.373</td>
+</tr>
+<tr>
+<td align="left">Q3 [64,70)</td>
+<td align="right">40</td>
+<td align="left">1.03(0.61,1.73)</td>
+<td align="left">0.905</td>
+</tr>
+<tr>
+<td align="left">Q4 [70,82]</td>
+<td align="right">44</td>
+<td align="left">1.34(0.81,2.20)</td>
+<td align="left">0.256</td>
+</tr>
+<tr>
+<td align="left">P for trend</td>
+<td align="right">NA</td>
+<td align="left">NA</td>
+<td align="left">0.144</td>
+</tr>
+<tr>
+<td align="left">Grouped by Median Value</td>
+<td align="right">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr>
+<td align="left">Low [39,64)</td>
+<td align="right">83</td>
+<td align="left">1 (Reference)</td>
+<td align="left">NA</td>
+</tr>
+<tr>
+<td align="left">High [64,82]</td>
+<td align="right">84</td>
+<td align="left">1.33(0.93,1.91)</td>
+<td align="left">0.118</td>
+</tr>
+<tr>
+<td align="left">Values</td>
+<td align="right">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr>
+<td align="left">Youngest Third [39,58.8)</td>
+<td align="right">55</td>
+<td align="left">1 (Reference)</td>
+<td align="left">NA</td>
+</tr>
+<tr>
+<td align="left">Middle Third [58.8,68)</td>
+<td align="right">54</td>
+<td align="left">0.92(0.58,1.46)</td>
+<td align="left">0.721</td>
+</tr>
+<tr>
+<td align="left">Oldest Third [68,82]</td>
+<td align="right">58</td>
+<td align="left">1.37(0.89,2.13)</td>
+<td align="left">0.154</td>
+</tr>
+<tr>
+<td align="left">P for trend</td>
+<td align="right">NA</td>
+<td align="left">NA</td>
+<td align="left">0.145</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="森林图" class="section level2">
+<h2>森林图</h2>
+<div id="单因素森林图" class="section level3">
+<h3>单因素森林图</h3>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>uni_forest <span class="ot">&lt;-</span> <span class="fu">regression_forest</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  <span class="at">data =</span> cancer_clean,</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="at">model_vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;ph.karno&quot;</span>, <span class="st">&quot;pat.karno&quot;</span>, <span class="st">&quot;wt.loss&quot;</span>),</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;status&quot;</span>,</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;time&quot;</span>,</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>  <span class="at">as_univariate =</span> <span class="cn">TRUE</span>, <span class="co"># 生成单因素森林图</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>  <span class="at">save_plot =</span> <span class="cn">FALSE</span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>)</span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>uni_forest</span></code></pre></div>
+<div class="float">
+<img src="figure/univariate-forest-1.png"
+alt="plot of chunk univariate-forest" />
+<div class="figcaption">plot of chunk univariate-forest</div>
+</div>
+<p>单因素森林图包含以下元素：</p>
+<ul>
+<li><strong>左侧面板</strong>：变量名称</li>
+<li><strong>中间</strong>：森林图，展示效应估计值和 95% 置信区间
+<ul>
+<li>函数自动估计效应量（Cox 模型为 HR，Logistic 模型为 OR，线性模型为 β
+系数）</li>
+<li>每个方块代表点估计值</li>
+<li>水平线代表 95% 置信区间</li>
+<li>垂直虚线为参考线（Cox/Logistic 模型 HR/OR=1.0，线性模型 β=0）</li>
+</ul></li>
+<li><strong>右侧面板</strong>：效应估计值的数值（95% CI）和 P 值</li>
+</ul>
+<p>在本例中，<code>pat.karno</code> 显示出显著的保护效应（HR ≈ 0.98, p
+&lt; 0.01），而 <code>age</code>、<code>ph.karno</code> 和
+<code>wt.loss</code> 在单因素分析中未达到统计学显著性。</p>
+</div>
+<div id="多因素森林图" class="section level3">
+<h3>多因素森林图</h3>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>multi_forest <span class="ot">&lt;-</span> <span class="fu">regression_forest</span>(</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>  <span class="at">data =</span> cancer_clean,</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>  <span class="at">model_vars =</span> <span class="fu">list</span>(</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>    <span class="at">Model1 =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>),</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>    <span class="at">Model2 =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;ph.karno&quot;</span>),</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>    <span class="at">Model3 =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;ph.karno&quot;</span>, <span class="st">&quot;pat.karno&quot;</span>)</span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>  ),</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;status&quot;</span>,</span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;time&quot;</span>,</span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a>  <span class="at">as_univariate =</span> <span class="cn">FALSE</span>, <span class="co"># 生成多因素森林图</span></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>  <span class="at">save_plot =</span> <span class="cn">FALSE</span></span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>)</span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a></span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>multi_forest</span></code></pre></div>
+<div class="float">
+<img src="figure/multivariate-forest-1.png"
+alt="plot of chunk multivariate-forest" />
+<div class="figcaption">plot of chunk multivariate-forest</div>
+</div>
+<p>多因素森林图对比了不同的模型规格：</p>
+<ul>
+<li><strong>Model1</strong>：仅包含 <code>age</code>（粗模型）</li>
+<li><strong>Model2</strong>：包含 <code>age</code> 和
+<code>ph.karno</code>（部分调整）</li>
+<li><strong>Model3</strong>：包含
+<code>age</code>、<code>ph.karno</code> 和
+<code>pat.karno</code>（完全调整）</li>
+</ul>
+<p>要点： - 随着协变量的增加，<code>age</code> 的效应估计值略有变化 -
+置信区间可能因预测变量之间的相关性而变宽或变窄 -
+该可视化有助于评估混杂效应和模型稳定性</p>
+</div>
+<div id="自定义森林图" class="section level3">
+<h3>自定义森林图</h3>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>custom_forest <span class="ot">&lt;-</span> <span class="fu">regression_forest</span>(</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>  <span class="at">data =</span> cancer_clean,</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>  <span class="at">model_vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;ph.karno&quot;</span>, <span class="st">&quot;pat.karno&quot;</span>, <span class="st">&quot;wt.loss&quot;</span>, <span class="st">&quot;meal.cal&quot;</span>),</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;status&quot;</span>,</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;time&quot;</span>,</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>  <span class="at">as_univariate =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>  <span class="at">show_vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;ph.karno&quot;</span>, <span class="st">&quot;pat.karno&quot;</span>),</span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>  <span class="at">est_nsmall =</span> <span class="dv">2</span>,</span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>  <span class="at">p_nsmall =</span> <span class="dv">4</span>,</span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>  <span class="at">save_plot =</span> <span class="cn">FALSE</span></span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a>)</span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a></span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a>custom_forest</span></code></pre></div>
+<div class="float">
+<img src="figure/custom-forest-1.png"
+alt="plot of chunk custom-forest" />
+<div class="figcaption">plot of chunk custom-forest</div>
+</div>
+<p>自定义森林图展示了几个格式化选项：</p>
+<ul>
+<li><strong><code>show_vars</code></strong>：仅显示
+<code>age</code>、<code>ph.karno</code> 和 <code>pat.karno</code></li>
+<li><strong><code>est_nsmall = 2</code></strong>：效应估计值保留 2
+位小数</li>
+<li><strong><code>p_nsmall = 4</code></strong>：P 值保留 4 位小数</li>
+</ul>
+<p>这允许你聚焦展示关键预测变量，并使用适合发表的精确数值格式。</p>
+</div>
+</div>
+<div id="预测变量效应可视化" class="section level2">
+<h2>预测变量效应可视化</h2>
+<div id="效应图" class="section level3">
+<h3>效应图</h3>
+<p>统一的连续和分类预测变量接口：</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>effect_linear <span class="ot">&lt;-</span> <span class="fu">predictor_effect_plot</span>(</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>  <span class="at">data =</span> cancer_clean,</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>  <span class="at">x =</span> <span class="st">&quot;age&quot;</span>,</span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;status&quot;</span>,</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;time&quot;</span>,</span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a>  <span class="at">covars =</span> <span class="fu">c</span>(<span class="st">&quot;sex&quot;</span>),</span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;linear&quot;</span>,</span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a>  <span class="at">add_hist =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a>  <span class="at">save_plot =</span> <span class="cn">FALSE</span></span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a>)</span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a></span>
+<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a>effect_linear</span></code></pre></div>
+<div class="float">
+<img src="figure/predictor-effect-1.png"
+alt="plot of chunk predictor-effect" />
+<div class="figcaption">plot of chunk predictor-effect</div>
+</div>
+<p>线性预测变量效应图包含：</p>
+<ul>
+<li><strong>X 轴</strong>：年龄（连续预测变量）</li>
+<li><strong>Y 轴</strong>：风险比（HR），以年龄中位数为参考</li>
+<li><strong>实线</strong>：各年龄值的估计 HR</li>
+<li><strong>阴影区域</strong>：95% 置信区间</li>
+<li><strong>直方图</strong>：数据集中年龄的分布，右侧 Y
+轴为相对频率</li>
+<li><strong>P-overall</strong>：模型整体 P
+值，表示预测变量效应的显著性</li>
+<li><strong>P-proportional</strong>：仅 Cox 模型有，比例风险假设检验的 P
+值</li>
+</ul>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>effect_cat <span class="ot">&lt;-</span> <span class="fu">predictor_effect_plot</span>(</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>  <span class="at">data =</span> cancer_clean,</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>  <span class="at">x =</span> <span class="st">&quot;sex&quot;</span>,</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;status&quot;</span>,</span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;time&quot;</span>,</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>  <span class="at">covars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;ph.karno&quot;</span>),</span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;categorical&quot;</span>,</span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a>  <span class="at">save_plot =</span> <span class="cn">FALSE</span></span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a>)</span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a></span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a>effect_cat</span></code></pre></div>
+<div class="float">
+<img src="figure/predictor-effect-categorical-1.png"
+alt="plot of chunk predictor-effect-categorical" />
+<div class="figcaption">plot of chunk predictor-effect-categorical</div>
+</div>
+<p>分类预测变量效应图包含：</p>
+<ul>
+<li><strong>X 轴</strong>：预测变量的分类（Male vs Female）</li>
+<li><strong>Y 轴</strong>：带 95% 置信区间的风险比</li>
+<li><strong>参考线</strong>：HR = 1.0（虚线）</li>
+<li><strong>误差十字</strong>：每个分类的点估计值和 95% 置信区间</li>
+<li><strong>条形图</strong>：数据集中各分类的分布，右侧 Y
+轴为百分比</li>
+<li><strong>P-overall</strong>：模型整体 P 值</li>
+<li><strong>P-proportional</strong>：仅 Cox 模型有，比例风险假设检验的 P
+值</li>
+</ul>
+<p>在本例中，调整年龄和体能状态后，女性显示出显著更低的死亡风险（HR ≈
+0.62, 95% CI 不包含 1.0）。</p>
+</div>
+<div id="rcs-图" class="section level3">
+<h3>RCS 图</h3>
+<p>RCS 图在保留数据连续性的同时可视化非线性关系，也可以通过
+<code>predictor_effect_plot()</code> 并设置 <code>method = "rcs"</code>
+来生成：</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>rcs_age <span class="ot">&lt;-</span> <span class="fu">rcs_plot</span>(</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>  <span class="at">data =</span> cancer_clean,</span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>  <span class="at">x =</span> <span class="st">&quot;age&quot;</span>,</span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;status&quot;</span>,</span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;time&quot;</span>,</span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a>  <span class="at">covars =</span> <span class="fu">c</span>(<span class="st">&quot;sex&quot;</span>, <span class="st">&quot;ph.karno&quot;</span>),</span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a>  <span class="at">knot =</span> <span class="dv">4</span>,</span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a>  <span class="at">ref =</span> <span class="st">&quot;x_median&quot;</span>,</span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a>  <span class="at">add_hist =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a>  <span class="at">save_plot =</span> <span class="cn">FALSE</span></span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a>)</span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a></span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a>rcs_age</span></code></pre></div>
+<div class="float">
+<img src="figure/rcs-plot-1.png" alt="plot of chunk rcs-plot" />
+<div class="figcaption">plot of chunk rcs-plot</div>
+</div>
+<p>RCS（限制性立方样条）图可视化年龄与生存之间的非线性关系，各元素解读与线性图类似，额外包含：</p>
+<ul>
+<li><strong>P-non-linear</strong>：非线性 P
+值，表示非线性效应的显著性</li>
+</ul>
+<p>要点： - 4
+个节点的样条（<code>knot = 4</code>）允许灵活地建模非线性关系 -
+参考点（<code>ref = "x_median"</code>）设在中位年龄（HR = 1.0） -
+图中展示了相对于中位年龄的风险变化</p>
+</div>
+<div id="自定义-rcs-图" class="section level3">
+<h3>自定义 RCS 图</h3>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>custom_rcs <span class="ot">&lt;-</span> <span class="fu">rcs_plot</span>(</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>  <span class="at">data =</span> cancer_clean,</span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>  <span class="at">x =</span> <span class="st">&quot;wt.loss&quot;</span>,</span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;status&quot;</span>,</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;time&quot;</span>,</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a>  <span class="at">covars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;sex&quot;</span>),</span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a>  <span class="at">knot =</span> <span class="dv">5</span>,</span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a>  <span class="at">ref =</span> <span class="dv">0</span>,</span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a>  <span class="at">add_hist =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a>  <span class="at">trans =</span> <span class="st">&quot;log10&quot;</span>,</span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a>  <span class="at">y_lim =</span> <span class="fu">c</span>(<span class="fl">0.5</span>, <span class="dv">5</span>),</span>
+<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a>  <span class="at">save_plot =</span> <span class="cn">FALSE</span></span>
+<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a>)</span>
+<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a></span>
+<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a>custom_rcs</span></code></pre></div>
+<div class="float">
+<img src="figure/custom-effect-1.png"
+alt="plot of chunk custom-effect" />
+<div class="figcaption">plot of chunk custom-effect</div>
+</div>
+<p>自定义 RCS 图展示了高级选项：</p>
+<ul>
+<li><strong><code>knot = 5</code></strong>：使用 5
+个节点，更灵活地拟合曲线</li>
+<li><strong><code>ref = 0</code></strong>：参考点设为体重减轻 =
+0（无体重减轻）</li>
+<li><strong><code>trans = "log10"</code></strong>：对 Y 轴应用 log10
+变换。启用 log 刻度 Y 轴时，<code>add_hist</code> 必须为
+<code>FALSE</code></li>
+<li><strong><code>y_lim = c(0.5, 5)</code></strong>：自定义 Y
+轴范围</li>
+<li><strong><code>add_hist = FALSE</code></strong>：不显示直方图，使展示更简洁</li>
+</ul>
+</div>
+</div>
+<div id="交互作用与亚组分析" class="section level2">
+<h2>交互作用与亚组分析</h2>
+<div id="交互作用扫描" class="section level3">
+<h3>交互作用扫描</h3>
+<p>交互作用分析在临床研究中至关重要，用于评估预测变量对结局的效应是否因另一个变量的不同分组而异（效应修饰）。在医学论文中，这通常被称为<strong>带交互检验的亚组分析</strong>。</p>
+<p><code>interaction_scan()</code>
+函数系统性地评估多个预测变量与分组变量之间的潜在交互作用：</p>
+<ul>
+<li><strong>线性交互（<code>linear.p.int</code>）</strong>：检验预测变量的线性效应是否在各亚组间不同</li>
+<li><strong>RCS
+交互（<code>rcs.p.int</code>）</strong>：使用限制性立方样条（4
+个节点）检验非线性交互</li>
+<li><strong>校正后 P 值</strong>：同时提供原始 P 值和
+Benjamini-Hochberg（BH）校正后 P 值</li>
+<li><strong>样本量（<code>nvalid</code>）</strong>：报告每个交互检验的完整病例数</li>
+</ul>
+<p><strong>临床解读</strong>：显著的交互 P 值（通常 &lt;
+0.05）表明预测变量对结局的效应被分组变量所修饰，提示治疗效应或风险关联可能因亚组而异。</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>interaction_scan <span class="ot">&lt;-</span> <span class="fu">interaction_scan</span>(</span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>  <span class="at">data =</span> cancer_clean,</span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;status&quot;</span>,</span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;time&quot;</span>,</span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a>  <span class="at">predictors =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;ph.karno&quot;</span>, <span class="st">&quot;pat.karno&quot;</span>),</span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a>  <span class="at">group_vars =</span> <span class="fu">c</span>(<span class="st">&quot;sex&quot;</span>, <span class="st">&quot;ph.karno&quot;</span>), <span class="co"># 连续变量将按中位数切分为亚组</span></span>
+<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a>  <span class="at">save_table =</span> <span class="cn">FALSE</span></span>
+<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a>)</span>
+<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a></span>
+<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(interaction_scan, <span class="at">caption =</span> <span class="st">&quot;交互作用扫描结果&quot;</span>)</span></code></pre></div>
+<table>
+<caption>交互作用扫描结果</caption>
+<colgroup>
+<col width="4%" />
+<col width="13%" />
+<col width="12%" />
+<col width="9%" />
+<col width="17%" />
+<col width="13%" />
+<col width="17%" />
+<col width="13%" />
+</colgroup>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left">predictor</th>
+<th align="left">group.by</th>
+<th align="right">nvalid</th>
+<th align="right">linear.p.int</th>
+<th align="right">rcs.p.int</th>
+<th align="right">linear.p.adj</th>
+<th align="right">rcs.p.adj</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">2</td>
+<td align="left">age</td>
+<td align="left">ph.karno</td>
+<td align="right">167</td>
+<td align="right">0.0972655</td>
+<td align="right">0.0117594</td>
+<td align="right">0.3101036</td>
+<td align="right">0.0235189</td>
+</tr>
+<tr>
+<td align="left">3</td>
+<td align="left">ph.karno</td>
+<td align="left">sex</td>
+<td align="right">167</td>
+<td align="right">0.1240414</td>
+<td align="right">NA</td>
+<td align="right">0.3101036</td>
+<td align="right">NA</td>
+</tr>
+<tr>
+<td align="left">5</td>
+<td align="left">pat.karno</td>
+<td align="left">ph.karno</td>
+<td align="right">167</td>
+<td align="right">0.5731909</td>
+<td align="right">NA</td>
+<td align="right">0.7485232</td>
+<td align="right">NA</td>
+</tr>
+<tr>
+<td align="left">1</td>
+<td align="left">age</td>
+<td align="left">sex</td>
+<td align="right">167</td>
+<td align="right">0.6276238</td>
+<td align="right">0.9342510</td>
+<td align="right">0.7485232</td>
+<td align="right">0.9342510</td>
+</tr>
+<tr>
+<td align="left">4</td>
+<td align="left">pat.karno</td>
+<td align="left">sex</td>
+<td align="right">167</td>
+<td align="right">0.7485232</td>
+<td align="right">NA</td>
+<td align="right">0.7485232</td>
+<td align="right">NA</td>
+</tr>
+</tbody>
+</table>
+<p><strong>输出列解读：</strong></p>
+<table>
+<thead>
+<tr>
+<th>列名</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>predictor</code></td>
+<td>被检验效应修饰的连续或分类变量</td>
+</tr>
+<tr>
+<td><code>group.by</code></td>
+<td>亚组变量（如性别），可能修饰预测变量的效应</td>
+</tr>
+<tr>
+<td><code>nvalid</code></td>
+<td>交互检验中使用的完整观测数</td>
+</tr>
+<tr>
+<td><code>linear.p.int</code></td>
+<td>线性交互效应的原始 P 值</td>
+</tr>
+<tr>
+<td><code>linear.p.adj</code></td>
+<td>线性交互的 BH 校正 P 值</td>
+</tr>
+<tr>
+<td><code>rcs.p.int</code></td>
+<td>非线性（RCS）交互效应的原始 P 值</td>
+</tr>
+<tr>
+<td><code>rcs.p.adj</code></td>
+<td>RCS 交互的 BH 校正 P 值</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="交互作用可视化" class="section level3">
+<h3>交互作用可视化</h3>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a>interaction_age_sex <span class="ot">&lt;-</span> <span class="fu">interaction_plot</span>(</span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>  <span class="at">data =</span> cancer_clean,</span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a>  <span class="at">predictor =</span> <span class="st">&quot;age&quot;</span>,</span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;status&quot;</span>,</span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;time&quot;</span>,</span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a>  <span class="at">group_var =</span> <span class="st">&quot;sex&quot;</span>,</span>
+<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a>  <span class="at">covars =</span> <span class="fu">c</span>(<span class="st">&quot;ph.karno&quot;</span>),</span>
+<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a>  <span class="at">save_plot =</span> <span class="cn">FALSE</span></span>
+<span id="cb17-9"><a href="#cb17-9" tabindex="-1"></a>)</span>
+<span id="cb17-10"><a href="#cb17-10" tabindex="-1"></a></span>
+<span id="cb17-11"><a href="#cb17-11" tabindex="-1"></a>interaction_age_sex</span>
+<span id="cb17-12"><a href="#cb17-12" tabindex="-1"></a><span class="co">#&gt; $lin</span></span></code></pre></div>
+<div class="float">
+<img src="figure/interaction-plot-1.png"
+alt="plot of chunk interaction-plot" />
+<div class="figcaption">plot of chunk interaction-plot</div>
+</div>
+<pre><code>#&gt; 
+#&gt; $rcs</code></pre>
+<div class="float">
+<img src="figure/interaction-plot-2.png"
+alt="plot of chunk interaction-plot" />
+<div class="figcaption">plot of chunk interaction-plot</div>
+</div>
+<p>交互作用图包含两个面板：</p>
+<p><strong>线性交互图（<code>$lin</code>）</strong>： -
+分别展示男性和女性中年龄对生存的效应 - 不同颜色的线代表不同的性别组 -
+平行线提示无交互作用；发散/收敛线提示存在交互作用 - 阴影区域代表 95%
+置信区间</p>
+<p><strong>RCS 交互图（<code>$rcs</code>）</strong>： -
+展示每个性别组内年龄的非线性效应 - 允许检测非线性交互 -
+每条曲线代表相对于该性别参考点的 HR</p>
+<p>在本例中，两条线大致平行，提示年龄与性别之间无显著交互作用（P 值 &gt;
+0.05 已确认）。</p>
+</div>
+<div id="亚组森林图" class="section level3">
+<h3>亚组森林图</h3>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a>subgroup_result <span class="ot">&lt;-</span> <span class="fu">subgroup_forest</span>(</span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a>  <span class="at">data =</span> cancer_clean,</span>
+<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a>  <span class="at">x =</span> <span class="st">&quot;age&quot;</span>,</span>
+<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;status&quot;</span>,</span>
+<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;time&quot;</span>,</span>
+<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a>  <span class="at">subgroup_vars =</span> <span class="fu">c</span>(<span class="st">&quot;sex&quot;</span>, <span class="st">&quot;pat.karno&quot;</span>),</span>
+<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a>  <span class="at">covars =</span> <span class="fu">c</span>(<span class="st">&quot;ph.karno&quot;</span>),</span>
+<span id="cb19-8"><a href="#cb19-8" tabindex="-1"></a>  <span class="at">save_plot =</span> <span class="cn">FALSE</span></span>
+<span id="cb19-9"><a href="#cb19-9" tabindex="-1"></a>)</span>
+<span id="cb19-10"><a href="#cb19-10" tabindex="-1"></a></span>
+<span id="cb19-11"><a href="#cb19-11" tabindex="-1"></a>subgroup_result</span></code></pre></div>
+<div class="float">
+<img src="figure/subgroup-forest-1.png"
+alt="plot of chunk subgroup-forest" />
+<div class="figcaption">plot of chunk subgroup-forest</div>
+</div>
+<p>亚组森林图展示了按分组层级的年龄对生存的效应：</p>
+<ul>
+<li><strong>Overall</strong>：整个队列的效应估计</li>
+<li><strong>Sex</strong>：各性别组的效应估计</li>
+<li><strong>Pat.Karno</strong>：各 Karno 评分组的效应估计</li>
+</ul>
+<p>每一行展示： - 该亚组的样本量 - 带有 95% 置信区间的效应估计 -
+交互作用 P 值</p>
+<p>该可视化有助于评估： - 效应在各亚组间是否一致 -
+分层变量是否存在潜在的效应修饰</p>
+</div>
+</div>
+<div id="小结" class="section level2">
+<h2>小结</h2>
+<table>
+<thead>
+<tr>
+<th>函数</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>regression_scan()</code></td>
+<td>自动化多变换预测变量筛选</td>
+</tr>
+<tr>
+<td><code>regression_basic_results()</code></td>
+<td>多模型规格的综合结果表</td>
+</tr>
+<tr>
+<td><code>regression_forest()</code></td>
+<td>发表级森林图</td>
+</tr>
+<tr>
+<td><code>rcs_plot()</code> / <code>predictor_effect_plot()</code></td>
+<td>灵活的预测变量效应可视化</td>
+</tr>
+<tr>
+<td><code>interaction_scan()</code> /
+<code>interaction_plot()</code></td>
+<td>交互作用分析与可视化</td>
+</tr>
+<tr>
+<td><code>subgroup_forest()</code></td>
+<td>亚组分析森林图</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<blockquote>
+<p><strong>相关文章推荐</strong></p>
+<ul>
+<li><a href="model-evaluation.html">模型评估与比较：从 AUC 到 DCA
+的全面指南</a></li>
+<li><a href="baseline-table.html">基线特征表（Table
+1）一键生成指南</a></li>
+</ul>
+<p><strong>安装
+clinpubr</strong>：<code>devtools::install_github("niuyu1993/clinpubr")</code></p>
+</blockquote>
+</div>
+</body>
+</html>

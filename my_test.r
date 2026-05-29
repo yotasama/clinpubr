@@ -703,3 +703,218 @@ clean_data <- get_valid_subset(
 )
 toc()
 dim(clean_data)
+
+
+library(tidyverse)
+library(stringr)
+
+#' 提取任意病史（修正版）
+#' @param text 病历文本
+#' @param disease 疾病关键词（如 "高血压"）
+#' @return 返回 "无"/"有"/"未提及"/"X年"
+extract_history2 <- function(text, disease) {
+  if (is.na(text)) return(NA)
+  
+  # 1. 清理文本：替换标点为空格，压缩多余空白
+  clean_text <- text %>%
+    str_squish() %>%
+    str_replace_all("[,，。；;]", " ")
+  
+  # 2. 否定检测
+  deny_pattern <- paste0("(无|否认|未).{0,20}?", disease)
+  if (str_detect(clean_text, deny_pattern)) {
+    return("无")
+  }
+  
+  # 3. 尝试提取年限（核心修正）
+  # 模式：疾病关键词 + (可选的"病史"或"史") + 任意空白 + 数字 + "年"
+  year_pattern <- paste0(disease, "(病史|史)?\\s*([0-9]+)(?=年)")
+  
+  # 使用 str_match 提取括号内的捕获组
+  # match 结构：整个匹配字符串, 第一组(病史/史), 第二组(数字)
+  match_info <- str_match(clean_text, year_pattern)
+  
+  if (!is.na(match_info[1])) {
+    # 成功提取到年限（捕获组2）
+    return(paste0(match_info[,3], "年"))
+  }
+  
+  # 4. 如果没有年限，检查是否有“有/患”或单纯提及病史
+  affirm_pattern <- paste0("(有|患).{0,20}?", disease)
+  mention_pattern <- paste0(disease, "(病史|史)")
+  
+  if (str_detect(clean_text, affirm_pattern) || str_detect(clean_text, mention_pattern)) {
+    return("有")
+  }
+  
+  # 5. 默认返回NA
+  return("NA")
+}
+
+# 构建模拟数据
+test_data <- data.frame(
+  id = 1:6,
+  SECTION_TEXT = c(
+    # 样例1：截图中的标准混合否定
+    "否认肝炎、结核、疟疾史，否认高血压、心脏病史，否认糖尿病，无手术史，无过敏史。",
+    
+    # 样例2：肯定+具体年限
+    "既往有高血压病史20年，口服降压药控制良好。",
+    
+    # 样例3：肯定手术史，没有明确年限
+    "有阑尾炎切除手术史，否认高血压。",
+    
+    # 样例4：混合的否定+肯定
+    "无高血压、心脏病史，但有糖尿病病史。",
+    
+    # 样例5：纯提及，无明确“有”或“无”
+    "患者高血压病史、冠心病史，无吸烟史。",
+    
+    # 样例6：复杂年限文本
+    "高血压病史10年，吸烟史15年，每天10支，饮酒史5年。"
+  )
+)
+
+disease_list <- c("高血压", "心脏病", "糖尿病", "手术", "肝炎", "吸烟", "饮酒")
+
+# 批量处理
+final_result <- test_data %>%
+  mutate(
+    hypertension = extract_history(SECTION_TEXT, "高血压",return_format = "detailed"),
+    heart_disease = extract_history(SECTION_TEXT, "心脏病",return_format = "detailed"),
+    diabetes = extract_history(SECTION_TEXT, "糖尿病",return_format = "detailed"),
+    surgery = extract_history(SECTION_TEXT, "手术",return_format = "detailed"),
+    hepatitis = extract_history(SECTION_TEXT, "肝炎",return_format = "detailed"),
+    smoking = extract_history(SECTION_TEXT, "吸烟",return_format = "detailed"),
+    drinking = extract_history(SECTION_TEXT, "饮酒",return_format = "detailed")
+  ) %>%
+  ungroup()
+as.data.frame(final_result)
+load_all()
+
+library(tidyverse)
+library(stringr)
+
+# ----------------------------
+# 创建大型测试用例框架
+# ----------------------------
+test_cases <- data.frame(
+  id = 1:100,
+  case_type = "",
+  text = "",
+  expected_hypertension = "",
+  expected_heart_disease = "",
+  expected_diabetes = "",
+  stringsAsFactors = FALSE
+)
+
+# 填充用例 (为了代码简洁，只展示20个高价值用例，你可以追加更多)
+cases <- list()
+
+# 1. 标准否定（无高血压）
+cases[[1]] <- list("否定1", "否认高血压、心脏病史，无糖尿病", "无", "无", "无")
+
+# 2. 标准肯定 + 年限
+cases[[2]] <- list("肯定+年限", "高血压病史20年，吸烟史10年", "20年", NA, NA)
+
+# 3. 肯定但无年限
+cases[[3]] <- list("肯定无年限", "有高血压病史，无心脏病", "有", "无", NA)
+
+# 4. 混合标点分隔
+cases[[4]] <- list("标点混合", "否认高血压;否认心脏病；有糖尿病，吸烟史15年", "无", "无", "有")
+
+# 5. 疾病前有“既往”字眼
+cases[[5]] <- list("既往前缀", "既往高血压病史10年、心脏病史5年", "10年", "5年", NA)
+
+# 6. “无” + 顿号 + “有” 同时出现
+cases[[6]] <- list("混合否定+肯定", "无高血压、心脏病，但有糖尿病史20年", "无", "无", "20年")
+
+# 7. 不规范的年代写法
+cases[[7]] <- list("不完整年限", "高血压病史 10年，糖尿病史10余年", "10年", NA, "10年")
+
+# 8. “否认”后面紧跟疾病，但无空格或标点
+cases[[8]] <- list("紧邻否定", "否认高血压心脏病糖尿病", "无", "无", "无")
+
+# 9. “未”作为否定
+cases[[9]] <- list("否定词'未'", "未发现有高血压，但有糖尿病", "无", NA, "有")
+
+# 10. 仅提及“高血压”，无任何动词
+cases[[10]] <- list("纯提及", "患者高血压，心脏病待排除", "有", "有", NA)
+
+# 11. 年限在句子后面（距离较远）
+cases[[11]] <- list("远距离年限", "高血压病史，服用降压药5年，病程约10年", "10年", NA, NA) # 这里意图是高血压病程10年
+
+# 12. 年限带“余”字
+cases[[12]] <- list("年限带'余'", "高血压病史10余年", "10年", NA, NA)
+
+# 13. 多个疾病共用否定
+cases[[13]] <- list("共用否定", "无高血压、糖尿病、心脏病史", "无", "无", "无")
+
+# 14. 否定词在疾病后面（少见）
+cases[[14]] <- list("倒序否定", "高血压病史否认", "无", NA, NA)
+
+# 15. 句子中穿插无关词
+cases[[15]] <- list("噪声词", "高血压病史20年（已治愈），目前无心脏病", "20年", "无", NA)
+
+# 16. 未提及任何疾病
+cases[[16]] <- list("全未提及", "患者一般情况可，无特殊主诉", NA, NA, NA)
+
+# 17. 手术史冒充疾病（应只提取疾病）
+cases[[17]] <- list("手术干扰", "高血压病史，有阑尾炎手术史", "有", NA, NA)
+
+# 18. 中文数字（尽量避免，但可以测试）——暂不处理，返回“有”
+cases[[18]] <- list("中文数字", "高血压病史二十年", "有", NA, NA)
+
+# 19. 年与数字之间有空行（模拟真实脏数据）
+cases[[19]] <- list("换行符干扰", "高血压病史 \n 20 年", "20年", NA, NA)
+
+# 20. 多种疾病交织
+cases[[20]] <- list("复杂交织", "无高血压、糖尿病，有心脏病病史10年，吸烟史5年", "无", "10年", "无")
+
+# 更多可以继续添加...（此处仅示范20条）
+
+# 将列表转换为数据框行
+for (i in seq_along(cases)) {
+  test_cases[i, "case_type"] <- cases[[i]][[1]]
+  test_cases[i, "text"] <- cases[[i]][[2]]
+  test_cases[i, "expected_hypertension"] <- cases[[i]][[3]]
+  test_cases[i, "expected_heart_disease"] <- cases[[i]][[4]]
+  test_cases[i, "expected_diabetes"] <- cases[[i]][[5]]
+}
+
+# 只保留前20条已填充的（你可以追加更多）
+test_cases <- test_cases[1:20, ]
+
+# ----------------------------
+# 执行测试并对比结果
+# ----------------------------
+test_results <- test_cases %>%
+  mutate(
+    actual_hypertension = extract_history(text, "高血压"),
+    actual_heart_disease = extract_history(text, "心脏病"),
+    actual_diabetes = extract_history(text, "糖尿病"),
+    match_hypertension = actual_hypertension == expected_hypertension|is.na(actual_hypertension) & is.na(expected_hypertension),
+    match_heart_disease = actual_heart_disease == expected_heart_disease|is.na(actual_heart_disease) & is.na(expected_heart_disease),
+    match_diabetes = actual_diabetes == expected_diabetes|is.na(actual_diabetes) & is.na(expected_diabetes),
+    all_match = match_hypertension & match_heart_disease & match_diabetes
+  ) %>%
+  ungroup()
+
+# ----------------------------
+# 输出报告
+# ----------------------------
+# 1. 显示全部测试用例及其结果
+print(test_results[!test_results$all_match, ])
+
+# 2. 统计通过率
+pass_rate <- mean(test_results$all_match)
+cat("\n====================\n")
+cat("总测试用例数: ", nrow(test_results), "\n")
+cat("完全匹配通过率: ", round(pass_rate * 100, 2), "%\n")
+
+# 3. 列出未通过用例
+failures <- test_results %>% filter(!all_match)
+if (nrow(failures) > 0) {
+  cat("\n⚠️ 以下用例未完全通过验证：\n")
+  print(failures[, c("id", "case_type", "text", "expected_hypertension", "actual_hypertension")])
+}
