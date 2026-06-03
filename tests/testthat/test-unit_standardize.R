@@ -138,3 +138,95 @@ test_that("unit_standardize handles edge cases", {
     "`target_unit` is not specified and cannot be inferred from the data!"
   )
 })
+
+# Test extract_numbers parameter with character value column
+# Reference extract_num features: first-match extraction, range strings, negative signs, decimals
+
+test_that("extract_numbers = TRUE extracts first number from character strings", {
+  df <- data.frame(
+    subject = c("a", "a", "a", "a"),
+    value = c("12.5mg", "5-10u", "1.2 (high)", "-0.5C"),
+    unit = c("x", "x", "x", "x")
+  )
+  change_rules <- list(
+    list(subject = "a", target_unit = "y", units2change = c("x"), coeffs = c(2))
+  )
+  expect_warning(
+    result <- unit_standardize(df, "subject", "value", "unit", change_rules, extract_numbers = TRUE),
+    "is not numeric"
+  )
+  expect_equal(result$unit, rep("y", 4))
+  # extract_num first mode: 12.5, 5, 1.2, -0.5; then *2
+  expect_equal(as.numeric(result$value), c(25, 10, 2.4, -1))
+})
+
+test_that("extract_numbers = FALSE falls back to as.numeric conversion", {
+  df <- data.frame(
+    subject = c("a", "a"),
+    value = c("10", "abc"),
+    unit = c("x", "x")
+  )
+  change_rules <- list(
+    list(subject = "a", target_unit = "y", units2change = c("x"), coeffs = c(1))
+  )
+  expect_warning(
+    result <- unit_standardize(df, "subject", "value", "unit", change_rules, extract_numbers = FALSE),
+    "is not numeric"
+  )
+  expect_equal(result$unit, rep("y", 2))
+  expect_equal(as.numeric(result$value), c(10, NA))
+})
+
+# Test NA edge cases in subject_col and value_col (lines 94-104)
+
+test_that("unit_standardize warns and excludes rows with NA subject_col", {
+  df <- data.frame(
+    subject = c("a", NA, "a"),
+    value = c(1, 2, 3),
+    unit = c("x", "x", "x")
+  )
+  change_rules <- list(
+    list(subject = "a", target_unit = "y", units2change = c("x"), coeffs = c(1))
+  )
+  expect_warning(
+    result <- unit_standardize(df, "subject", "value", "unit", change_rules),
+    "Some subjects in `df` are NA"
+  )
+  expect_equal(nrow(result), 2)
+  expect_equal(result$subject, c("a", "a"))
+})
+
+test_that("unit_standardize warns and excludes rows with NA value_col", {
+  df <- data.frame(
+    subject = c("a", "a", "a"),
+    value = c(1, NA, 3),
+    unit = c("x", "x", "x")
+  )
+  change_rules <- list(
+    list(subject = "a", target_unit = "y", units2change = c("x"), coeffs = c(1))
+  )
+  expect_warning(
+    result <- unit_standardize(df, "subject", "value", "unit", change_rules),
+    "Some values in `df` are NA"
+  )
+  expect_equal(nrow(result), 2)
+  expect_equal(result$value, c(1, 3))
+})
+
+test_that("unit_standardize warns and excludes rows with NA in both subject_col and value_col", {
+  df <- data.frame(
+    subject = c("a", NA, "a"),
+    value = c(1, 2, NA),
+    unit = c("x", "x", "x")
+  )
+  change_rules <- list(
+    list(subject = "a", target_unit = "y", units2change = c("x"), coeffs = c(1))
+  )
+  expect_warning(
+    result <- unit_standardize(df, "subject", "value", "unit", change_rules),
+    "Some subjects in `df` are NA"
+  )
+  expect_equal(nrow(result), 1)
+  expect_equal(result$subject, "a")
+  expect_equal(result$value, 1)
+})

@@ -1,3 +1,7 @@
+# clinpubr 1.4.1
+
+* Fixed a bug in `unit_standardize()` that `extract_numbers` would not work as expected.
+
 # clinpubr 1.4.0
 
 * Added vignettes:

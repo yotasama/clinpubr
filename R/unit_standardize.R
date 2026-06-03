@@ -91,9 +91,21 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules,
                              extract_numbers = FALSE, verbose = FALSE) {
   .validate_inputs(df, subject_col, value_col, unit_col)
 
+  # exclude invalid subjects
+  if (any(is.na(df[[subject_col]]))) {
+    warning("Some subjects in `df` are NA. These rows will be excluded.")
+    df <- df %>% dplyr::filter(!is.na(!!sym(subject_col)))
+  }
+
+  # exclude invalid values
+  if (any(is.na(df[[value_col]]))) {
+    warning("Some values in `df` are NA. These rows will be excluded.")
+    df <- df %>% dplyr::filter(!is.na(!!sym(value_col)))
+  }
+
   # Convert value_col to numeric if needed
   if (!is.numeric(df[[value_col]])) {
-    df[[value_col]] <- suppressWarnings(as.numeric(df[[value_col]]))
+    warning(sprintf("`%s` is not numeric. It will be converted to numeric.", value_col))
   }
 
   change_rules <- .parse_change_rules(change_rules, df, subject_col, verbose)
@@ -290,7 +302,7 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules,
         if (extract_numbers) {
           subject_values[unit_idx] <- extract_num(subject_values[unit_idx]) * coeff
         } else {
-          subject_values[unit_idx] <- subject_values[unit_idx] * coeff
+          subject_values[unit_idx] <- suppressWarnings(as.numeric(subject_values[unit_idx])) * coeff
         }
       }
     }
