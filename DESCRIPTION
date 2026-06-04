@@ -15,8 +15,8 @@ BugReports: https://github.com/yotasama/clinpubr/issues
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Collate: 
+    'RcppExports.R'
     'answer_check.R'
     'baseline_table.R'
     'calculate_index.R'
@@ -31,6 +31,7 @@ Collate:
     'extract_num.R'
     'get_valid.R'
     'get_valid_subset.R'
+    'group_by_range.R'
     'importance_plot.R'
     'initial_cleaning.R'
     'interactions.R'
@@ -47,7 +48,10 @@ Collate:
     'time_roc.R'
     'to_date.R'
     'unit_standardize.R'
+LinkingTo: 
+    Rcpp
 Imports: 
+    Rcpp,
     broom,
     car,
     data.table,
@@ -81,3 +85,4 @@ Suggests:
     withr
 VignetteBuilder: knitr
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0

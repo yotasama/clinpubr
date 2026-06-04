@@ -1,5 +1,7 @@
 # clinpubr 1.4.1
 
+* Added `group_by_range()` to group data frames by time ranges.
+
 * Fixed a bug in `unit_standardize()` that `extract_numbers` would not work as expected.
 
 # clinpubr 1.4.0
