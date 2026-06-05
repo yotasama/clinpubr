@@ -345,7 +345,7 @@ str_match_replace <- function(x, to_match, to_replace) {
 #'   agg_fun = max
 #' )
 to_wide <- function(df, keys, item_col, value_col, items = NULL, agg_fun = get_valid) {
-  if (!is.data.frame(df)) {
+  if (!is.data.frame(df) && !inherits(df, "dtplyr_step")) {
     stop("`df` must be a data frame.")
   }
   if (!is.character(keys) || length(keys) == 0) {
@@ -362,7 +362,8 @@ to_wide <- function(df, keys, item_col, value_col, items = NULL, agg_fun = get_v
   }
 
   required_cols <- unique(c(keys, item_col, value_col))
-  missing_cols <- setdiff(required_cols, colnames(df))
+  df_names <- if (inherits(df, "dtplyr_step")) df$vars else colnames(df)
+  missing_cols <- setdiff(required_cols, df_names)
   if (length(missing_cols) > 0) {
     stop("Missing columns in `df`: ", paste(missing_cols, collapse = ", "))
   }
@@ -377,9 +378,10 @@ to_wide <- function(df, keys, item_col, value_col, items = NULL, agg_fun = get_v
       dplyr::mutate(!!rlang::sym(item_col) := factor(!!rlang::sym(item_col), levels = items))
   }
 
+  agg_call <- rlang::call2(agg_fun, rlang::sym(value_col))
   res <- df %>%
     dplyr::group_by(dplyr::across(dplyr::all_of(c(keys, item_col)))) %>%
-    dplyr::summarise(.value = agg_fun(.data[[value_col]]), .groups = "drop") %>%
+    dplyr::summarise(.value = !!agg_call, .groups = "drop") %>%
     tidyr::pivot_wider(
       names_from = !!rlang::sym(item_col),
       values_from = .value,
