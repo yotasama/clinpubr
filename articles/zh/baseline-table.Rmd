@@ -250,10 +250,4 @@ knitr::kable(baseline_final$missing, caption = "最终缺失数据汇总")
 4. **多组两两比较时使用 BH 校正**——控制假阳性率
 
 ---
-
-> **相关文章推荐**
->
-> - [数据清洗实战：从杂乱的实验室数据到分析就绪数据集](data-cleaning.html)
-> - [回归分析与可视化完全指南](regression-analysis.html)
->
-> **安装 clinpubr**：`devtools::install_github("niuyu1993/clinpubr")`
+> **安装 clinpubr**：`install.packages("clinpubr", dependencies = TRUE)`

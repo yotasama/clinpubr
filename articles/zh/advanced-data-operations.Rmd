@@ -424,10 +424,4 @@ knitr::kable(head(joined_result), caption = "合并后的输出")
 | 工具函数 | 字符串标准化、列表操作、NA 填充 |
 
 ---
-
-> **相关文章推荐**
->
-> - [数据清洗实战：从杂乱的实验室数据到分析就绪数据集](data-cleaning.html)
-> - [基线特征表（Table 1）一键生成指南](baseline-table.html)
->
-> **安装 clinpubr**：`devtools::install_github("niuyu1993/clinpubr")`
+> **安装 clinpubr**：`install.packages("clinpubr", dependencies = TRUE)`

@@ -355,6 +355,8 @@ display: none;
 
 
 <pre class="r"><code>library(clinpubr)
+#&gt; Error in `library()`:
+#&gt; ! 不存在叫&#39;clinpubr&#39;这个名称的程序包
 library(dplyr)
 library(survival)</code></pre>
 <blockquote>
@@ -636,25 +638,12 @@ Fisher 精确检验）</li>
 <li><strong>省略变量（Omitted）</strong>：水平数过多的变量</li>
 </ul>
 <pre class="r"><code>var_types &lt;- get_var_types(cancer, strata = &quot;sex&quot;)
+#&gt; Error in `get_var_types()`:
+#&gt; ! 没有&quot;get_var_types&quot;这个函数
 
 var_types
-#&gt; $factor_vars
-#&gt; [1] &quot;status&quot;      &quot;sex&quot;         &quot;ph.ecog&quot;     &quot;age_group&quot;   &quot;ph.ecog_cat&quot;
-#&gt; 
-#&gt; $exact_vars
-#&gt; [1] &quot;ph.ecog&quot;
-#&gt; 
-#&gt; $nonnormal_vars
-#&gt; [1] &quot;inst&quot;      &quot;time&quot;      &quot;ph.karno&quot;  &quot;pat.karno&quot; &quot;meal.cal&quot;  &quot;wt.loss&quot;  
-#&gt; 
-#&gt; $omit_vars
-#&gt; NULL
-#&gt; 
-#&gt; $strata
-#&gt; [1] &quot;sex&quot;
-#&gt; 
-#&gt; attr(,&quot;class&quot;)
-#&gt; [1] &quot;var_types&quot;</code></pre>
+#&gt; Error:
+#&gt; ! 找不到对象&#39;var_types&#39;</code></pre>
 <div id="自定义分类阈值" class="section level3">
 <h3>自定义分类阈值</h3>
 <p>你可以调整自动分类的阈值参数：</p>
@@ -665,26 +654,12 @@ var_types
   omit_factor_above = 15, # 水平数 &gt;15 的因子将被省略
   norm_test_by_group = TRUE # 在每个分层内进行正态性检验
 )
+#&gt; Error in `get_var_types()`:
+#&gt; ! 没有&quot;get_var_types&quot;这个函数
 
 var_types_custom
-#&gt; $factor_vars
-#&gt; [1] &quot;status&quot;      &quot;sex&quot;         &quot;ph.ecog&quot;     &quot;ph.karno&quot;    &quot;pat.karno&quot;  
-#&gt; [6] &quot;age_group&quot;   &quot;ph.ecog_cat&quot;
-#&gt; 
-#&gt; $exact_vars
-#&gt; [1] &quot;ph.ecog&quot;   &quot;ph.karno&quot;  &quot;pat.karno&quot;
-#&gt; 
-#&gt; $nonnormal_vars
-#&gt; [1] &quot;inst&quot;     &quot;time&quot;     &quot;meal.cal&quot; &quot;wt.loss&quot; 
-#&gt; 
-#&gt; $omit_vars
-#&gt; NULL
-#&gt; 
-#&gt; $strata
-#&gt; [1] &quot;sex&quot;
-#&gt; 
-#&gt; attr(,&quot;class&quot;)
-#&gt; [1] &quot;var_types&quot;</code></pre>
+#&gt; Error:
+#&gt; ! 找不到对象&#39;var_types_custom&#39;</code></pre>
 <p>保存 QQ 图用于人工审核正态性检验（可选）：</p>
 <pre class="r"><code># var_types_with_plots &lt;- get_var_types(
 #   cancer, strata = &quot;sex&quot;,
@@ -704,215 +679,12 @@ Fisher）：</p>
   var_types = var_types,
   save_table = FALSE
 )
+#&gt; Error in `baseline_table()`:
+#&gt; ! 没有&quot;baseline_table&quot;这个函数
 
-knitr::kable(baseline_result$baseline, caption = &quot;按性别分组的基线特征表&quot;)</code></pre>
-<table>
-<caption>按性别分组的基线特征表</caption>
-<colgroup>
-<col width="21%" />
-<col width="22%" />
-<col width="22%" />
-<col width="21%" />
-<col width="5%" />
-<col width="6%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="left"></th>
-<th align="left">Overall</th>
-<th align="left">sex: 1</th>
-<th align="left">sex: 2</th>
-<th align="left">p</th>
-<th align="left">test</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">n</td>
-<td align="left">228</td>
-<td align="left">138</td>
-<td align="left">90</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">inst (median [IQR])</td>
-<td align="left">11.00 [3.00, 16.00]</td>
-<td align="left">11.00 [3.00, 15.00]</td>
-<td align="left">11.00 [3.25, 16.00]</td>
-<td align="left">0.416</td>
-<td align="left">nonnorm</td>
-</tr>
-<tr class="odd">
-<td align="left">time (median [IQR])</td>
-<td align="left">255.50 [166.75, 396.50]</td>
-<td align="left">224.00 [144.75, 369.25]</td>
-<td align="left">292.50 [195.25, 448.50]</td>
-<td align="left">0.013</td>
-<td align="left">nonnorm</td>
-</tr>
-<tr class="even">
-<td align="left">status = 2 (%)</td>
-<td align="left">165 (72.4)</td>
-<td align="left">112 (81.2)</td>
-<td align="left">53 (58.9)</td>
-<td align="left">&lt;0.001</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">age (mean (SD))</td>
-<td align="left">62.45 (9.07)</td>
-<td align="left">63.34 (9.14)</td>
-<td align="left">61.08 (8.85)</td>
-<td align="left">0.064</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">ph.ecog (%)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">0.819</td>
-<td align="left">exact</td>
-</tr>
-<tr class="odd">
-<td align="left">0</td>
-<td align="left">63 (27.8)</td>
-<td align="left">36 (26.3)</td>
-<td align="left">27 (30.0)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">1</td>
-<td align="left">113 (49.8)</td>
-<td align="left">71 (51.8)</td>
-<td align="left">42 (46.7)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">2</td>
-<td align="left">50 (22.0)</td>
-<td align="left">29 (21.2)</td>
-<td align="left">21 (23.3)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">3</td>
-<td align="left">1 (0.4)</td>
-<td align="left">1 (0.7)</td>
-<td align="left">0 (0.0)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">ph.karno (median [IQR])</td>
-<td align="left">80.00 [75.00, 90.00]</td>
-<td align="left">80.00 [70.00, 90.00]</td>
-<td align="left">80.00 [80.00, 90.00]</td>
-<td align="left">0.882</td>
-<td align="left">nonnorm</td>
-</tr>
-<tr class="even">
-<td align="left">pat.karno (median [IQR])</td>
-<td align="left">80.00 [70.00, 90.00]</td>
-<td align="left">80.00 [70.00, 90.00]</td>
-<td align="left">80.00 [70.00, 90.00]</td>
-<td align="left">0.332</td>
-<td align="left">nonnorm</td>
-</tr>
-<tr class="odd">
-<td align="left">meal.cal (median [IQR])</td>
-<td align="left">1025.00 [630.00, 1137.50]</td>
-<td align="left">1025.00 [730.25, 1175.00]</td>
-<td align="left">925.00 [588.00, 1060.00]</td>
-<td align="left">0.062</td>
-<td align="left">nonnorm</td>
-</tr>
-<tr class="even">
-<td align="left">wt.loss (median [IQR])</td>
-<td align="left">6.50 [0.00, 15.00]</td>
-<td align="left">9.00 [0.25, 20.00]</td>
-<td align="left">4.00 [0.00, 11.00]</td>
-<td align="left">0.031</td>
-<td align="left">nonnorm</td>
-</tr>
-<tr class="odd">
-<td align="left">age_group (%)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">0.188</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">&lt;50</td>
-<td align="left">26 (11.4)</td>
-<td align="left">14 (10.1)</td>
-<td align="left">12 (13.3)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">50-60</td>
-<td align="left">68 (29.8)</td>
-<td align="left">35 (25.4)</td>
-<td align="left">33 (36.7)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">60-70</td>
-<td align="left">88 (38.6)</td>
-<td align="left">58 (42.0)</td>
-<td align="left">30 (33.3)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">&gt;70</td>
-<td align="left">46 (20.2)</td>
-<td align="left">31 (22.5)</td>
-<td align="left">15 (16.7)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">ph.ecog_cat (%)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">0.737</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">0</td>
-<td align="left">63 (27.8)</td>
-<td align="left">36 (26.3)</td>
-<td align="left">27 (30.0)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">1</td>
-<td align="left">113 (49.8)</td>
-<td align="left">71 (51.8)</td>
-<td align="left">42 (46.7)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">&gt;=2</td>
-<td align="left">51 (22.5)</td>
-<td align="left">30 (21.9)</td>
-<td align="left">21 (23.3)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-</tbody>
-</table>
+knitr::kable(baseline_result$baseline, caption = &quot;按性别分组的基线特征表&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;baseline_result&#39;</code></pre>
 </div>
 <div id="多组比较" class="section level3">
 <h3>多组比较</h3>
@@ -925,6 +697,8 @@ cancer$ph.ecog_cat &lt;- factor(cancer$ph.ecog,
 )
 
 var_types_ecog &lt;- get_var_types(cancer, strata = &quot;ph.ecog_cat&quot;)
+#&gt; Error in `get_var_types()`:
+#&gt; ! 没有&quot;get_var_types&quot;这个函数
 
 baseline_multi &lt;- baseline_table(
   cancer,
@@ -933,248 +707,15 @@ baseline_multi &lt;- baseline_table(
   multiple_comparison_test = TRUE,
   p_adjust_method = &quot;BH&quot;
 )
+#&gt; Error in `baseline_table()`:
+#&gt; ! 没有&quot;baseline_table&quot;这个函数
 
-knitr::kable(baseline_multi$baseline, caption = &quot;按 ECOG 评分分组的基线特征表&quot;)</code></pre>
-<table>
-<caption>按 ECOG 评分分组的基线特征表</caption>
-<colgroup>
-<col width="17%" />
-<col width="17%" />
-<col width="18%" />
-<col width="18%" />
-<col width="17%" />
-<col width="4%" />
-<col width="5%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="left"></th>
-<th align="left">Overall</th>
-<th align="left">ph.ecog_cat: 0</th>
-<th align="left">ph.ecog_cat: 1</th>
-<th align="left">ph.ecog_cat: &gt;=2</th>
-<th align="left">p</th>
-<th align="left">test</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">n</td>
-<td align="left">228</td>
-<td align="left">63</td>
-<td align="left">113</td>
-<td align="left">51</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">inst (median [IQR])</td>
-<td align="left">11.00 [3.00, 16.00]</td>
-<td align="left">7.00 [3.00, 13.00]</td>
-<td align="left">11.00 [5.00, 15.00]</td>
-<td align="left">11.50 [3.25, 16.00]</td>
-<td align="left">0.254</td>
-<td align="left">nonnorm</td>
-</tr>
-<tr class="odd">
-<td align="left">time (median [IQR])</td>
-<td align="left">255.50 [166.75, 396.50]</td>
-<td align="left">303.00 [224.50, 437.50]</td>
-<td align="left">243.00 [177.00, 426.00]</td>
-<td align="left">180.00 [100.00, 301.00]</td>
-<td align="left">0.001</td>
-<td align="left">nonnorm</td>
-</tr>
-<tr class="even">
-<td align="left">status = 2 (%)</td>
-<td align="left">165 (72.4)</td>
-<td align="left">37 (58.7)</td>
-<td align="left">82 (72.6)</td>
-<td align="left">45 (88.2)</td>
-<td align="left">0.002</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">age (median [IQR])</td>
-<td align="left">63.00 [56.00, 69.00]</td>
-<td align="left">61.00 [56.50, 68.00]</td>
-<td align="left">63.00 [55.00, 68.00]</td>
-<td align="left">68.00 [60.50, 73.00]</td>
-<td align="left">0.002</td>
-<td align="left">nonnorm</td>
-</tr>
-<tr class="even">
-<td align="left">sex = 2 (%)</td>
-<td align="left">90 (39.5)</td>
-<td align="left">27 (42.9)</td>
-<td align="left">42 (37.2)</td>
-<td align="left">21 (41.2)</td>
-<td align="left">0.737</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">ph.ecog (%)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">&lt;0.001</td>
-<td align="left">exact</td>
-</tr>
-<tr class="even">
-<td align="left">0</td>
-<td align="left">63 (27.8)</td>
-<td align="left">63 (100.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">1</td>
-<td align="left">113 (49.8)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">113 (100.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">2</td>
-<td align="left">50 (22.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">50 (98.0)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">3</td>
-<td align="left">1 (0.4)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">1 (2.0)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">ph.karno (median [IQR])</td>
-<td align="left">80.00 [75.00, 90.00]</td>
-<td align="left">90.00 [90.00, 100.00]</td>
-<td align="left">80.00 [80.00, 90.00]</td>
-<td align="left">70.00 [60.00, 70.00]</td>
-<td align="left">&lt;0.001</td>
-<td align="left">nonnorm</td>
-</tr>
-<tr class="odd">
-<td align="left">pat.karno (median [IQR])</td>
-<td align="left">80.00 [70.00, 90.00]</td>
-<td align="left">90.00 [80.00, 90.00]</td>
-<td align="left">80.00 [70.00, 90.00]</td>
-<td align="left">60.00 [60.00, 70.00]</td>
-<td align="left">&lt;0.001</td>
-<td align="left">nonnorm</td>
-</tr>
-<tr class="even">
-<td align="left">meal.cal (median [IQR])</td>
-<td align="left">975.00 [635.00, 1150.00]</td>
-<td align="left">1000.00 [653.75, 1175.00]</td>
-<td align="left">1025.00 [825.00, 1150.00]</td>
-<td align="left">796.50 [472.00, 1075.00]</td>
-<td align="left">0.037</td>
-<td align="left">nonnorm</td>
-</tr>
-<tr class="odd">
-<td align="left">wt.loss (median [IQR])</td>
-<td align="left">7.00 [0.00, 15.75]</td>
-<td align="left">4.00 [0.00, 10.00]</td>
-<td align="left">6.00 [0.00, 15.00]</td>
-<td align="left">10.50 [3.50, 22.75]</td>
-<td align="left">0.009</td>
-<td align="left">nonnorm</td>
-</tr>
-</tbody>
-</table>
-<pre class="r"><code>knitr::kable(baseline_multi$pairwise, caption = &quot;两两比较 P 值&quot;)</code></pre>
-<table>
-<caption>两两比较 P 值</caption>
-<colgroup>
-<col width="9%" />
-<col width="28%" />
-<col width="30%" />
-<col width="30%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="left"></th>
-<th align="right">ph.ecog_cat: 0_ph.ecog_cat: 1</th>
-<th align="right">ph.ecog_cat: 0_ph.ecog_cat: &gt;=2</th>
-<th align="right">ph.ecog_cat: 1_ph.ecog_cat: &gt;=2</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">inst</td>
-<td align="right">0.2225074</td>
-<td align="right">0.2225074</td>
-<td align="right">0.7774247</td>
-</tr>
-<tr class="even">
-<td align="left">time</td>
-<td align="right">0.1457843</td>
-<td align="right">0.0008158</td>
-<td align="right">0.0101101</td>
-</tr>
-<tr class="odd">
-<td align="left">status</td>
-<td align="right">0.0868062</td>
-<td align="right">0.0031545</td>
-<td align="right">0.0650124</td>
-</tr>
-<tr class="even">
-<td align="left">age</td>
-<td align="right">0.8454807</td>
-<td align="right">0.0029606</td>
-<td align="right">0.0029606</td>
-</tr>
-<tr class="odd">
-<td align="left">sex</td>
-<td align="right">1.0000000</td>
-<td align="right">1.0000000</td>
-<td align="right">1.0000000</td>
-</tr>
-<tr class="even">
-<td align="left">ph.ecog</td>
-<td align="right">0.0001000</td>
-<td align="right">0.0001000</td>
-<td align="right">0.0001000</td>
-</tr>
-<tr class="odd">
-<td align="left">ph.karno</td>
-<td align="right">0.0000000</td>
-<td align="right">0.0000000</td>
-<td align="right">0.0000000</td>
-</tr>
-<tr class="even">
-<td align="left">pat.karno</td>
-<td align="right">0.0136468</td>
-<td align="right">0.0000000</td>
-<td align="right">0.0000000</td>
-</tr>
-<tr class="odd">
-<td align="left">meal.cal</td>
-<td align="right">0.5094785</td>
-<td align="right">0.1265793</td>
-<td align="right">0.0316249</td>
-</tr>
-<tr class="even">
-<td align="left">wt.loss</td>
-<td align="right">0.0907856</td>
-<td align="right">0.0062612</td>
-<td align="right">0.0907856</td>
-</tr>
-</tbody>
-</table>
+knitr::kable(baseline_multi$baseline, caption = &quot;按 ECOG 评分分组的基线特征表&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;baseline_multi&#39;
+knitr::kable(baseline_multi$pairwise, caption = &quot;两两比较 P 值&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;baseline_multi&#39;</code></pre>
 </div>
 <div id="自定义表格" class="section level3">
 <h3>自定义表格</h3>
@@ -1187,229 +728,18 @@ knitr::kable(baseline_multi$baseline, caption = &quot;按 ECOG 评分分组的�
   omit_missing_strata = TRUE,
   seed = 123
 )
+#&gt; Error in `baseline_table()`:
+#&gt; ! 没有&quot;baseline_table&quot;这个函数
 
-knitr::kable(baseline_custom$baseline, caption = &quot;自定义基线特征表&quot;)</code></pre>
-<table>
-<caption>自定义基线特征表</caption>
-<colgroup>
-<col width="20%" />
-<col width="20%" />
-<col width="21%" />
-<col width="20%" />
-<col width="5%" />
-<col width="6%" />
-<col width="5%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="left"></th>
-<th align="left">Overall</th>
-<th align="left">sex: 1</th>
-<th align="left">sex: 2</th>
-<th align="left">p</th>
-<th align="left">test</th>
-<th align="left">SMD</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">n</td>
-<td align="left">228</td>
-<td align="left">138</td>
-<td align="left">90</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">age (mean (SD))</td>
-<td align="left">62.45 (9.07)</td>
-<td align="left">63.34 (9.14)</td>
-<td align="left">61.08 (8.85)</td>
-<td align="left">0.064</td>
-<td align="left"></td>
-<td align="left">0.252</td>
-</tr>
-<tr class="odd">
-<td align="left">wt.loss (median [IQR])</td>
-<td align="left">7.00 [0.00, 15.75]</td>
-<td align="left">8.00 [0.75, 18.50]</td>
-<td align="left">4.00 [0.00, 11.00]</td>
-<td align="left">0.029</td>
-<td align="left">nonnorm</td>
-<td align="left">0.264</td>
-</tr>
-<tr class="even">
-<td align="left">meal.cal (median [IQR])</td>
-<td align="left">975.00 [635.00, 1150.00]</td>
-<td align="left">1025.00 [768.00, 1175.00]</td>
-<td align="left">925.00 [588.00, 1067.50]</td>
-<td align="left">0.022</td>
-<td align="left">nonnorm</td>
-<td align="left">0.357</td>
-</tr>
-<tr class="odd">
-<td align="left">ph.ecog (%)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">0.822</td>
-<td align="left">exact</td>
-<td align="left">0.165</td>
-</tr>
-<tr class="even">
-<td align="left">0</td>
-<td align="left">63 (27.8)</td>
-<td align="left">36 (26.3)</td>
-<td align="left">27 (30.0)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">1</td>
-<td align="left">113 (49.8)</td>
-<td align="left">71 (51.8)</td>
-<td align="left">42 (46.7)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">2</td>
-<td align="left">50 (22.0)</td>
-<td align="left">29 (21.2)</td>
-<td align="left">21 (23.3)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">3</td>
-<td align="left">1 (0.4)</td>
-<td align="left">1 (0.7)</td>
-<td align="left">0 (0.0)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-</tbody>
-</table>
+knitr::kable(baseline_custom$baseline, caption = &quot;自定义基线特征表&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;baseline_custom&#39;</code></pre>
 </div>
 <div id="缺失数据汇总" class="section level3">
 <h3>缺失数据汇总</h3>
-<pre class="r"><code>knitr::kable(baseline_result$missing, caption = &quot;缺失数据汇总&quot;)</code></pre>
-<table>
-<caption>缺失数据汇总</caption>
-<thead>
-<tr class="header">
-<th align="left"></th>
-<th align="left">Overall</th>
-<th align="left">sex: 1</th>
-<th align="left">sex: 2</th>
-<th align="left">p</th>
-<th align="left">test</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">n</td>
-<td align="left">228</td>
-<td align="left">138</td>
-<td align="left">90</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">inst = TRUE (%)</td>
-<td align="left">1 (0.4)</td>
-<td align="left">1 (0.7)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">1.000</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">time = TRUE (%)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">NaN</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">status = TRUE (%)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">NaN</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">age = TRUE (%)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">NaN</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">ph.ecog = TRUE (%)</td>
-<td align="left">1 (0.4)</td>
-<td align="left">1 (0.7)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">1.000</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">ph.karno = TRUE (%)</td>
-<td align="left">1 (0.4)</td>
-<td align="left">1 (0.7)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">1.000</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">pat.karno = TRUE (%)</td>
-<td align="left">3 (1.3)</td>
-<td align="left">2 (1.4)</td>
-<td align="left">1 (1.1)</td>
-<td align="left">1.000</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">meal.cal = TRUE (%)</td>
-<td align="left">69 (30.3)</td>
-<td align="left">36 (26.1)</td>
-<td align="left">33 (36.7)</td>
-<td align="left">0.121</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">wt.loss = TRUE (%)</td>
-<td align="left">34 (14.9)</td>
-<td align="left">24 (17.4)</td>
-<td align="left">10 (11.1)</td>
-<td align="left">0.267</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">age_group = TRUE (%)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">NaN</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">ph.ecog_cat = TRUE (%)</td>
-<td align="left">1 (0.4)</td>
-<td align="left">1 (0.7)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">1.000</td>
-<td align="left"></td>
-</tr>
-</tbody>
-</table>
+<pre class="r"><code>knitr::kable(baseline_result$missing, caption = &quot;缺失数据汇总&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;baseline_result&#39;</code></pre>
 </div>
 </div>
 <div id="人工覆盖自动分类" class="section level2">
@@ -1422,239 +752,12 @@ knitr::kable(baseline_custom$baseline, caption = &quot;自定义基线特征表&
   nonnormal_vars = c(&quot;age&quot;),
   exact_vars = c(&quot;ph.ecog&quot;)
 )
+#&gt; Error in `baseline_table()`:
+#&gt; ! 没有&quot;baseline_table&quot;这个函数
 
-knitr::kable(baseline_manual$baseline, caption = &quot;人工覆盖后的基线特征表&quot;)</code></pre>
-<table>
-<caption>人工覆盖后的基线特征表</caption>
-<colgroup>
-<col width="21%" />
-<col width="21%" />
-<col width="21%" />
-<col width="21%" />
-<col width="7%" />
-<col width="8%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="left"></th>
-<th align="left">Overall</th>
-<th align="left">sex: 1</th>
-<th align="left">sex: 2</th>
-<th align="left">p</th>
-<th align="left">test</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">n</td>
-<td align="left">228</td>
-<td align="left">138</td>
-<td align="left">90</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">inst (mean (SD))</td>
-<td align="left">11.09 (8.30)</td>
-<td align="left">10.56 (7.80)</td>
-<td align="left">11.89 (9.00)</td>
-<td align="left">0.254</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">time (mean (SD))</td>
-<td align="left">305.23 (210.65)</td>
-<td align="left">283.23 (213.05)</td>
-<td align="left">338.97 (203.47)</td>
-<td align="left">0.049</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">status (mean (SD))</td>
-<td align="left">1.72 (0.45)</td>
-<td align="left">1.81 (0.39)</td>
-<td align="left">1.59 (0.49)</td>
-<td align="left">&lt;0.001</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">age (median [IQR])</td>
-<td align="left">63.00 [56.00, 69.00]</td>
-<td align="left">64.00 [57.00, 70.00]</td>
-<td align="left">61.00 [55.00, 68.00]</td>
-<td align="left">0.057</td>
-<td align="left">nonnorm</td>
-</tr>
-<tr class="even">
-<td align="left">ph.ecog (%)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">0.822</td>
-<td align="left">exact</td>
-</tr>
-<tr class="odd">
-<td align="left">0</td>
-<td align="left">63 (27.8)</td>
-<td align="left">36 (26.3)</td>
-<td align="left">27 (30.0)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">1</td>
-<td align="left">113 (49.8)</td>
-<td align="left">71 (51.8)</td>
-<td align="left">42 (46.7)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">2</td>
-<td align="left">50 (22.0)</td>
-<td align="left">29 (21.2)</td>
-<td align="left">21 (23.3)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">3</td>
-<td align="left">1 (0.4)</td>
-<td align="left">1 (0.7)</td>
-<td align="left">0 (0.0)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">ph.karno (mean (SD))</td>
-<td align="left">81.94 (12.33)</td>
-<td align="left">81.82 (12.38)</td>
-<td align="left">82.11 (12.32)</td>
-<td align="left">0.864</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">pat.karno (%)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">0.636</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">30</td>
-<td align="left">2 (0.9)</td>
-<td align="left">1 (0.7)</td>
-<td align="left">1 (1.1)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">40</td>
-<td align="left">2 (0.9)</td>
-<td align="left">1 (0.7)</td>
-<td align="left">1 (1.1)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">50</td>
-<td align="left">4 (1.8)</td>
-<td align="left">2 (1.5)</td>
-<td align="left">2 (2.2)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">60</td>
-<td align="left">30 (13.3)</td>
-<td align="left">18 (13.2)</td>
-<td align="left">12 (13.5)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">70</td>
-<td align="left">41 (18.2)</td>
-<td align="left">30 (22.1)</td>
-<td align="left">11 (12.4)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">80</td>
-<td align="left">51 (22.7)</td>
-<td align="left">32 (23.5)</td>
-<td align="left">19 (21.3)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">90</td>
-<td align="left">60 (26.7)</td>
-<td align="left">31 (22.8)</td>
-<td align="left">29 (32.6)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">100</td>
-<td align="left">35 (15.6)</td>
-<td align="left">21 (15.4)</td>
-<td align="left">14 (15.7)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">meal.cal (mean (SD))</td>
-<td align="left">928.78 (402.17)</td>
-<td align="left">980.54 (413.26)</td>
-<td align="left">840.70 (369.08)</td>
-<td align="left">0.020</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">wt.loss (mean (SD))</td>
-<td align="left">9.83 (13.14)</td>
-<td align="left">11.22 (12.98)</td>
-<td align="left">7.77 (13.18)</td>
-<td align="left">0.060</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">ph.ecog_cat (%)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">0.737</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">0</td>
-<td align="left">63 (27.8)</td>
-<td align="left">36 (26.3)</td>
-<td align="left">27 (30.0)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">1</td>
-<td align="left">113 (49.8)</td>
-<td align="left">71 (51.8)</td>
-<td align="left">42 (46.7)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">&gt;=2</td>
-<td align="left">51 (22.5)</td>
-<td align="left">30 (21.9)</td>
-<td align="left">21 (23.3)</td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-</tbody>
-</table>
+knitr::kable(baseline_manual$baseline, caption = &quot;人工覆盖后的基线特征表&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;baseline_manual&#39;</code></pre>
 </div>
 <div id="保存结果" class="section level2">
 <h2>保存结果</h2>
@@ -1684,6 +787,8 @@ cancer_clean &lt;- cancer %&gt;%
 
 # 第 2 步：判定变量类型
 var_types &lt;- get_var_types(cancer_clean, strata = &quot;sex&quot;, num_to_factor = 5)
+#&gt; Error in `get_var_types()`:
+#&gt; ! 没有&quot;get_var_types&quot;这个函数
 
 # 第 3 步：审核分类结果
 knitr::kable(data.frame(
@@ -1693,406 +798,26 @@ knitr::kable(data.frame(
     paste(var_types$nonnormal_vars, collapse = &quot;, &quot;),
     paste(var_types$exact_vars, collapse = &quot;, &quot;)
   )
-), caption = &quot;变量类型审核&quot;)</code></pre>
-<table>
-<caption>变量类型审核</caption>
-<thead>
-<tr class="header">
-<th align="left">Variable_Type</th>
-<th align="left">Variables</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">Factor</td>
-<td align="left">status, sex, ph.ecog, age_group, ph.ecog_cat</td>
-</tr>
-<tr class="even">
-<td align="left">Non-normal</td>
-<td align="left">inst, time, ph.karno, pat.karno, meal.cal, wt.loss</td>
-</tr>
-<tr class="odd">
-<td align="left">Exact</td>
-<td align="left">ph.ecog</td>
-</tr>
-</tbody>
-</table>
-<pre class="r"><code>
+), caption = &quot;变量类型审核&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;var_types&#39;
+
 # 第 4 步：创建基线表
 baseline_final &lt;- baseline_table(
   cancer_clean,
   var_types = var_types,
   smd = TRUE
 )
+#&gt; Error in `baseline_table()`:
+#&gt; ! 没有&quot;baseline_table&quot;这个函数
 
 # 第 5 步：查看结果
-knitr::kable(baseline_final$baseline, caption = &quot;最终基线特征表&quot;)</code></pre>
-<table>
-<caption>最终基线特征表</caption>
-<colgroup>
-<col width="20%" />
-<col width="20%" />
-<col width="21%" />
-<col width="20%" />
-<col width="5%" />
-<col width="6%" />
-<col width="4%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="left"></th>
-<th align="left">Overall</th>
-<th align="left">sex: Male</th>
-<th align="left">sex: Female</th>
-<th align="left">p</th>
-<th align="left">test</th>
-<th align="left">SMD</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">n</td>
-<td align="left">228</td>
-<td align="left">138</td>
-<td align="left">90</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">inst (median [IQR])</td>
-<td align="left">11.00 [3.00, 16.00]</td>
-<td align="left">11.00 [3.00, 15.00]</td>
-<td align="left">11.00 [3.25, 16.00]</td>
-<td align="left">0.416</td>
-<td align="left">nonnorm</td>
-<td align="left">0.158</td>
-</tr>
-<tr class="odd">
-<td align="left">time (median [IQR])</td>
-<td align="left">255.50 [166.75, 396.50]</td>
-<td align="left">224.00 [144.75, 369.25]</td>
-<td align="left">292.50 [195.25, 448.50]</td>
-<td align="left">0.013</td>
-<td align="left">nonnorm</td>
-<td align="left">0.268</td>
-</tr>
-<tr class="even">
-<td align="left">status = 2 (%)</td>
-<td align="left">165 (72.4)</td>
-<td align="left">112 (81.2)</td>
-<td align="left">53 (58.9)</td>
-<td align="left">&lt;0.001</td>
-<td align="left"></td>
-<td align="left">0.501</td>
-</tr>
-<tr class="odd">
-<td align="left">age (mean (SD))</td>
-<td align="left">62.45 (9.07)</td>
-<td align="left">63.34 (9.14)</td>
-<td align="left">61.08 (8.85)</td>
-<td align="left">0.064</td>
-<td align="left"></td>
-<td align="left">0.252</td>
-</tr>
-<tr class="even">
-<td align="left">ph.ecog (%)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">0.824</td>
-<td align="left">exact</td>
-<td align="left">0.165</td>
-</tr>
-<tr class="odd">
-<td align="left">0</td>
-<td align="left">63 (27.8)</td>
-<td align="left">36 (26.3)</td>
-<td align="left">27 (30.0)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">1</td>
-<td align="left">113 (49.8)</td>
-<td align="left">71 (51.8)</td>
-<td align="left">42 (46.7)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">2</td>
-<td align="left">50 (22.0)</td>
-<td align="left">29 (21.2)</td>
-<td align="left">21 (23.3)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">3</td>
-<td align="left">1 (0.4)</td>
-<td align="left">1 (0.7)</td>
-<td align="left">0 (0.0)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">ph.karno (median [IQR])</td>
-<td align="left">80.00 [75.00, 90.00]</td>
-<td align="left">80.00 [70.00, 90.00]</td>
-<td align="left">80.00 [80.00, 90.00]</td>
-<td align="left">0.882</td>
-<td align="left">nonnorm</td>
-<td align="left">0.023</td>
-</tr>
-<tr class="even">
-<td align="left">pat.karno (median [IQR])</td>
-<td align="left">80.00 [70.00, 90.00]</td>
-<td align="left">80.00 [70.00, 90.00]</td>
-<td align="left">80.00 [70.00, 90.00]</td>
-<td align="left">0.332</td>
-<td align="left">nonnorm</td>
-<td align="left">0.093</td>
-</tr>
-<tr class="odd">
-<td align="left">meal.cal (median [IQR])</td>
-<td align="left">975.00 [635.00, 1150.00]</td>
-<td align="left">1025.00 [768.00, 1175.00]</td>
-<td align="left">925.00 [588.00, 1067.50]</td>
-<td align="left">0.022</td>
-<td align="left">nonnorm</td>
-<td align="left">0.357</td>
-</tr>
-<tr class="even">
-<td align="left">wt.loss (median [IQR])</td>
-<td align="left">7.00 [0.00, 15.75]</td>
-<td align="left">8.00 [0.75, 18.50]</td>
-<td align="left">4.00 [0.00, 11.00]</td>
-<td align="left">0.029</td>
-<td align="left">nonnorm</td>
-<td align="left">0.264</td>
-</tr>
-<tr class="odd">
-<td align="left">age_group (%)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">0.188</td>
-<td align="left"></td>
-<td align="left">0.298</td>
-</tr>
-<tr class="even">
-<td align="left">&lt;50</td>
-<td align="left">26 (11.4)</td>
-<td align="left">14 (10.1)</td>
-<td align="left">12 (13.3)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">50-60</td>
-<td align="left">68 (29.8)</td>
-<td align="left">35 (25.4)</td>
-<td align="left">33 (36.7)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">60-70</td>
-<td align="left">88 (38.6)</td>
-<td align="left">58 (42.0)</td>
-<td align="left">30 (33.3)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">&gt;70</td>
-<td align="left">46 (20.2)</td>
-<td align="left">31 (22.5)</td>
-<td align="left">15 (16.7)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">ph.ecog_cat (%)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left">0.737</td>
-<td align="left"></td>
-<td align="left">0.106</td>
-</tr>
-<tr class="odd">
-<td align="left">0</td>
-<td align="left">63 (27.8)</td>
-<td align="left">36 (26.3)</td>
-<td align="left">27 (30.0)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">1</td>
-<td align="left">113 (49.8)</td>
-<td align="left">71 (51.8)</td>
-<td align="left">42 (46.7)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">&gt;=2</td>
-<td align="left">51 (22.5)</td>
-<td align="left">30 (21.9)</td>
-<td align="left">21 (23.3)</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-</tbody>
-</table>
-<pre class="r"><code>knitr::kable(baseline_final$missing, caption = &quot;最终缺失数据汇总&quot;)</code></pre>
-<table style="width:100%;">
-<caption>最终缺失数据汇总</caption>
-<colgroup>
-<col width="31%" />
-<col width="13%" />
-<col width="13%" />
-<col width="16%" />
-<col width="8%" />
-<col width="6%" />
-<col width="9%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="left"></th>
-<th align="left">Overall</th>
-<th align="left">sex: Male</th>
-<th align="left">sex: Female</th>
-<th align="left">p</th>
-<th align="left">test</th>
-<th align="left">SMD</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">n</td>
-<td align="left">228</td>
-<td align="left">138</td>
-<td align="left">90</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">inst = TRUE (%)</td>
-<td align="left">1 (0.4)</td>
-<td align="left">1 (0.7)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">1.000</td>
-<td align="left"></td>
-<td align="left">0.121</td>
-</tr>
-<tr class="odd">
-<td align="left">time = TRUE (%)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">NaN</td>
-<td align="left"></td>
-<td align="left">&lt;0.001</td>
-</tr>
-<tr class="even">
-<td align="left">status = TRUE (%)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">NaN</td>
-<td align="left"></td>
-<td align="left">&lt;0.001</td>
-</tr>
-<tr class="odd">
-<td align="left">age = TRUE (%)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">NaN</td>
-<td align="left"></td>
-<td align="left">&lt;0.001</td>
-</tr>
-<tr class="even">
-<td align="left">ph.ecog = TRUE (%)</td>
-<td align="left">1 (0.4)</td>
-<td align="left">1 (0.7)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">1.000</td>
-<td align="left"></td>
-<td align="left">0.121</td>
-</tr>
-<tr class="odd">
-<td align="left">ph.karno = TRUE (%)</td>
-<td align="left">1 (0.4)</td>
-<td align="left">1 (0.7)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">1.000</td>
-<td align="left"></td>
-<td align="left">0.121</td>
-</tr>
-<tr class="even">
-<td align="left">pat.karno = TRUE (%)</td>
-<td align="left">3 (1.3)</td>
-<td align="left">2 (1.4)</td>
-<td align="left">1 (1.1)</td>
-<td align="left">1.000</td>
-<td align="left"></td>
-<td align="left">0.030</td>
-</tr>
-<tr class="odd">
-<td align="left">meal.cal = TRUE (%)</td>
-<td align="left">47 (20.6)</td>
-<td align="left">24 (17.4)</td>
-<td align="left">23 (25.6)</td>
-<td align="left">0.186</td>
-<td align="left"></td>
-<td align="left">0.200</td>
-</tr>
-<tr class="even">
-<td align="left">wt.loss = TRUE (%)</td>
-<td align="left">14 (6.1)</td>
-<td align="left">10 (7.2)</td>
-<td align="left">4 (4.4)</td>
-<td align="left">0.562</td>
-<td align="left"></td>
-<td align="left">0.120</td>
-</tr>
-<tr class="odd">
-<td align="left">age_group = TRUE (%)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">NaN</td>
-<td align="left"></td>
-<td align="left">&lt;0.001</td>
-</tr>
-<tr class="even">
-<td align="left">ph.ecog_cat = TRUE (%)</td>
-<td align="left">1 (0.4)</td>
-<td align="left">1 (0.7)</td>
-<td align="left">0 (0.0)</td>
-<td align="left">1.000</td>
-<td align="left"></td>
-<td align="left">0.121</td>
-</tr>
-</tbody>
-</table>
+knitr::kable(baseline_final$baseline, caption = &quot;最终基线特征表&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;baseline_final&#39;
+knitr::kable(baseline_final$missing, caption = &quot;最终缺失数据汇总&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;baseline_final&#39;</code></pre>
 </div>
 <div id="小结" class="section level2">
 <h2>小结</h2>
@@ -2114,13 +839,8 @@ SMD</strong>——标准化均数差有助于评估组间均衡性</li>
 </ol>
 <hr />
 <blockquote>
-<p><strong>相关文章推荐</strong></p>
-<ul>
-<li><a href="data-cleaning.html">数据清洗实战：从杂乱的实验室数据到分析就绪数据集</a></li>
-<li><a href="regression-analysis.html">回归分析与可视化完全指南</a></li>
-</ul>
 <p><strong>安装
-clinpubr</strong>：<code>devtools::install_github(&quot;niuyu1993/clinpubr&quot;)</code></p>
+clinpubr</strong>：<code>install.packages(&quot;clinpubr&quot;, dependencies = TRUE)</code></p>
 </blockquote>
 </div>
 </div>

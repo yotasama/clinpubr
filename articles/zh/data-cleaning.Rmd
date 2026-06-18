@@ -603,10 +603,4 @@ cat(
 4. **保留原始数据**：永远不要覆盖原始数据；创建清洗后的副本
 
 ---
-
-> **相关文章推荐**
->
-> - [基线特征表（Table 1）一键生成指南](baseline-table.html)
-> - [高级数据操作：队列筛选、数据合并与转换](advanced-data-operations.html)
->
-> **安装 clinpubr**：`devtools::install_github("niuyu1993/clinpubr")`
+> **安装 clinpubr**：`install.packages("clinpubr", dependencies = TRUE)`

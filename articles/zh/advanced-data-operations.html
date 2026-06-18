@@ -355,6 +355,8 @@ display: none;
 
 
 <pre class="r"><code>library(clinpubr)
+#&gt; Error in `library()`:
+#&gt; ! 不存在叫&#39;clinpubr&#39;这个名称的程序包
 library(dplyr)
 library(survival)</code></pre>
 <blockquote>
@@ -443,50 +445,16 @@ exclusion_summary &lt;- exclusion_count(
   !meets_inclusion,
   !complete_followup
 )
+#&gt; Error in `exclusion_count()`:
+#&gt; ! 没有&quot;exclusion_count&quot;这个函数
 
-knitr::kable(exclusion_summary, caption = &quot;CONSORT 风格的队列流程&quot;)</code></pre>
-<table>
-<caption>CONSORT 风格的队列流程</caption>
-<thead>
-<tr class="header">
-<th align="left">Criteria</th>
-<th align="right">N</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">Initial N</td>
-<td align="right">100</td>
-</tr>
-<tr class="even">
-<td align="left">age &lt; 50</td>
-<td align="right">16</td>
-</tr>
-<tr class="odd">
-<td align="left">gender != “M”</td>
-<td align="right">44</td>
-</tr>
-<tr class="even">
-<td align="left">!has_baseline_data</td>
-<td align="right">7</td>
-</tr>
-<tr class="odd">
-<td align="left">!meets_inclusion</td>
-<td align="right">6</td>
-</tr>
-<tr class="even">
-<td align="left">!complete_followup</td>
-<td align="right">7</td>
-</tr>
-<tr class="odd">
-<td align="left">Final N</td>
-<td align="right">20</td>
-</tr>
-</tbody>
-</table>
-<pre class="r"><code>
+knitr::kable(exclusion_summary, caption = &quot;CONSORT 风格的队列流程&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;exclusion_summary&#39;
+
 cat(&quot;纳入率:&quot;, round(100 * exclusion_summary$N[nrow(exclusion_summary)] / exclusion_summary$N[1], 1), &quot;%\n&quot;)
-#&gt; 纳入率: 20 %</code></pre>
+#&gt; Error:
+#&gt; ! 找不到对象&#39;exclusion_summary&#39;</code></pre>
 <p>自定义排除标准的名称，让流程图更清晰：</p>
 <pre class="r"><code>exclusion_flow &lt;- exclusion_count(
   patients,
@@ -499,39 +467,12 @@ cat(&quot;纳入率:&quot;, round(100 * exclusion_summary$N[nrow(exclusion_summa
     &quot;不符合纳入标准&quot;
   )
 )
+#&gt; Error in `exclusion_count()`:
+#&gt; ! 没有&quot;exclusion_count&quot;这个函数
 
-knitr::kable(exclusion_flow, caption = &quot;自定义排除流程&quot;)</code></pre>
-<table>
-<caption>自定义排除流程</caption>
-<thead>
-<tr class="header">
-<th align="left">Criteria</th>
-<th align="right">N</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">Initial N</td>
-<td align="right">100</td>
-</tr>
-<tr class="even">
-<td align="left">年龄不在 18-80 范围内</td>
-<td align="right">9</td>
-</tr>
-<tr class="odd">
-<td align="left">缺失基线数据</td>
-<td align="right">10</td>
-</tr>
-<tr class="even">
-<td align="left">不符合纳入标准</td>
-<td align="right">14</td>
-</tr>
-<tr class="odd">
-<td align="left">Final N</td>
-<td align="right">67</td>
-</tr>
-</tbody>
-</table>
+knitr::kable(exclusion_flow, caption = &quot;自定义排除流程&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;exclusion_flow&#39;</code></pre>
 </div>
 <div id="数据合并策略" class="section level2">
 <h2>数据合并策略</h2>
@@ -574,6 +515,8 @@ merged_substring &lt;- merge_by_substring(
   key_col = &quot;match_term&quot;,
   value_cols = c(&quot;standard_term&quot;, &quot;icd_code&quot;, &quot;category&quot;)
 )
+#&gt; Error in `merge_by_substring()`:
+#&gt; ! 没有&quot;merge_by_substring&quot;这个函数
 
 knitr::kable(medical_terms, caption = &quot;标准医学术语表&quot;)</code></pre>
 <table>
@@ -637,98 +580,9 @@ knitr::kable(medical_terms, caption = &quot;标准医学术语表&quot;)</code><
 </tr>
 </tbody>
 </table>
-<pre class="r"><code>knitr::kable(merged_substring, caption = &quot;诊断名称映射到 ICD 编码&quot;)</code></pre>
-<table style="width:100%;">
-<caption>诊断名称映射到 ICD 编码</caption>
-<colgroup>
-<col width="36%" />
-<col width="11%" />
-<col width="26%" />
-<col width="9%" />
-<col width="15%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="left">diagnosis_text</th>
-<th align="right">patient_id</th>
-<th align="left">standard_term</th>
-<th align="left">icd_code</th>
-<th align="left">category</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">CAD - Coronary Artery Disease</td>
-<td align="right">6</td>
-<td align="left">Coronary Artery Disease</td>
-<td align="left">I25</td>
-<td align="left">Cardiovascular</td>
-</tr>
-<tr class="even">
-<td align="left">CKD Stage 3</td>
-<td align="right">8</td>
-<td align="left">NA</td>
-<td align="left">NA</td>
-<td align="left">NA</td>
-</tr>
-<tr class="odd">
-<td align="left">Congestive Heart Failure</td>
-<td align="right">9</td>
-<td align="left">Heart Failure</td>
-<td align="left">I50</td>
-<td align="left">Cardiovascular</td>
-</tr>
-<tr class="even">
-<td align="left">Coronary disease</td>
-<td align="right">7</td>
-<td align="left">Coronary Artery Disease</td>
-<td align="left">I25</td>
-<td align="left">Cardiovascular</td>
-</tr>
-<tr class="odd">
-<td align="left">Essential Hypertension</td>
-<td align="right">4</td>
-<td align="left">Hypertension</td>
-<td align="left">I10</td>
-<td align="left">Cardiovascular</td>
-</tr>
-<tr class="even">
-<td align="left">Heart failure chronic</td>
-<td align="right">10</td>
-<td align="left">Heart Failure</td>
-<td align="left">I50</td>
-<td align="left">Cardiovascular</td>
-</tr>
-<tr class="odd">
-<td align="left">Hypertensive disease</td>
-<td align="right">5</td>
-<td align="left">NA</td>
-<td align="left">NA</td>
-<td align="left">NA</td>
-</tr>
-<tr class="even">
-<td align="left">Severe Type 2 Diabetes</td>
-<td align="right">1</td>
-<td align="left">Type 2 Diabetes Mellitus</td>
-<td align="left">E11</td>
-<td align="left">Endocrine</td>
-</tr>
-<tr class="odd">
-<td align="left">Type 2 Diabetes Mellitus</td>
-<td align="right">2</td>
-<td align="left">Type 2 Diabetes Mellitus</td>
-<td align="left">E11</td>
-<td align="left">Endocrine</td>
-</tr>
-<tr class="even">
-<td align="left">Type 2 Diabetes with Complications</td>
-<td align="right">3</td>
-<td align="left">Type 2 Diabetes Mellitus</td>
-<td align="left">E11</td>
-<td align="left">Endocrine</td>
-</tr>
-</tbody>
-</table>
+<pre class="r"><code>knitr::kable(merged_substring, caption = &quot;诊断名称映射到 ICD 编码&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;merged_substring&#39;</code></pre>
 </div>
 <div id="时间范围合并时间窗口匹配" class="section level3">
 <h3>时间范围合并（时间窗口匹配）</h3>
@@ -764,103 +618,12 @@ merged_range &lt;- merge_by_range(
   x_start = &quot;visit_start&quot;, x_end = &quot;visit_end&quot;,
   y_val = &quot;test_date&quot;
 )
+#&gt; Error in `merge_by_range()`:
+#&gt; ! 没有&quot;merge_by_range&quot;这个函数
 
-knitr::kable(merged_range, caption = &quot;匹配到就诊时间窗口的检验结果&quot;)</code></pre>
-<table>
-<caption>匹配到就诊时间窗口的检验结果</caption>
-<colgroup>
-<col width="11%" />
-<col width="9%" />
-<col width="13%" />
-<col width="11%" />
-<col width="7%" />
-<col width="11%" />
-<col width="13%" />
-<col width="7%" />
-<col width="13%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="right">patient_id</th>
-<th align="right">visit_id</th>
-<th align="left">visit_start</th>
-<th align="left">visit_end</th>
-<th align="right">lab_id</th>
-<th align="left">test_date</th>
-<th align="left">test_name</th>
-<th align="right">result</th>
-<th align="right">since_start</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="right">1</td>
-<td align="right">1</td>
-<td align="left">2023-01-01</td>
-<td align="left">2023-01-10</td>
-<td align="right">1</td>
-<td align="left">2023-01-05</td>
-<td align="left">Glucose</td>
-<td align="right">89.3</td>
-<td align="right">4</td>
-</tr>
-<tr class="even">
-<td align="right">1</td>
-<td align="right">2</td>
-<td align="left">2023-06-01</td>
-<td align="left">2023-06-10</td>
-<td align="right">2</td>
-<td align="left">2023-06-05</td>
-<td align="left">HbA1c</td>
-<td align="right">88.7</td>
-<td align="right">4</td>
-</tr>
-<tr class="odd">
-<td align="right">2</td>
-<td align="right">3</td>
-<td align="left">2023-02-01</td>
-<td align="left">2023-02-10</td>
-<td align="right">3</td>
-<td align="left">2023-02-03</td>
-<td align="left">Glucose</td>
-<td align="right">85.9</td>
-<td align="right">2</td>
-</tr>
-<tr class="even">
-<td align="right">2</td>
-<td align="right">4</td>
-<td align="left">2023-07-01</td>
-<td align="left">2023-07-10</td>
-<td align="right">4</td>
-<td align="left">2023-07-08</td>
-<td align="left">Creatinine</td>
-<td align="right">84.2</td>
-<td align="right">7</td>
-</tr>
-<tr class="odd">
-<td align="right">3</td>
-<td align="right">6</td>
-<td align="left">2023-08-01</td>
-<td align="left">2023-08-10</td>
-<td align="right">6</td>
-<td align="left">2023-08-05</td>
-<td align="left">Lipid panel</td>
-<td align="right">105.0</td>
-<td align="right">4</td>
-</tr>
-<tr class="even">
-<td align="right">NA</td>
-<td align="right">NA</td>
-<td align="left">NA</td>
-<td align="left">NA</td>
-<td align="right">5</td>
-<td align="left">2023-03-15</td>
-<td align="left">Glucose</td>
-<td align="right">93.4</td>
-<td align="right">NA</td>
-</tr>
-</tbody>
-</table>
+knitr::kable(merged_range, caption = &quot;匹配到就诊时间窗口的检验结果&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;merged_range&#39;</code></pre>
 </div>
 </div>
 <div id="数据转换" class="section level2">
@@ -882,6 +645,8 @@ wide_labs &lt;- to_wide(
   item_col = &quot;test&quot;,
   value_col = &quot;value&quot;
 )
+#&gt; Error in `to_wide()`:
+#&gt; ! 没有&quot;to_wide&quot;这个函数
 
 knitr::kable(head(long_labs), caption = &quot;实验室数据 - 长格式&quot;)</code></pre>
 <table>
@@ -933,63 +698,9 @@ knitr::kable(head(long_labs), caption = &quot;实验室数据 - 长格式&quot;)
 </tr>
 </tbody>
 </table>
-<pre class="r"><code>knitr::kable(head(wide_labs), caption = &quot;实验室数据 - 宽格式&quot;)</code></pre>
-<table>
-<caption>实验室数据 - 宽格式</caption>
-<thead>
-<tr class="header">
-<th align="right">patient_id</th>
-<th align="right">visit</th>
-<th align="right">cholesterol</th>
-<th align="right">creatinine</th>
-<th align="right">glucose</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="right">1</td>
-<td align="right">1</td>
-<td align="right">124.7</td>
-<td align="right">104.2</td>
-<td align="right">59.7</td>
-</tr>
-<tr class="even">
-<td align="right">2</td>
-<td align="right">1</td>
-<td align="right">115.1</td>
-<td align="right">126.0</td>
-<td align="right">140.8</td>
-</tr>
-<tr class="odd">
-<td align="right">3</td>
-<td align="right">1</td>
-<td align="right">NA</td>
-<td align="right">88.0</td>
-<td align="right">65.5</td>
-</tr>
-<tr class="even">
-<td align="right">3</td>
-<td align="right">2</td>
-<td align="right">93.0</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-</tr>
-<tr class="odd">
-<td align="right">4</td>
-<td align="right">2</td>
-<td align="right">74.8</td>
-<td align="right">97.9</td>
-<td align="right">114.1</td>
-</tr>
-<tr class="even">
-<td align="right">5</td>
-<td align="right">2</td>
-<td align="right">104.7</td>
-<td align="right">118.2</td>
-<td align="right">133.7</td>
-</tr>
-</tbody>
-</table>
+<pre class="r"><code>knitr::kable(head(wide_labs), caption = &quot;实验室数据 - 宽格式&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;wide_labs&#39;</code></pre>
 </div>
 <div id="多选题数据处理" class="section level3">
 <h3>多选题数据处理</h3>
@@ -1019,6 +730,8 @@ symptoms_split &lt;- split_multichoice(
   split = &quot;,&quot;,
   remove_space = FALSE
 )
+#&gt; Error in `split_multichoice()`:
+#&gt; ! 没有&quot;split_multichoice&quot;这个函数
 
 knitr::kable(head(survey_data), caption = &quot;多选题原始数据&quot;)</code></pre>
 <table>
@@ -1064,87 +777,10 @@ knitr::kable(head(survey_data), caption = &quot;多选题原始数据&quot;)</co
 </tbody>
 </table>
 <pre class="r"><code>
-knitr::kable(head(symptoms_split), caption = &quot;拆分后的多选题数据&quot;)</code></pre>
-<table>
-<caption>拆分后的多选题数据</caption>
-<colgroup>
-<col width="2%" />
-<col width="12%" />
-<col width="12%" />
-<col width="14%" />
-<col width="15%" />
-<col width="19%" />
-<col width="22%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="right">id</th>
-<th align="left">symptoms_fever</th>
-<th align="left">symptoms_cough</th>
-<th align="left">symptoms_fatigue</th>
-<th align="left">symptoms_headache</th>
-<th align="left">comorbidities_diabetes</th>
-<th align="left">comorbidities_hypertension</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="right">1</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="right">2</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="odd">
-<td align="right">3</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="even">
-<td align="right">4</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="right">5</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="even">
-<td align="right">6</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-</tbody>
-</table>
-<pre class="r"><code>
+knitr::kable(head(symptoms_split), caption = &quot;拆分后的多选题数据&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;symptoms_split&#39;
+
 combined &lt;- combine_multichoice(
   symptoms_split,
   quest_cols = list(
@@ -1153,71 +789,12 @@ combined &lt;- combine_multichoice(
   ),
   sep = &quot;,&quot;
 )
+#&gt; Error in `combine_multichoice()`:
+#&gt; ! 没有&quot;combine_multichoice&quot;这个函数
 
-knitr::kable(head(combined), caption = &quot;合并后的症状分组&quot;)</code></pre>
-<table>
-<caption>合并后的症状分组</caption>
-<colgroup>
-<col width="3%" />
-<col width="28%" />
-<col width="32%" />
-<col width="17%" />
-<col width="18%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="right">id</th>
-<th align="left">comorbidities_diabetes</th>
-<th align="left">comorbidities_hypertension</th>
-<th align="left">respiratory</th>
-<th align="left">systemic</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="right">1</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-<td align="left"></td>
-<td align="left">fever</td>
-</tr>
-<tr class="even">
-<td align="right">2</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">cough,fatigue</td>
-<td align="left">fever</td>
-</tr>
-<tr class="odd">
-<td align="right">3</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">cough,fatigue</td>
-<td align="left">fever</td>
-</tr>
-<tr class="even">
-<td align="right">4</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-<td align="left"></td>
-<td align="left">fever,headache</td>
-</tr>
-<tr class="odd">
-<td align="right">5</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">fatigue</td>
-<td align="left">headache</td>
-</tr>
-<tr class="even">
-<td align="right">6</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-<td align="left">cough,fatigue</td>
-<td align="left">headache</td>
-</tr>
-</tbody>
-</table>
+knitr::kable(head(combined), caption = &quot;合并后的症状分组&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;combined&#39;</code></pre>
 </div>
 </div>
 <div id="实用工具函数" class="section level2">
@@ -1228,7 +805,8 @@ knitr::kable(head(combined), caption = &quot;合并后的症状分组&quot;)</co
 提取字符向量的公共前缀，适用于处理医院导出文件时识别同一患者或批次的文件：</p>
 <pre class="r"><code>file_names &lt;- c(&quot;patient_001_lab.csv&quot;, &quot;patient_001_visit.csv&quot;, &quot;patient_001_demo.csv&quot;)
 common_prefix(file_names)
-#&gt; [1] &quot;patient_001_&quot;</code></pre>
+#&gt; Error in `common_prefix()`:
+#&gt; ! 没有&quot;common_prefix&quot;这个函数</code></pre>
 <p><code>str_match_replace()</code>
 替换字符串中匹配的模式，适用于跨医院统一检验名称或问卷选项标签：</p>
 <pre class="r"><code>test_names &lt;- c(&quot;Glucose_Fasting&quot;, &quot;Glucose_Random&quot;, &quot;Cholesterol_Total&quot;, &quot;LDL_Calculated&quot;)
@@ -1237,37 +815,14 @@ standardized &lt;- str_match_replace(
   to_match = c(&quot;Glucose&quot;, &quot;Cholesterol&quot;, &quot;LDL&quot;),
   to_replace = c(&quot;GLU&quot;, &quot;CHOL&quot;, &quot;LDL_CHOL&quot;)
 )
+#&gt; Error in `str_match_replace()`:
+#&gt; ! 没有&quot;str_match_replace&quot;这个函数
 
 knitr::kable(data.frame(Original = test_names, Standardized = standardized),
   caption = &quot;检验名称标准化&quot;
-)</code></pre>
-<table>
-<caption>检验名称标准化</caption>
-<thead>
-<tr class="header">
-<th align="left">Original</th>
-<th align="left">Standardized</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">Glucose_Fasting</td>
-<td align="left">GLU_Fasting</td>
-</tr>
-<tr class="even">
-<td align="left">Glucose_Random</td>
-<td align="left">GLU_Random</td>
-</tr>
-<tr class="odd">
-<td align="left">Cholesterol_Total</td>
-<td align="left">CHOL_Total</td>
-</tr>
-<tr class="even">
-<td align="left">LDL_Calculated</td>
-<td align="left">LDL_CHOL_Calculated</td>
-</tr>
-</tbody>
-</table>
+)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;standardized&#39;</code></pre>
 </div>
 <div id="列表和数据框操作" class="section level3">
 <h3>列表和数据框操作</h3>
@@ -1276,14 +831,8 @@ knitr::kable(data.frame(Original = test_names, Standardized = standardized),
 <pre class="r"><code>list1 &lt;- list(diabetes = 10, hypertension = 20, asthma = 5)
 list2 &lt;- list(diabetes = 15, hypertension = 25, asthma = 8)
 add_lists(list1, list2)
-#&gt; $diabetes
-#&gt; [1] 25
-#&gt; 
-#&gt; $hypertension
-#&gt; [1] 45
-#&gt; 
-#&gt; $asthma
-#&gt; [1] 13</code></pre>
+#&gt; Error in `add_lists()`:
+#&gt; ! 没有&quot;add_lists&quot;这个函数</code></pre>
 <p><code>merge_ordered_vectors()</code>
 合并多个有序向量并保留唯一元素和原始顺序，适用于整合多中心研究的纳入标准列表：</p>
 <pre class="r"><code>sites &lt;- list(
@@ -1292,8 +841,8 @@ add_lists(list1, list2)
   c(&quot;CKD&quot;, &quot;Diabetes&quot;, &quot;Stroke&quot;, &quot;Hypertension&quot;)
 )
 merge_ordered_vectors(sites)
-#&gt; [1] &quot;COPD&quot;          &quot;Diabetes&quot;      &quot;Stroke&quot;        &quot;Hypertension&quot; 
-#&gt; [5] &quot;Heart Failure&quot; &quot;Cancer&quot;        &quot;CKD&quot;</code></pre>
+#&gt; Error in `merge_ordered_vectors()`:
+#&gt; ! 没有&quot;merge_ordered_vectors&quot;这个函数</code></pre>
 <p><code>replace_elements()</code>
 替换向量中的指定元素，适用于纠正临床数据中的录入错误：</p>
 <pre class="r"><code>sample_data &lt;- data.frame(
@@ -1305,90 +854,22 @@ recoded &lt;- replace_elements(
   from = c(&quot;Cntrol&quot;, &quot;Treetment&quot;),
   to = c(&quot;Control&quot;, &quot;Treatment&quot;)
 )
+#&gt; Error in `replace_elements()`:
+#&gt; ! 没有&quot;replace_elements&quot;这个函数
 knitr::kable(data.frame(Original = sample_data$group, Recoded = recoded),
   caption = &quot;分组重编码&quot;
-)</code></pre>
-<table>
-<caption>分组重编码</caption>
-<thead>
-<tr class="header">
-<th align="left">Original</th>
-<th align="left">Recoded</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">Cntrol</td>
-<td align="left">Control</td>
-</tr>
-<tr class="even">
-<td align="left">Treetment</td>
-<td align="left">Treatment</td>
-</tr>
-<tr class="odd">
-<td align="left">Placebo</td>
-<td align="left">Placebo</td>
-</tr>
-<tr class="even">
-<td align="left">Cntrol</td>
-<td align="left">Control</td>
-</tr>
-<tr class="odd">
-<td align="left">Treatment</td>
-<td align="left">Treatment</td>
-</tr>
-</tbody>
-</table>
+)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;recoded&#39;</code></pre>
 <p><code>fill_with_last()</code>
 用最后一个有效观测值填充缺失值（LOCF），适用于处理 EMR 数据从 Excel
 导入时的合并单元格：</p>
 <pre class="r"><code>time_series &lt;- c(120, NA, NA, 125, NA, 130, NA, NA)
 knitr::kable(data.frame(Original = time_series, Filled = fill_with_last(time_series)),
   caption = &quot;末次观测值前推填充&quot;
-)</code></pre>
-<table>
-<caption>末次观测值前推填充</caption>
-<thead>
-<tr class="header">
-<th align="right">Original</th>
-<th align="right">Filled</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="right">120</td>
-<td align="right">120</td>
-</tr>
-<tr class="even">
-<td align="right">NA</td>
-<td align="right">120</td>
-</tr>
-<tr class="odd">
-<td align="right">NA</td>
-<td align="right">120</td>
-</tr>
-<tr class="even">
-<td align="right">125</td>
-<td align="right">125</td>
-</tr>
-<tr class="odd">
-<td align="right">NA</td>
-<td align="right">125</td>
-</tr>
-<tr class="even">
-<td align="right">130</td>
-<td align="right">130</td>
-</tr>
-<tr class="odd">
-<td align="right">NA</td>
-<td align="right">130</td>
-</tr>
-<tr class="even">
-<td align="right">NA</td>
-<td align="right">130</td>
-</tr>
-</tbody>
-</table>
+)
+#&gt; Error in `fill_with_last()`:
+#&gt; ! 没有&quot;fill_with_last&quot;这个函数</code></pre>
 </div>
 </div>
 <div id="多表队列筛选" class="section level2">
@@ -1446,295 +927,27 @@ lab &lt;- data.frame(
   output = &quot;list&quot;,
   return_audit = TRUE
 )
+#&gt; Error in `screen_data_list()`:
+#&gt; ! 没有&quot;screen_data_list&quot;这个函数
 
-knitr::kable(screened_data$audit$entry_scope, caption = &quot;入组阶段审计&quot;)</code></pre>
-<table>
-<caption>入组阶段审计</caption>
-<thead>
-<tr class="header">
-<th align="left">step</th>
-<th align="left">table</th>
-<th align="right">before</th>
-<th align="right">after</th>
-<th align="right">removed</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">entry_scope</td>
-<td align="left">patient</td>
-<td align="right">50</td>
-<td align="right">7</td>
-<td align="right">43</td>
-</tr>
-<tr class="even">
-<td align="left">entry_scope</td>
-<td align="left">admission</td>
-<td align="right">15</td>
-<td align="right">10</td>
-<td align="right">5</td>
-</tr>
-<tr class="odd">
-<td align="left">entry_scope</td>
-<td align="left">diagnosis</td>
-<td align="right">14</td>
-<td align="right">9</td>
-<td align="right">5</td>
-</tr>
-<tr class="even">
-<td align="left">entry_scope</td>
-<td align="left">lab</td>
-<td align="right">15</td>
-<td align="right">10</td>
-<td align="right">5</td>
-</tr>
-</tbody>
-</table>
-<pre class="r"><code>knitr::kable(screened_data$audit$anchor_scope, caption = &quot;锚定阶段审计&quot;)</code></pre>
-<table>
-<caption>锚定阶段审计</caption>
-<thead>
-<tr class="header">
-<th align="left">step</th>
-<th align="left">table</th>
-<th align="right">before</th>
-<th align="right">after</th>
-<th align="right">removed</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">anchor_scope</td>
-<td align="left">patient</td>
-<td align="right">7</td>
-<td align="right">7</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">anchor_scope</td>
-<td align="left">admission</td>
-<td align="right">10</td>
-<td align="right">9</td>
-<td align="right">1</td>
-</tr>
-<tr class="odd">
-<td align="left">anchor_scope</td>
-<td align="left">diagnosis</td>
-<td align="right">9</td>
-<td align="right">8</td>
-<td align="right">1</td>
-</tr>
-<tr class="even">
-<td align="left">anchor_scope</td>
-<td align="left">lab</td>
-<td align="right">10</td>
-<td align="right">9</td>
-<td align="right">1</td>
-</tr>
-</tbody>
-</table>
+knitr::kable(screened_data$audit$entry_scope, caption = &quot;入组阶段审计&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;screened_data&#39;
+knitr::kable(screened_data$audit$anchor_scope, caption = &quot;锚定阶段审计&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;screened_data&#39;</code></pre>
 </div>
 <div id="查看筛选后的数据" class="section level3">
 <h3>查看筛选后的数据</h3>
-<pre class="r"><code>knitr::kable(head(screened_data$data$patient), caption = &quot;筛选后的患者&quot;)</code></pre>
-<table>
-<caption>筛选后的患者</caption>
-<thead>
-<tr class="header">
-<th align="left"></th>
-<th align="right">pid</th>
-<th align="right">age</th>
-<th align="left">gender</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">1</td>
-<td align="right">1</td>
-<td align="right">51</td>
-<td align="left">M</td>
-</tr>
-<tr class="even">
-<td align="left">2</td>
-<td align="right">2</td>
-<td align="right">72</td>
-<td align="left">M</td>
-</tr>
-<tr class="odd">
-<td align="left">3</td>
-<td align="right">3</td>
-<td align="right">38</td>
-<td align="left">M</td>
-</tr>
-<tr class="even">
-<td align="left">5</td>
-<td align="right">5</td>
-<td align="right">75</td>
-<td align="left">F</td>
-</tr>
-<tr class="odd">
-<td align="left">7</td>
-<td align="right">7</td>
-<td align="right">59</td>
-<td align="left">F</td>
-</tr>
-<tr class="even">
-<td align="left">9</td>
-<td align="right">9</td>
-<td align="right">28</td>
-<td align="left">M</td>
-</tr>
-</tbody>
-</table>
-<pre class="r"><code>knitr::kable(screened_data$data$diagnosis, caption = &quot;筛选后的诊断&quot;)</code></pre>
-<table>
-<caption>筛选后的诊断</caption>
-<thead>
-<tr class="header">
-<th align="left"></th>
-<th align="right">pid</th>
-<th align="right">vid</th>
-<th align="right">dx_day</th>
-<th align="left">icd</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">1</td>
-<td align="right">1</td>
-<td align="right">101</td>
-<td align="right">1</td>
-<td align="left">E11</td>
-</tr>
-<tr class="even">
-<td align="left">2</td>
-<td align="right">1</td>
-<td align="right">102</td>
-<td align="right">30</td>
-<td align="left">I10</td>
-</tr>
-<tr class="odd">
-<td align="left">4</td>
-<td align="right">2</td>
-<td align="right">104</td>
-<td align="right">45</td>
-<td align="left">E11</td>
-</tr>
-<tr class="even">
-<td align="left">5</td>
-<td align="right">3</td>
-<td align="right">105</td>
-<td align="right">10</td>
-<td align="left">E11</td>
-</tr>
-<tr class="odd">
-<td align="left">7</td>
-<td align="right">5</td>
-<td align="right">108</td>
-<td align="right">20</td>
-<td align="left">E11</td>
-</tr>
-<tr class="even">
-<td align="left">9</td>
-<td align="right">7</td>
-<td align="right">110</td>
-<td align="right">35</td>
-<td align="left">E11</td>
-</tr>
-<tr class="odd">
-<td align="left">11</td>
-<td align="right">9</td>
-<td align="right">112</td>
-<td align="right">50</td>
-<td align="left">E11</td>
-</tr>
-<tr class="even">
-<td align="left">13</td>
-<td align="right">11</td>
-<td align="right">114</td>
-<td align="right">65</td>
-<td align="left">E11</td>
-</tr>
-</tbody>
-</table>
-<pre class="r"><code>knitr::kable(screened_data$data$lab, caption = &quot;筛选后的检验&quot;)</code></pre>
-<table>
-<caption>筛选后的检验</caption>
-<thead>
-<tr class="header">
-<th align="left"></th>
-<th align="right">pid</th>
-<th align="right">vid</th>
-<th align="right">lab_day</th>
-<th align="right">HbA1c</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">1</td>
-<td align="right">1</td>
-<td align="right">101</td>
-<td align="right">1</td>
-<td align="right">8.5</td>
-</tr>
-<tr class="even">
-<td align="left">2</td>
-<td align="right">1</td>
-<td align="right">102</td>
-<td align="right">30</td>
-<td align="right">7.2</td>
-</tr>
-<tr class="odd">
-<td align="left">4</td>
-<td align="right">2</td>
-<td align="right">104</td>
-<td align="right">45</td>
-<td align="right">7.8</td>
-</tr>
-<tr class="even">
-<td align="left">5</td>
-<td align="right">3</td>
-<td align="right">105</td>
-<td align="right">10</td>
-<td align="right">8.0</td>
-</tr>
-<tr class="odd">
-<td align="left">6</td>
-<td align="right">3</td>
-<td align="right">106</td>
-<td align="right">60</td>
-<td align="right">6.9</td>
-</tr>
-<tr class="even">
-<td align="left">8</td>
-<td align="right">5</td>
-<td align="right">108</td>
-<td align="right">20</td>
-<td align="right">8.2</td>
-</tr>
-<tr class="odd">
-<td align="left">10</td>
-<td align="right">7</td>
-<td align="right">110</td>
-<td align="right">35</td>
-<td align="right">9.5</td>
-</tr>
-<tr class="even">
-<td align="left">12</td>
-<td align="right">9</td>
-<td align="right">112</td>
-<td align="right">50</td>
-<td align="right">8.1</td>
-</tr>
-<tr class="odd">
-<td align="left">14</td>
-<td align="right">11</td>
-<td align="right">114</td>
-<td align="right">65</td>
-<td align="right">8.8</td>
-</tr>
-</tbody>
-</table>
+<pre class="r"><code>knitr::kable(head(screened_data$data$patient), caption = &quot;筛选后的患者&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;screened_data&#39;
+knitr::kable(screened_data$data$diagnosis, caption = &quot;筛选后的诊断&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;screened_data&#39;
+knitr::kable(screened_data$data$lab, caption = &quot;筛选后的检验&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;screened_data&#39;</code></pre>
 </div>
 <div id="合并输出" class="section level3">
 <h3>合并输出</h3>
@@ -1754,80 +967,15 @@ knitr::kable(screened_data$audit$entry_scope, caption = &quot;入组阶段审计
   date_map = c(admission = &quot;admit_day&quot;, diagnosis = &quot;dx_day&quot;, lab = &quot;lab_day&quot;),
   output = &quot;joined&quot;
 )
+#&gt; Error in `screen_data_list()`:
+#&gt; ! 没有&quot;screen_data_list&quot;这个函数
 
 cat(&quot;合并后数据:&quot;, nrow(joined_result), &quot;行,&quot;, ncol(joined_result), &quot;列\n&quot;)
-#&gt; 合并后数据: 9 行, 7 列
-knitr::kable(head(joined_result), caption = &quot;合并后的输出&quot;)</code></pre>
-<table>
-<caption>合并后的输出</caption>
-<thead>
-<tr class="header">
-<th align="right">patient_id</th>
-<th align="right">age</th>
-<th align="left">gender</th>
-<th align="right">visit_id</th>
-<th align="right">date</th>
-<th align="left">icd</th>
-<th align="right">HbA1c</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="right">1</td>
-<td align="right">51</td>
-<td align="left">M</td>
-<td align="right">101</td>
-<td align="right">1</td>
-<td align="left">E11</td>
-<td align="right">8.5</td>
-</tr>
-<tr class="even">
-<td align="right">1</td>
-<td align="right">51</td>
-<td align="left">M</td>
-<td align="right">102</td>
-<td align="right">30</td>
-<td align="left">I10</td>
-<td align="right">7.2</td>
-</tr>
-<tr class="odd">
-<td align="right">2</td>
-<td align="right">72</td>
-<td align="left">M</td>
-<td align="right">104</td>
-<td align="right">45</td>
-<td align="left">E11</td>
-<td align="right">7.8</td>
-</tr>
-<tr class="even">
-<td align="right">3</td>
-<td align="right">38</td>
-<td align="left">M</td>
-<td align="right">105</td>
-<td align="right">10</td>
-<td align="left">E11</td>
-<td align="right">8.0</td>
-</tr>
-<tr class="odd">
-<td align="right">3</td>
-<td align="right">38</td>
-<td align="left">M</td>
-<td align="right">106</td>
-<td align="right">60</td>
-<td align="left">NA</td>
-<td align="right">6.9</td>
-</tr>
-<tr class="even">
-<td align="right">5</td>
-<td align="right">75</td>
-<td align="left">F</td>
-<td align="right">108</td>
-<td align="right">20</td>
-<td align="left">E11</td>
-<td align="right">8.2</td>
-</tr>
-</tbody>
-</table>
+#&gt; Error:
+#&gt; ! 找不到对象&#39;joined_result&#39;
+knitr::kable(head(joined_result), caption = &quot;合并后的输出&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;joined_result&#39;</code></pre>
 </div>
 </div>
 <div id="小结" class="section level2">
@@ -1873,14 +1021,8 @@ knitr::kable(head(joined_result), caption = &quot;合并后的输出&quot;)</cod
 </table>
 <hr />
 <blockquote>
-<p><strong>相关文章推荐</strong></p>
-<ul>
-<li><a href="data-cleaning.html">数据清洗实战：从杂乱的实验室数据到分析就绪数据集</a></li>
-<li><a href="baseline-table.html">基线特征表（Table
-1）一键生成指南</a></li>
-</ul>
 <p><strong>安装
-clinpubr</strong>：<code>devtools::install_github(&quot;niuyu1993/clinpubr&quot;)</code></p>
+clinpubr</strong>：<code>install.packages(&quot;clinpubr&quot;, dependencies = TRUE)</code></p>
 </blockquote>
 </div>
 

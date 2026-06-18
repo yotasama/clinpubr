@@ -6,8 +6,8 @@
 library(rmarkdown)
 
 # 定义路径
-vignette_dir <- "vignettes/zh"
-output_dir <- "vignettes/zh"
+vignette_dir <- "articles/zh"
+output_dir <- "articles/zh"
 
 # 获取所有 Rmd 文件
 rmd_files <- list.files(vignette_dir, pattern = "\\.Rmd$", full.names = TRUE)

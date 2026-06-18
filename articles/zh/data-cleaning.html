@@ -355,6 +355,8 @@ display: none;
 
 
 <pre class="r"><code>library(clinpubr)
+#&gt; Error in `library()`:
+#&gt; ! 不存在叫&#39;clinpubr&#39;这个名称的程序包
 library(dplyr)</code></pre>
 <blockquote>
 <p><strong>写在前面</strong></p>
@@ -531,7 +533,7 @@ knitr::kable(head(lab_data[sample(nrow(lab_data)), ], 10),
 <td align="left">Cholesterol</td>
 <td align="left">4.56</td>
 <td align="left">mg/dL</td>
-<td align="left">2026-05-01</td>
+<td align="left">2026-05-18</td>
 </tr>
 <tr class="even">
 <td align="left">81</td>
@@ -539,7 +541,7 @@ knitr::kable(head(lab_data[sample(nrow(lab_data)), ], 10),
 <td align="left">Glucose</td>
 <td align="left">5.4</td>
 <td align="left">mg/dL</td>
-<td align="left">2025-10-27</td>
+<td align="left">2025-11-13</td>
 </tr>
 <tr class="odd">
 <td align="left">260</td>
@@ -547,7 +549,7 @@ knitr::kable(head(lab_data[sample(nrow(lab_data)), ], 10),
 <td align="left">Cholesterol</td>
 <td align="left">227.31</td>
 <td align="left">mmol/L</td>
-<td align="left">2026/03/10</td>
+<td align="left">2026/03/27</td>
 </tr>
 <tr class="even">
 <td align="left">76</td>
@@ -555,7 +557,7 @@ knitr::kable(head(lab_data[sample(nrow(lab_data)), ], 10),
 <td align="left">Glucose</td>
 <td align="left">218.4</td>
 <td align="left">mg/dL</td>
-<td align="left">2025-10-31</td>
+<td align="left">2025-11-17</td>
 </tr>
 <tr class="odd">
 <td align="left">184</td>
@@ -563,7 +565,7 @@ knitr::kable(head(lab_data[sample(nrow(lab_data)), ], 10),
 <td align="left">Creatinine</td>
 <td align="left">263.9</td>
 <td align="left">mg/dL</td>
-<td align="left">2026-02-15</td>
+<td align="left">2026-03-04</td>
 </tr>
 <tr class="even">
 <td align="left">14</td>
@@ -571,7 +573,7 @@ knitr::kable(head(lab_data[sample(nrow(lab_data)), ], 10),
 <td align="left">Glucose</td>
 <td align="left">190.2</td>
 <td align="left">mg/dL</td>
-<td align="left">2025/12/03</td>
+<td align="left">2025/12/20</td>
 </tr>
 <tr class="odd">
 <td align="left">51</td>
@@ -579,7 +581,7 @@ knitr::kable(head(lab_data[sample(nrow(lab_data)), ], 10),
 <td align="left">Glucose</td>
 <td align="left">NA</td>
 <td align="left">mg/dL</td>
-<td align="left">2025/07/17</td>
+<td align="left">2025/08/03</td>
 </tr>
 <tr class="even">
 <td align="left">155</td>
@@ -587,7 +589,7 @@ knitr::kable(head(lab_data[sample(nrow(lab_data)), ], 10),
 <td align="left">Creatinine</td>
 <td align="left">1.09</td>
 <td align="left">umol/L</td>
-<td align="left">2026-04-22</td>
+<td align="left">2026-05-09</td>
 </tr>
 <tr class="odd">
 <td align="left">75</td>
@@ -595,7 +597,7 @@ knitr::kable(head(lab_data[sample(nrow(lab_data)), ], 10),
 <td align="left">Glucose</td>
 <td align="left">5.7</td>
 <td align="left">NA</td>
-<td align="left">2025-11-16</td>
+<td align="left">2025-12-03</td>
 </tr>
 <tr class="even">
 <td align="left">236</td>
@@ -603,7 +605,7 @@ knitr::kable(head(lab_data[sample(nrow(lab_data)), ], 10),
 <td align="left">Cholesterol</td>
 <td align="left">8.39</td>
 <td align="left">mg/dL</td>
-<td align="left">2026/01/01</td>
+<td align="left">2026/01/18</td>
 </tr>
 </tbody>
 </table>
@@ -614,183 +616,24 @@ knitr::kable(head(lab_data[sample(nrow(lab_data)), ], 10),
 <p>拿到数据的第一件事，不是急着清洗，而是先<strong>摸清家底</strong>。<code>data_overview()</code>
 可以一键生成数据质量诊断报告：</p>
 <pre class="r"><code>overview &lt;- data_overview(lab_data)
-#&gt; === Data Overview Summary ===
-#&gt; Dataset: 300 rows, 5 columns
-#&gt; 
-#&gt; Variable Types:
-#&gt;   character : 5 variables
-#&gt; 
-#&gt; Found 4 potential quality issues:
-#&gt;   numeric_as_character     : 1 cases
-#&gt;   missing_values           : 3 cases
-#&gt; 
-#&gt; Recommendations:
-#&gt;   - Consider converting these character variables to numeric: value
-#&gt;   - Variables with &lt; 50 % missing values: unit, value, test_date - consider imputation
+#&gt; Error in `data_overview()`:
+#&gt; ! 没有&quot;data_overview&quot;这个函数
 
 print(overview$variable_types)
-#&gt; $character
-#&gt; [1] &quot;patient_id&quot; &quot;test&quot;       &quot;value&quot;      &quot;unit&quot;       &quot;test_date&quot;
+#&gt; Error:
+#&gt; ! 找不到对象&#39;overview&#39;
 print(overview$summary_stats)
-#&gt; $character
-#&gt;              variable   n missing missing_pct unique   top_value top_freq
-#&gt; patient_id patient_id 300       0        0.00    100        P001        3
-#&gt; test             test 300       0        0.00      3 Cholesterol      100
-#&gt; value           value 275      25        8.33    236           0        4
-#&gt; unit             unit 268      32       10.67      3       mg/dL      159
-#&gt; test_date   test_date 279      21        7.00     86  2025-09-02        9
-#&gt;            top_pct
-#&gt; patient_id    1.00
-#&gt; test         33.33
-#&gt; value         1.45
-#&gt; unit         59.33
-#&gt; test_date     3.23
+#&gt; Error:
+#&gt; ! 找不到对象&#39;overview&#39;
 print(overview$quality_issues$missing_values)
-#&gt;      unit     value test_date 
-#&gt;     10.67      8.33      7.00</code></pre>
+#&gt; Error:
+#&gt; ! 找不到对象&#39;overview&#39;</code></pre>
 <p>检查不同检验项目的单位冲突情况：</p>
 <pre class="r"><code>knitr::kable(unit_view(lab_data, subject_col = &quot;test&quot;, value_col = &quot;value&quot;, unit_col = &quot;unit&quot;),
   caption = &quot;各检验项目的单位冲突情况&quot;
-)</code></pre>
-<table>
-<caption>各检验项目的单位冲突情况</caption>
-<colgroup>
-<col width="14%" />
-<col width="8%" />
-<col width="7%" />
-<col width="7%" />
-<col width="8%" />
-<col width="12%" />
-<col width="12%" />
-<col width="8%" />
-<col width="10%" />
-<col width="10%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="left">subject</th>
-<th align="left">unit</th>
-<th align="left">label</th>
-<th align="right">count</th>
-<th align="right">nvalid</th>
-<th align="right">mean</th>
-<th align="right">sd</th>
-<th align="right">median</th>
-<th align="right">q_0.025</th>
-<th align="right">q_0.975</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">Cholesterol</td>
-<td align="left">mg/dL</td>
-<td align="left">NA</td>
-<td align="right">50</td>
-<td align="right">41</td>
-<td align="right">119.34902</td>
-<td align="right">175.46788</td>
-<td align="right">9.70</td>
-<td align="right">3.70000</td>
-<td align="right">342.5300</td>
-</tr>
-<tr class="even">
-<td align="left">Cholesterol</td>
-<td align="left">mmol/L</td>
-<td align="left">NA</td>
-<td align="right">40</td>
-<td align="right">33</td>
-<td align="right">185.58394</td>
-<td align="right">197.11032</td>
-<td align="right">183.62</td>
-<td align="right">3.73600</td>
-<td align="right">657.6000</td>
-</tr>
-<tr class="odd">
-<td align="left">Cholesterol</td>
-<td align="left">NA</td>
-<td align="left">NA</td>
-<td align="right">10</td>
-<td align="right">8</td>
-<td align="right">102.32375</td>
-<td align="right">84.31264</td>
-<td align="right">141.32</td>
-<td align="right">0.56000</td>
-<td align="right">189.1785</td>
-</tr>
-<tr class="even">
-<td align="left">Creatinine</td>
-<td align="left">mg/dL</td>
-<td align="left">NA</td>
-<td align="right">54</td>
-<td align="right">46</td>
-<td align="right">94.63500</td>
-<td align="right">212.69011</td>
-<td align="right">2.87</td>
-<td align="right">0.70000</td>
-<td align="right">915.3400</td>
-</tr>
-<tr class="odd">
-<td align="left">Creatinine</td>
-<td align="left">umol/L</td>
-<td align="left">NA</td>
-<td align="right">37</td>
-<td align="right">32</td>
-<td align="right">57.27156</td>
-<td align="right">82.24823</td>
-<td align="right">2.72</td>
-<td align="right">-2.25000</td>
-<td align="right">292.5532</td>
-</tr>
-<tr class="even">
-<td align="left">Creatinine</td>
-<td align="left">NA</td>
-<td align="left">NA</td>
-<td align="right">9</td>
-<td align="right">8</td>
-<td align="right">74.75500</td>
-<td align="right">109.80029</td>
-<td align="right">41.49</td>
-<td align="right">0.14175</td>
-<td align="right">283.1100</td>
-</tr>
-<tr class="odd">
-<td align="left">Glucose</td>
-<td align="left">mg/dL</td>
-<td align="left">NA</td>
-<td align="right">55</td>
-<td align="right">41</td>
-<td align="right">88.75610</td>
-<td align="right">159.26087</td>
-<td align="right">16.30</td>
-<td align="right">0.00000</td>
-<td align="right">500.0000</td>
-</tr>
-<tr class="even">
-<td align="left">Glucose</td>
-<td align="left">mmol/L</td>
-<td align="left">NA</td>
-<td align="right">32</td>
-<td align="right">26</td>
-<td align="right">71.28846</td>
-<td align="right">63.38110</td>
-<td align="right">84.30</td>
-<td align="right">4.56250</td>
-<td align="right">202.9750</td>
-</tr>
-<tr class="odd">
-<td align="left">Glucose</td>
-<td align="left">NA</td>
-<td align="left">NA</td>
-<td align="right">13</td>
-<td align="right">9</td>
-<td align="right">178.11111</td>
-<td align="right">314.49209</td>
-<td align="right">82.90</td>
-<td align="right">5.74000</td>
-<td align="right">841.0000</td>
-</tr>
-</tbody>
-</table>
+)
+#&gt; Error in `unit_view()`:
+#&gt; ! 没有&quot;unit_view&quot;这个函数</code></pre>
 </div>
 <div id="第二步格式清洗" class="section level2">
 <h2>第二步：格式清洗</h2>
@@ -800,126 +643,11 @@ print(overview$quality_issues$missing_values)
 <h3>2.1 检查非数值条目</h3>
 <p>首先，找出哪些记录无法转换为数值：</p>
 <pre class="r"><code>nonnum_df &lt;- df_view_nonnum(lab_data)
-knitr::kable(head(nonnum_df, 15), caption = &quot;各变量中的非数值条目&quot;)</code></pre>
-<table>
-<caption>各变量中的非数值条目</caption>
-<thead>
-<tr class="header">
-<th align="left">patient_id</th>
-<th align="left">test</th>
-<th align="left">test_date</th>
-<th align="left">unit</th>
-<th align="left">value</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">P001</td>
-<td align="left">Glucose</td>
-<td align="left">2026/05/23</td>
-<td align="left">mg/dL</td>
-<td align="left">N/A</td>
-</tr>
-<tr class="even">
-<td align="left">P002</td>
-<td align="left">Creatinine</td>
-<td align="left">pending</td>
-<td align="left">mmol/L</td>
-<td align="left">7..2</td>
-</tr>
-<tr class="odd">
-<td align="left">P003</td>
-<td align="left">Cholesterol</td>
-<td align="left">2025/07/07</td>
-<td align="left">umol/L</td>
-<td align="left">180 (post-meal)</td>
-</tr>
-<tr class="even">
-<td align="left">P004</td>
-<td align="left">NA</td>
-<td align="left">2025-12-08</td>
-<td align="left">NA</td>
-<td align="left">&gt;500</td>
-</tr>
-<tr class="odd">
-<td align="left">P005</td>
-<td align="left">NA</td>
-<td align="left">1900-01-01</td>
-<td align="left">NA</td>
-<td align="left">&lt;40</td>
-</tr>
-<tr class="even">
-<td align="left">P006</td>
-<td align="left">NA</td>
-<td align="left">2026-04-21</td>
-<td align="left">NA</td>
-<td align="left">8.5.1</td>
-</tr>
-<tr class="odd">
-<td align="left">P007</td>
-<td align="left">NA</td>
-<td align="left">2026/04/12</td>
-<td align="left">NA</td>
-<td align="left">6..5</td>
-</tr>
-<tr class="even">
-<td align="left">P008</td>
-<td align="left">NA</td>
-<td align="left">2026/01/01</td>
-<td align="left">NA</td>
-<td align="left">see comment</td>
-</tr>
-<tr class="odd">
-<td align="left">P009</td>
-<td align="left">NA</td>
-<td align="left">2026-05-01</td>
-<td align="left">NA</td>
-<td align="left">normal range</td>
-</tr>
-<tr class="even">
-<td align="left">P010</td>
-<td align="left">NA</td>
-<td align="left">2026-04-22</td>
-<td align="left">NA</td>
-<td align="left">1.2 mg/dL</td>
-</tr>
-<tr class="odd">
-<td align="left">P011</td>
-<td align="left">NA</td>
-<td align="left">2025-09-02</td>
-<td align="left">NA</td>
-<td align="left">110 umol/L</td>
-</tr>
-<tr class="even">
-<td align="left">P012</td>
-<td align="left">NA</td>
-<td align="left">2025/12/03</td>
-<td align="left">NA</td>
-<td align="left">&gt;5.0</td>
-</tr>
-<tr class="odd">
-<td align="left">P013</td>
-<td align="left">NA</td>
-<td align="left">2026/01/27</td>
-<td align="left">NA</td>
-<td align="left">(1.2)</td>
-</tr>
-<tr class="even">
-<td align="left">P014</td>
-<td align="left">NA</td>
-<td align="left">2025-12-25</td>
-<td align="left">NA</td>
-<td align="left">&gt;400</td>
-</tr>
-<tr class="odd">
-<td align="left">P015</td>
-<td align="left">NA</td>
-<td align="left">2025/10/21</td>
-<td align="left">NA</td>
-<td align="left">250 (borderline)</td>
-</tr>
-</tbody>
-</table>
+#&gt; Error in `df_view_nonnum()`:
+#&gt; ! 没有&quot;df_view_nonnum&quot;这个函数
+knitr::kable(head(nonnum_df, 15), caption = &quot;各变量中的非数值条目&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;nonnum_df&#39;</code></pre>
 </div>
 <div id="提取数值" class="section level3">
 <h3>2.2 提取数值</h3>
@@ -936,6 +664,8 @@ lab_data_cleaned &lt;- lab_data
 
 # 从混乱的 value 列中提取数值
 lab_data_cleaned$value_numeric &lt;- extract_num(lab_data$value)
+#&gt; Error in `extract_num()`:
+#&gt; ! 没有&quot;extract_num&quot;这个函数
 
 # 展示清洗前后对比
 comparison &lt;- data.frame(
@@ -946,111 +676,12 @@ comparison &lt;- data.frame(
 ) %&gt;%
   dplyr::filter(original != cleaned | is.na(cleaned)) %&gt;%
   head(15)
+#&gt; Error in `data.frame()`:
+#&gt; ! 参数值意味着不同的行数: 300, 0
 
-knitr::kable(comparison, caption = &quot;数值清洗：前后对比&quot;)</code></pre>
-<table>
-<caption>数值清洗：前后对比</caption>
-<thead>
-<tr class="header">
-<th align="left">test</th>
-<th align="left">original</th>
-<th align="right">cleaned</th>
-<th align="left">unit</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">Glucose</td>
-<td align="left">N/A</td>
-<td align="right">NA</td>
-<td align="left">mg/dL</td>
-</tr>
-<tr class="even">
-<td align="left">Glucose</td>
-<td align="left">7..2</td>
-<td align="right">7.2</td>
-<td align="left">mg/dL</td>
-</tr>
-<tr class="odd">
-<td align="left">Glucose</td>
-<td align="left">NA</td>
-<td align="right">NA</td>
-<td align="left">mmol/L</td>
-</tr>
-<tr class="even">
-<td align="left">Glucose</td>
-<td align="left">NA</td>
-<td align="right">NA</td>
-<td align="left">mg/dL</td>
-</tr>
-<tr class="odd">
-<td align="left">Glucose</td>
-<td align="left">NA</td>
-<td align="right">NA</td>
-<td align="left">NA</td>
-</tr>
-<tr class="even">
-<td align="left">Glucose</td>
-<td align="left">N/A</td>
-<td align="right">NA</td>
-<td align="left">mg/dL</td>
-</tr>
-<tr class="odd">
-<td align="left">Glucose</td>
-<td align="left">NA</td>
-<td align="right">NA</td>
-<td align="left">mg/dL</td>
-</tr>
-<tr class="even">
-<td align="left">Glucose</td>
-<td align="left">180 (post-meal)</td>
-<td align="right">180.0</td>
-<td align="left">mmol/L</td>
-</tr>
-<tr class="odd">
-<td align="left">Glucose</td>
-<td align="left">NA</td>
-<td align="right">NA</td>
-<td align="left">mmol/L</td>
-</tr>
-<tr class="even">
-<td align="left">Glucose</td>
-<td align="left">&gt;500</td>
-<td align="right">500.0</td>
-<td align="left">mmol/L</td>
-</tr>
-<tr class="odd">
-<td align="left">Glucose</td>
-<td align="left">NA</td>
-<td align="right">NA</td>
-<td align="left">mg/dL</td>
-</tr>
-<tr class="even">
-<td align="left">Glucose</td>
-<td align="left">&lt;40</td>
-<td align="right">40.0</td>
-<td align="left">mg/dL</td>
-</tr>
-<tr class="odd">
-<td align="left">Glucose</td>
-<td align="left">8.5.1</td>
-<td align="right">8.5</td>
-<td align="left">mg/dL</td>
-</tr>
-<tr class="even">
-<td align="left">Glucose</td>
-<td align="left">6..5</td>
-<td align="right">6.5</td>
-<td align="left">mg/dL</td>
-</tr>
-<tr class="odd">
-<td align="left">Glucose</td>
-<td align="left">&lt;40</td>
-<td align="right">40.0</td>
-<td align="left">NA</td>
-</tr>
-</tbody>
-</table>
+knitr::kable(comparison, caption = &quot;数值清洗：前后对比&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;comparison&#39;</code></pre>
 </div>
 <div id="日期转换" class="section level3">
 <h3>2.3 日期转换</h3>
@@ -1058,6 +689,8 @@ knitr::kable(comparison, caption = &quot;数值清洗：前后对比&quot;)</cod
 进行标准化：</p>
 <pre class="r"><code># 将各种日期格式转换为标准 Date 对象
 lab_data_cleaned$test_date_clean &lt;- to_date(lab_data$test_date)
+#&gt; Error in `to_date()`:
+#&gt; ! 没有&quot;to_date&quot;这个函数
 
 # 展示日期转换结果
 date_comparison &lt;- data.frame(
@@ -1066,148 +699,26 @@ date_comparison &lt;- data.frame(
 ) %&gt;%
   dplyr::filter(!is.na(original)) %&gt;%
   head(15)
+#&gt; Error in `data.frame()`:
+#&gt; ! 参数值意味着不同的行数: 300, 0
 
-knitr::kable(date_comparison, caption = &quot;日期转换：前后对比&quot;)</code></pre>
-<table>
-<caption>日期转换：前后对比</caption>
-<thead>
-<tr class="header">
-<th align="left">original</th>
-<th align="left">cleaned</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">2026/05/23</td>
-<td align="left">2026-05-23</td>
-</tr>
-<tr class="even">
-<td align="left">pending</td>
-<td align="left">NA</td>
-</tr>
-<tr class="odd">
-<td align="left">2025/07/07</td>
-<td align="left">2025-07-07</td>
-</tr>
-<tr class="even">
-<td align="left">2025-12-08</td>
-<td align="left">2025-12-08</td>
-</tr>
-<tr class="odd">
-<td align="left">1900-01-01</td>
-<td align="left">1900-01-01</td>
-</tr>
-<tr class="even">
-<td align="left">2026-04-21</td>
-<td align="left">2026-04-21</td>
-</tr>
-<tr class="odd">
-<td align="left">2026/04/12</td>
-<td align="left">2026-04-12</td>
-</tr>
-<tr class="even">
-<td align="left">2026/01/01</td>
-<td align="left">2026-01-01</td>
-</tr>
-<tr class="odd">
-<td align="left">2026-05-01</td>
-<td align="left">2026-05-01</td>
-</tr>
-<tr class="even">
-<td align="left">2025-12-08</td>
-<td align="left">2025-12-08</td>
-</tr>
-<tr class="odd">
-<td align="left">2026-04-22</td>
-<td align="left">2026-04-22</td>
-</tr>
-<tr class="even">
-<td align="left">2025-09-02</td>
-<td align="left">2025-09-02</td>
-</tr>
-<tr class="odd">
-<td align="left">2025/12/03</td>
-<td align="left">2025-12-03</td>
-</tr>
-<tr class="even">
-<td align="left">2025/12/03</td>
-<td align="left">2025-12-03</td>
-</tr>
-<tr class="odd">
-<td align="left">2026/01/27</td>
-<td align="left">2026-01-27</td>
-</tr>
-</tbody>
-</table>
+knitr::kable(date_comparison, caption = &quot;日期转换：前后对比&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;date_comparison&#39;</code></pre>
 <p>检查无法解析的无效日期：</p>
 <pre class="r"><code>invalid_dates &lt;- lab_data_cleaned %&gt;%
   dplyr::filter(!is.na(test_date) &amp; is.na(test_date_clean)) %&gt;%
   dplyr::select(patient_id, test, test_date) %&gt;%
   head(10)
+#&gt; Error in `dplyr::filter()`:
+#&gt; ℹ In argument: `!is.na(test_date) &amp;
+#&gt;   is.na(test_date_clean)`.
+#&gt; Caused by error:
+#&gt; ! 找不到对象&#39;test_date_clean&#39;
 
-knitr::kable(invalid_dates, caption = &quot;无效日期条目（无法解析）&quot;)</code></pre>
-<table>
-<caption>无效日期条目（无法解析）</caption>
-<thead>
-<tr class="header">
-<th align="left">patient_id</th>
-<th align="left">test</th>
-<th align="left">test_date</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">P002</td>
-<td align="left">Glucose</td>
-<td align="left">pending</td>
-</tr>
-<tr class="even">
-<td align="left">P068</td>
-<td align="left">Glucose</td>
-<td align="left">unknown</td>
-</tr>
-<tr class="odd">
-<td align="left">P079</td>
-<td align="left">Glucose</td>
-<td align="left">unknown</td>
-</tr>
-<tr class="even">
-<td align="left">P088</td>
-<td align="left">Glucose</td>
-<td align="left">pending</td>
-</tr>
-<tr class="odd">
-<td align="left">P018</td>
-<td align="left">Creatinine</td>
-<td align="left">unknown</td>
-</tr>
-<tr class="even">
-<td align="left">P058</td>
-<td align="left">Creatinine</td>
-<td align="left">N/A</td>
-</tr>
-<tr class="odd">
-<td align="left">P059</td>
-<td align="left">Creatinine</td>
-<td align="left">N/A</td>
-</tr>
-<tr class="even">
-<td align="left">P065</td>
-<td align="left">Creatinine</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">P073</td>
-<td align="left">Creatinine</td>
-<td align="left">unknown</td>
-</tr>
-<tr class="even">
-<td align="left">P080</td>
-<td align="left">Creatinine</td>
-<td align="left">N/A</td>
-</tr>
-</tbody>
-</table>
+knitr::kable(invalid_dates, caption = &quot;无效日期条目（无法解析）&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;invalid_dates&#39;</code></pre>
 </div>
 <div id="更新数据" class="section level3">
 <h3>2.4 更新数据</h3>
@@ -1217,7 +728,11 @@ knitr::kable(invalid_dates, caption = &quot;无效日期条目（无法解析）
     value = value_numeric,
     test_date = test_date_clean
   ) %&gt;%
-  dplyr::select(-value_numeric, -test_date_clean)</code></pre>
+  dplyr::select(-value_numeric, -test_date_clean)
+#&gt; Error in `dplyr::mutate()`:
+#&gt; ℹ In argument: `value = value_numeric`.
+#&gt; Caused by error:
+#&gt; ! 找不到对象&#39;value_numeric&#39;</code></pre>
 </div>
 </div>
 <div id="第三步单位标准化" class="section level2">
@@ -1240,162 +755,18 @@ lab_data_std &lt;- unit_standardize(
   subject_col = &quot;test&quot;, value_col = &quot;value&quot;,
   unit_col = &quot;unit&quot;, change_rules = change_rules
 )
+#&gt; Error in `unit_standardize()`:
+#&gt; ! 没有&quot;unit_standardize&quot;这个函数
 
-knitr::kable(head(lab_data_std, 15), caption = &quot;单位标准化后的实验室数据&quot;)</code></pre>
-<table>
-<caption>单位标准化后的实验室数据</caption>
-<thead>
-<tr class="header">
-<th align="left">patient_id</th>
-<th align="left">test</th>
-<th align="right">value</th>
-<th align="left">unit</th>
-<th align="left">test_date</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">P001</td>
-<td align="left">Glucose</td>
-<td align="right">NA</td>
-<td align="left">mg/dL</td>
-<td align="left">2026-05-23</td>
-</tr>
-<tr class="even">
-<td align="left">P002</td>
-<td align="left">Glucose</td>
-<td align="right">2282.4</td>
-<td align="left">mg/dL</td>
-<td align="left">NA</td>
-</tr>
-<tr class="odd">
-<td align="left">P003</td>
-<td align="left">Glucose</td>
-<td align="right">7.2</td>
-<td align="left">mg/dL</td>
-<td align="left">2025-07-07</td>
-</tr>
-<tr class="even">
-<td align="left">P004</td>
-<td align="left">Glucose</td>
-<td align="right">95.6</td>
-<td align="left">mg/dL</td>
-<td align="left">2025-12-08</td>
-</tr>
-<tr class="odd">
-<td align="left">P005</td>
-<td align="left">Glucose</td>
-<td align="right">1512.0</td>
-<td align="left">mg/dL</td>
-<td align="left">1900-01-01</td>
-</tr>
-<tr class="even">
-<td align="left">P006</td>
-<td align="left">Glucose</td>
-<td align="right">95.4</td>
-<td align="left">mg/dL</td>
-<td align="left">2026-04-21</td>
-</tr>
-<tr class="odd">
-<td align="left">P007</td>
-<td align="left">Glucose</td>
-<td align="right">186.2</td>
-<td align="left">mg/dL</td>
-<td align="left">2026-04-12</td>
-</tr>
-<tr class="even">
-<td align="left">P008</td>
-<td align="left">Glucose</td>
-<td align="right">6.1</td>
-<td align="left">mg/dL</td>
-<td align="left">2026-01-01</td>
-</tr>
-<tr class="odd">
-<td align="left">P009</td>
-<td align="left">Glucose</td>
-<td align="right">257.4</td>
-<td align="left">mg/dL</td>
-<td align="left">2026-05-01</td>
-</tr>
-<tr class="even">
-<td align="left">P010</td>
-<td align="left">Glucose</td>
-<td align="right">NA</td>
-<td align="left">mg/dL</td>
-<td align="left">2025-12-08</td>
-</tr>
-<tr class="odd">
-<td align="left">P011</td>
-<td align="left">Glucose</td>
-<td align="right">5.3</td>
-<td align="left">mg/dL</td>
-<td align="left">2026-04-22</td>
-</tr>
-<tr class="even">
-<td align="left">P012</td>
-<td align="left">Glucose</td>
-<td align="right">6.6</td>
-<td align="left">mg/dL</td>
-<td align="left">2025-09-02</td>
-</tr>
-<tr class="odd">
-<td align="left">P013</td>
-<td align="left">Glucose</td>
-<td align="right">1614.6</td>
-<td align="left">mg/dL</td>
-<td align="left">2025-12-03</td>
-</tr>
-<tr class="even">
-<td align="left">P014</td>
-<td align="left">Glucose</td>
-<td align="right">190.2</td>
-<td align="left">mg/dL</td>
-<td align="left">2025-12-03</td>
-</tr>
-<tr class="odd">
-<td align="left">P015</td>
-<td align="left">Glucose</td>
-<td align="right">5.1</td>
-<td align="left">mg/dL</td>
-<td align="left">2026-01-27</td>
-</tr>
-</tbody>
-</table>
+knitr::kable(head(lab_data_std, 15), caption = &quot;单位标准化后的实验室数据&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;lab_data_std&#39;</code></pre>
 <p>验证单位是否已统一：</p>
 <pre class="r"><code>knitr::kable(unit_view(lab_data_std, subject_col = &quot;test&quot;, value_col = &quot;value&quot;, unit_col = &quot;unit&quot;),
   caption = &quot;标准化后的单位情况&quot;
-)</code></pre>
-<table>
-<caption>标准化后的单位情况</caption>
-<colgroup>
-<col width="12%" />
-<col width="7%" />
-<col width="9%" />
-<col width="9%" />
-<col width="11%" />
-<col width="7%" />
-<col width="4%" />
-<col width="11%" />
-<col width="12%" />
-<col width="12%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="left">subject</th>
-<th align="left">unit</th>
-<th align="left">label</th>
-<th align="right">count</th>
-<th align="right">nvalid</th>
-<th align="right">mean</th>
-<th align="right">sd</th>
-<th align="right">median</th>
-<th align="right">q_0.025</th>
-<th align="right">q_0.975</th>
-</tr>
-</thead>
-<tbody>
-</tbody>
-</table>
+)
+#&gt; Error in `unit_view()`:
+#&gt; ! 没有&quot;unit_view&quot;这个函数</code></pre>
 </div>
 <div id="第四步异常值检测" class="section level2">
 <h2>第四步：异常值检测</h2>
@@ -1412,6 +783,8 @@ knitr::kable(head(lab_data_std, 15), caption = &quot;单位标准化后的实验
 <p>使用 IQR 方法对各检验项目进行异常值检测：</p>
 <pre class="r"><code># 按检验项目拆分数据进行异常值检测
 lab_data_clean &lt;- lab_data_std
+#&gt; Error:
+#&gt; ! 找不到对象&#39;lab_data_std&#39;
 
 # 对每个检验项目检测异常值
 for (test_name in c(&quot;Glucose&quot;, &quot;Creatinine&quot;, &quot;Cholesterol&quot;)) {
@@ -1424,23 +797,12 @@ for (test_name in c(&quot;Glucose&quot;, &quot;Creatinine&quot;, &quot;Cholester
   cat(&quot;  检出异常值:&quot;, sum(outlier_res$outlier_mask, na.rm = TRUE), &quot;\n&quot;)
   cat(&quot;  缺失值:&quot;, sum(is.na(test_data)), &quot;\n&quot;)
 }
-#&gt; 
-#&gt;  Glucose :
-#&gt;   总值数量: 100 
-#&gt;   检出异常值: 19 
-#&gt;   缺失值: 14 
-#&gt; 
-#&gt;  Creatinine :
-#&gt;   总值数量: 100 
-#&gt;   检出异常值: 23 
-#&gt;   缺失值: 8 
-#&gt; 
-#&gt;  Cholesterol :
-#&gt;   总值数量: 100 
-#&gt;   检出异常值: 22 
-#&gt;   缺失值: 10</code></pre>
+#&gt; Error:
+#&gt; ! 找不到对象&#39;lab_data_std&#39;</code></pre>
 <p>对比不同异常值检测方法（以葡萄糖为例）：</p>
 <pre class="r"><code>glucose_values &lt;- lab_data_std$value[lab_data_std$test == &quot;Glucose&quot;]
+#&gt; Error:
+#&gt; ! 找不到对象&#39;lab_data_std&#39;
 
 knitr::kable(data.frame(
   Method = c(&quot;MAD&quot;, &quot;IQR&quot;, &quot;Z-score&quot;),
@@ -1449,30 +811,9 @@ knitr::kable(data.frame(
     sum(iqr_outlier(glucose_values, threshold = 1.5), na.rm = TRUE),
     sum(zscore_outlier(glucose_values, threshold = 3), na.rm = TRUE)
   )
-), caption = &quot;不同方法的异常值检测结果（葡萄糖）&quot;)</code></pre>
-<table>
-<caption>不同方法的异常值检测结果（葡萄糖）</caption>
-<thead>
-<tr class="header">
-<th align="left">Method</th>
-<th align="right">Outlier_Count</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">MAD</td>
-<td align="right">19</td>
-</tr>
-<tr class="even">
-<td align="left">IQR</td>
-<td align="right">19</td>
-</tr>
-<tr class="odd">
-<td align="left">Z-score</td>
-<td align="right">1</td>
-</tr>
-</tbody>
-</table>
+), caption = &quot;不同方法的异常值检测结果（葡萄糖）&quot;)
+#&gt; Error in `mad_outlier()`:
+#&gt; ! 没有&quot;mad_outlier&quot;这个函数</code></pre>
 <div id="处理异常值" class="section level3">
 <h3>处理异常值</h3>
 <p>在本次演示中，我们将异常值设为
@@ -1480,6 +821,8 @@ NA。<strong>实际工作中，异常值应当逐条人工核实</strong>——�
 &gt; 400 mg/dL），而非数据错误。</p>
 <pre class="r"><code># 创建副本用于异常值处理
 lab_data_final &lt;- lab_data_std
+#&gt; Error:
+#&gt; ! 找不到对象&#39;lab_data_std&#39;
 
 # 对每个检验项目将异常值设为 NA
 for (test_name in c(&quot;Glucose&quot;, &quot;Creatinine&quot;, &quot;Cholesterol&quot;)) {
@@ -1491,6 +834,8 @@ for (test_name in c(&quot;Glucose&quot;, &quot;Creatinine&quot;, &quot;Cholester
   # 将异常值设为 NA
   lab_data_final$value[test_idx][outlier_res$outlier_mask] &lt;- NA
 }
+#&gt; Error:
+#&gt; ! 找不到对象&#39;lab_data_std&#39;
 
 # 对比异常值处理前后
 comparison_df &lt;- data.frame(
@@ -1513,57 +858,12 @@ comparison_df &lt;- data.frame(
     mean(lab_data_final$value[lab_data_final$test == &quot;Cholesterol&quot;], na.rm = TRUE)
   )
 )
+#&gt; Error:
+#&gt; ! 找不到对象&#39;lab_data_std&#39;
 
-knitr::kable(comparison_df, caption = &quot;异常值处理前后对比&quot;, digits = 2)</code></pre>
-<table>
-<caption>异常值处理前后对比</caption>
-<thead>
-<tr class="header">
-<th align="left">Test</th>
-<th align="left">Stage</th>
-<th align="right">N</th>
-<th align="right">Mean</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">Glucose</td>
-<td align="left">处理前</td>
-<td align="right">86</td>
-<td align="right">599.81</td>
-</tr>
-<tr class="even">
-<td align="left">Glucose</td>
-<td align="left">处理后</td>
-<td align="right">67</td>
-<td align="right">82.01</td>
-</tr>
-<tr class="odd">
-<td align="left">Creatinine</td>
-<td align="left">处理前</td>
-<td align="right">92</td>
-<td align="right">55.35</td>
-</tr>
-<tr class="even">
-<td align="left">Creatinine</td>
-<td align="left">处理后</td>
-<td align="right">69</td>
-<td align="right">1.11</td>
-</tr>
-<tr class="odd">
-<td align="left">Cholesterol</td>
-<td align="left">处理前</td>
-<td align="right">90</td>
-<td align="right">2818.59</td>
-</tr>
-<tr class="even">
-<td align="left">Cholesterol</td>
-<td align="left">处理后</td>
-<td align="right">68</td>
-<td align="right">147.00</td>
-</tr>
-</tbody>
-</table>
+knitr::kable(comparison_df, caption = &quot;异常值处理前后对比&quot;, digits = 2)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;comparison_df&#39;</code></pre>
 <blockquote>
 <p><strong>临床提示</strong>：删除异常值之前务必进行临床核实。某些”异常值”可能具有重要的临床意义（如血糖
 &gt; 400 mg/dL
@@ -1587,96 +887,18 @@ lab_wide &lt;- lab_data_final %&gt;%
     values_from = value,
     names_sort = TRUE
   )
+#&gt; Error:
+#&gt; ! 找不到对象&#39;lab_data_final&#39;
 
 # 按患者和日期排序，便于纵向查看
 lab_wide &lt;- lab_wide %&gt;%
   arrange(patient_id, test_date)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;lab_wide&#39;
 
-knitr::kable(head(lab_wide, 10), caption = &quot;纵向实验室数据（前 10 条记录）&quot;)</code></pre>
-<table>
-<caption>纵向实验室数据（前 10 条记录）</caption>
-<thead>
-<tr class="header">
-<th align="left">patient_id</th>
-<th align="left">test_date</th>
-<th align="right">Cholesterol</th>
-<th align="right">Creatinine</th>
-<th align="right">Glucose</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">P001</td>
-<td align="left">2025-11-03</td>
-<td align="right">NA</td>
-<td align="right">1.13</td>
-<td align="right">NA</td>
-</tr>
-<tr class="even">
-<td align="left">P001</td>
-<td align="left">2025-12-13</td>
-<td align="right">3.70</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-</tr>
-<tr class="odd">
-<td align="left">P001</td>
-<td align="left">2026-05-23</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-</tr>
-<tr class="even">
-<td align="left">P002</td>
-<td align="left">2025-10-23</td>
-<td align="right">9.70</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-</tr>
-<tr class="odd">
-<td align="left">P002</td>
-<td align="left">2025-12-31</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-</tr>
-<tr class="even">
-<td align="left">P003</td>
-<td align="left">2025-07-07</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-<td align="right">7.2</td>
-</tr>
-<tr class="odd">
-<td align="left">P003</td>
-<td align="left">2026-02-28</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-</tr>
-<tr class="even">
-<td align="left">P003</td>
-<td align="left">2026-05-01</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-</tr>
-<tr class="odd">
-<td align="left">P004</td>
-<td align="left">2025-11-21</td>
-<td align="right">329.49</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-</tr>
-<tr class="even">
-<td align="left">P004</td>
-<td align="left">2025-12-08</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-<td align="right">95.6</td>
-</tr>
-</tbody>
-</table>
+knitr::kable(head(lab_wide, 10), caption = &quot;纵向实验室数据（前 10 条记录）&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;lab_wide&#39;</code></pre>
 <p>查看队列结构——每位患者的检验次数：</p>
 <pre class="r"><code>cohort_summary &lt;- lab_wide %&gt;%
   group_by(patient_id) %&gt;%
@@ -1686,108 +908,45 @@ knitr::kable(head(lab_wide, 10), caption = &quot;纵向实验室数据（前 10 
     last_date = max(test_date)
   ) %&gt;%
   head(10)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;lab_wide&#39;
 
-knitr::kable(cohort_summary, caption = &quot;队列结构：每位患者的就诊次数&quot;)</code></pre>
-<table>
-<caption>队列结构：每位患者的就诊次数</caption>
-<thead>
-<tr class="header">
-<th align="left">patient_id</th>
-<th align="right">n_visits</th>
-<th align="left">first_date</th>
-<th align="left">last_date</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">P001</td>
-<td align="right">3</td>
-<td align="left">2025-11-03</td>
-<td align="left">2026-05-23</td>
-</tr>
-<tr class="even">
-<td align="left">P002</td>
-<td align="right">2</td>
-<td align="left">2025-10-23</td>
-<td align="left">2025-12-31</td>
-</tr>
-<tr class="odd">
-<td align="left">P003</td>
-<td align="right">3</td>
-<td align="left">2025-07-07</td>
-<td align="left">2026-05-01</td>
-</tr>
-<tr class="even">
-<td align="left">P004</td>
-<td align="right">3</td>
-<td align="left">2025-11-21</td>
-<td align="left">2026-04-12</td>
-</tr>
-<tr class="odd">
-<td align="left">P005</td>
-<td align="right">3</td>
-<td align="left">1900-01-01</td>
-<td align="left">2026-02-21</td>
-</tr>
-<tr class="even">
-<td align="left">P006</td>
-<td align="right">2</td>
-<td align="left">2026-03-07</td>
-<td align="left">2026-04-21</td>
-</tr>
-<tr class="odd">
-<td align="left">P007</td>
-<td align="right">2</td>
-<td align="left">2026-04-12</td>
-<td align="left">2030-12-31</td>
-</tr>
-<tr class="even">
-<td align="left">P008</td>
-<td align="right">3</td>
-<td align="left">2025-09-26</td>
-<td align="left">2026-02-12</td>
-</tr>
-<tr class="odd">
-<td align="left">P009</td>
-<td align="right">3</td>
-<td align="left">2025-12-19</td>
-<td align="left">2026-05-01</td>
-</tr>
-<tr class="even">
-<td align="left">P010</td>
-<td align="right">3</td>
-<td align="left">2025-08-27</td>
-<td align="left">2025-12-08</td>
-</tr>
-</tbody>
-</table>
+knitr::kable(cohort_summary, caption = &quot;队列结构：每位患者的就诊次数&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;cohort_summary&#39;</code></pre>
 <p>评估缺失数据模式：</p>
 <pre class="r"><code>missing_summary &lt;- data.frame(
   Variable = names(lab_wide)[-1],
   Missing_Count = sapply(lab_wide[-1], function(x) sum(is.na(x))),
   Missing_Percent = round(sapply(lab_wide[-1], function(x) sum(is.na(x)) / length(x) * 100, 2))
 )
-#&gt; Error in FUN(X[[i]], ...): unused argument (2)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;lab_wide&#39;
 
 knitr::kable(missing_summary, caption = &quot;各检验项目的缺失数据汇总&quot;)
-#&gt; Error: object &#39;missing_summary&#39; not found</code></pre>
+#&gt; Error:
+#&gt; ! 找不到对象&#39;missing_summary&#39;</code></pre>
 <p>筛选缺失过多的记录：</p>
 <pre class="r"><code>lab_wide_clean &lt;- get_valid_subset(
   lab_wide,
   row_na_ratio = 0.5, # 每条记录最多允许 50% 缺失
   col_na_ratio = 0.3 # 每个检验项目最多允许 30% 缺失
 )
+#&gt; Error in `get_valid_subset()`:
+#&gt; ! 没有&quot;get_valid_subset&quot;这个函数
 
 cat(
   &quot;维度变化:&quot;, nrow(lab_wide), &quot;条记录&quot;,
   &quot;-&gt;&quot;, nrow(lab_wide_clean), &quot;条记录\n&quot;
 )
-#&gt; 维度变化: 259 条记录 -&gt; 259 条记录
+#&gt; Error:
+#&gt; ! 找不到对象&#39;lab_wide&#39;
 cat(
   &quot;唯一患者数:&quot;, length(unique(lab_wide$patient_id)),
   &quot;-&gt;&quot;, length(unique(lab_wide_clean$patient_id)), &quot;\n&quot;
 )
-#&gt; 唯一患者数: 99 -&gt; 99</code></pre>
+#&gt; Error:
+#&gt; ! 找不到对象&#39;lab_wide&#39;</code></pre>
 </div>
 <div id="第六步数据转换" class="section level2">
 <h2>第六步：数据转换</h2>
@@ -1802,7 +961,8 @@ lab_wide_clean$glucose_category &lt;- cut_by(
   labels = c(&quot;Normal&quot;, &quot;Prediabetes&quot;, &quot;Diabetes&quot;),
   label_with_range = FALSE
 )
-#&gt; Error in cut_by(lab_wide_clean$Glucose, breaks = c(100, 126), labels = c(&quot;Normal&quot;, : Some of `breaks` are not in the range of `x`!
+#&gt; Error in `cut_by()`:
+#&gt; ! 没有&quot;cut_by&quot;这个函数
 
 # 肌酐分类（eGFR 近似）
 lab_wide_clean$renal_function &lt;- cut_by(
@@ -1811,7 +971,8 @@ lab_wide_clean$renal_function &lt;- cut_by(
   labels = c(&quot;Normal&quot;, &quot;Mild&quot;, &quot;Moderate&quot;, &quot;Severe&quot;),
   label_with_range = FALSE
 )
-#&gt; Error in cut_by(lab_wide_clean$Creatinine, breaks = c(1.2, 2, 4), labels = c(&quot;Normal&quot;, : Some of `breaks` are not in the range of `x`!
+#&gt; Error in `cut_by()`:
+#&gt; ! 没有&quot;cut_by&quot;这个函数
 
 # 胆固醇分类
 lab_wide_clean$cholesterol_category &lt;- cut_by(
@@ -1820,7 +981,8 @@ lab_wide_clean$cholesterol_category &lt;- cut_by(
   labels = c(&quot;Desirable&quot;, &quot;Borderline&quot;, &quot;High&quot;),
   label_with_range = FALSE
 )
-#&gt; Error in cut_by(lab_wide_clean$Cholesterol, breaks = c(200, 240), labels = c(&quot;Desirable&quot;, : Some of `breaks` are not in the range of `x`!
+#&gt; Error in `cut_by()`:
+#&gt; ! 没有&quot;cut_by&quot;这个函数
 
 # 所有就诊的分类汇总
 cat_summary &lt;- data.frame(
@@ -1840,19 +1002,12 @@ cat_summary &lt;- data.frame(
     as.vector(table(lab_wide_clean$cholesterol_category))
   )
 )
+#&gt; Error:
+#&gt; ! 找不到对象&#39;lab_wide_clean&#39;
 
-knitr::kable(cat_summary, caption = &quot;临床分类分布（所有就诊）&quot;)</code></pre>
-<table>
-<caption>临床分类分布（所有就诊）</caption>
-<thead>
-<tr class="header">
-<th align="left">Category</th>
-<th align="right">Count</th>
-</tr>
-</thead>
-<tbody>
-</tbody>
-</table>
+knitr::kable(cat_summary, caption = &quot;临床分类分布（所有就诊）&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;cat_summary&#39;</code></pre>
 </div>
 <div id="纵向视图示例" class="section level3">
 <h3>纵向视图示例</h3>
@@ -1865,12 +1020,12 @@ patient_trajectory &lt;- lab_wide_clean %&gt;%
     glucose_category, renal_function
   ) %&gt;%
   arrange(test_date)
-#&gt; Error in `select()`:
-#&gt; ! Can&#39;t select columns that don&#39;t exist.
-#&gt; ✖ Column `Glucose` doesn&#39;t exist.
+#&gt; Error:
+#&gt; ! 找不到对象&#39;lab_wide_clean&#39;
 
 knitr::kable(patient_trajectory, caption = &quot;示例：单患者的实验室检验轨迹&quot;)
-#&gt; Error: object &#39;patient_trajectory&#39; not found</code></pre>
+#&gt; Error:
+#&gt; ! 找不到对象&#39;patient_trajectory&#39;</code></pre>
 </div>
 </div>
 <div id="完整清洗流水线" class="section level2">
@@ -1878,31 +1033,17 @@ knitr::kable(patient_trajectory, caption = &quot;示例：单患者的实验室�
 <p>以下是从原始实验室数据到分析就绪数据的完整工作流：</p>
 <pre class="r"><code># 第 1 步：数据概览
 overview &lt;- data_overview(lab_data)
-#&gt; === Data Overview Summary ===
-#&gt; Dataset: 300 rows, 5 columns
-#&gt; 
-#&gt; Variable Types:
-#&gt;   numeric   : 1 variables
-#&gt;   character : 3 variables
-#&gt;   date      : 1 variables
-#&gt; 
-#&gt; Found 6 potential quality issues:
-#&gt;   outliers                 : 1 cases
-#&gt;   missing_values           : 3 cases
-#&gt;   negative_in_positive     : 1 cases
-#&gt;   suspicious_dates         : 1 cases
-#&gt; 
-#&gt; Recommendations:
-#&gt;   - Review outliers in these numeric variables: value
-#&gt;   - Variables with &lt; 50 % missing values: test_date, value, unit - consider imputation
-#&gt;   - Numeric variables with mostly positive values but containing negatives: value
-#&gt;   - Review suspicious dates (year &lt; 1910 or &gt; current year) in: test_date
+#&gt; Error in `data_overview()`:
+#&gt; ! 没有&quot;data_overview&quot;这个函数
 
 # 第 2 步：格式清洗——提取数值和转换日期
 clean &lt;- lab_data
 clean$value &lt;- extract_num(lab_data$value)
+#&gt; Error in `extract_num()`:
+#&gt; ! 没有&quot;extract_num&quot;这个函数
 clean$test_date &lt;- to_date(lab_data$test_date)
-#&gt; Error: Input must be numeric or character vector, got: Date
+#&gt; Error in `to_date()`:
+#&gt; ! 没有&quot;to_date&quot;这个函数
 
 # 第 3 步：单位标准化
 change_rules &lt;- list(
@@ -1916,6 +1057,8 @@ clean &lt;- unit_standardize(
   subject_col = &quot;test&quot;, value_col = &quot;value&quot;,
   unit_col = &quot;unit&quot;, change_rules = change_rules
 )
+#&gt; Error in `unit_standardize()`:
+#&gt; ! 没有&quot;unit_standardize&quot;这个函数
 
 # 第 4 步：异常值检测和处理
 for (test_name in c(&quot;Glucose&quot;, &quot;Creatinine&quot;, &quot;Cholesterol&quot;)) {
@@ -1924,6 +1067,8 @@ for (test_name in c(&quot;Glucose&quot;, &quot;Creatinine&quot;, &quot;Cholester
   outlier_res &lt;- detect_outliers(test_values, method = &quot;iqr&quot;)
   clean$value[test_idx][outlier_res$outlier_mask] &lt;- NA
 }
+#&gt; Error in `detect_outliers()`:
+#&gt; ! 没有&quot;detect_outliers&quot;这个函数
 
 # 第 5 步：转换为宽格式（纵向队列数据）
 clean_wide &lt;- clean %&gt;%
@@ -1934,6 +1079,8 @@ clean_wide &lt;- clean %&gt;%
 
 # 第 6 步：缺失值筛选
 clean_wide &lt;- get_valid_subset(clean_wide, row_na_ratio = 0.5, col_na_ratio = 0.3)
+#&gt; Error in `get_valid_subset()`:
+#&gt; ! 没有&quot;get_valid_subset&quot;这个函数
 
 # 第 7 步：创建临床分类变量
 clean_wide$glucose_category &lt;- cut_by(
@@ -1941,86 +1088,29 @@ clean_wide$glucose_category &lt;- cut_by(
   breaks = c(100, 126),
   labels = c(&quot;Normal&quot;, &quot;Prediabetes&quot;, &quot;Diabetes&quot;)
 )
-#&gt; Error in cut_by(clean_wide$Glucose, breaks = c(100, 126), labels = c(&quot;Normal&quot;, : Some of `breaks` are not in the range of `x`!
+#&gt; Error in `cut_by()`:
+#&gt; ! 没有&quot;cut_by&quot;这个函数
 
 # 第 8 步：最终检查
 final_overview &lt;- data_overview(clean_wide)
-#&gt; === Data Overview Summary ===
-#&gt; Dataset: 259 rows, 2 columns
-#&gt; 
-#&gt; Variable Types:
-#&gt;   character : 1 variables
-#&gt;   date      : 1 variables
-#&gt; 
-#&gt; Found 1 potential quality issues:
-#&gt;   suspicious_dates         : 1 cases
-#&gt; 
-#&gt; Recommendations:
-#&gt;   - Review suspicious dates (year &lt; 1910 or &gt; current year) in: test_date
-knitr::kable(final_overview$summary_stats, caption = &quot;最终数据质量概览&quot;)</code></pre>
-<table class="kable_wrapper">
-<caption>
-最终数据质量概览
-</caption>
-<tbody>
-<tr>
-<td>
-<table style="width:100%;">
-<colgroup>
-<col width="13%" />
-<col width="13%" />
-<col width="4%" />
-<col width="9%" />
-<col width="14%" />
-<col width="8%" />
-<col width="12%" />
-<col width="11%" />
-<col width="9%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="left"></th>
-<th align="left">variable</th>
-<th align="right">n</th>
-<th align="right">missing</th>
-<th align="right">missing_pct</th>
-<th align="right">unique</th>
-<th align="left">top_value</th>
-<th align="right">top_freq</th>
-<th align="right">top_pct</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">patient_id</td>
-<td align="left">patient_id</td>
-<td align="right">259</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">99</td>
-<td align="left">P001</td>
-<td align="right">3</td>
-<td align="right">1.16</td>
-</tr>
-</tbody>
-</table>
-</td>
-</tr>
-</tbody>
-</table>
-<pre class="r"><code>
+#&gt; Error in `data_overview()`:
+#&gt; ! 没有&quot;data_overview&quot;这个函数
+knitr::kable(final_overview$summary_stats, caption = &quot;最终数据质量概览&quot;)
+#&gt; Error:
+#&gt; ! 找不到对象&#39;final_overview&#39;
+
 cat(
   &quot;\n原始记录数:&quot;, nrow(lab_data),
   &quot;| 最终记录数:&quot;, nrow(clean_wide),
   &quot;| 移除:&quot;, nrow(lab_data) - nrow(clean_wide), &quot;\n&quot;
 )
 #&gt; 
-#&gt; 原始记录数: 300 | 最终记录数: 259 | 移除: 41
+#&gt; 原始记录数: 300 | 最终记录数: 274 | 移除: 26
 cat(
   &quot;唯一患者数:&quot;, length(unique(lab_data$patient_id)),
   &quot;-&gt;&quot;, length(unique(clean_wide$patient_id)), &quot;\n&quot;
 )
-#&gt; 唯一患者数: 100 -&gt; 99</code></pre>
+#&gt; 唯一患者数: 100 -&gt; 100</code></pre>
 </div>
 <div id="小结" class="section level2">
 <h2>小结</h2>
@@ -2089,14 +1179,8 @@ cat(
 </ol>
 <hr />
 <blockquote>
-<p><strong>相关文章推荐</strong></p>
-<ul>
-<li><a href="baseline-table.html">基线特征表（Table
-1）一键生成指南</a></li>
-<li><a href="advanced-data-operations.html">高级数据操作：队列筛选、数据合并与转换</a></li>
-</ul>
 <p><strong>安装
-clinpubr</strong>：<code>devtools::install_github(&quot;niuyu1993/clinpubr&quot;)</code></p>
+clinpubr</strong>：<code>install.packages(&quot;clinpubr&quot;, dependencies = TRUE)</code></p>
 </blockquote>
 </div>
 </div>

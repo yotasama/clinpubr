@@ -190,10 +190,4 @@ importance_plot(
 4. **外部验证**：在独立人群中的表现
 
 ---
-
-> **相关文章推荐**
->
-> - [回归分析与可视化完全指南](regression-analysis.html)
-> - [数据清洗实战：从杂乱的实验室数据到分析就绪数据集](data-cleaning.html)
->
-> **安装 clinpubr**：`devtools::install_github("niuyu1993/clinpubr")`
+> **安装 clinpubr**：`install.packages("clinpubr", dependencies = TRUE)`
