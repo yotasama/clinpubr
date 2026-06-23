@@ -134,3 +134,11 @@ test_that("extract_history handles no match case", {
   res <- extract_history(text, "高血压")
   expect_true(all(is.na(res)))
 })
+
+test_that("extract_history prefers real duration over year-like numbers", {
+  text <- "心脏病“病史10年，2015年开始使用恩格列净"
+  expect_equal(extract_history(text, "心脏病", return_format = "detailed"), "10年")
+
+  text2 <- "高血压病史5年，2010年确诊。"
+  expect_equal(extract_history(text2, "高血压", return_format = "detailed"), "5年")
+})

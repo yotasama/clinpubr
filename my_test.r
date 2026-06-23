@@ -918,3 +918,6 @@ if (nrow(failures) > 0) {
   cat("\n⚠️ 以下用例未完全通过验证：\n")
   print(failures[, c("id", "case_type", "text", "expected_hypertension", "actual_hypertension")])
 }
+
+load_all()
+extract_history("心脏病“病史10年，2015年开始使用恩格列净", "心脏病")

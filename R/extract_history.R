@@ -14,8 +14,6 @@
 #'   (convert all to days). Default is \code{"original"}.
 #' @param negation_window Integer. The maximum character distance to look for negation
 #'   words before the keyword. Default is 20.
-#' @param affirmative_window Integer. The maximum character distance to look for affirmative
-#'   words before the keyword. Default is 20.
 #' @param return_format Character. The format of return values. Can be \code{"simple"} ("有"/"无"/NA),
 #'   \code{"detailed"} (duration included, e.g., "有:5年"/"无"/NA), or \code{"data.frame"} (separate
 #'   columns for status and duration). Default is \code{"simple"}.
@@ -66,225 +64,284 @@ extract_history <- function(text,
                             extract_duration = TRUE,
                             duration_unit = c("original", "years", "days"),
                             negation_window = 20,
-                            affirmative_window = 20,
                             return_format = c("detailed", "simple", "data.frame")) {
   return_format <- match.arg(return_format)
   duration_unit <- match.arg(duration_unit)
 
   if (length(text) == 0) {
-    return(switch(return_format,
-      "simple" = character(0),
-      "detailed" = character(0),
-      "data.frame" = data.frame(
-        status = character(0),
-        duration = character(0),
-        stringsAsFactors = FALSE
-      )
-    ))
+    return(empty_result(return_format))
   }
 
-  is_named_list <- is.list(keywords) && !is.null(names(keywords))
-  is_named_char <- is.character(keywords) && !is.null(names(keywords)) && length(keywords) > 0
+  keyword_list <- normalize_keywords(keywords)
+  categories <- names(keyword_list)
 
-  if (is_named_list || is_named_char) {
-    categories <- names(keywords)
-    results <- lapply(seq_along(categories), function(i) {
-      kw <- if (is_named_list) keywords[[i]] else keywords[i]
-      extract_history_single(
-        text = text,
-        keywords = kw,
-        extract_duration = extract_duration,
-        duration_unit = duration_unit,
-        negation_window = negation_window,
-        affirmative_window = affirmative_window,
-        return_format = return_format
-      )
-    })
+  results <- lapply(keyword_list, function(kw) {
+    extract_history_single(
+      text = text,
+      keyword = kw[1],
+      extract_duration = extract_duration,
+      duration_unit = duration_unit,
+      negation_window = negation_window,
+      return_format = return_format
+    )
+  })
 
-    if (return_format == "data.frame") {
-      for (i in seq_along(results)) {
-        names(results[[i]]) <- paste0(categories[i], c("_status", "_duration"))
-      }
-      do.call(cbind, results)
-    } else {
-      result_df <- do.call(
-        data.frame,
-        c(results, list(stringsAsFactors = FALSE, check.names = FALSE))
-      )
-      names(result_df) <- make.names(categories, unique = TRUE)
-      result_df
-    }
-  } else {
-    keywords <- as.character(keywords)
-    if (length(keywords) == 1) {
-      extract_history_single(
-        text = text,
-        keywords = keywords,
-        extract_duration = extract_duration,
-        duration_unit = duration_unit,
-        negation_window = negation_window,
-        affirmative_window = affirmative_window,
-        return_format = return_format
-      )
-    } else {
-      results <- lapply(keywords, function(kw) {
-        extract_history_single(
-          text = text,
-          keywords = kw,
-          extract_duration = extract_duration,
-          duration_unit = duration_unit,
-          negation_window = negation_window,
-          affirmative_window = affirmative_window,
-          return_format = return_format
-        )
-      })
-
-      if (return_format == "data.frame") {
-        for (i in seq_along(results)) {
-          names(results[[i]]) <- paste0(keywords[i], c("_status", "_duration"))
-        }
-        do.call(cbind, results)
-      } else {
-        result_df <- do.call(
-          data.frame,
-          c(results, list(stringsAsFactors = FALSE, check.names = FALSE))
-        )
-        names(result_df) <- make.names(keywords, unique = TRUE)
-        result_df
-      }
-    }
+  if (length(results) == 1) {
+    return(results[[1]])
   }
+
+  format_multi_results(results, categories, return_format)
+}
+
+#' @keywords internal
+normalize_keywords <- function(keywords) {
+  if (is.list(keywords) && !is.null(names(keywords))) {
+    return(lapply(keywords, as.character))
+  }
+
+  if (is.character(keywords) && !is.null(names(keywords)) && length(keywords) > 0) {
+    return(as.list(keywords))
+  }
+
+  keywords <- as.character(keywords)
+  as.list(setNames(keywords, keywords))
+}
+
+#' @keywords internal
+empty_result <- function(return_format) {
+  switch(return_format,
+    "simple" = character(0),
+    "detailed" = character(0),
+    "data.frame" = data.frame(
+      status = character(0),
+      duration = character(0),
+      stringsAsFactors = FALSE,
+      check.names = FALSE
+    )
+  )
+}
+
+#' @keywords internal
+format_multi_results <- function(results, categories, return_format) {
+  if (return_format == "data.frame") {
+    for (i in seq_along(results)) {
+      names(results[[i]]) <- paste0(categories[i], c("_status", "_duration"))
+    }
+    return(do.call(cbind, unname(results)))
+  }
+
+  result_df <- do.call(
+    data.frame,
+    c(unname(results), list(stringsAsFactors = FALSE, check.names = FALSE))
+  )
+  names(result_df) <- make.names(categories, unique = TRUE)
+  result_df
 }
 
 #' @title Extract History for Single Category (Internal Function)
+#' @param keyword A single keyword string.
 #' @keywords internal
 extract_history_single <- function(text,
-                                    keywords,
+                                    keyword,
                                     extract_duration = TRUE,
                                     duration_unit = "original",
                                     negation_window = 20,
-                                    affirmative_window = 20,
                                     return_format = "simple") {
+  status <- detect_status(text, keyword, negation_window)
+
+  duration <- rep(NA_character_, length(text))
+  if (extract_duration && return_format != "simple") {
+    yes_idx <- which(status == "有")
+    if (length(yes_idx) > 0) {
+      duration[yes_idx] <- extract_durations(text[yes_idx], keyword)
+    }
+  }
+
+  create_result(status, duration, return_format, duration_unit)
+}
+
+#' @keywords internal
+detect_status <- function(text, keyword, negation_window) {
   n <- length(text)
-  keyword <- keywords[1]
-
-  keyword_escaped <- stringi::stri_replace_all_fixed(
-    keyword,
-    c(".", "\\", "+", "*", "?", "^", "$", "|", "(", ")", "[", "{"),
-    c("\\.", "\\\\", "\\+", "\\*", "\\?", "\\^", "\\$", "\\|", "\\(", "\\)", "\\[", "\\{"),
-    vectorize_all = FALSE
-  )
-
   status <- rep(NA_character_, n)
-  duration <- rep(NA_character_, n)
 
+  keyword_escaped <- escape_keyword(keyword)
   has_kw <- stringi::stri_detect_regex(text, keyword_escaped)
   has_kw[is.na(has_kw)] <- FALSE
   if (!any(has_kw)) {
-    return(create_result(status, duration, return_format, duration_unit))
+    return(status)
   }
 
   subset_text <- text[has_kw]
-
-  # 前置否定（禁止跨越逗号/句尾，允许顿号列举）
-  neg_pattern_pre <- sprintf(
-    "(?:否认|没有|未见|否定|未|无)(?:[^，,。；但\n\r]{0,%d})%s",
-    negation_window, keyword_escaped
-  )
-  # 后置否定（如：高血压病史否认）
-  neg_pattern_post <- sprintf(
-    "%s(?:[^，,。；\n\r]{0,%d})(?:否认|没有|未见|否定|未|无)",
-    keyword_escaped, negation_window
-  )
-  has_neg <- stringi::stri_detect_regex(subset_text, neg_pattern_pre) |
-             stringi::stri_detect_regex(subset_text, neg_pattern_post)
-  has_neg[is.na(has_neg)] <- FALSE
-
-  # 肯定检测（禁止跨越逗号/句尾，允许顿号列举）
-  aff_pattern <- sprintf(
-    "(?:有|患|既往|确诊|诊断|曾患|曾有)(?:[^，,。；\n\r]{0,%d})%s",
-    affirmative_window, keyword_escaped
-  )
-  has_aff <- stringi::stri_detect_regex(subset_text, aff_pattern)
-  has_aff[is.na(has_aff)] <- FALSE
-
-  # 纯提及检测（关键词+史）
-  pure_pattern <- sprintf("%s[病]?史", keyword_escaped)
-  has_pure <- stringi::stri_detect_regex(subset_text, pure_pattern)
-  has_pure[is.na(has_pure)] <- FALSE
+  has_neg <- detect_negation(subset_text, keyword_escaped, negation_window)
 
   subset_status <- rep(NA_character_, length(subset_text))
   subset_status[has_neg] <- "无"
   subset_status[!has_neg] <- "有"
 
-  if (extract_duration) {
-    yes_idx <- which(subset_status == "有")
-    if (length(yes_idx) > 0) {
-      subset_duration <- rep(NA_character_, length(subset_text))
+  status[has_kw] <- subset_status
+  status
+}
 
-      # 提取关键词后面的文本（到句子结束，最多50字符）
-      after_pattern <- sprintf("%s([\\s\\S]{0,50}?)(?:[。；!！?？]|$)", keyword_escaped)
-      after_matches <- stringi::stri_match_first_regex(subset_text[yes_idx], after_pattern)
-      after_text <- after_matches[, 2]
+#' @keywords internal
+detect_negation <- function(text, keyword_escaped, window) {
+  n <- length(text)
+  has_neg <- rep(FALSE, n)
 
-      # 查找所有 duration 候选
-      dur_pattern <- "([0-9]+(?:\\.[0-9]+)?)\\s*(?:余)?\\s*[个]?\\s*(年|月|周|天|日)"
-      all_dur_locs <- stringi::stri_locate_all_regex(after_text, dur_pattern)
-      all_dur_matches <- stringi::stri_match_all_regex(after_text, dur_pattern)
-
-      for (j in seq_along(yes_idx)) {
-        locs <- all_dur_locs[[j]]
-        matches <- all_dur_matches[[j]]
-
-        if (is.null(locs) || nrow(locs) == 0 || is.na(locs[1, 1])) next
-
-        best_dur <- NA_character_
-        for (k in seq_len(nrow(locs))) {
-          if (is.na(locs[k, 1])) next
-
-          match_start <- locs[k, 1]
-          prefix_start <- max(1, match_start - 15)
-          prefix <- stringi::stri_sub(after_text[j], from = prefix_start, to = match_start - 1)
-
-          # 检查是否属于其他实体（前缀以 X史 结尾，X 至少2个字符，且 X 不是当前关键词）
-          entity_pattern <- "([^，,、。；\\s]{2,})史\\s*$"
-          entity_match <- stringi::stri_match_first_regex(prefix, entity_pattern)
-
-          is_other_entity <- FALSE
-          if (!is.na(entity_match[1, 1])) {
-            entity_name <- entity_match[1, 2]
-            if (!stringi::stri_detect_fixed(entity_name, keyword) &&
-                !stringi::stri_detect_fixed(keyword, entity_name)) {
-              is_other_entity <- TRUE
-            }
-          }
-
-          if (!is_other_entity) {
-            # 优先选择 "病程" 前缀
-            if (stringi::stri_detect_regex(prefix, "病程")) {
-              best_dur <- paste0(matches[k, 2], matches[k, 3])
-              break
-            }
-
-            if (is.na(best_dur)) {
-              best_dur <- paste0(matches[k, 2], matches[k, 3])
-            }
-          }
-        }
-
-        subset_duration[yes_idx[j]] <- best_dur
-      }
-    } else {
-      subset_duration <- rep(NA_character_, length(subset_text))
-    }
-  } else {
-    subset_duration <- rep(NA_character_, length(subset_text))
+  # Fast pre-filter: skip rows without any negation word
+  has_any_neg <- stringi::stri_detect_regex(text, "否认|没有|未见|否定|未|无")
+  has_any_neg[is.na(has_any_neg)] <- FALSE
+  if (!any(has_any_neg)) {
+    return(has_neg)
   }
 
-  status[has_kw] <- subset_status
-  duration[has_kw] <- subset_duration
+  neg_idx <- which(has_any_neg)
+  subset_text <- text[neg_idx]
 
-  create_result(status, duration, return_format, duration_unit)
+  neg_pattern_pre <- sprintf(
+    "(?:否认|没有|未见|否定|未|无)(?:[^，,。；但\n\r]{0,%d})%s",
+    window, keyword_escaped
+  )
+  neg_pattern_post <- sprintf(
+    "%s(?:[^，,。；\n\r]{0,%d})(?:否认|没有|未见|否定|未|无)",
+    keyword_escaped, window
+  )
+  subset_has_neg <- stringi::stri_detect_regex(subset_text, neg_pattern_pre) |
+    stringi::stri_detect_regex(subset_text, neg_pattern_post)
+  subset_has_neg[is.na(subset_has_neg)] <- FALSE
+
+  has_neg[neg_idx] <- subset_has_neg
+  has_neg
+}
+
+#' @keywords internal
+escape_keyword <- function(keyword) {
+  stringi::stri_replace_all_fixed(
+    keyword,
+    c(".", "\\", "+", "*", "?", "^", "$", "|", "(", ")", "[", "{"),
+    c("\\.", "\\\\", "\\+", "\\*", "\\?", "\\^", "\\$", "\\|", "\\(", "\\)", "\\[", "\\{"),
+    vectorize_all = FALSE
+  )
+}
+
+#' @keywords internal
+extract_durations <- function(text, keyword) {
+  keyword_escaped <- escape_keyword(keyword)
+  after_pattern <- sprintf("%s([\\s\\S]{0,50}?)(?:[。；!！?？]|$)", keyword_escaped)
+  after_matches <- stringi::stri_match_first_regex(text, after_pattern)
+
+  duration <- rep(NA_character_, length(text))
+  after_text <- after_matches[, 2]
+  valid <- !is.na(after_text)
+
+  if (!any(valid)) {
+    return(duration)
+  }
+
+  dur_pattern <- "([0-9]+(?:\\.[0-9]+)?)\\s*(?:余)?\\s*[个]?\\s*(年|月|周|天|日)"
+  after_text_valid <- after_text[valid]
+
+  # Fast pre-filter: only rows that contain a duration pattern
+  has_dur <- stringi::stri_detect_regex(after_text_valid, dur_pattern)
+  has_dur[is.na(has_dur)] <- FALSE
+  if (!any(has_dur)) {
+    return(duration)
+  }
+
+  valid_idx <- which(valid)[has_dur]
+  text_with_dur <- after_text_valid[has_dur]
+
+  duration[valid_idx] <- select_best_duration(
+    text = text_with_dur,
+    keyword = keyword,
+    dur_pattern = dur_pattern
+  )
+
+  duration
+}
+
+#' @keywords internal
+select_best_duration <- function(text, keyword, dur_pattern) {
+  n <- length(text)
+  duration <- rep(NA_character_, n)
+
+  if (n == 0) {
+    return(duration)
+  }
+
+  all_locs <- stringi::stri_locate_all_regex(text, dur_pattern)
+  all_matches <- stringi::stri_match_all_regex(text, dur_pattern)
+
+  n_matches <- vapply(all_locs, function(x) {
+    if (is.null(x) || nrow(x) == 0 || is.na(x[1, 1])) 0L else nrow(x)
+  }, integer(1))
+
+  has_matches <- n_matches > 0
+  if (!any(has_matches)) {
+    return(duration)
+  }
+
+  match_rows <- which(has_matches)
+  row_idx <- rep(match_rows, n_matches[has_matches])
+
+  nums <- unlist(lapply(all_matches[has_matches], function(m) m[, 2]))
+  units <- unlist(lapply(all_matches[has_matches], function(m) m[, 3]))
+  starts <- unlist(lapply(all_locs[has_matches], function(m) m[, 1]))
+
+  prefix_start <- pmax(1, starts - 15)
+  prefix <- stringi::stri_sub(text[row_idx], from = prefix_start, to = starts - 1)
+
+  is_year <- is_year_like(nums, units)
+  is_other <- is_other_entity_prefix(prefix, keyword)
+  has_bingcheng <- stringi::stri_detect_regex(prefix, "病程")
+
+  valid <- !is_year & !is_other
+  if (!any(valid)) {
+    return(duration)
+  }
+
+  valid_idx <- row_idx[valid]
+  valid_num <- nums[valid]
+  valid_unit <- units[valid]
+  valid_bingcheng <- has_bingcheng[valid]
+  valid_order <- seq_along(valid_idx)
+
+  # Prefer 病程, then earliest valid match
+  ord <- order(valid_idx, !valid_bingcheng, valid_order)
+  selected <- !duplicated(valid_idx[ord])
+
+  sel_idx <- valid_idx[ord][selected]
+  duration[sel_idx] <- paste0(valid_num[ord][selected], valid_unit[ord][selected])
+
+  duration
+}
+
+#' @keywords internal
+is_year_like <- function(num, unit) {
+  unit == "年" &
+    nchar(num) == 4 &
+    !stringi::stri_detect_fixed(num, ".") &
+    suppressWarnings(as.numeric(num)) >= 1000 &
+    suppressWarnings(as.numeric(num)) <= 9999
+}
+
+#' @keywords internal
+is_other_entity_prefix <- function(prefix, keyword) {
+  entity_pattern <- "([^，,、。；\\s]{2,})史\\s*$"
+  entity_match <- stringi::stri_match_first_regex(prefix, entity_pattern)
+
+  has_entity <- !is.na(entity_match[, 1])
+  entity_name <- entity_match[, 2]
+  entity_name <- stringi::stri_replace_all_regex(
+    entity_name,
+    "^[^\\p{L}\\p{N}]+|[^\\p{L}\\p{N}]+$",
+    ""
+  )
+
+  has_entity &
+    nchar(entity_name) >= 2 &
+    !stringi::stri_detect_fixed(entity_name, keyword) &
+    !stringi::stri_detect_fixed(keyword, entity_name)
 }
 
 #' @keywords internal
@@ -346,21 +403,4 @@ convert_duration <- function(duration, unit) {
 
   res[is.na(duration)] <- NA_character_
   res
-}
-
-#' Create Empty Result Vector
-#' @param n Number of elements.
-#' @param return_format Format of return values.
-#' @return A vector of appropriate type.
-#' @keywords internal
-create_result_vector <- function(n, return_format) {
-  switch(return_format,
-    "simple" = character(n),
-    "detailed" = character(n),
-    "data.frame" = data.frame(
-      status = character(n),
-      duration = character(n),
-      stringsAsFactors = FALSE
-    )
-  )
 }

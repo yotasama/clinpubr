@@ -10,7 +10,6 @@ extract_history(
   extract_duration = TRUE,
   duration_unit = c("original", "years", "days"),
   negation_window = 20,
-  affirmative_window = 20,
   return_format = c("detailed", "simple", "data.frame")
 )
 }
@@ -28,9 +27,6 @@ extracted, e.g., "5年", "3月"), \code{"years"} (convert all to years), or \cod
 (convert all to days). Default is \code{"original"}.}
 
 \item{negation_window}{Integer. The maximum character distance to look for negation
-words before the keyword. Default is 20.}
-
-\item{affirmative_window}{Integer. The maximum character distance to look for affirmative
 words before the keyword. Default is 20.}
 
 \item{return_format}{Character. The format of return values. Can be \code{"simple"} ("有"/"无"/NA),

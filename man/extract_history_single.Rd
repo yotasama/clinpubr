@@ -6,13 +6,15 @@
 \usage{
 extract_history_single(
   text,
-  keywords,
+  keyword,
   extract_duration = TRUE,
   duration_unit = "original",
   negation_window = 20,
-  affirmative_window = 20,
   return_format = "simple"
 )
+}
+\arguments{
+\item{keyword}{A single keyword string.}
 }
 \description{
 Extract History for Single Category (Internal Function)
