@@ -63,9 +63,14 @@ interaction_scan <- function(data, y, time = NULL, time2 = NULL, predictors = NU
           next
         }
 
-        p1 <- interaction_p_value(data, y, predictor, group_var,
-          time = time, time2 = time2, covars = covars,
-          cluster = cluster
+        p1 <- tryCatch(
+          interaction_p_value(data, y, predictor, group_var,
+            time = time, time2 = time2, covars = covars,
+            cluster = cluster
+          ),
+          error = function(e) {
+            NA
+          }
         )
         if (try_rcs && length(unique(data[, predictor])) > 10) {
           p2 <- tryCatch(
