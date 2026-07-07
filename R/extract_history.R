@@ -5,24 +5,24 @@
 #'   for high performance on large datasets.
 #'
 #' @param text A character vector of clinical text records.
-#' @param keywords A character vector of keywords to search for (e.g., "\u9ad8\u8840\u538b", "\u5438\u70df").
+#' @param keywords A character vector of keywords to search for (e.g., "高血压", "吸烟").
 #'   Can also be a named list where names are category names and values are keyword vectors.
 #' @param extract_duration Logical. If \code{TRUE}, extract duration information (years/months/days)
 #'   when available. Default is \code{TRUE}.
 #' @param duration_unit Character. The unit for duration output. Can be \code{"original"} (keep as
-#'   extracted, e.g., "5\u5e74", "3\u6708"), \code{"years"} (convert all to years), or \code{"days"}
+#'   extracted, e.g., "5年", "3月"), \code{"years"} (convert all to years), or \code{"days"}
 #'   (convert all to days). Default is \code{"original"}.
 #' @param negation_window Integer. The maximum character distance to look for negation
 #'   words before the keyword. Default is 20.
-#' @param return_format Character. The format of return values. Can be \code{"simple"} ("\u6709"/"\u65e0"/NA),
-#'   \code{"detailed"} (duration included, e.g., "\u6709:5\u5e74"/"\u65e0"/NA), or \code{"data.frame"} (separate
+#' @param return_format Character. The format of return values. Can be \code{"simple"} ("有"/"无"/NA),
+#'   \code{"detailed"} (duration included, e.g., "有:5年"/"无"/NA), or \code{"data.frame"} (separate
 #'   columns for status and duration). Default is \code{"simple"}.
 #'
 #' @return Depending on \code{return_format}:
 #' \itemize{
-#'   \item \code{"simple"}: A character vector with values "\u6709" (yes), "\u65e0" (no), or \code{NA} (unknown).
+#'   \item \code{"simple"}: A character vector with values "有" (yes), "无" (no), or \code{NA} (unknown).
 #'   \item \code{"detailed"}: A character vector with duration information when available.
-#'   \item \code{"data.frame"}: A data frame with columns \code{status} (\u6709/\u65e0/NA) and \code{duration} (duration value).
+#'   \item \code{"data.frame"}: A data frame with columns \code{status} (有/无/NA) and \code{duration} (duration value).
 #' }
 #'
 #' If \code{keywords} is a named list with multiple categories, returns a data frame with
@@ -33,29 +33,22 @@
 #' @examples
 #' \dontrun{
 #' test_data <- c(
-#'   "\u5426\u8ba4\u809d\u708e\u3001\u7ed3\u6838\u3001\u759f\u75be\u53f2\uff0c\u5426\u8ba4\u9ad8\u8840\u538b\u3001\u5fc3\u810f\u75c5\u53f2\uff0c\u5426\u8ba4\u7cd6\u5c3f\u75c5\uff0c\u65e0\u624b\u672f\u53f2\uff0c\u65e0\u8fc7\u654f\u53f2\u3002",
-#'   "\u65e2\u5f80\u6709\u9ad8\u8840\u538b\u75c5\u53f220\u5e74\uff0c\u53e3\u670d\u964d\u538b\u836f\u63a7\u5236\u826f\u597d\u3002",
-#'   "\u6709\u9611\u5c3e\u708e\u5207\u9664\u624b\u672f\u53f2\uff0c\u5426\u8ba4\u9ad8\u8840\u538b\u3002",
-#'   "\u65e0\u9ad8\u8840\u538b\u3001\u5fc3\u810f\u75c5\u53f2\uff0c\u4f46\u6709\u7cd6\u5c3f\u75c5\u75c5\u53f2\u3002",
-#'   "\u60a3\u8005\u9ad8\u8840\u538b\u75c5\u53f2\u3001\u51a0\u5fc3\u75c5\u53f2\uff0c\u65e0\u5438\u70df\u53f2\u3002",
-#'   "\u9ad8\u8840\u538b\u75c5\u53f210\u5e74\uff0c\u5438\u70df\u53f215\u5e74\uff0c\u6bcf\u592910\u652f\uff0c\u996e\u9152\u53f25\u5e74\u3002"
+#'   "有高血压病史20年，口服降压药控制良好。",
+#'   "有阑尾炎切除手术史，否认高血压。",
+#'   "无高血压、心脏病史，但有糖尿病病史。",
+#'   "患者高血压病史、冠心病史，无吸烟史。",
+#'   "压病史10年，吸烟史15年，每天10支，饮酒史5年。"
 #' )
 #'
-#' # Extract single keyword
-#' extract_history(test_data, "\u9ad8\u8840\u538b")
+#' extract_history(test_data, "高血压")
+#' extract_history(test_data, c("高血压", "吸烟", "饮酒"))
+#' extract_history(test_data, "高血压", return_format = "detailed")
 #'
-#' # Extract multiple keywords
-#' extract_history(test_data, c("\u9ad8\u8840\u538b", "\u5438\u70df", "\u996e\u9152"))
-#'
-#' # Extract with duration
-#' extract_history(test_data, "\u9ad8\u8840\u538b", return_format = "detailed")
-#'
-#' # Extract multiple categories with named list
 #' keywords <- list(
-#'   hypertension = "\u9ad8\u8840\u538b",
-#'   diabetes = "\u7cd6\u5c3f\u75c5",
-#'   smoking = c("\u5438\u70df", "\u62bd\u70df"),
-#'   drinking = c("\u996e\u9152", "\u559d\u9152")
+#'   hypertension = "高血压",
+#'   diabetes = "糖尿病",
+#'   smoking = c("吸烟", "抽烟"),
+#'   drinking = c("饮酒", "喝酒")
 #' )
 #' extract_history(test_data, keywords)
 #' }
