@@ -1,7 +1,7 @@
-#' Extract Medical History from Clinical Text
+#' Extract Medical History from Clinical Text in Chinese
 #'
 #' @description Extract medical history information (disease, smoking, drinking, surgery, etc.)
-#'   from clinical text records. The function uses vectorized string operations
+#'   from clinical text records, now only supports Chinese text. The function uses vectorized string operations
 #'   for high performance on large datasets.
 #'
 #' @param text A character vector of clinical text records.

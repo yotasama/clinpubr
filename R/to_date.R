@@ -37,7 +37,7 @@ to_date <- function(x, from_excel = TRUE, verbose = TRUE,
   # Identify potential Excel dates (numeric strings < 100000)
   if (from_excel) {
     num_x <- suppressWarnings(as.numeric(x))
-    excel_idx <- !is.na(num_x) & num_x < 100000
+    excel_idx <- !is.na(num_x) & num_x < 100000 & num_x > 0 & grepl("^\\d+$", x)
 
     if (any(excel_idx, na.rm = TRUE)) {
       result[excel_idx] <- as.Date(num_x[excel_idx], origin = "1899-12-30")
