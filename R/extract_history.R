@@ -1,28 +1,29 @@
-#' Extract Medical History from Clinical Text in Chinese
+#' Extract Medical History from Clinical Text
 #'
 #' @description Extract medical history information (disease, smoking, drinking, surgery, etc.)
-#'   from clinical text records, now only supports Chinese text. The function uses vectorized string operations
+#'   from clinical text records, supports Chinese text. The function uses vectorized string operations
 #'   for high performance on large datasets.
 #'
 #' @param text A character vector of clinical text records.
-#' @param keywords A character vector of keywords to search for (e.g., "高血压", "吸烟").
+#' @param keywords A character vector of keywords to search for.
 #'   Can also be a named list where names are category names and values are keyword vectors.
 #' @param extract_duration Logical. If \code{TRUE}, extract duration information (years/months/days)
 #'   when available. Default is \code{TRUE}.
 #' @param duration_unit Character. The unit for duration output. Can be \code{"original"} (keep as
-#'   extracted, e.g., "5年", "3月"), \code{"years"} (convert all to years), or \code{"days"}
+#'   extracted), \code{"years"} (convert all to years), or \code{"days"}
 #'   (convert all to days). Default is \code{"original"}.
 #' @param negation_window Integer. The maximum character distance to look for negation
 #'   words before the keyword. Default is 20.
-#' @param return_format Character. The format of return values. Can be \code{"simple"} ("有"/"无"/NA),
-#'   \code{"detailed"} (duration included, e.g., "有:5年"/"无"/NA), or \code{"data.frame"} (separate
-#'   columns for status and duration). Default is \code{"simple"}.
+#' @param return_format Character. The format of return values. Can be \code{"simple"} (\code{TRUE}/\code{FALSE}/\code{NA}),
+#'   \code{"detailed"} (duration strings like "5 years" when available, "yes"/"no" otherwise),
+#'   or \code{"data.frame"} (separate columns for status and duration). Default is \code{"simple"}.
 #'
 #' @return Depending on \code{return_format}:
 #' \itemize{
-#'   \item \code{"simple"}: A character vector with values "有" (yes), "无" (no), or \code{NA} (unknown).
-#'   \item \code{"detailed"}: A character vector with duration information when available.
-#'   \item \code{"data.frame"}: A data frame with columns \code{status} (有/无/NA) and \code{duration} (duration value).
+#'   \item \code{"simple"}: A logical vector with values \code{TRUE}, \code{FALSE}, or \code{NA}.
+#'   \item \code{"detailed"}: A character vector with duration strings (e.g., "5 years", "30 days") when available,
+#'     otherwise \code{TRUE}, \code{FALSE}, or \code{NA}.
+#'   \item \code{"data.frame"}: A data frame with columns \code{status} (logical) and \code{duration} (character).
 #' }
 #'
 #' If \code{keywords} is a named list with multiple categories, returns a data frame with
@@ -33,31 +34,17 @@
 #' @examples
 #' \dontrun{
 #' test_data <- c(
-#'   "有高血压病史20年，口服降压药控制良好。",
-#'   "有阑尾炎切除手术史，否认高血压。",
-#'   "无高血压、心脏病史，但有糖尿病病史。",
-#'   "患者高血压病史、冠心病史，无吸烟史。",
-#'   "压病史10年，吸烟史15年，每天10支，饮酒史5年。"
+#'   "hypertension history 20 years",
+#'   "appendectomy surgery history"
 #' )
-#'
-#' extract_history(test_data, "高血压")
-#' extract_history(test_data, c("高血压", "吸烟", "饮酒"))
-#' extract_history(test_data, "高血压", return_format = "detailed")
-#'
-#' keywords <- list(
-#'   hypertension = "高血压",
-#'   diabetes = "糖尿病",
-#'   smoking = c("吸烟", "抽烟"),
-#'   drinking = c("饮酒", "喝酒")
-#' )
-#' extract_history(test_data, keywords)
+#' extract_history(test_data, "hypertension")
 #' }
 extract_history <- function(text,
                             keywords,
                             extract_duration = TRUE,
                             duration_unit = c("original", "years", "days"),
                             negation_window = 20,
-                            return_format = c("detailed", "simple", "data.frame")) {
+                            return_format = c("simple", "detailed", "data.frame")) {
   return_format <- match.arg(return_format)
   duration_unit <- match.arg(duration_unit)
 
@@ -103,10 +90,10 @@ normalize_keywords <- function(keywords) {
 #' @keywords internal
 empty_result <- function(return_format) {
   switch(return_format,
-    "simple" = character(0),
-    "detailed" = character(0),
+    "simple" = logical(0),
+    "detailed" = logical(0),
     "data.frame" = data.frame(
-      status = character(0),
+      status = logical(0),
       duration = character(0),
       stringsAsFactors = FALSE,
       check.names = FALSE
@@ -144,7 +131,7 @@ extract_history_single <- function(text,
 
   duration <- rep(NA_character_, length(text))
   if (extract_duration && return_format != "simple") {
-    yes_idx <- which(status == "\u6709")
+    yes_idx <- which(status == TRUE)
     if (length(yes_idx) > 0) {
       duration[yes_idx] <- extract_durations(text[yes_idx], keyword)
     }
@@ -156,7 +143,7 @@ extract_history_single <- function(text,
 #' @keywords internal
 detect_status <- function(text, keyword, negation_window) {
   n <- length(text)
-  status <- rep(NA_character_, n)
+  status <- rep(NA, n)
 
   keyword_escaped <- escape_keyword(keyword)
   has_kw <- stringi::stri_detect_regex(text, keyword_escaped)
@@ -168,9 +155,9 @@ detect_status <- function(text, keyword, negation_window) {
   subset_text <- text[has_kw]
   has_neg <- detect_negation(subset_text, keyword_escaped, negation_window)
 
-  subset_status <- rep(NA_character_, length(subset_text))
-  subset_status[has_neg] <- "\u65e0"
-  subset_status[!has_neg] <- "\u6709"
+  subset_status <- rep(NA, length(subset_text))
+  subset_status[has_neg] <- FALSE
+  subset_status[!has_neg] <- TRUE
 
   status[has_kw] <- subset_status
   status
@@ -181,7 +168,6 @@ detect_negation <- function(text, keyword_escaped, window) {
   n <- length(text)
   has_neg <- rep(FALSE, n)
 
-  # Fast pre-filter: skip rows without any negation word
   has_any_neg <- stringi::stri_detect_regex(text, "\u5426\u8ba4|\u6ca1\u6709|\u672a\u89c1|\u5426\u5b9a|\u672a|\u65e0")
   has_any_neg[is.na(has_any_neg)] <- FALSE
   if (!any(has_any_neg)) {
@@ -231,10 +217,9 @@ extract_durations <- function(text, keyword) {
     return(duration)
   }
 
-  dur_pattern <- "([0-9]+(?:\\.[0-9]+)?)\\s*(?:\u4f59)?\\s*[\u4e2a]?\\s*(\u5e74|\u6708|\u5468|\u5929|\u65e5)"
+  dur_pattern <- "([0-9]+(?:\\.[0-9]+)?)\\s*(?:\u4f59)?\\s*[\u4e2a]?\\s*(\u5e74|\u6708|\u5468|\u5929|\u65e5|year|years|month|months|week|weeks|day|days)"
   after_text_valid <- after_text[valid]
 
-  # Fast pre-filter: only rows that contain a duration pattern
   has_dur <- stringi::stri_detect_regex(after_text_valid, dur_pattern)
   has_dur[is.na(has_dur)] <- FALSE
   if (!any(has_dur)) {
@@ -299,19 +284,24 @@ select_best_duration <- function(text, keyword, dur_pattern) {
   valid_bingcheng <- has_bingcheng[valid]
   valid_order <- seq_along(valid_idx)
 
-  # Prefer \u75c5\u7a0b, then earliest valid match
   ord <- order(valid_idx, !valid_bingcheng, valid_order)
   selected <- !duplicated(valid_idx[ord])
 
   sel_idx <- valid_idx[ord][selected]
-  duration[sel_idx] <- paste0(valid_num[ord][selected], valid_unit[ord][selected])
+  sel_unit <- valid_unit[ord][selected]
+  sel_unit <- dplyr::recode(sel_unit,
+    "\u5e74" = "years", "\u6708" = "months", "\u5468" = "weeks",
+    "\u5929" = "days", "\u65e5" = "days",
+    .default = sel_unit
+  )
+  duration[sel_idx] <- paste0(valid_num[ord][selected], " ", sel_unit)
 
   duration
 }
 
 #' @keywords internal
 is_year_like <- function(num, unit) {
-  unit == "\u5e74" &
+  unit %in% c("\u5e74", "year", "years") &
     nchar(num) == 4 &
     !stringi::stri_detect_fixed(num, ".") &
     suppressWarnings(as.numeric(num)) >= 1000 &
@@ -346,8 +336,10 @@ create_result <- function(status, duration, return_format, duration_unit) {
   switch(return_format,
     "simple" = status,
     "detailed" = {
-      res <- status
-      has_dur <- !is.na(duration) & !is.na(status) & status == "\u6709"
+      res <- rep(NA_character_, length(status))
+      res[status == TRUE & is.na(duration)] <- "yes"
+      res[status == FALSE] <- "no"
+      has_dur <- !is.na(duration) & !is.na(status) & status == TRUE
       res[has_dur] <- duration[has_dur]
       res
     },
@@ -366,30 +358,37 @@ convert_duration <- function(duration, unit) {
     return(duration)
   }
 
-  pattern <- "([0-9]+(?:\\.[0-9]+)?)\\s*(?:\u4f59)?\\s*[\u4e2a]?\\s*(\u5e74|\u6708|\u5468|\u5929|\u65e5)"
+  pattern <- "([0-9]+(?:\\.[0-9]+)?)\\s*(?:\u4f59)?\\s*[\u4e2a]?\\s*(\u5e74|\u6708|\u5468|\u5929|\u65e5|year|years|month|months|week|weeks|day|days)"
   matches <- stringi::stri_match_first_regex(duration, pattern)
 
   num <- suppressWarnings(as.numeric(matches[, 2]))
   orig_unit <- matches[, 3]
 
+  orig_unit <- dplyr::recode(orig_unit,
+    "\u5e74" = "years", "\u6708" = "months", "\u5468" = "weeks",
+    "\u5929" = "days", "\u65e5" = "days",
+    "year" = "years", "month" = "months", "week" = "weeks", "day" = "days",
+    .default = orig_unit
+  )
+
   if (unit == "years") {
-    converted <- num * ifelse(orig_unit == "\u5e74", 1,
-      ifelse(orig_unit == "\u6708", 1 / 12,
-        ifelse(orig_unit == "\u5468", 7 / 365.25,
-          ifelse(orig_unit %in% c("\u5929", "\u65e5"), 1 / 365.25, NA)
+    converted <- num * ifelse(orig_unit == "years", 1,
+      ifelse(orig_unit == "months", 1 / 12,
+        ifelse(orig_unit == "weeks", 7 / 365.25,
+          ifelse(orig_unit == "days", 1 / 365.25, NA)
         )
       )
     )
-    res <- ifelse(!is.na(converted), sprintf("%.2f\u5e74", converted), NA_character_)
+    res <- ifelse(!is.na(converted), sprintf("%.2f years", converted), NA_character_)
   } else if (unit == "days") {
-    converted <- num * ifelse(orig_unit == "\u5e74", 365.25,
-      ifelse(orig_unit == "\u6708", 30.44,
-        ifelse(orig_unit == "\u5468", 7,
-          ifelse(orig_unit %in% c("\u5929", "\u65e5"), 1, NA)
+    converted <- num * ifelse(orig_unit == "years", 365.25,
+      ifelse(orig_unit == "months", 30.44,
+        ifelse(orig_unit == "weeks", 7,
+          ifelse(orig_unit == "days", 1, NA)
         )
       )
     )
-    res <- ifelse(!is.na(converted), sprintf("%.1f\u5929", converted), NA_character_)
+    res <- ifelse(!is.na(converted), sprintf("%.1f days", converted), NA_character_)
   } else {
     res <- duration
   }

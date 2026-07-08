@@ -2,7 +2,7 @@
 % Please edit documentation in R/extract_history.R
 \name{extract_history}
 \alias{extract_history}
-\title{Extract Medical History from Clinical Text in Chinese}
+\title{Extract Medical History from Clinical Text}
 \usage{
 extract_history(
   text,
@@ -10,35 +10,36 @@ extract_history(
   extract_duration = TRUE,
   duration_unit = c("original", "years", "days"),
   negation_window = 20,
-  return_format = c("detailed", "simple", "data.frame")
+  return_format = c("simple", "detailed", "data.frame")
 )
 }
 \arguments{
 \item{text}{A character vector of clinical text records.}
 
-\item{keywords}{A character vector of keywords to search for (e.g., 高血压, 吸烟).
+\item{keywords}{A character vector of keywords to search for.
 Can also be a named list where names are category names and values are keyword vectors.}
 
 \item{extract_duration}{Logical. If \code{TRUE}, extract duration information (years/months/days)
 when available. Default is \code{TRUE}.}
 
 \item{duration_unit}{Character. The unit for duration output. Can be \code{"original"} (keep as
-extracted, e.g., "5年", "3月"), \code{"years"} (convert all to years), or \code{"days"}
+extracted), \code{"years"} (convert all to years), or \code{"days"}
 (convert all to days). Default is \code{"original"}.}
 
 \item{negation_window}{Integer. The maximum character distance to look for negation
 words before the keyword. Default is 20.}
 
-\item{return_format}{Character. The format of return values. Can be \code{"simple"} ("有"/"无"/NA),
-\code{"detailed"} (duration included, e.g., "有:5年"/"无"/NA), or \code{"data.frame"} (separate
-columns for status and duration). Default is \code{"simple"}.}
+\item{return_format}{Character. The format of return values. Can be \code{"simple"} (\code{TRUE}/\code{FALSE}/\code{NA}),
+\code{"detailed"} (duration strings like "5 years" when available, "yes"/"no" otherwise),
+or \code{"data.frame"} (separate columns for status and duration). Default is \code{"simple"}.}
 }
 \value{
 Depending on \code{return_format}:
 \itemize{
-\item \code{"simple"}: A character vector with values "有" (yes), "无" (no), or \code{NA} (unknown).
-\item \code{"detailed"}: A character vector with duration information when available.
-\item \code{"data.frame"}: A data frame with columns \code{status} (有/无/NA) and \code{duration} (duration value).
+\item \code{"simple"}: A logical vector with values \code{TRUE}, \code{FALSE}, or \code{NA}.
+\item \code{"detailed"}: A character vector with duration strings (e.g., "5 years", "30 days") when available,
+otherwise \code{TRUE}, \code{FALSE}, or \code{NA}.
+\item \code{"data.frame"}: A data frame with columns \code{status} (logical) and \code{duration} (character).
 }
 
 If \code{keywords} is a named list with multiple categories, returns a data frame with
@@ -46,29 +47,15 @@ one column per category.
 }
 \description{
 Extract medical history information (disease, smoking, drinking, surgery, etc.)
-from clinical text records, now only supports Chinese text. The function uses vectorized string operations
+from clinical text records, supports Chinese text. The function uses vectorized string operations
 for high performance on large datasets.
 }
 \examples{
 \dontrun{
 test_data <- c(
-  "有高血压病史20年，口服降压药控制良好。",
-  "有阑尾炎切除手术史，否认高血压。",
-  "无高血压、心脏病史，但有糖尿病病史。",
-  "患者高血压病史、冠心病史，无吸烟史。",
-  "压病史10年，吸烟史15年，每天10支，饮酒史5年。"
+  "hypertension history 20 years",
+  "appendectomy surgery history"
 )
-
-extract_history(test_data, "高血压")
-extract_history(test_data, c("高血压", "吸烟", "饮酒"))
-extract_history(test_data, "高血压", return_format = "detailed")
-
-keywords <- list(
-  hypertension = "高血压",
-  diabetes = "糖尿病",
-  smoking = c("吸烟", "抽烟"),
-  drinking = c("饮酒", "喝酒")
-)
-extract_history(test_data, keywords)
+extract_history(test_data, "hypertension")
 }
 }
