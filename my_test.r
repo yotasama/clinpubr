@@ -210,6 +210,26 @@ str_contains_merge_stringi <- function(df, match_df, col_name = "name", ori_col 
   }
 }
 
+data(cancer, package = "survival")
+# coxph model with time assigned
+out=regression_basic_results(cancer,
+  x = "age", y = "status", time = "time",
+  model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex")),
+  save_output = FALSE,
+  ggtheme = survminer::theme_survminer(font.legend = c(14, "plain", "black")) # theme for KM
+)
+print(out)
+
+# logistic model with time not assigned
+cancer$dead <- cancer$status == 2
+out=regression_basic_results(cancer,
+  x = "age", y = "dead", ref_levels = c("Q3", "High"),
+  model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex")),
+  save_output = FALSE
+)
+
+
+
 # 测试函数
 df <- data.frame(name = c("AB", "B,C", "A..", "ACD"))
 match <- data.frame(
@@ -455,20 +475,20 @@ plot(clean_dl$date, clean_dl$count, type = "l", col = "blue", xlab = "Date", yla
 clean_dl[clean_dl$adjusted_downloads < clean_dl$count, ]
 clean_dl$adjusted_total_downloads
 
-#' Benchmark group_by %>% summarise using tictoc
+Benchmark group_by %>% summarise using tictoc
 #'
-#' This function generates a data.frame with approximately `n` rows and
-#' runs `reps` repetitions of a `dplyr` `group_by` + `summarise` pipeline,
-#' timing each run with `tictoc` and returning elapsed times.
+This function generates a data.frame with approximately `n` rows and
+runs `reps` repetitions of a `dplyr` `group_by` + `summarise` pipeline,
+timing each run with `tictoc` and returning elapsed times.
 #'
-#' @param n Number of rows to generate (default 1e6).
-#' @param n_groups Number of distinct groups (default 100).
-#' @param reps Number of repetitions to run (default 3).
-#' @param seed Random seed for reproducibility (default 123).
-#' @returns A list with `times` (numeric vector, seconds) and `last_summary` (the last summarised data.frame).
-#' @examples
-#' # Make sure tictoc and dplyr are installed, then:
-#' # bench_group_by_summary(1e6, 100, reps = 2)
+@param n Number of rows to generate (default 1e6).
+@param n_groups Number of distinct groups (default 100).
+@param reps Number of repetitions to run (default 3).
+@param seed Random seed for reproducibility (default 123).
+@returns A list with `times` (numeric vector, seconds) and `last_summary` (the last summarised data.frame).
+@examples
+# Make sure tictoc and dplyr are installed, then:
+# bench_group_by_summary(1e6, 100, reps = 2)
 bench_group_by_summary <- function(n = 1e6, n_groups = 100, reps = 3, seed = 123) {
   if (!requireNamespace("tictoc", quietly = TRUE)) stop("Please install the 'tictoc' package")
   if (!requireNamespace("dplyr", quietly = TRUE)) stop("Please install the 'dplyr' package")
@@ -708,10 +728,10 @@ dim(clean_data)
 library(tidyverse)
 library(stringr)
 
-#' 提取任意病史（修正版）
-#' @param text 病历文本
-#' @param disease 疾病关键词（如 "高血压"）
-#' @return 返回 "无"/"有"/"未提及"/"X年"
+提取任意病史（修正版）
+@param text 病历文本
+@param disease 疾病关键词（如 "高血压"）
+@return 返回 "无"/"有"/"未提及"/"X年"
 extract_history2 <- function(text, disease) {
   if (is.na(text)) return(NA)
   

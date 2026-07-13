@@ -50,7 +50,7 @@
 #' @examples
 #' data(cancer, package = "survival")
 #' # coxph model with time assigned
-#' regression_basic_results(cancer,
+#' res1 <- regression_basic_results(cancer,
 #'   x = "age", y = "status", time = "time",
 #'   model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex")),
 #'   save_output = FALSE,
@@ -59,7 +59,7 @@
 #'
 #' # logistic model with time not assigned
 #' cancer$dead <- cancer$status == 2
-#' regression_basic_results(cancer,
+#' res2 <- regression_basic_results(cancer,
 #'   x = "age", y = "dead", ref_levels = c("Q3", "High"),
 #'   model_covs = list(Crude = c(), Model1 = c("ph.karno"), Model2 = c("ph.karno", "sex")),
 #'   save_output = FALSE
