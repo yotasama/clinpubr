@@ -1,8 +1,12 @@
 # clinpubr 1.4.1
 
+* Added `extract_history()` to extract patient history from clinical records in Chinese.
+
 * Added `group_by_range()` to group data frames by time ranges.
 
 * Fixed a bug in `unit_standardize()` that `extract_numbers` would not work as expected.
+
+* Minor bug fixes and improvements.
 
 # clinpubr 1.4.0
 
