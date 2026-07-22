@@ -42,7 +42,7 @@
 - **`exclusion_count`** → [exclusion_count.md](exclusion_count.md)  
   This function sequentially applies exclusion criteria to a data frame and counts the number of samples removed at each step.
 - **`extract_history`** → [extract_history.md](extract_history.md)  
-  Extract medical history information (disease, smoking, drinking, surgery, etc.) from clinical text records, now only supports Chinese text. The function uses vectorized string operations for high performance on large datasets.
+  Extract medical history information (disease, smoking, drinking, surgery, etc.) from clinical text records, supports Chinese text. The function uses vectorized string operations for high performance on large datasets.
 - **`extract_num`** → [extract_num.md](extract_num.md)  
   Extract numerical values from strings. Can be used to filter out the unwanted information coming along with the numbers.
 - **`fill_with_last`** → [fill_with_last.md](fill_with_last.md)  
