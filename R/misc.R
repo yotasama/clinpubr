@@ -179,17 +179,18 @@ merge_ordered_vectors <- function(vectors) {
   if (n == 1) {
     return(all_elements)
   }
-  for (i in 1:(n - 1)) {
-    for (j in (i + 1):n) {
-      order_result <- .calculate_order(all_elements[i], all_elements[j], vectors)
-      if (order_result == -1) {
-        temp <- all_elements[i]
-        all_elements[i] <- all_elements[j]
-        all_elements[j] <- temp
-      }
-    }
+
+  # Precompute first-occurrence positions (0 = not present) so that the
+  # exchange sort can run in C++ with O(1) lookups per comparison.
+  K <- length(vectors)
+  pos <- matrix(0L, nrow = n, ncol = K)
+  for (k in seq_len(K)) {
+    p <- match(all_elements, vectors[[k]])
+    p[is.na(p)] <- 0L
+    pos[, k] <- as.integer(p)
   }
-  return(all_elements)
+
+  all_elements[mov_sort_cpp(seq_len(n) - 1L, pos) + 1L]
 }
 
 #' Adding lists element-wise

@@ -1,3 +1,7 @@
+# clinpubr 1.4.2
+
+* Minor bug fixes and improvements.
+
 # clinpubr 1.4.1
 
 * Added `extract_history()` to extract patient history from clinical records in Chinese.

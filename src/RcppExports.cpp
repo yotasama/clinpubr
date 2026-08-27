@@ -22,9 +22,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// mov_sort_cpp
+IntegerVector mov_sort_cpp(IntegerVector ids0, IntegerMatrix pos);
+RcppExport SEXP _clinpubr_mov_sort_cpp(SEXP ids0SEXP, SEXP posSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< IntegerVector >::type ids0(ids0SEXP);
+    Rcpp::traits::input_parameter< IntegerMatrix >::type pos(posSEXP);
+    rcpp_result_gen = Rcpp::wrap(mov_sort_cpp(ids0, pos));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_clinpubr_group_by_range_cpp", (DL_FUNC) &_clinpubr_group_by_range_cpp, 2},
+    {"_clinpubr_mov_sort_cpp", (DL_FUNC) &_clinpubr_mov_sort_cpp, 2},
     {NULL, NULL, 0}
 };
 

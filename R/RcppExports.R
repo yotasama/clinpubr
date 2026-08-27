@@ -14,3 +14,21 @@ group_by_range_cpp <- function(x, max_range) {
     .Call(`_clinpubr_group_by_range_cpp`, x, max_range)
 }
 
+#' Vote-based Ordered Vector Merge (C++ core)
+#'
+#' Reproduces the exact swap-order semantics of
+#' \code{clinpubr::merge_ordered_vectors()}: for each pair \code{(x[i], x[j])},
+#' count in how many vectors \code{x[i]} precedes/follows \code{x[j]} (by first
+#' occurrence); swap when the element precedes in fewer vectors. Swapping
+#' updates \code{x[i]} and comparison continues, matching the original
+#' bubble-style sort exactly.
+#'
+#' @param ids0 IntegerVector of 0-based element IDs (in initial order).
+#' @param pos IntegerMatrix of shape \code{[n x K]}, column-major, where
+#'   \code{pos[e, k]} is the 1-based first-occurrence position of element \code{e}
+#'   in vector \code{k}, and \code{0} means not present.
+#' @return An IntegerVector of 0-based IDs in merged order.
+mov_sort_cpp <- function(ids0, pos) {
+    .Call(`_clinpubr_mov_sort_cpp`, ids0, pos)
+}
+
