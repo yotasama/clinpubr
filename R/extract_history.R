@@ -6,7 +6,8 @@
 #'
 #' @param text A character vector of clinical text records.
 #' @param keywords A character vector of keywords to search for.
-#'   Can also be a named list where names are category names and values are keyword vectors.
+#'   Can also be a named list where names are category names and values are keyword vectors;
+#'   multiple keywords within one category are treated as synonyms and matched with OR logic.
 #' @param extract_duration Logical. If \code{TRUE}, extract duration information (years/months/days)
 #'   when available. Default is \code{TRUE}.
 #' @param duration_unit Character. The unit for duration output. Can be \code{"original"} (keep as
@@ -58,7 +59,7 @@ extract_history <- function(text,
   results <- lapply(keyword_list, function(kw) {
     extract_history_single(
       text = text,
-      keyword = kw[1],
+      keyword = kw,
       extract_duration = extract_duration,
       duration_unit = duration_unit,
       negation_window = negation_window,
@@ -119,7 +120,8 @@ format_multi_results <- function(results, categories, return_format) {
 }
 
 #' @title Extract History for Single Category (Internal Function)
-#' @param keyword A single keyword string.
+#' @param keyword A keyword string or a character vector of synonym keywords
+#'   combined with OR logic.
 #' @keywords internal
 extract_history_single <- function(text,
                                     keyword,
@@ -127,13 +129,14 @@ extract_history_single <- function(text,
                                     duration_unit = "original",
                                     negation_window = 20,
                                     return_format = "simple") {
-  status <- detect_status(text, keyword, negation_window)
+  keyword_pattern <- build_keyword_pattern(keyword)
+  status <- detect_status(text, keyword_pattern, negation_window)
 
   duration <- rep(NA_character_, length(text))
   if (extract_duration && return_format != "simple") {
     yes_idx <- which(status == TRUE)
     if (length(yes_idx) > 0) {
-      duration[yes_idx] <- extract_durations(text[yes_idx], keyword)
+      duration[yes_idx] <- extract_durations(text[yes_idx], keyword, keyword_pattern)
     }
   }
 
@@ -141,19 +144,23 @@ extract_history_single <- function(text,
 }
 
 #' @keywords internal
-detect_status <- function(text, keyword, negation_window) {
+build_keyword_pattern <- function(keyword) {
+  paste0("(?:", paste(escape_keyword(keyword), collapse = "|"), ")")
+}
+
+#' @keywords internal
+detect_status <- function(text, keyword_pattern, negation_window) {
   n <- length(text)
   status <- rep(NA, n)
 
-  keyword_escaped <- escape_keyword(keyword)
-  has_kw <- stringi::stri_detect_regex(text, keyword_escaped)
+  has_kw <- stringi::stri_detect_regex(text, keyword_pattern)
   has_kw[is.na(has_kw)] <- FALSE
   if (!any(has_kw)) {
     return(status)
   }
 
   subset_text <- text[has_kw]
-  has_neg <- detect_negation(subset_text, keyword_escaped, negation_window)
+  has_neg <- detect_negation(subset_text, keyword_pattern, negation_window)
 
   subset_status <- rep(NA, length(subset_text))
   subset_status[has_neg] <- FALSE
@@ -164,7 +171,7 @@ detect_status <- function(text, keyword, negation_window) {
 }
 
 #' @keywords internal
-detect_negation <- function(text, keyword_escaped, window) {
+detect_negation <- function(text, keyword_pattern, window) {
   n <- length(text)
   has_neg <- rep(FALSE, n)
 
@@ -179,11 +186,11 @@ detect_negation <- function(text, keyword_escaped, window) {
 
   neg_pattern_pre <- sprintf(
     "(?:\u5426\u8ba4|\u6ca1\u6709|\u672a\u89c1|\u5426\u5b9a|\u672a|\u65e0)(?:[^\uff0c,\u3002\uff1b\u4f46\n\r]{0,%d})%s",
-    window, keyword_escaped
+    window, keyword_pattern
   )
   neg_pattern_post <- sprintf(
     "%s(?:[^\uff0c,\u3002\uff1b\n\r]{0,%d})(?:\u5426\u8ba4|\u6ca1\u6709|\u672a\u89c1|\u5426\u5b9a|\u672a|\u65e0)",
-    keyword_escaped, window
+    keyword_pattern, window
   )
   subset_has_neg <- stringi::stri_detect_regex(subset_text, neg_pattern_pre) |
     stringi::stri_detect_regex(subset_text, neg_pattern_post)
@@ -204,9 +211,8 @@ escape_keyword <- function(keyword) {
 }
 
 #' @keywords internal
-extract_durations <- function(text, keyword) {
-  keyword_escaped <- escape_keyword(keyword)
-  after_pattern <- sprintf("%s([\\s\\S]{0,50}?)(?:[\u3002\uff1b!\uff01?\uff1f]|$)", keyword_escaped)
+extract_durations <- function(text, keyword, keyword_pattern = build_keyword_pattern(keyword)) {
+  after_pattern <- sprintf("%s([\\s\\S]{0,50}?)(?:[\u3002\uff1b!\uff01?\uff1f]|$)", keyword_pattern)
   after_matches <- stringi::stri_match_first_regex(text, after_pattern)
 
   duration <- rep(NA_character_, length(text))
@@ -309,11 +315,10 @@ is_year_like <- function(num, unit) {
 }
 
 #' @keywords internal
-is_other_entity_prefix <- function(prefix, keyword) {
+is_other_entity_prefix <- function(prefix, keywords) {
   entity_pattern <- "([^\uff0c,\u3001\u3002\uff1b\\s]{2,})\u53f2\\s*$"
   entity_match <- stringi::stri_match_first_regex(prefix, entity_pattern)
 
-  has_entity <- !is.na(entity_match[, 1])
   entity_name <- entity_match[, 2]
   entity_name <- stringi::stri_replace_all_regex(
     entity_name,
@@ -321,10 +326,14 @@ is_other_entity_prefix <- function(prefix, keyword) {
     ""
   )
 
-  has_entity &
+  matches_keyword <- Reduce(`|`, lapply(keywords, function(kw) {
+    stringi::stri_detect_fixed(entity_name, kw) |
+      stringi::stri_detect_fixed(kw, entity_name)
+  }))
+
+  !is.na(entity_name) &
     nchar(entity_name) >= 2 &
-    !stringi::stri_detect_fixed(entity_name, keyword) &
-    !stringi::stri_detect_fixed(keyword, entity_name)
+    !matches_keyword
 }
 
 #' @keywords internal

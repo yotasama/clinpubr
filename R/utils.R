@@ -46,6 +46,33 @@ emp_colors <- c(
   "#FFD92F", "#E5C494", "#B3B3B3", "#ad4c5e", "#474747"
 )
 
+#' Common publication-ready theme for `clinpubr` plots
+#' @description A `ggplot2` theme shared by all built-in plots: classic background,
+#'   no legend title, transparent legend background, and an inside legend with
+#'   unified font sizes.
+#' @param legend_pos Legend coordinates passed to [ggplot2::theme()]`legend.position.inside`.
+#' @param ... Additional element arguments passed to [ggplot2::theme()], overriding the defaults.
+#' @returns A `ggplot2` theme object.
+#' @export
+#' @examples
+#' library(ggplot2)
+#' ggplot(mtcars, aes(wt, mpg, color = factor(cyl))) +
+#'   geom_point() +
+#'   theme_pub()
+theme_pub <- function(legend_pos = c(0.7, 0.25), ...) {
+  ggplot2::theme_classic() +
+    ggplot2::theme(
+      axis.text = ggplot2::element_text(size = 12),
+      axis.title = ggplot2::element_text(size = 15),
+      legend.title = ggplot2::element_blank(),
+      legend.background = ggplot2::element_blank(),
+      legend.text = ggplot2::element_text(size = 10),
+      legend.position = "inside",
+      legend.position.inside = legend_pos
+    ) +
+    ggplot2::theme(...)
+}
+
 wrap_backticks <- function(x) {
   if (is.null(x)) {
     return(NULL)

@@ -56,3 +56,22 @@ test_that("alpha_by_n calculates appropriate thresholds", {
   set.seed(1)
   expect_snapshot(alpha_by_n(500))
 })
+
+test_that("test_normality classifies distributions correctly", {
+  set.seed(42)
+  expect_true(test_normality(rnorm(500)))
+  expect_false(test_normality(rexp(500)))
+
+  # Positive normal data with SD < mean is treated as non-normal by the documented
+  # right-skewness heuristic; disabling it restores the normal classification.
+  x <- rnorm(1000, mean = 100, sd = 5)
+  expect_true(all(x >= 0))
+  expect_false(test_normality(x))
+  expect_true(test_normality(x, all_positive = FALSE))
+})
+
+test_that("test_normality handles insufficient data", {
+  expect_warning(val <- test_normality(c(1, 2)), "Insufficient")
+  expect_false(val)
+  expect_false(suppressWarnings(test_normality(numeric(0))))
+})

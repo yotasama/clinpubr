@@ -63,10 +63,10 @@ test_normality <- function(x, alpha = 0.05, all_positive = NULL) {
 
   # Determine if variable is normal
   # Consider non-normal if:
-  # 1. For positive variables: SD < mean (indicating right skewness)
+  # 1. For positive variables: SD < mean on the raw scale (indicating right skewness)
   # 2. At least two normality tests reject null hypothesis (p < alpha)
-  is_nonnormal <- (all_positive && (sd(x_scaled, na.rm = TRUE) < mean(x_scaled, na.rm = TRUE))) ||
-    (sum(ps < alpha, na.rm = TRUE) >= sum(!is.na(ps)) - 2)
+  is_nonnormal <- (all_positive && (sd(x_clean, na.rm = TRUE) < mean(x_clean, na.rm = TRUE))) ||
+    (sum(ps < alpha, na.rm = TRUE) >= 2)
 
   return(!is_nonnormal)
 }
@@ -267,7 +267,7 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
   if (is.null(nonnormal_vars) && !is.null(var_types)) nonnormal_vars <- var_types$nonnormal_vars
   if (is.null(vars)) vars <- setdiff(colnames(data), strata)
   if (!is.null(var_types$omit_vars)) vars <- setdiff(vars, var_types$omit_vars)
-  if (is.null(seed)) set.seed(seed)
+  if (!is.null(seed)) set.seed(seed)
   if (is.null(filename)) filename <- paste0("baseline_by_", strata, ".csv")
   if (!endsWith(filename, ".csv")) stop("please save as `.csv` file")
   factor_vars <- union(factor_vars, exact_vars)
@@ -358,9 +358,10 @@ baseline_table <- function(data, var_types = NULL, strata = NULL, vars = NULL, f
       }
       p_values_wide <- as.data.frame(pivot_wider(p_values_long, names_from = comparison, values_from = p.adj))
       if (nrow(p_values_wide) == 0) {
-        pairwise_list[[var]] <- setNames(
-          as.list(rep(NA, length(levels(g)) * (length(levels(g)) - 1) / 2)),
-          names(p_values_wide)
+        pair_levels <- utils::combn(levels(g), 2)
+        pair_names <- paste(pair_levels[1, ], pair_levels[2, ], sep = "_")
+        pairwise_list[[var]] <- as.data.frame(
+          setNames(as.list(rep(NA_real_, length(pair_names))), pair_names)
         )
       } else {
         pairwise_list[[var]] <- p_values_wide

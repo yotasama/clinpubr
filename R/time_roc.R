@@ -127,21 +127,12 @@ time_roc_plot <- function(data, time_var, event_var, marker_var, times = c(12, 3
   p <- ggplot2::ggplot(roc_data_all, aes(x = fpr, y = tpr, color = time)) +
     ggplot2::geom_line(linewidth = 1) +
     ggplot2::scale_color_manual(
-      values = colors[seq_along(valid_time_roc_times)],
+      values = rep_len(colors, length(valid_time_roc_times)),
       labels = auc_labels
     ) +
     ggplot2::geom_abline(slope = 1, intercept = 0, linetype = 2, alpha = 0.5) +
-    ggplot2::theme_classic() +
     ggplot2::labs(x = "1 - Specificity", y = "Sensitivity") +
-    ggplot2::theme(
-      axis.text = ggplot2::element_text(size = 12),
-      axis.title = ggplot2::element_text(size = 15),
-      legend.title = ggplot2::element_blank(),
-      legend.background = ggplot2::element_blank(),
-      legend.text = ggplot2::element_text(size = 10),
-      legend.position = "inside",
-      legend.position.inside = c(0.7, 0.25)
-    )
+    theme_pub()
 
   if (title) {
     p <- p + ggplot2::ggtitle("Time-dependent ROC Curves")

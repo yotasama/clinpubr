@@ -135,6 +135,18 @@ test_that("extract_history handles no match case", {
   expect_true(all(is.na(res)))
 })
 
+test_that("extract_history treats multiple keywords in one category as synonyms (OR)", {
+  text <- c("既往有高血压病史5年。", "否认高血压、心脏病史。", "有心脏病史。", "无特殊。")
+  keywords <- list(disease = c("高血压", "心脏病"))
+
+  res <- extract_history(text, keywords, return_format = "simple")
+  expect_equal(res, c(TRUE, FALSE, TRUE, NA))
+
+  res_df <- extract_history(text[1], keywords, return_format = "data.frame")
+  expect_equal(res_df$status, TRUE)
+  expect_equal(res_df$duration, "5 years")
+})
+
 test_that("extract_history prefers real duration over year-like numbers", {
   text <- "心脏病“病史10年，2015年开始使用恩格列净"
   expect_equal(extract_history(text, "心脏病", return_format = "detailed"), "10 years")

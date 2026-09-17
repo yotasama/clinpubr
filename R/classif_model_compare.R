@@ -62,24 +62,23 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   check_package("ResourceSelection", "Hosmer-Lemeshow test")
   check_package("dcurves", "decision curve analysis")
 
-  if (isTRUE(as_probability)) {
-    vars_to_prob <- model_names[apply(data[, model_names, drop = FALSE], 2, function(x) any(x < 0 | x > 1))]
-  } else if (is.character(as_probability)) {
-    vars_to_prob <- as_probability
-  } else {
-    vars_to_prob <- NULL
+  if (!target_var %in% names(data)) {
+    stop("`target_var` not found in `data`.")
   }
-  for (var in vars_to_prob) {
-    data[[var]] <- (data[[var]] - min(data[[var]])) / (max(data[[var]]) - min(data[[var]]))
-  }
-  if (max(data[, model_names]) > 1 || min(data[, model_names]) < 0) {
-    stop(paste0(
-      "Only predicted probabilities are allowed, detected values not in range 0 to 1.\n",
-      "Set `as_probability = TRUE` to convert illegal variables to the range of 0 to 1.\n",
-      "You can also pass a vector of variable names to `as_probability` to convert only those variables.\n"
-    ))
+  missing_models <- setdiff(model_names, names(data))
+  if (length(missing_models) > 0) {
+    stop("Prediction column(s) not found in `data`: ", paste(missing_models, collapse = ", "))
   }
   if (is.null(colors)) colors <- emp_colors
+
+  # Validate a binary target: numeric must be coded as 0/1, factor/character must have 2 levels
+  target_raw <- data[[target_var]]
+  if (is.numeric(target_raw)) {
+    target_levels <- unique(target_raw[!is.na(target_raw)])
+    if (!all(target_levels %in% c(0, 1))) {
+      stop("`target_var` is numeric but not coded as 0/1. Convert it to a binary factor or 0/1 coding.")
+    }
+  }
   data[[target_var]] <- factor(data[[target_var]])
   target <- data[[target_var]]
   tmp <- is.na(target)
@@ -87,14 +86,42 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
     data <- data[!tmp, ]
     target <- target[!tmp]
     warning(paste0(
-      "The target variable contains missing values.",
+      "The target variable contains missing values. ",
       sum(tmp), " rows with missing target values are removed."
     ))
   }
-  metric_table <- data.frame(matrix(NA, nrow = length(model_names), ncol = 14))
+  if (nlevels(target) != 2) {
+    stop("`target_var` must be binary: exactly 2 non-missing levels are required.")
+  }
+
+  if (isTRUE(as_probability)) {
+    vars_to_prob <- model_names[apply(data[, model_names, drop = FALSE], 2,
+                                      function(x) any(x < 0 | x > 1, na.rm = TRUE))]
+  } else if (is.character(as_probability)) {
+    vars_to_prob <- as_probability
+  } else {
+    vars_to_prob <- NULL
+  }
+  for (var in vars_to_prob) {
+    pred_range <- range(data[[var]], na.rm = TRUE)
+    if (pred_range[1] == pred_range[2]) {
+      stop("Cannot rescale '", var, "' to probabilities: all non-missing values are identical.")
+    }
+    data[[var]] <- (data[[var]] - pred_range[1]) / (pred_range[2] - pred_range[1])
+  }
+  pred_values <- unlist(data[, model_names, drop = FALSE], use.names = FALSE)
+  if (any(pred_values < 0 | pred_values > 1, na.rm = TRUE)) {
+    stop(paste0(
+      "Only predicted probabilities are allowed, detected values not in range 0 to 1.\n",
+      "Set `as_probability = TRUE` to convert illegal variables to the range of 0 to 1.\n",
+      "You can also pass a vector of variable names to `as_probability` to convert only those variables.\n"
+    ))
+  }
+
+  metric_table <- data.frame(matrix(NA, nrow = length(model_names), ncol = 16))
   colnames(metric_table) <- c(
-    "Model", "AUC", "PRAUC", "Accuracy", "Sensitivity", "Specificity", "Pos Pred Value",
-    "Neg Pred Value", "F1", "Kappa", "Brier", "cutoff", "Youden", "HosLem"
+    "Model", "AUC", "AUC_lower", "AUC_upper", "PRAUC", "Accuracy", "Sensitivity", "Specificity",
+    "Pos Pred Value", "Neg Pred Value", "F1", "Kappa", "Brier", "cutoff", "Youden", "HosLem"
   )
   metric_table$Model <- model_names
   sens_metrics <- c(
@@ -123,8 +150,9 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
     )
     aucs <- pROC::ci.auc(target, data[[model_name]], direction = "<", quiet = TRUE)
     model_aucs[i] <- aucs[2]
-    aucs <- format(aucs, digits = 2, nsmall = 3)
-    metric_table$AUC[i] <- paste0(aucs[2], " (", aucs[1], ", ", aucs[3], ")")
+    metric_table$AUC[i] <- aucs[2]
+    metric_table$AUC_lower[i] <- aucs[1]
+    metric_table$AUC_upper[i] <- aucs[3]
     for (j in seq_along(sens_metrics)) {
       metric_table[i, sens_metrics[j]] <- cm$byClass[sens_metrics[j]]
     }
@@ -135,7 +163,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
     metric_table$Youden[i] <- metric_table$Sensitivity[i] + metric_table$Specificity[i] - 1
     metric_table$HosLem[i] <- ResourceSelection::hoslem.test(as.numeric(target) - 1, data[[model_name]])$p.value
   }
-  for (i in 3:ncol(metric_table)) {
+  for (i in 2:ncol(metric_table)) {
     metric_table[, i] <- round(metric_table[, i], digits = 3)
   }
   if (auto_order) {
@@ -163,18 +191,11 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
 
   dca_plot <- dcurves::dca(plot_formula, data = data, thresholds = dca_thresholds) %>%
     plot(smooth = TRUE) +
-    ggplot2::scale_color_manual(values = colors[c(length(colors) - 1:0, seq_along(model_names))]) +
+    ggplot2::scale_color_manual(
+      values = c(utils::tail(colors, 2), rep_len(colors, length(model_names)))
+    ) +
     ggplot2::labs(x = "Threshold probability") +
-    ggplot2::theme_classic() +
-    ggplot2::theme(
-      axis.text = element_text(size = 12),
-      axis.title = element_text(size = 15),
-      legend.title = element_blank(),
-      legend.background = element_blank(),
-      legend.text = element_text(size = 10),
-      legend.position = "inside",
-      legend.position.inside = legend_pos,
-    )
+    theme_pub(legend_pos = legend_pos)
   if (save_output) {
     ggplot2::ggsave(dca_plot, file = paste0(output_prefix, "_dca.", figure_type), width = 4, height = 4)
   }
@@ -187,19 +208,10 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   }
   names(roc_list) <- paste0(names(roc_list), " (", sapply(roc_list, function(x) sprintf("%.3f", x$auc)), ")")
   roc_plot <- pROC::ggroc(roc_list, legacy.axes = TRUE, linewidth = 1) +
-    ggplot2::scale_color_manual(values = colors) +
+    ggplot2::scale_color_manual(values = rep_len(colors, length(model_names))) +
     ggplot2::geom_abline(slope = 1, intercept = 0, linetype = 2, alpha = 0.5) +
-    ggplot2::theme_classic() +
     ggplot2::labs(x = "1 - Specificity", y = "Sensitivity") +
-    ggplot2::theme(
-      axis.text = element_text(size = 12),
-      axis.title = element_text(size = 15),
-      legend.title = element_blank(),
-      legend.background = element_blank(),
-      legend.text = element_text(size = 10),
-      legend.position = "inside",
-      legend.position.inside = c(0.7, 0.25),
-    )
+    theme_pub(legend_pos = c(0.7, 0.25))
   if (save_output) {
     ggplot2::ggsave(roc_plot, file = paste0(output_prefix, "_roc.", figure_type), width = 4, height = 4)
   }
@@ -215,19 +227,10 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   pr_data_all$Model <- factor(pr_data_all$Model, levels = paste0(metric_table$Model, " (", metric_table$PRAUC, ")"))
   pr_plot <- ggplot2::ggplot(pr_data_all, aes(x = recall, y = precision, color = Model)) +
     ggplot2::geom_line(linewidth = 1) +
-    ggplot2::scale_color_manual(values = colors) +
-    ggplot2::theme_classic() +
+    ggplot2::scale_color_manual(values = rep_len(colors, length(model_names))) +
     ggplot2::lims(x = c(0, 1), y = c(0, 1)) +
     ggplot2::labs(x = "Recall", y = "Precision") +
-    ggplot2::theme(
-      axis.text = element_text(size = 12),
-      axis.title = element_text(size = 15),
-      legend.title = element_blank(),
-      legend.background = element_blank(),
-      legend.text = element_text(size = 10),
-      legend.position = "inside",
-      legend.position.inside = c(0.25, 0.25),
-    )
+    theme_pub(legend_pos = c(0.25, 0.25))
   if (save_output) {
     ggplot2::ggsave(pr_plot, file = paste0(output_prefix, "_pr.", figure_type), width = 4, height = 4)
   }
@@ -252,18 +255,9 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
     geom_smooth(method = "loess", formula = y ~ x, se = FALSE, span = 1) +
     lims(x = c(0, 1), y = c(0, 1)) +
     geom_abline(intercept = 0, slope = 1, linetype = 2, alpha = 0.5) +
-    ggplot2::scale_color_manual(values = colors) +
-    ggplot2::theme_classic() +
+    ggplot2::scale_color_manual(values = rep_len(colors, length(model_names))) +
     ggplot2::labs(x = "Predicted probability", y = "Observed probability") +
-    ggplot2::theme(
-      axis.text = element_text(size = 12),
-      axis.title = element_text(size = 15),
-      legend.title = element_blank(),
-      legend.background = element_blank(),
-      legend.text = element_text(size = 10),
-      legend.position = "inside",
-      legend.position.inside = c(0.7, 0.25),
-    )
+    theme_pub(legend_pos = c(0.7, 0.25))
   if (save_output) {
     ggplot2::ggsave(calibration_plot, file = paste0(output_prefix, "_calibration.", figure_type), width = 4, height = 4)
   }

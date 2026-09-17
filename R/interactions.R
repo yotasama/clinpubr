@@ -282,17 +282,13 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, time2 =
           )
       }
       plt1 <- plt1 +
-        theme_classic() +
-        theme(
-          legend.position = "inside",
-          legend.position.inside = c(0.05, 0.95),
+        theme_pub(
+          legend_pos = c(0.05, 0.95),
+          legend.title = element_text(hjust = 0),
           legend.justification = c(0, 1),
           legend.box.margin = margin(6, 6, 6, 6),
-          legend.background = element_blank(),
           plot.title = element_text(hjust = 0.5, size = 15),
-          axis.text = element_text(size = 12),
-          legend.text = element_text(size = 12),
-          axis.title = element_text(size = 15)
+          legend.text = element_text(size = 12)
         )
       if (save_plot) {
         ggsave(paste0(prefix, filename), plt1, height = height, width = width)
@@ -355,17 +351,13 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, time2 =
         }
 
         plt2 <- plt2 +
-          theme_classic() +
-          theme(
-            legend.position = "inside",
-            legend.position.inside = c(0.05, 0.95),
+          theme_pub(
+            legend_pos = c(0.05, 0.95),
+            legend.title = element_text(hjust = 0),
             legend.justification = c(0, 1),
             legend.box.margin = margin(6, 6, 6, 6),
-            legend.background = element_blank(),
             plot.title = element_text(hjust = 0.5, size = 15),
-            axis.text = element_text(size = 12),
-            legend.text = element_text(size = 12),
-            axis.title = element_text(size = 15)
+            legend.text = element_text(size = 12)
           )
         if (save_plot) {
           ggsave(paste0("rcs_", filename), plt2, height = height, width = width)

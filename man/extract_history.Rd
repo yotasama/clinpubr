@@ -17,7 +17,8 @@ extract_history(
 \item{text}{A character vector of clinical text records.}
 
 \item{keywords}{A character vector of keywords to search for.
-Can also be a named list where names are category names and values are keyword vectors.}
+Can also be a named list where names are category names and values are keyword vectors;
+multiple keywords within one category are treated as synonyms and matched with OR logic.}
 
 \item{extract_duration}{Logical. If \code{TRUE}, extract duration information (years/months/days)
 when available. Default is \code{TRUE}.}

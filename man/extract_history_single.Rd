@@ -14,7 +14,8 @@ extract_history_single(
 )
 }
 \arguments{
-\item{keyword}{A single keyword string.}
+\item{keyword}{A keyword string or a character vector of synonym keywords
+combined with OR logic.}
 }
 \description{
 Extract History for Single Category (Internal Function)

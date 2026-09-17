@@ -1,5 +1,15 @@
 # clinpubr 1.4.2
 
+* Added `theme_pub()`, the common publication theme used by `classif_model_compare()`, `time_roc_plot()`, and `interaction_plot()`.
+
+* `classif_model_compare()` now returns numeric `AUC`, `AUC_lower`, and `AUC_upper` columns instead of a formatted AUC string, validates its inputs more robustly, and recycles the color palette when more models than colors are compared.
+
+* `extract_history()` now treats multiple keywords within one category as synonyms (OR matching) instead of using only the first keyword.
+
+* Fixed `test_normality()` applying the skewness heuristic to standardized (mean 0, SD 1) data, which made the rule ineffective; it now uses the raw data and flags non-normality when at least two tests reject, matching the documentation.
+
+* Fixed `baseline_table()` ignoring a user-supplied random seed and pairwise p-value columns being unnamed when a group comparison produced no result.
+
 * Minor bug fixes and improvements.
 
 # clinpubr 1.4.1
