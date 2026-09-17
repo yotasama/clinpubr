@@ -12,7 +12,8 @@ test_normality(x, alpha = 0.05, all_positive = NULL)
 \item{alpha}{The significance level for normality tests. Default is 0.05.}
 
 \item{all_positive}{A logical value indicating whether all values are non-negative. If TRUE and
-standard deviation is less than mean, the variable is considered non-normal (likely right-skewed).}
+standard deviation is greater than mean (coefficient of variation > 1), the variable is
+considered non-normal (likely strongly right-skewed).}
 }
 \value{
 A logical value indicating whether the variable is normal (TRUE) or non-normal (FALSE).
@@ -22,9 +23,10 @@ Perform multiple normality tests on a numeric variable and determine if it follo
 }
 \note{
 This function performs Shapiro-Wilk, Lilliefors, Anderson-Darling, Jarque-Bera, and
-Shapiro-Francia tests. If at least two of these tests indicate that the variable is nonnormal
-(p < alpha), then it is considered nonnormal. For positive variables, if SD < mean, it's also
-considered non-normal as it suggests right skewness.
+Shapiro-Francia tests. The variable is considered nonnormal if a strict majority of the
+successful tests (with at least two tests) indicate that it is nonnormal (p < alpha); tests that
+fail do not count. For positive variables, if SD > mean, it's also considered non-normal as it
+suggests strong right skewness.
 }
 \examples{
 # Test normal data

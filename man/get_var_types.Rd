@@ -46,8 +46,9 @@ Automatic variable type and method determination for baseline table.
 \note{
 This function performs normality tests on the variables in the data frame and determines
 whether they are normal. This is done by performing Shapiro-Wilk, Lilliefors, Anderson-Darling,
-Jarque-Bera, and Shapiro-Francia tests. If at least two of these tests indicate that the variable
-is nonnormal, then it is considered nonnormal. To alleviate the problem that normality tests become
+Jarque-Bera, and Shapiro-Francia tests. If a strict majority of the successful tests (with at
+least two) indicate that the variable is nonnormal, then it is considered nonnormal.
+To alleviate the problem that normality tests become
 too sensitive when sample size gets larger, the alpha level is determined by an experience formula
 that decrease with sample size.
 

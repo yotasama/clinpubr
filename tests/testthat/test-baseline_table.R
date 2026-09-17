@@ -61,17 +61,24 @@ test_that("test_normality classifies distributions correctly", {
   set.seed(42)
   expect_true(test_normality(rnorm(500)))
   expect_false(test_normality(rexp(500)))
+  expect_false(test_normality(rlnorm(500, 0, 2)))
 
-  # Positive normal data with SD < mean is treated as non-normal by the documented
-  # right-skewness heuristic; disabling it restores the normal classification.
+  # Positive normal data (CV < 1, e.g. age/BMI-like variables) must not be flagged
+  # as right-skewed by the heuristic.
   x <- rnorm(1000, mean = 100, sd = 5)
   expect_true(all(x >= 0))
-  expect_false(test_normality(x))
-  expect_true(test_normality(x, all_positive = FALSE))
+  expect_true(sd(x) < mean(x))
+  expect_true(test_normality(x))
 })
 
 test_that("test_normality handles insufficient data", {
   expect_warning(val <- test_normality(c(1, 2)), "Insufficient")
   expect_false(val)
   expect_false(suppressWarnings(test_normality(numeric(0))))
+})
+
+test_that("test_normality does not flag non-normality when all tests fail (NA p-values)", {
+  # A constant vector makes every normality test error (zero variance).
+  # No rejecting evidence means it must not be classified as non-normal.
+  expect_true(suppressWarnings(test_normality(rep(5, 20))))
 })
