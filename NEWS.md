@@ -6,8 +6,6 @@
 
 * `extract_history()` now treats multiple keywords within one category as synonyms (OR matching) instead of using only the first keyword.
 
-* Fixed `test_normality()`: the skewness heuristic was applied to standardized data (mean 0, SD 1) so it never fired, and its inequality direction was inverted; it now flags positive variables as non-normal only when SD > mean (CV > 1) on the raw scale. Non-normality now requires a strict majority of the successful tests with at least two rejections, so tests that fail no longer make the decision more lenient.
-
 * Fixed `baseline_table()` ignoring a user-supplied random seed and pairwise p-value columns being unnamed when a group comparison produced no result.
 
 * Minor bug fixes and improvements.
