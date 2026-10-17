@@ -104,11 +104,11 @@ cut_by <- function(x, breaks,
       levels(res) <- cut_labels
     }
   }
-  if(drop_empty){
-    prev_levels = levels(res)
+  if (drop_empty) {
+    prev_levels <- levels(res)
     res <- droplevels(res)
-    after_levels = levels(res)
-    if(length(prev_levels) != length(after_levels)){
+    after_levels <- levels(res)
+    if (length(prev_levels) != length(after_levels)) {
       warning("Empty levels are dropped: ", paste(setdiff(prev_levels, after_levels), collapse = ", "))
     }
   }

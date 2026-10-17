@@ -143,7 +143,7 @@ first_mode <- function(x, empty_return) {
   x <- na.omit(x)
   l <- length(unique(x))
   if (l == 0) {
-    if(!missing(empty_return)) {
+    if (!missing(empty_return)) {
       empty_return
     } else {
       x[NA]
@@ -209,16 +209,25 @@ add_lists <- function(l1, l2) {
 
   all_names <- unique(c(names1, names2))
 
+  idx1 <- match(all_names, names1)
+  idx2 <- match(all_names, names2)
+  in1 <- !is.na(idx1)
+  in2 <- !is.na(idx2)
+  shared <- in1 & in2
+
+  # Single assignments into the result list. List subsetting by integer index
+  # (l1[idx], l2[idx]) and mapply on the shared names avoid repeated [[ ]]
+  # name lookup in an R loop over every name.
   result <- setNames(vector("list", length(all_names)), all_names)
-  for (name in all_names) {
-    if (name %in% names1 && name %in% names2) {
-      result[[name]] <- l1[[name]] + l2[[name]]
-    } else if (name %in% names1) {
-      result[[name]] <- l1[[name]]
-    } else if (name %in% names2) {
-      result[[name]] <- l2[[name]]
-    }
-  }
+  result[shared] <- mapply(
+    function(a, b) a + b,
+    l1[idx1[shared]], l2[idx2[shared]],
+    SIMPLIFY = FALSE, USE.NAMES = FALSE
+  )
+  only1 <- in1 & !in2
+  if (any(only1)) result[only1] <- l1[idx1[only1]]
+  only2 <- in2 & !in1
+  if (any(only2)) result[only2] <- l2[idx2[only2]]
 
   return(result)
 }
@@ -254,13 +263,23 @@ indicate_duplicates <- function(x) {
 #' @examples
 #' replace_elements(c("a", "x", "1", NA, "a"), c("a", "b", NA), c("A", "B", "XX"))
 replace_elements <- function(x, from, to) {
-  y <- x
   if (length(from) != length(to)) {
     stop("`from` and `to` should have the same length!")
   }
-  for (i in seq_along(from)) {
-    y[y %in% from[i]] <- to[i]
+  # Vectorized replacement via a lookup table: build the map once and apply it in
+  # a single pass instead of scanning the whole vector once per replacement.
+  #
+  # Memory note: `y <- x` makes a full copy of the input.  When replacements are
+  # rare, allocating the map only for matched positions and using the original
+  # x as the returned value avoids holding two full copies at the same time.
+  idx <- match(x, from)
+  if (all(is.na(idx))) {
+    return(x)
   }
+  # Copy-on-modify semantics: touching a single element copies the vector, so
+  # build the result as a fresh assignment to keep peak memory to one copy.
+  y <- x
+  y[!is.na(idx)] <- to[idx[!is.na(idx)]]
   y
 }
 
@@ -273,14 +292,19 @@ replace_elements <- function(x, from, to) {
 #' @examples
 #' fill_with_last(c(1, 2, NA, 4, NA, 6))
 fill_with_last <- function(x) {
-  if (length(x) >= 2) {
-    for (i in 2:length(x)) {
-      if (is.na(x[i])) {
-        x[i] <- x[i - 1]
-      }
-    }
+  # Vectorised forward fill (the previous version walked the vector in R,
+  # which is slow on very long vectors).  Prepend an NA placeholder so the
+  # cumsum-based index always resolves: rows before the first valid value pick
+  # the placeholder (NA), every other row picks the last valid value.
+  if (length(x) == 0L) {
+    return(x)
   }
-  x
+  g <- !is.na(x)
+  if (!any(g)) {
+    return(x)
+  }
+  vals <- c(NA, x[g])
+  vals[cumsum(g) + 1L]
 }
 
 #' Match string and replace with corresponding value
@@ -447,7 +471,7 @@ keep_by_keyword <- function(x,
   if (c(start = 1L, first = 2L, last = 3L)[[from]] > c(first = 2L, last = 3L, end = 4L)[[to]]) {
     stop("`from` must not be after `to`")
   }
-  if(from =="start" && to == "end") {
+  if (from == "start" && to == "end") {
     warning("`from = 'start'` and `to = 'end'` will keep the whole string, no keyword filtering applied.")
     return(x)
   }

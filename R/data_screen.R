@@ -544,11 +544,21 @@ screen_data_list <- function(data_list,
 }
 
 .cmp_values <- function(lhs, rhs, op) {
-  if (op == ">") return(lhs > rhs)
-  if (op == ">=") return(lhs >= rhs)
-  if (op == "<") return(lhs < rhs)
-  if (op == "<=") return(lhs <= rhs)
-  if (op == "==") return(lhs == rhs)
+  if (op == ">") {
+    return(lhs > rhs)
+  }
+  if (op == ">=") {
+    return(lhs >= rhs)
+  }
+  if (op == "<") {
+    return(lhs < rhs)
+  }
+  if (op == "<=") {
+    return(lhs <= rhs)
+  }
+  if (op == "==") {
+    return(lhs == rhs)
+  }
   lhs != rhs
 }
 
@@ -787,7 +797,7 @@ screen_data_list <- function(data_list,
 
   if (is.null(anchor_expr) || anchor_window == "none") {
     return(list(data = data_list, scope_log = scope_log))
-  } 
+  }
 
   effective_level <- anchor_level
   if (anchor_level == "date" && is.null(date_map)) {

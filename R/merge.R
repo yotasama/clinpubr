@@ -89,7 +89,8 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols,
 
     # Find matches
     matches <- stringi::stri_detect_regex(search_values, regex_pattern,
-                                          case_insensitive = case_insensitive, ...)
+      case_insensitive = case_insensitive, ...
+    )
     matches[is.na(matches)] <- FALSE
 
     if (any(matches)) {

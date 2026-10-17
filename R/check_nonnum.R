@@ -69,6 +69,10 @@ df_view_nonnum <- function(df, max_count = 20, random_sample = FALSE, long_df = 
   if (long_df && ncol(df) != 2 && (is.null(subject_col) || is.null(value_col))) {
     stop("`subject_col` and `value_col` must be specified for long `data.frame` with more than 2 columns.")
   }
+
+  # Directly compute non-numeric values per column / level, without building
+  # the nrow(df) x ncol(df) intermediate long frame (the old pivot_longer /
+  # group_map / rbindlist pipeline dominated large tables).
   if (long_df) {
     if (inherits(df, "data.frame")) {
       cols <- colnames(df)
@@ -77,49 +81,41 @@ df_view_nonnum <- function(df, max_count = 20, random_sample = FALSE, long_df = 
     }
     if (is.null(subject_col)) subject_col <- cols[1]
     if (is.null(value_col)) value_col <- cols[2]
-    df_long <- df %>% dplyr::select(!!rlang::sym(subject_col), !!rlang::sym(value_col))
+
+    subj <- df[[subject_col]]
+    val <- df[[value_col]]
+    subj_levels <- if (is.factor(subj)) levels(subj) else as.character(unique(subj[!is.na(subj)]))
+
+    nn <- split(val, subj)
   } else {
-    subject_col <- "subject"
-    value_col <- "value"
-    df_long <- df %>%
-      dplyr::select(dplyr::where(is.character)) %>%
-      tidyr::pivot_longer(
-        cols = dplyr::everything(),
-        names_to = subject_col,
-        values_to = value_col
-      )
+    char_cols <- colnames(df)[vapply(df, is.character, logical(1))]
+    subj_levels <- char_cols
+    nn <- lapply(char_cols, function(col) df[[col]])
+    names(nn) <- char_cols
   }
+
   if (is.null(max_count) || max_count == 0) {
-    max_count <- df_long %>%
-      dplyr::count(!!rlang::sym(subject_col)) %>%
-      dplyr::pull(n) %>%
-      max()
+    max_count <- max(vapply(nn, function(z) {
+      ok <- z[!is.na(z)]
+      length(ok[is.na(suppressWarnings(as.numeric(ok)))])
+    }, integer(1)))
   }
 
-  res <- df_long %>%
-    dplyr::group_by(!!rlang::sym(subject_col)) %>%
-    dplyr::group_map(~ {
-      x <- check_nonnum(.x[[value_col]],
-        max_count = max_count,
-        random_sample = random_sample,
-        fix_len = TRUE
-      )
+  # One output column per subject, check_nonnum() keeps its ordering/format.
+  col_list <- lapply(subj_levels, function(s) {
+    check_nonnum(nn[[s]], max_count = max_count, random_sample = random_sample, fix_len = TRUE)
+  })
+  names(col_list) <- subj_levels
 
-      dplyr::tibble(
-        subject = .y[[1]],
-        row = seq_along(!!x),
-        value = !!x
-      )
-    }) %>%
-    data.table::rbindlist() %>%
-    tidyr::pivot_wider(
-      names_from = subject,
-      values_from = value,
-      values_fill = NA
-    ) %>%
-    dplyr::select(-row) %>%
-    dplyr::filter(dplyr::if_any(dplyr::everything(), ~ !is.na(.x))) %>%
-    dplyr::select(dplyr::where(~ any(!is.na(.x))))
+  # Keep only columns with at least one non-NA entry.
+  col_list <- col_list[vapply(col_list, function(x) any(!is.na(x)), logical(1))]
+  if (length(col_list) == 0L) {
+    return(data.frame())
+  }
 
+  res <- as.data.frame(col_list, check.names = FALSE)
+  # Drop the leading rows that are entirely NA across all retained columns.
+  res <- res[apply(!is.na(res), 1, any), , drop = FALSE]
+  rownames(res) <- NULL
   res
 }

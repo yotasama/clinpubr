@@ -48,76 +48,126 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL,
   result <- list()
 
   # 1. Variable Type Classification
-  var_classes <- sapply(df, class)
+  var_classes <- vapply(df, function(x) class(x)[1], character(1))
 
   # Detailed variable types
+  is_num <- var_classes %in% c("numeric", "integer")
+  is_char <- var_classes %in% c("character", "factor")
+  is_log <- var_classes == "logical"
+  is_date <- var_classes %in% c("Date", "POSIXct", "POSIXlt")
   variable_types <- list(
-    numeric = names(var_classes[var_classes %in% c("numeric", "integer")]),
-    character = names(var_classes[var_classes %in% c("character", "factor")]),
-    logical = names(var_classes[var_classes == "logical"]),
-    date = names(var_classes[var_classes %in% c("Date", "POSIXct", "POSIXlt")]),
-    other = names(var_classes[!var_classes %in% c("numeric", "integer", "character", "factor", "logical", "Date", "POSIXct", "POSIXlt")])
+    numeric = names(var_classes[is_num]),
+    character = names(var_classes[is_char]),
+    logical = names(var_classes[is_log]),
+    date = names(var_classes[is_date]),
+    other = names(var_classes[!(is_num | is_char | is_log | is_date)])
   )
 
   # Remove empty categories
-  variable_types <- variable_types[sapply(variable_types, length) > 0]
+  variable_types <- variable_types[lengths(variable_types) > 0]
 
   result$variable_types <- variable_types
 
-  # 2. Summary Statistics
+  # 2. Summary Statistics - compute all stats in one pass per column
   summary_stats <- list()
+  n_total <- nrow(df)
 
   # Numeric variables summary
   if (length(variable_types$numeric) > 0) {
-    numeric_summary <- data.frame(
-      variable = variable_types$numeric,
-      n = sapply(df[, variable_types$numeric], function(x) sum(!is.na(x))),
-      missing = sapply(df[, variable_types$numeric], function(x) sum(is.na(x))),
-      missing_pct = sapply(df[, variable_types$numeric], function(x) round(mean(is.na(x)) * 100, 2)),
-      mean = sapply(df[, variable_types$numeric], function(x) round(mean(x, na.rm = TRUE), 2)),
-      median = sapply(df[, variable_types$numeric], function(x) round(median(x, na.rm = TRUE), 2)),
-      min = sapply(df[, variable_types$numeric], function(x) round(min(x, na.rm = TRUE), 2)),
-      max = sapply(df[, variable_types$numeric], function(x) round(max(x, na.rm = TRUE), 2)),
-      sd = sapply(df[, variable_types$numeric], function(x) round(sd(x, na.rm = TRUE), 2))
+    num_cols <- variable_types$numeric
+    n_num <- length(num_cols)
+    ns <- integer(n_num)
+    miss <- integer(n_num)
+    miss_pct <- numeric(n_num)
+    means <- numeric(n_num)
+    medians <- numeric(n_num)
+    mins <- numeric(n_num)
+    maxs <- numeric(n_num)
+    sds <- numeric(n_num)
+    for (k in seq_along(num_cols)) {
+      x <- df[[num_cols[k]]]
+      x_valid <- x[!is.na(x)]
+      n_valid <- length(x_valid)
+      ns[k] <- n_valid
+      miss[k] <- n_total - n_valid
+      miss_pct[k] <- round(miss[k] / n_total * 100, 2)
+      if (n_valid > 0) {
+        means[k] <- round(mean(x_valid), 2)
+        medians[k] <- round(median(x_valid), 2)
+        mins[k] <- round(min(x_valid), 2)
+        maxs[k] <- round(max(x_valid), 2)
+        sds[k] <- round(sd(x_valid), 2)
+      }
+    }
+    summary_stats$numeric <- data.frame(
+      variable = num_cols, n = ns, missing = miss, missing_pct = miss_pct,
+      mean = means, median = medians, min = mins, max = maxs, sd = sds,
+      row.names = NULL
     )
-    summary_stats$numeric <- numeric_summary
   }
 
   # Character/factor variables summary
   if (length(variable_types$character) > 0) {
-    character_summary <- data.frame(
-      variable = variable_types$character,
-      n = sapply(df[, variable_types$character], function(x) sum(!is.na(x))),
-      missing = sapply(df[, variable_types$character], function(x) sum(is.na(x))),
-      missing_pct = sapply(df[, variable_types$character], function(x) round(mean(is.na(x)) * 100, 2)),
-      unique = sapply(df[, variable_types$character], function(x) length(unique(x[!is.na(x)]))),
-      top_value = sapply(df[, variable_types$character], function(x) {
-        tab <- table(x[!is.na(x)])
-        if (length(tab) > 0) names(tab)[which.max(tab)] else NA
-      }),
-      top_freq = sapply(df[, variable_types$character], function(x) {
-        tab <- table(x[!is.na(x)])
-        if (length(tab) > 0) max(tab) else 0
-      }),
-      top_pct = sapply(df[, variable_types$character], function(x) {
-        tab <- table(x[!is.na(x)])
-        if (length(tab) > 0) round(max(tab) / sum(tab) * 100, 2) else 0
-      })
+    char_cols <- variable_types$character
+    n_char <- length(char_cols)
+    ns <- integer(n_char)
+    miss <- integer(n_char)
+    miss_pct <- numeric(n_char)
+    uniques <- integer(n_char)
+    top_freqs <- integer(n_char)
+    top_pcts <- numeric(n_char)
+    top_vals <- character(n_char)
+    for (k in seq_along(char_cols)) {
+      x <- df[[char_cols[k]]]
+      x_valid <- x[!is.na(x)]
+      n_valid <- length(x_valid)
+      ns[k] <- n_valid
+      miss[k] <- n_total - n_valid
+      miss_pct[k] <- round(miss[k] / n_total * 100, 2)
+      if (n_valid > 0) {
+        tab <- table(x_valid)
+        uniques[k] <- length(tab)
+        mt <- max(tab)
+        top_freqs[k] <- mt
+        top_pcts[k] <- round(mt / n_valid * 100, 2)
+        top_vals[k] <- names(tab)[which.max(tab)]
+      } else {
+        top_vals[k] <- NA_character_
+      }
+    }
+    summary_stats$character <- data.frame(
+      variable = char_cols, n = ns, missing = miss, missing_pct = miss_pct,
+      unique = uniques, top_value = top_vals, top_freq = top_freqs, top_pct = top_pcts,
+      row.names = NULL
     )
-    summary_stats$character <- character_summary
   }
 
   # Logical variables summary
   if (length(variable_types$logical) > 0) {
-    logical_summary <- data.frame(
-      variable = variable_types$logical,
-      n = sapply(df[, variable_types$logical], function(x) sum(!is.na(x))),
-      missing = sapply(df[, variable_types$logical], function(x) sum(is.na(x))),
-      missing_pct = sapply(df[, variable_types$logical], function(x) round(mean(is.na(x)) * 100, 2)),
-      true_pct = sapply(df[, variable_types$logical], function(x) round(mean(x, na.rm = TRUE) * 100, 2)),
-      false_pct = sapply(df[, variable_types$logical], function(x) round((1 - mean(x, na.rm = TRUE)) * 100, 2))
+    log_cols <- variable_types$logical
+    n_log <- length(log_cols)
+    ns <- integer(n_log)
+    miss <- integer(n_log)
+    miss_pct <- numeric(n_log)
+    true_pcts <- numeric(n_log)
+    false_pcts <- numeric(n_log)
+    for (k in seq_along(log_cols)) {
+      x <- df[[log_cols[k]]]
+      x_valid <- x[!is.na(x)]
+      n_valid <- length(x_valid)
+      ns[k] <- n_valid
+      miss[k] <- n_total - n_valid
+      miss_pct[k] <- round(miss[k] / n_total * 100, 2)
+      if (n_valid > 0) {
+        tp <- mean(x_valid) * 100
+        true_pcts[k] <- round(tp, 2)
+        false_pcts[k] <- round(100 - tp, 2)
+      }
+    }
+    summary_stats$logical <- data.frame(
+      variable = log_cols, n = ns, missing = miss, missing_pct = miss_pct,
+      true_pct = true_pcts, false_pct = false_pcts, row.names = NULL
     )
-    summary_stats$logical <- logical_summary
   }
 
   result$summary_stats <- summary_stats
@@ -128,28 +178,26 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL,
 
   # Check for numeric variables stored as characters
   numeric_as_char <- list()
-  for (var in variable_types$character) {
-    if (is.factor(df[[var]])) {
-      # Skip factor variables
-      next
-    }
-    
-    # Try to convert to numeric
-    x <- df[[var]]
-    x_no_na <- x[!is.na(x)]
-
-    # Count how many values can be converted to numeric
-    numeric_count <- sum(!is.na(suppressWarnings(as.numeric(x_no_na))))
-    total_non_na <- length(x_no_na)
-
-    if (numeric_count > 0) {
-      numeric_as_char[[var]] <- list(
-        total_values = total_non_na,
-        convertible_values = numeric_count,
-        convertible_pct = round(numeric_count / total_non_na * 100, 2),
-        sample_values = head(x_no_na[!is.na(suppressWarnings(as.numeric(x_no_na)))], 3),
-        problematic_values = head(x_no_na[is.na(suppressWarnings(as.numeric(x_no_na)))], 3)
-      )
+  char_cols_all <- variable_types$character
+  if (length(char_cols_all) > 0) {
+    for (var in char_cols_all) {
+      if (is.factor(df[[var]])) next
+      x <- df[[var]]
+      x_no_na <- x[!is.na(x)]
+      if (length(x_no_na) == 0) next
+      num_conv <- suppressWarnings(as.numeric(x_no_na))
+      numeric_count <- sum(!is.na(num_conv))
+      total_non_na <- length(x_no_na)
+      if (numeric_count > 0) {
+        is_num <- !is.na(num_conv)
+        numeric_as_char[[var]] <- list(
+          total_values = total_non_na,
+          convertible_values = numeric_count,
+          convertible_pct = round(numeric_count / total_non_na * 100, 2),
+          sample_values = head(x_no_na[is_num], 3),
+          problematic_values = head(x_no_na[!is_num], 3)
+        )
+      }
     }
   }
 
@@ -166,10 +214,7 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL,
   if (length(variable_types$numeric) > 0) {
     for (var in variable_types$numeric) {
       x <- df[[var]]
-
-      # Call detect_outliers function with unified threshold parameter
       outlier_result <- detect_outliers(x, method = outlier_method, threshold = outlier_threshold)
-
       if (outlier_result$outlier_count > 0) {
         x_no_na <- x[!is.na(x)]
         outliers[[var]] <- list(
@@ -191,29 +236,17 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL,
     )
   }
 
-  # Missing Values Check
-  missing_vars <- list()
-  high_missing_threshold <- 50 # % threshold for high missing values
-  any_missing_threshold <- 1 # % threshold for any missing values
-
-  for (var in names(df)) {
-    missing_pct <- round(mean(is.na(df[[var]])) * 100, 2)
-    if (missing_pct >= any_missing_threshold) {
-      missing_vars[[var]] <- missing_pct
-    }
-  }
+  # Missing Values Check - vectorized
+  high_missing_threshold <- 50
+  any_missing_threshold <- 1
+  all_miss_pct <- vapply(df, function(x) round(mean(is.na(x)) * 100, 2), numeric(1))
+  missing_vars <- all_miss_pct[all_miss_pct >= any_missing_threshold]
 
   if (length(missing_vars) > 0) {
-    # Convert to named vector and sort by missing percentage
-    missing_vec <- unlist(missing_vars)
-    missing_vec <- sort(missing_vec, decreasing = TRUE)
-
+    missing_vec <- sort(missing_vars, decreasing = TRUE)
     quality_issues$missing_values <- missing_vec
-
-    # Recommendations based on missing percentage
     high_missing <- names(missing_vec[missing_vec >= high_missing_threshold])
     low_missing <- names(missing_vec[missing_vec < high_missing_threshold])
-
     if (length(high_missing) > 0) {
       recommendations$high_missing <- paste(
         "Variables with >", high_missing_threshold, "% missing values:",
@@ -221,7 +254,6 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL,
         "- consider dropping or imputation strategy"
       )
     }
-
     if (length(low_missing) > 0) {
       recommendations$low_missing <- paste(
         "Variables with <", high_missing_threshold, "% missing values:",
@@ -231,20 +263,16 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL,
     }
   }
 
-  # Check for near-zero variance variables
+  # Check for near-zero variance variables - vectorized per column
   near_zero_var <- list()
   for (var in names(df)) {
     x <- df[[var]]
     x_no_na <- x[!is.na(x)]
-
-    if (length(unique(x_no_na)) == 1) {
-      # Constant variable
-      near_zero_var[[var]] <- list(
-        type = "constant",
-        value = unique(x_no_na)[1]
-      )
-    } else if (length(unique(x_no_na)) == 2 && is.character(x)) {
-      # Binary character variable
+    if (length(x_no_na) == 0) next
+    n_unique <- length(unique(x_no_na))
+    if (n_unique == 1) {
+      near_zero_var[[var]] <- list(type = "constant", value = x_no_na[1])
+    } else if (n_unique == 2 && is.character(x)) {
       tab <- table(x_no_na)
       dominant_pct <- max(tab) / sum(tab) * 100
       if (dominant_pct > 95) {
@@ -265,8 +293,15 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL,
     )
   }
 
-  # Check for duplicate rows
-  duplicate_rows <- sum(duplicated(df))
+  # Check for duplicate rows - use data.table for C-level hashing
+  # Base duplicated.data.frame is slow on large data.frames; data.table's
+  # implementation uses fast C-level row hashing and is orders of magnitude faster.
+  # Note: duplicated.data.table is not exported from data.table's NAMESPACE.
+  # Use unique() + setdiff to compute duplicate count instead.
+  dt_for_dup <- data.table::as.data.table(df)
+  duplicate_rows <- nrow(dt_for_dup) - nrow(unique(dt_for_dup))
+  rm(dt_for_dup)
+  gc()
   if (duplicate_rows > 0) {
     quality_issues$duplicate_rows <- duplicate_rows
     recommendations$duplicate_rows <- paste("Found", duplicate_rows, "duplicate rows - consider removing them")
@@ -278,19 +313,15 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL,
     for (var in variable_types$numeric) {
       x <- df[[var]]
       x_no_na <- x[!is.na(x)]
-
       if (length(x_no_na) == 0) next
-
       n_positive <- sum(x_no_na >= 0)
       n_negative <- sum(x_no_na < 0)
-      n_total <- length(x_no_na)
-      positive_pct <- n_positive / n_total * 100
-
-      # If >90% are positive and there are negative values, flag it
+      n_total_valid <- length(x_no_na)
+      positive_pct <- n_positive / n_total_valid * 100
       if (positive_pct > 90 && n_negative > 0) {
         negative_in_positive[[var]] <- list(
           n_negative = n_negative,
-          negative_pct = round(n_negative / n_total * 100, 2),
+          negative_pct = round(n_negative / n_total_valid * 100, 2),
           positive_pct = round(positive_pct, 2),
           sample_negative = head(x_no_na[x_no_na < 0], 3)
         )
@@ -306,13 +337,9 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL,
     )
   }
 
-  # Check for completely empty columns (all NA)
-  empty_columns <- character(0)
-  for (var in names(df)) {
-    if (all(is.na(df[[var]]))) {
-      empty_columns <- c(empty_columns, var)
-    }
-  }
+  # Check for completely empty columns (all NA) - vectorized
+  all_na_cols <- vapply(df, function(x) all(is.na(x)), logical(1))
+  empty_columns <- names(all_na_cols)[all_na_cols]
 
   if (length(empty_columns) > 0) {
     quality_issues$empty_columns <- empty_columns
@@ -323,8 +350,13 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL,
     )
   }
 
-  # Check for completely empty rows (all NA)
-  empty_rows <- which(apply(df, 1, function(row) all(is.na(row))))
+  # Check for completely empty rows (all NA) - use rowSums instead of apply()
+  if (ncol(df) > 0) {
+    empty_row_idx <- rowSums(is.na(df)) == ncol(df)
+    empty_rows <- which(empty_row_idx)
+  } else {
+    empty_rows <- integer(0)
+  }
   if (length(empty_rows) > 0) {
     quality_issues$empty_rows <- empty_rows
     recommendations$empty_rows <- paste(
@@ -338,16 +370,13 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL,
   # Check for suspicious date values (year < 1910 or > current year)
   suspicious_dates <- list()
   if (length(variable_types$date) > 0) {
+    current_year <- as.numeric(format(Sys.Date(), "%Y"))
     for (var in variable_types$date) {
       x <- df[[var]]
       x_no_na <- x[!is.na(x)]
-
       if (length(x_no_na) == 0) next
-
-      current_year <- as.numeric(format(Sys.Date(), "%Y"))
       years <- as.numeric(format(x_no_na, "%Y"))
       suspicious_idx <- which(years < 1910 | years > current_year)
-
       if (length(suspicious_idx) > 0) {
         suspicious_dates[[var]] <- list(
           n_suspicious = length(suspicious_idx),
@@ -369,16 +398,13 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL,
 
   # Check for variables with few unique values that should be converted to factor
   low_cardinality_vars <- list()
-  n_unique_threshold <- 5 # Variables with <= 5 unique values
-
-  # Check numeric variables with few unique values
+  n_unique_threshold <- 5
   if (length(variable_types$numeric) > 0) {
     for (var in variable_types$numeric) {
       x <- df[[var]]
       x_no_na <- x[!is.na(x)]
       n_unique <- length(unique(x_no_na))
       if (n_unique <= n_unique_threshold && all(x_no_na %in% c(0, 1))) next
-
       if (n_unique <= n_unique_threshold) {
         low_cardinality_vars[[var]] <- list(
           type = "numeric",
@@ -397,26 +423,22 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL,
     )
   }
 
-  # Check for case inconsistency in factor variables
+  # Check for case inconsistency in character variables
   case_issues <- list()
   if (length(variable_types$character) > 0) {
     for (var in variable_types$character) {
       x <- df[[var]]
       x_no_na <- x[!is.na(x)]
-
-      # Check if normalizing case would reduce unique values
+      if (length(x_no_na) == 0) next
       x_lower <- tolower(x_no_na)
       n_original <- length(unique(x_no_na))
       n_lower <- length(unique(x_lower))
-
       if (n_lower < n_original) {
-        # Find the problematic values
         dup_values <- unique(x_lower[duplicated(x_lower)])
         examples <- list()
         for (val in head(dup_values, 3)) {
           examples[[val]] <- unique(x_no_na[tolower(x_no_na) == val])
         }
-
         case_issues[[var]] <- list(
           n_original = n_original,
           n_normalized = n_lower,
@@ -452,7 +474,6 @@ data_overview <- function(df, outlier_method = "iqr", outlier_threshold = NULL,
   )
 
   if (verbose) {
-    # Print summary for quick overview
     cat("=== Data Overview Summary ===\n")
     cat(sprintf("Dataset: %d rows, %d columns\n", result$overall$n_rows, result$overall$n_columns))
     cat("\nVariable Types:\n")

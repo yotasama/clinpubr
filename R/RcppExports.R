@@ -11,7 +11,7 @@
 #' @return An IntegerVector of group IDs (1-indexed).
 #' @export
 group_by_range_cpp <- function(x, max_range) {
-    .Call(`_clinpubr_group_by_range_cpp`, x, max_range)
+  .Call(`_clinpubr_group_by_range_cpp`, x, max_range)
 }
 
 #' Vote-based Ordered Vector Merge (C++ core)
@@ -29,6 +29,5 @@ group_by_range_cpp <- function(x, max_range) {
 #'   in vector \code{k}, and \code{0} means not present.
 #' @return An IntegerVector of 0-based IDs in merged order.
 mov_sort_cpp <- function(ids0, pos) {
-    .Call(`_clinpubr_mov_sort_cpp`, ids0, pos)
+  .Call(`_clinpubr_mov_sort_cpp`, ids0, pos)
 }
-

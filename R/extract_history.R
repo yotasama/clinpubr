@@ -124,11 +124,11 @@ format_multi_results <- function(results, categories, return_format) {
 #'   combined with OR logic.
 #' @keywords internal
 extract_history_single <- function(text,
-                                    keyword,
-                                    extract_duration = TRUE,
-                                    duration_unit = "original",
-                                    negation_window = 20,
-                                    return_format = "simple") {
+                                   keyword,
+                                   extract_duration = TRUE,
+                                   duration_unit = "original",
+                                   negation_window = 20,
+                                   return_format = "simple") {
   keyword_pattern <- build_keyword_pattern(keyword)
   status <- detect_status(text, keyword_pattern, negation_window)
 

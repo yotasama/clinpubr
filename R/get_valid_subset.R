@@ -5,9 +5,9 @@
 #' @param col_na_ratio The maximum acceptable missing rate of columns. Should be in range of `[0, 1]`.
 #' @param row_priority A positive numerical, the priority to keep rows. The higher the value, the higher the priority,
 #'   with `1` indicating equal priority for rows and columns.
-#' @param adaptive_scoring A logical, whether to use adaptive scoring that considers the improvement in 
+#' @param adaptive_scoring A logical, whether to use adaptive scoring that considers the improvement in
 #'   missing rates for the other dimension. When TRUE, the score reflects how much removing a row/column
-#'   helps the columns/rows get closer to their thresholds. Setting `adaptive_scoring = TRUE` would allow the algorithm 
+#'   helps the columns/rows get closer to their thresholds. Setting `adaptive_scoring = TRUE` would allow the algorithm
 #'   to search in a wider range of candidates, but significantly increases the running time. Default is FALSE.
 #' @param speedup_ratio A numerical in `[0, 1]`. Controls how many rows/columns to remove per iteration.
 #'   `0` removes one at a time (most precise), `1` removes all candidates at once (most aggressive).
@@ -17,8 +17,8 @@
 #'   of all rows and columns are below the specified threshold. Then it reversely tries to add rows and columns that
 #'   do not break the conditions back and finalize the subset. The result depends on the `row_priority` parameter
 #'   drastically, so it's recommended to try different `row_priority` values to find the most satisfying one.
-#'   
-#'   When `adaptive_scoring = TRUE`, the scoring considers how much removing a row/column improves the 
+#'
+#'   When `adaptive_scoring = TRUE`, the scoring considers how much removing a row/column improves the
 #'   missing rates of the other dimension. The score is calculated as:
 #'   - For rows: sum of improvements in column missing rates (how much closer columns get to col_na_ratio)
 #'   - For columns: sum of improvements in row missing rates (how much closer rows get to row_na_ratio)
@@ -34,23 +34,29 @@
 #' cancer_valid <- get_valid_subset(cancer, row_na_ratio = 0.2, col_na_ratio = 0.1, row_priority = 1)
 #' dim(cancer_valid)
 #' max_missing_rates(cancer_valid)
-get_valid_subset <- function(df, row_na_ratio = 0.5, col_na_ratio = 0.2, row_priority = 1, 
+get_valid_subset <- function(df, row_na_ratio = 0.5, col_na_ratio = 0.2, row_priority = 1,
                              adaptive_scoring = FALSE, speedup_ratio = 0, return_index = FALSE) {
   # ---- Input validation ----
   if (!is.data.frame(df)) stop("'df' must be a data frame.")
   if (nrow(df) == 0 || ncol(df) == 0) stop("'df' must have at least one row and one column.")
-  if (!is.numeric(row_na_ratio) || length(row_na_ratio) != 1 || row_na_ratio < 0 || row_na_ratio > 1)
+  if (!is.numeric(row_na_ratio) || length(row_na_ratio) != 1 || row_na_ratio < 0 || row_na_ratio > 1) {
     stop("'row_na_ratio' must be a single numeric value in [0, 1].")
-  if (!is.numeric(col_na_ratio) || length(col_na_ratio) != 1 || col_na_ratio < 0 || col_na_ratio > 1)
+  }
+  if (!is.numeric(col_na_ratio) || length(col_na_ratio) != 1 || col_na_ratio < 0 || col_na_ratio > 1) {
     stop("'col_na_ratio' must be a single numeric value in [0, 1].")
-  if (!is.numeric(row_priority) || length(row_priority) != 1 || row_priority <= 0)
+  }
+  if (!is.numeric(row_priority) || length(row_priority) != 1 || row_priority <= 0) {
     stop("'row_priority' must be a single positive numeric value.")
-  if (!is.numeric(speedup_ratio) || length(speedup_ratio) != 1 || speedup_ratio < 0 || speedup_ratio > 1)
+  }
+  if (!is.numeric(speedup_ratio) || length(speedup_ratio) != 1 || speedup_ratio < 0 || speedup_ratio > 1) {
     stop("'speedup_ratio' must be a single numeric value in [0, 1].")
-  if (!is.logical(return_index) || length(return_index) != 1)
+  }
+  if (!is.logical(return_index) || length(return_index) != 1) {
     stop("'return_index' must be a single logical value.")
-  if (!is.logical(adaptive_scoring) || length(adaptive_scoring) != 1)
+  }
+  if (!is.logical(adaptive_scoring) || length(adaptive_scoring) != 1) {
     stop("'adaptive_scoring' must be a single logical value.")
+  }
 
   # ---- Initialization ----
   ori_nrow <- nrow(df)
@@ -62,8 +68,8 @@ get_valid_subset <- function(df, row_na_ratio = 0.5, col_na_ratio = 0.2, row_pri
 
   # Incremental NA counts: row_na_count[i] = number of NAs in row i within current_cols
   #                       col_na_count[j] = number of NAs in col j within current_rows
-  row_na_count <- rowSums(na_mat)  # initial: all columns active
-  col_na_count <- colSums(na_mat)  # initial: all rows active
+  row_na_count <- rowSums(na_mat) # initial: all columns active
+  col_na_count <- colSums(na_mat) # initial: all rows active
 
   # ---- Helper: compute missing rate from count ----
   row_missing_rate_from_count <- function(count) count / length(current_cols)
@@ -75,51 +81,55 @@ get_valid_subset <- function(df, row_na_ratio = 0.5, col_na_ratio = 0.2, row_pri
   compute_adaptive_scores <- function(current_rows, current_cols, row_na_count, col_na_count) {
     n_rows <- length(current_rows)
     n_cols <- length(current_cols)
-    
+
     # Current missing rates
     row_miss <- row_na_count[current_rows] / n_cols
     col_miss <- col_na_count[current_cols] / n_rows
-    
+
     # For each row: compute how much removing it helps columns
     # Improvement = average reduction in column excess missing rates
     row_scores <- vapply(current_rows, function(r) {
-      if (n_rows <= 1) return(-Inf)  # Don't remove last row
-      
+      if (n_rows <= 1) {
+        return(-Inf)
+      } # Don't remove last row
+
       # New column missing rates after removing row r
       new_col_na <- col_na_count[current_cols] - na_mat[r, current_cols]
       new_col_miss <- new_col_na / (n_rows - 1)
-      
+
       # Improvement: how much closer columns get to their threshold (average per column)
       old_excess <- pmax(0, col_miss - col_na_ratio)
       new_excess <- pmax(0, new_col_miss - col_na_ratio)
-      improvement <- mean(old_excess - new_excess)  # Average improvement per column
-      
+      improvement <- mean(old_excess - new_excess) # Average improvement per column
+
       # Also add own excess as penalty (normalized)
       own_excess <- max(0, row_na_count[r] / n_cols - row_na_ratio)
-      
+
       return((improvement + own_excess) / row_priority)
     }, numeric(1))
-    
+
     # For each column: compute how much removing it helps rows
     # Improvement = average reduction in row excess missing rates
     col_scores <- vapply(current_cols, function(c) {
-      if (n_cols <= 1) return(-Inf)  # Don't remove last column
-      
+      if (n_cols <= 1) {
+        return(-Inf)
+      } # Don't remove last column
+
       # New row missing rates after removing column c
       new_row_na <- row_na_count[current_rows] - na_mat[current_rows, c]
       new_row_miss <- new_row_na / (n_cols - 1)
-      
+
       # Improvement: how much closer rows get to their threshold (average per row)
       old_excess <- pmax(0, row_miss - row_na_ratio)
       new_excess <- pmax(0, new_row_miss - row_na_ratio)
-      improvement <- mean(old_excess - new_excess)  # Average improvement per row
-      
+      improvement <- mean(old_excess - new_excess) # Average improvement per row
+
       # Also add own excess as penalty (normalized)
       own_excess <- max(0, col_na_count[c] / n_rows - col_na_ratio)
-      
+
       return(improvement + own_excess)
     }, numeric(1))
-    
+
     list(row_scores = row_scores, col_scores = col_scores)
   }
 
@@ -137,16 +147,16 @@ get_valid_subset <- function(df, row_na_ratio = 0.5, col_na_ratio = 0.2, row_pri
       # Find candidates exceeding thresholds
       cand_row_logical <- row_miss > row_na_ratio
       cand_col_logical <- col_miss > col_na_ratio
-      
+
       if (!adaptive_scoring && sum(cand_row_logical) + sum(cand_col_logical) == 0) break
 
       # Build candidate score table
       score_list <- list()
-      
+
       if (adaptive_scoring) {
         # Use adaptive scoring: consider all rows and columns
         scores <- compute_adaptive_scores(current_rows, current_cols, row_na_count, col_na_count)
-        
+
         # Only consider candidates with positive scores (actual improvement)
         if (any(scores$row_scores > 0)) {
           cand_rows <- current_rows[scores$row_scores > 0]
@@ -162,11 +172,11 @@ get_valid_subset <- function(df, row_na_ratio = 0.5, col_na_ratio = 0.2, row_pri
             score = scores$col_scores[scores$col_scores > 0]
           )))
         }
-        if (length(score_list) == 0) break  # No beneficial removal found
+        if (length(score_list) == 0) break # No beneficial removal found
       } else {
         # Traditional scoring: only consider exceeders
         if (sum(cand_row_logical) + sum(cand_col_logical) == 0) break
-        
+
         if (sum(cand_row_logical) > 0) {
           cand_rows <- current_rows[cand_row_logical]
           score_list <- c(score_list, list(data.frame(
@@ -205,8 +215,10 @@ get_valid_subset <- function(df, row_na_ratio = 0.5, col_na_ratio = 0.2, row_pri
 
       if (length(current_rows) == 0 || length(current_cols) == 0) break
     }
-    list(current_rows = current_rows, current_cols = current_cols,
-         row_na_count = row_na_count, col_na_count = col_na_count)
+    list(
+      current_rows = current_rows, current_cols = current_cols,
+      row_na_count = row_na_count, col_na_count = col_na_count
+    )
   }
 
   # ---- Add phase ----
@@ -226,11 +238,15 @@ get_valid_subset <- function(df, row_na_ratio = 0.5, col_na_ratio = 0.2, row_pri
       # Recompute for removed rows: sum of NA in that row restricted to current_cols
       row_miss_removed <- if (length(removed_rows) > 0) {
         rowSums(na_mat[removed_rows, current_cols, drop = FALSE]) / n_cols
-      } else numeric(0)
+      } else {
+        numeric(0)
+      }
 
       col_miss_removed <- if (length(removed_cols) > 0) {
         colSums(na_mat[current_rows, removed_cols, drop = FALSE]) / n_rows
-      } else numeric(0)
+      } else {
+        numeric(0)
+      }
 
       # Find candidates that satisfy thresholds
       cand_row_logical <- row_miss_removed <= row_na_ratio

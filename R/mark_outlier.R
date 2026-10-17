@@ -21,7 +21,6 @@
 #' iqr_outlier(x, threshold = 2.0)
 #' zscore_outlier(x, threshold = 2.5)
 mad_outlier <- function(x, threshold = 1.4826 * 3) {
-
   sample_mad <- stats::mad(x, constant = 1.4826, na.rm = TRUE)
   return(abs(x - stats::median(x, na.rm = TRUE)) > threshold * sample_mad)
 }
@@ -44,7 +43,7 @@ zscore_outlier <- function(x, threshold = 3) {
   if (length(unique(x)) == 1) {
     return(rep(FALSE, length(x)))
   }
-  
+
   z_scores <- c(scale(x))
   return(abs(z_scores) > threshold)
 }
@@ -105,12 +104,12 @@ detect_outliers <- function(x, method = "iqr", threshold = NULL) {
     iqr = 1.5,
     zscore = 3
   )
-  
+
   # Use provided threshold or default
   if (is.null(threshold)) {
     threshold <- default_thresholds[[method]]
   }
-  
+
   # Detect outliers based on method
   outlier_result <- switch(method,
     "mad" = mad_outlier(x_no_na, threshold = threshold),

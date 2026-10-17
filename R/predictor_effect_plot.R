@@ -316,7 +316,7 @@ predictor_effect_plot <- function(data, x, y, time = NULL, time2 = NULL, covars 
       data = df_plot, aes(x = x, y = y, ymin = lower, ymax = upper), fill = line_color, alpha = 0.2, width = 0.5,
       color = line_color, linewidth = 1
     )
-    if(add_hist){
+    if (add_hist) {
       p <- p + geom_text(data = df_bar_plot, aes(x = x, y = den / scale_factor + ymin, label = label), vjust = -0.5, size = 6)
     }
   }

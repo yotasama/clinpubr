@@ -95,8 +95,10 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   }
 
   if (isTRUE(as_probability)) {
-    vars_to_prob <- model_names[apply(data[, model_names, drop = FALSE], 2,
-                                      function(x) any(x < 0 | x > 1, na.rm = TRUE))]
+    vars_to_prob <- model_names[apply(
+      data[, model_names, drop = FALSE], 2,
+      function(x) any(x < 0 | x > 1, na.rm = TRUE)
+    )]
   } else if (is.character(as_probability)) {
     vars_to_prob <- as_probability
   } else {
@@ -217,10 +219,12 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   }
 
   # plot PRAUC curves
-  for(i in seq_along(roc_list)) {
+  for (i in seq_along(roc_list)) {
     pr_data <- pROC::coords(roc_list[[i]], "all", ret = c("precision", "recall"))
-    roc_list[[i]] <- data.frame(recall = pr_data$recall, precision = pr_data$precision,
-                                Model = paste0(metric_table$Model[i], " (", metric_table$PRAUC[i], ")"))
+    roc_list[[i]] <- data.frame(
+      recall = pr_data$recall, precision = pr_data$precision,
+      Model = paste0(metric_table$Model[i], " (", metric_table$PRAUC[i], ")")
+    )
   }
   pr_data_all <- data.table::rbindlist(roc_list)
   pr_data_all$precision[is.nan(pr_data_all$precision)] <- 1

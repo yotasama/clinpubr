@@ -114,8 +114,10 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules,
     message(sprintf("Processing %d subjects with %d rows...", length(change_rules), nrow(df)))
   }
 
-  result <- .unit_standardize_optimized(df, subject_col, value_col, unit_col,
-                                         change_rules, extract_numbers, verbose)
+  result <- .unit_standardize_optimized(
+    df, subject_col, value_col, unit_col,
+    change_rules, extract_numbers, verbose
+  )
 
   return(result)
 }
@@ -232,7 +234,7 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules,
 }
 
 .unit_standardize_optimized <- function(df, subject_col, value_col, unit_col,
-                                         change_rules, extract_numbers, verbose) {
+                                        change_rules, extract_numbers, verbose) {
   if (length(change_rules) == 0) {
     return(df)
   }

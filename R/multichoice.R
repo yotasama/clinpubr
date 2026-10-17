@@ -15,24 +15,52 @@
 #' split_multichoice(df, quest_cols = c("q1", "q2"))
 split_multichoice <- function(df, quest_cols, split = "", remove_space = TRUE,
                               link = "_", remove_cols = TRUE) {
+  # Precompute the (possibly cleaned) column contents once per question column.
+  # In the original implementation strsplit / sapply were invoked per option
+  # inside the option loop, which scaled quadratically: for a column with many
+  # distinct options the whole column was re-split and re-tested for every
+  # option.  A single split + a vectorized membership table avoids this.
   for (col in quest_cols) {
+    values <- df[, col]
     if (remove_space) {
-      df[, col] <- str_remove_all(df[, col], " ")
+      values <- str_remove_all(values, " ")
     }
 
-    if (str_length(split) <= 1) {
-      tmp_split <- strsplit(df[, col], split, fixed = TRUE)
+    if (nchar(split) <= 1) {
+      tmp_split <- strsplit(values, split, fixed = TRUE)
     } else {
-      tmp_split <- strsplit(df[, col], split)
+      tmp_split <- strsplit(values, split)
     }
 
-    unique_options <- na.omit(unique(unlist(tmp_split)))
+    # A row with an NA input yields NA options (kept for backward compatibility:
+    # option columns are NA for missing input rows).
+    row_has_na <- is.na(values)
+    n <- length(tmp_split)
+    options <- na.omit(unique(unlist(tmp_split, use.names = FALSE)))
 
-    for (opt in unique_options) {
-      df[, paste0(col, link, opt)] <- ifelse(
-        is.na(tmp_split), NA,
-        sapply(tmp_split, function(x) opt %in% x)
-      )
+    # Vectorized membership: build one TRUE/FALSE matrix for all options at
+    # once instead of looping over options with lapply/sapply.
+    membership <- matrix(FALSE,
+      nrow = n, ncol = length(options),
+      dimnames = list(NULL, options)
+    )
+    if (n > 0 && length(options) > 0) {
+      # Which list elements are non-empty, and the flattened (row index, option
+      # index) pairs for the selected options.  data.table::rbindlist on list
+      # columns is much faster than do.call(rbind, ...) on a data.frame.
+      lens <- lengths(tmp_split)
+      row_idx <- rep.int(seq_len(n), lens)
+      opt_idx <- match(unlist(tmp_split, use.names = FALSE), options)
+      # In case of duplicate options within one row, the same cell may be set
+      # repeatedly (idempotent); matrix subscripting keeps it simple.
+      membership[cbind(row_idx, opt_idx)] <- TRUE
+    }
+
+    col_names <- paste0(col, link, options)
+    for (k in seq_along(options)) {
+      new_col <- membership[, k]
+      new_col[row_has_na] <- NA
+      df[, col_names[k]] <- new_col
     }
   }
   if (remove_cols) {
@@ -85,7 +113,7 @@ combine_multichoice <- function(df, quest_cols, sep = ",", remove_cols = TRUE, r
     stop("The following columns are not present in the data frame: ", paste(missing_cols, collapse = ", "))
   }
 
-  col_classes <- sapply(df[, all_cols], class)
+  col_classes <- vapply(df[, all_cols, drop = FALSE], function(x) class(x)[1], character(1))
   non_logical <- names(col_classes)[col_classes != "logical"]
   if (length(non_logical) > 0) {
     stop("The following columns are not logical vectors: ", paste(non_logical, collapse = ", "))
@@ -98,7 +126,6 @@ combine_multichoice <- function(df, quest_cols, sep = ",", remove_cols = TRUE, r
     if (remove_prefix && length(group_cols) > 1) {
       prefix <- common_prefix(group_cols)
       trimmed_names <- if (prefix == "") group_cols else substr(group_cols, nchar(prefix) + 1, nchar(group_cols))
-      # Use original names if all trimmed names are empty
       if (all(trimmed_names == "")) {
         name_map <- setNames(group_cols, group_cols)
       } else {
@@ -108,11 +135,28 @@ combine_multichoice <- function(df, quest_cols, sep = ",", remove_cols = TRUE, r
       name_map <- setNames(group_cols, group_cols)
     }
 
-    df[[group_name]] <- apply(df[, group_cols, drop = FALSE], 1, function(row) {
-      row[is.na(row)] <- FALSE
-      selected <- names(row)[row]
-      paste(name_map[selected], collapse = sep)
-    })
+    # Vectorized per-column accumulation
+    n <- nrow(df)
+    col_names_vec <- unname(name_map[group_cols])
+    result <- rep("", n)
+    for (j in seq_along(group_cols)) {
+      col_vals <- df[[group_cols[j]]]
+      col_vals[is.na(col_vals)] <- FALSE
+      if (any(col_vals)) {
+        name_j <- col_names_vec[j]
+        if (sep == "") {
+          result[col_vals] <- paste0(result[col_vals], name_j)
+        } else {
+          needs_sep <- nzchar(result[col_vals])
+          result[col_vals] <- paste0(
+            result[col_vals],
+            ifelse(needs_sep, sep, ""),
+            name_j
+          )
+        }
+      }
+    }
+    df[[group_name]] <- result
   }
 
   if (remove_cols) {
