@@ -1,3 +1,7 @@
+# clinpubr 1.4.3
+
+* Minor bug fixes and improvements.
+
 # clinpubr 1.4.2
 
 * Added `theme_pub()`, the common publication theme used by `classif_model_compare()`, `time_roc_plot()`, and `interaction_plot()`.
