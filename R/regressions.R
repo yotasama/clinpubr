@@ -474,7 +474,7 @@ regression_forest <- function(data, model_vars, y, time = NULL, time2 = NULL, cl
     tmp_res <- NULL
     for (var_id in intersect(tmp_var_ids, show_var_ids)) {
       if (!is.factor(data[[new_vars[var_id]]]) || length(levels(data[[new_vars[var_id]]])) == 2) {
-        tmp <- fit_res[fit_res$term == new_vars[var_id], ]
+        tmp <- fit_res[startsWith(fit_res$term, new_vars[var_id]), ]
         tmp <- data.frame(
           Model = model_name,
           Variable = vars[var_id],

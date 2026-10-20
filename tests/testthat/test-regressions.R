@@ -116,6 +116,49 @@ test_that("regression_forest generates forest plot", {
   })
 })
 
+test_that("regression_forest handles binary factors and logical predictors", {
+  set.seed(1)
+  n <- 100
+  dat <- data.frame(
+    y = rnorm(n),
+    y_bin = rbinom(n, 1, 0.4),
+    status = rbinom(n, 1, 0.5),
+    time = rexp(n),
+    age = rnorm(n),
+    bin = factor(sample(c("a", "b"), n, replace = TRUE)),
+    flag = sample(c(TRUE, FALSE), n, replace = TRUE),
+    cat3 = factor(sample(c("a", "b", "c"), n, replace = TRUE)),
+    grp = sample(letters[1:5], n, replace = TRUE)
+  )
+
+  # binary factor predictor in linear, logistic, and Cox models
+  expect_s3_class(regression_forest(dat, model_vars = "bin", y = "y", save_plot = FALSE), "gtable")
+  expect_s3_class(regression_forest(dat, model_vars = "bin", y = "y_bin", save_plot = FALSE), "gtable")
+  expect_s3_class(
+    regression_forest(dat, model_vars = "bin", y = "status", time = "time", save_plot = FALSE),
+    "gtable"
+  )
+
+  # rms path names terms as `var=level`
+  expect_s3_class(
+    regression_forest(dat, model_vars = "bin", y = "y", cluster = "grp", save_plot = FALSE),
+    "gtable"
+  )
+
+  # logical predictor
+  expect_s3_class(regression_forest(dat, model_vars = "flag", y = "y", save_plot = FALSE), "gtable")
+
+  # binary factor as a covariate, together with a multi-level factor
+  expect_s3_class(
+    regression_forest(
+      dat,
+      model_vars = list(Crude = "age", Adjusted = c("age", "bin", "cat3")),
+      y = "y", save_plot = FALSE
+    ),
+    "gtable"
+  )
+})
+
 # Test regression_scan
 test_that("regression_scan returns expected structure", {
   set.seed(1)
