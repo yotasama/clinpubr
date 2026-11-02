@@ -199,7 +199,7 @@ regression_basic_results <- function(
         fit <- survminer::surv_fit(formula = formula, data = dat)
         log_rank_p <- tryCatch(
           {
-            log_rank_p <- survdiff(formula = formula, data = dat)$pvalue
+            log_rank_p <- survival::survdiff(formula = formula, data = dat)$pvalue
             format_pval(log_rank_p,
               text_ahead = "Log-rank\np",
               nsmall = p_nsmall, eps = pval_eps

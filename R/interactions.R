@@ -231,7 +231,7 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, time2 =
         time = time, time2 = time2, covars = covars,
         cluster = cluster
       )
-      y1 <- as.data.frame(Predict(model, .predictor, .group_var,
+      y1 <- as.data.frame(rms::Predict(model, .predictor, .group_var,
         fun = pred_fun, type = "predictions", conf.int = 0.95, digits = 2,
         ref.zero = analysis_type %in% c("cox", "logistic")
       ))
@@ -309,7 +309,7 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, time2 =
           time = time, time2 = time2, covars = covars,
           rcs_knots = 4, cluster = cluster
         )
-        y2 <- as.data.frame(Predict(model2, .predictor, .group_var,
+        y2 <- as.data.frame(rms::Predict(model2, .predictor, .group_var,
           fun = pred_fun, type = "predictions", conf.int = 0.95, digits = 2,
           ref.zero = analysis_type %in% c("cox", "logistic")
         ))
@@ -423,7 +423,7 @@ interaction_p_value <- function(
   if (!is.null(cluster)) {
     model1 <- fit_model(formula1, data = data, analysis_type = analysis_type, cluster = cluster, rms = TRUE)
     model2 <- fit_model(formula2, data = data, analysis_type = analysis_type, cluster = cluster, rms = TRUE)
-    return(lrtest(model1, model2)$stats[["P"]])
+    return(rms::lrtest(model1, model2)$stats[["P"]])
   } else {
     model1 <- fit_model(formula1, data = data, analysis_type = analysis_type)
     model2 <- fit_model(formula2, data = data, analysis_type = analysis_type)
