@@ -34,3 +34,9 @@ test_that("fails to process prints messages", {
 test_that("non-Excel numerical dates convert correctly", {
   expect_equal(to_date(18262, from_excel = FALSE), as.Date(18262, origin = "1970-01-01"))
 })
+
+# Test Date input is returned unchanged
+test_that("Date input is returned unchanged", {
+  dates <- as.Date(c("2020-01-01", "2021-06-30", NA))
+  expect_identical(to_date(dates), dates)
+})

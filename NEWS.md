@@ -1,5 +1,7 @@
 # clinpubr 1.4.3
 
+* Fixed errors in vignettes.
+
 * Minor bug fixes and improvements.
 
 # clinpubr 1.4.2

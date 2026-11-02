@@ -10,6 +10,10 @@ test_that("extract_num handles basic cases", {
   expect_equal(extract_num(c("NS", "5"), zero_regexp = "NS"), c(0, 5))
 })
 
+test_that("extract_num handles missing values", {
+  expect_equal(extract_num(c("5.2", NA, "N/A")), c(5.2, NA, NA))
+})
+
 test_that("range mode works correctly", {
   x <- c("3-5cm", "7.2mm", "1|3kg")
 

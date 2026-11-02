@@ -45,70 +45,93 @@ library(dplyr)
 
 ## 构造一份"真实"的脏数据
 
-为了演示，我们先构造一份模拟实验室数据集，尽量还原真实 EHR 数据中的常见质量问题：混合单位、文字注释、异常日期、缺失值和离群值。
+为了演示，我们先构造一份模拟实验室数据集，尽量还原真实 EHR 数据中的常见质量问题：混合单位、文字注释、异常日期、缺失值和离群值。每位患者包含 1--4 次就诊，同一次就诊的 3 项检验共享同一日期，这样转换成长表/宽表后不会因为日期错位而出现大面积缺失。
 
 ```{r create-messy-data}
 set.seed(123)
-n <- 100
+n_patients <- 60
 
-# 患者编号
-patient_ids <- paste0("P", sprintf("%03d", 1:n))
+# 患者编号与每位患者的就诊次数（纵向队列）
+visits_per_patient <- sample(1:4, n_patients, replace = TRUE, prob = c(0.25, 0.4, 0.25, 0.1))
+patient_ids <- rep(paste0("P", sprintf("%03d", 1:n_patients)), visits_per_patient)
+n_visits <- length(patient_ids)
+
+# 辅助函数：生成符合临床分布的混合数值
+make_vals <- function(n, props, means, sds) {
+  grp <- sample(seq_along(means), n, replace = TRUE, prob = props)
+  round(rnorm(n, means[grp], sds[grp]), 2)
+}
 
 # 葡萄糖：mg/dL 和 mmol/L 混合（1 mmol/L = 18 mg/dL）
-# 同时包含异常值和缺失值
-glucose_vals <- c(
-  rnorm(35, mean = 100, sd = 15), # mg/dL 正常范围
-  rnorm(30, mean = 5.5, sd = 0.8), # mmol/L 正常范围
-  rnorm(10, mean = 200, sd = 20), # mg/dL 偏高（异常值）
-  rnorm(10, mean = 15, sd = 2), # mmol/L 偏高（异常值）
-  rep(NA, 10), # 缺失值
-  999, 888, 0, -50, 500 # 错误值
+glucose_units <- sample(c("mg/dL", "mmol/L", NA), n_visits,
+  replace = TRUE, prob = c(0.6, 0.3, 0.1)
 )
-glucose_vals <- round(sample(glucose_vals, n), 1)
-
-glucose_units <- sample(c("mg/dL", "mmol/L", NA), n, replace = TRUE, prob = c(0.5, 0.4, 0.1))
+glucose_vals <- make_vals(
+  n_visits, c(0.55, 0.25, 0.15, 0.05),
+  c(100, 150, 230, 5.7), c(12, 18, 30, 0.9) # mg/dL 数值
+)
+mmol_glu_idx <- !is.na(glucose_units) & glucose_units == "mmol/L"
+glucose_vals[mmol_glu_idx] <- make_vals(
+  sum(mmol_glu_idx), c(0.55, 0.25, 0.15, 0.05),
+  c(5.6, 8.3, 12.8, 0.32), c(0.7, 1, 1.7, 0.05) # mmol/L 数值
+)
 
 # 肌酐：mg/dL 和 umol/L 混合（1 mg/dL = 88.4 umol/L）
-creatinine_vals <- c(
-  rnorm(35, mean = 1.0, sd = 0.2), # mg/dL 正常范围
-  rnorm(30, mean = 88, sd = 15), # umol/L 正常范围
-  rnorm(10, mean = 3.0, sd = 0.5), # mg/dL 偏高（异常值）
-  rnorm(10, mean = 265, sd = 44), # umol/L 偏高（异常值）
-  rep(NA, 10), # 缺失值
-  999, 0, -10, 1000, 0.001 # 错误值
+creatinine_units <- sample(c("mg/dL", "umol/L", NA), n_visits,
+  replace = TRUE, prob = c(0.55, 0.35, 0.1)
 )
-creatinine_vals <- round(sample(creatinine_vals, n), 2)
-
-creatinine_units <- sample(c("mg/dL", "umol/L", NA), n, replace = TRUE, prob = c(0.5, 0.4, 0.1))
+creatinine_vals <- make_vals(
+  n_visits, c(0.5, 0.25, 0.25),
+  c(0.86, 1.7, 4.5), c(0.15, 0.3, 1.2) # mg/dL 数值
+)
+umol_cre_idx <- !is.na(creatinine_units) & creatinine_units == "umol/L"
+creatinine_vals[umol_cre_idx] <- make_vals(
+  sum(umol_cre_idx), c(0.5, 0.25, 0.25),
+  c(76, 150, 400), c(13, 27, 110) # umol/L 数值
+)
 
 # 胆固醇：mg/dL 和 mmol/L 混合（1 mmol/L = 38.67 mg/dL）
-cholesterol_vals <- c(
-  rnorm(35, mean = 180, sd = 30), # mg/dL 正常范围
-  rnorm(30, mean = 4.5, sd = 0.8), # mmol/L 正常范围
-  rnorm(10, mean = 350, sd = 40), # mg/dL 偏高（异常值）
-  rnorm(10, mean = 9, sd = 1), # mmol/L 偏高（异常值）
-  rep(NA, 10), # 缺失值
-  888, 999, 50, 600, 0 # 错误值
+cholesterol_units <- sample(c("mg/dL", "mmol/L", NA), n_visits,
+  replace = TRUE, prob = c(0.6, 0.3, 0.1)
 )
-cholesterol_vals <- round(sample(cholesterol_vals, n), 2)
+cholesterol_vals <- make_vals(
+  n_visits, c(0.55, 0.3, 0.15),
+  c(180, 230, 330), c(25, 20, 40) # mg/dL 数值
+)
+mmol_chol_idx <- !is.na(cholesterol_units) & cholesterol_units == "mmol/L"
+cholesterol_vals[mmol_chol_idx] <- make_vals(
+  sum(mmol_chol_idx), c(0.55, 0.3, 0.15),
+  c(4.7, 6, 8.5), c(0.6, 0.5, 1) # mmol/L 数值
+)
 
-cholesterol_units <- sample(c("mg/dL", "mmol/L", NA), n, replace = TRUE, prob = c(0.5, 0.4, 0.1))
+# 每项检验注入适量缺失值
+glucose_vals[sample(n_visits, round(n_visits * 0.08))] <- NA
+creatinine_vals[sample(n_visits, round(n_visits * 0.08))] <- NA
+cholesterol_vals[sample(n_visits, round(n_visits * 0.08))] <- NA
 
-# 检验日期：多种格式，包含不可能的日期
-test_date_vals <- sample(c(
-  format(Sys.Date() - sample(1:365, 60, replace = TRUE), "%Y-%m-%d"), # ISO 格式
-  format(Sys.Date() - sample(1:365, 30, replace = TRUE), "%Y/%m/%d"), # 斜杠格式
-  "1900-01-01", "2030-12-31", "N/A", "", "unknown", "pending", # 无效日期
-  rep(NA, 10)
-), n * 3, replace = TRUE)
+# 检验日期：每次就诊一个日期，包含多种格式和无效条目
+visit_dates <- rep(as.Date(NA), n_visits)
+for (p in seq_len(n_patients)) {
+  p_idx <- which(patient_ids == sprintf("P%03d", p))
+  visit_dates[p_idx] <- Sys.Date() - sample(1:365, length(p_idx), replace = FALSE)
+}
+date_strings <- ifelse(runif(n_visits) < 0.5,
+  format(visit_dates, "%Y-%m-%d"), # ISO 格式
+  format(visit_dates, "%Y/%m/%d") # 斜杠格式
+)
+invalid_idx <- sample(n_visits, round(n_visits * 0.1))
+date_strings[invalid_idx] <- sample(
+  c("N/A", "unknown", "pending", "", NA_character_),
+  length(invalid_idx), replace = TRUE
+)
 
-# 创建长格式的实验室数据
+# 创建长格式的实验室数据：每次就诊记录 3 项检验
 lab_data <- data.frame(
-  patient_id = rep(patient_ids, 3),
-  test = rep(c("Glucose", "Creatinine", "Cholesterol"), each = n),
-  value = c(glucose_vals, creatinine_vals, cholesterol_vals),
-  unit = c(glucose_units, creatinine_units, cholesterol_units),
-  test_date = test_date_vals
+  patient_id = rep(patient_ids, each = 3),
+  test = rep(c("Glucose", "Creatinine", "Cholesterol"), times = n_visits),
+  value = as.character(c(rbind(glucose_vals, creatinine_vals, cholesterol_vals))),
+  unit = c(rbind(glucose_units, creatinine_units, cholesterol_units)),
+  test_date = rep(date_strings, each = 3)
 )
 
 # 添加需要清洗的字符串值
@@ -397,6 +420,8 @@ lab_wide <- lab_data_final %>%
 lab_wide <- lab_wide %>%
   arrange(patient_id, test_date)
 
+test_cols <- c("Glucose", "Creatinine", "Cholesterol")
+
 knitr::kable(head(lab_wide, 10), caption = "纵向实验室数据（前 10 条记录）")
 ```
 
@@ -419,22 +444,30 @@ knitr::kable(cohort_summary, caption = "队列结构：每位患者的就诊次�
 
 ```{r missing-patterns}
 missing_summary <- data.frame(
-  Variable = names(lab_wide)[-1],
-  Missing_Count = sapply(lab_wide[-1], function(x) sum(is.na(x))),
-  Missing_Percent = round(sapply(lab_wide[-1], function(x) sum(is.na(x)) / length(x) * 100, 2))
+  Variable = test_cols,
+  Missing_Count = sapply(lab_wide[test_cols], function(x) sum(is.na(x))),
+  Missing_Percent = round(sapply(lab_wide[test_cols], function(x) {
+    sum(is.na(x)) / length(x) * 100
+  }), 2)
 )
 
 knitr::kable(missing_summary, caption = "各检验项目的缺失数据汇总")
 ```
 
-筛选缺失过多的记录：
+筛选缺失过多的记录。这里只把 3 个检验结果列交给 `get_valid_subset()`，因此患者编号和日期一定会保留，筛选完成后再把它们拼回数据中：
 
 ```{r filter-missing}
-lab_wide_clean <- get_valid_subset(
-  lab_wide,
+valid_idx <- get_valid_subset(
+  lab_wide[test_cols],
   row_na_ratio = 0.5, # 每条记录最多允许 50% 缺失
-  col_na_ratio = 0.3 # 每个检验项目最多允许 30% 缺失
+  col_na_ratio = 0.3, # 每个检验项目最多允许 30% 缺失
+  return_index = TRUE
 )
+
+lab_wide_clean <- lab_wide[
+  valid_idx$rows,
+  c("patient_id", "test_date", test_cols[valid_idx$cols])
+]
 
 cat(
   "维度变化:", nrow(lab_wide), "条记录",
@@ -506,9 +539,14 @@ knitr::kable(cat_summary, caption = "临床分类分布（所有就诊）")
 查看单个患者的检验轨迹：
 
 ```{r longitudinal-view}
-# 选择一位有多次就诊的患者进行展示
+# 选择一位就诊次数最多的患者进行展示
+patient_with_most_visits <- lab_wide_clean %>%
+  count(patient_id, sort = TRUE) %>%
+  slice(1) %>%
+  pull(patient_id)
+
 patient_trajectory <- lab_wide_clean %>%
-  filter(patient_id == unique(patient_id)[1]) %>%
+  filter(patient_id == patient_with_most_visits) %>%
   select(
     patient_id, test_date, Glucose, Creatinine, Cholesterol,
     glucose_category, renal_function
@@ -529,7 +567,8 @@ overview <- data_overview(lab_data)
 # 第 2 步：格式清洗——提取数值和转换日期
 clean <- lab_data
 clean$value <- extract_num(lab_data$value)
-clean$test_date <- to_date(lab_data$test_date)
+# 上文已将 lab_data 清洗过，这里先转为字符再重新解析日期
+clean$test_date <- to_date(as.character(lab_data$test_date))
 
 # 第 3 步：单位标准化
 change_rules <- list(
@@ -559,8 +598,16 @@ clean_wide <- clean %>%
   tidyr::pivot_wider(names_from = test, values_from = value) %>%
   arrange(patient_id, test_date)
 
-# 第 6 步：缺失值筛选
-clean_wide <- get_valid_subset(clean_wide, row_na_ratio = 0.5, col_na_ratio = 0.3)
+# 第 6 步：缺失值筛选（只针对检验结果列）
+valid_idx <- get_valid_subset(
+  clean_wide[test_cols],
+  row_na_ratio = 0.5, col_na_ratio = 0.3,
+  return_index = TRUE
+)
+clean_wide <- clean_wide[
+  valid_idx$rows,
+  c("patient_id", "test_date", test_cols[valid_idx$cols])
+]
 
 # 第 7 步：创建临床分类变量
 clean_wide$glucose_category <- cut_by(

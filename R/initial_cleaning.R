@@ -154,17 +154,17 @@ value_initial_cleaning <- function(x, remove_inequal = FALSE, fix_encoding = TRU
   # transformations unconditionally costs ~0.7s on a 1e6-character vector
   # even when nothing matches; guard each on a detection pass so the common
   # case is nearly free.
-  if (any(stringi::stri_detect_regex(x, "[\uff21-\uff3a\uff41-\uff5a\uff10-\uff19]"))) {
+  if (any(stringi::stri_detect_regex(x, "[\uff21-\uff3a\uff41-\uff5a\uff10-\uff19]"), na.rm = TRUE)) {
     x <- stringi::stri_trans_general(x, "Fullwidth-Halfwidth")
   }
-  if (any(stringi::stri_detect_regex(x, "\\.\\."))) {
+  if (any(stringi::stri_detect_regex(x, "\\.\\."), na.rm = TRUE)) {
     x <- stringi::stri_replace_all_regex(x, "\\.+", ".")
   }
   if (remove_inequal) {
-    if (any(stringi::stri_detect_regex(x, "[ <>\u2264\u2265&lt;&gt;]"))) {
+    if (any(stringi::stri_detect_regex(x, "[ <>\u2264\u2265&lt;&gt;]"), na.rm = TRUE)) {
       x <- stringi::stri_replace_all_regex(x, "[ <>\u2264\u2265&lt;&gt;]", "")
     }
-  } else if (any(stringi::stri_detect_fixed(x, " "))) {
+  } else if (any(stringi::stri_detect_fixed(x, " "), na.rm = TRUE)) {
     x <- stringi::stri_replace_all_fixed(x, " ", "")
   }
   x[which(x == "")] <- NA

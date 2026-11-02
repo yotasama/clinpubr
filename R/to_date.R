@@ -1,7 +1,7 @@
 #' Convert numerical or character date to date.
 #' @description Convert numerical (especially Excel date) or character date to date. Can deal with
-#'   common formats and allow different formats in one vector.
-#' @param x A vector that stores dates in numerical or character types.
+#'   common formats and allow different formats in one vector. `Date` input is returned as is.
+#' @param x A vector that stores dates in numerical, character, or `Date` types.
 #' @param from_excel If TRUE, treat numerical values as Excel dates.
 #' @param verbose If TRUE, print the values that cannot be converted.
 #' @param try_formats A character vector of date formats to try. Same as `tryFormats` in `as.Date`.
@@ -12,6 +12,9 @@
 #' to_date(c(43562, "2020-01-01", "2020/01/01", "20200101", "2020.01.01"))
 to_date <- function(x, from_excel = TRUE, verbose = TRUE,
                     try_formats = c("%Y-%m-%d", "%Y/%m/%d", "%Y%m%d", "%Y.%m.%d")) {
+  if (inherits(x, "Date")) {
+    return(x)
+  }
   if (is.numeric(x)) {
     if (from_excel) {
       y <- as.Date(x, origin = "1899-12-30")
