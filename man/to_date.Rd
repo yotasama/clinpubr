@@ -12,7 +12,7 @@ to_date(
 )
 }
 \arguments{
-\item{x}{A vector that stores dates in numerical or character types.}
+\item{x}{A vector that stores dates in numerical, character, or \code{Date} types.}
 
 \item{from_excel}{If TRUE, treat numerical values as Excel dates.}
 
@@ -25,7 +25,7 @@ A single valid value from the vector. \code{NA} if all values are invalid.
 }
 \description{
 Convert numerical (especially Excel date) or character date to date. Can deal with
-common formats and allow different formats in one vector.
+common formats and allow different formats in one vector. \code{Date} input is returned as is.
 }
 \examples{
 to_date(c(43562, "2020-01-01", "2020/01/01", "20200101", "2020.01.01"))

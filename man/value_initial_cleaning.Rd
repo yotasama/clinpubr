@@ -35,8 +35,10 @@ and replace empty strings with \code{NA}.
 When \code{fix_encoding = TRUE}, a warning will be issued if encoding repairs are made.
 }
 \examples{
-x <- c("\uFF11\uFF12\uFF13", "11..23", "\uff41\uff42\uff41\uff4e\uff44\uff4f\uff4e",
-       "hello world ")
+x <- c(
+  "\uFF11\uFF12\uFF13", "11..23", "\uff41\uff42\uff41\uff4e\uff44\uff4f\uff4e",
+  "hello world "
+)
 value_initial_cleaning(x)
 char_initial_cleaning(x)
 }

@@ -66,6 +66,6 @@ result <- time_roc_plot(lung, "time", "status", "age", times = c(180, 365, 730),
 result$plot
 
 # Save the plot to a file
-# time_roc_plot(lung, "time", "status", "age", times = c(180, 365, 730), 
+# time_roc_plot(lung, "time", "status", "age", times = c(180, 365, 730),
 #               time_unit = "days", save_plot = TRUE)
 }

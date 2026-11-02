@@ -41,9 +41,11 @@ if (l10n_info()$"UTF-8") {
 
 # Mixed encoding vector (UTF-8 and GBK)
 if (l10n_info()$"UTF-8") {
-  mixed <- c("hello",
-             iconv("\u4e2d\u6587", from = "UTF-8", to = "GBK"),
-             "world")
+  mixed <- c(
+    "hello",
+    iconv("\u4e2d\u6587", from = "UTF-8", to = "GBK"),
+    "world"
+  )
   auto_encoding_repair(mixed)
 }
 }
