@@ -3,6 +3,7 @@
 ^LICENSE\.md$
 ^\.lintr$
 ^articles$
+^plans$
 ^\.VSCodeCounter$
 ^sample_plots$
 ^my_test.r$
