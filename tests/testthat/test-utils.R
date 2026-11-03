@@ -12,7 +12,7 @@ test_that("create_formula generates correct formulas", {
   # With time (Cox model)
   expect_equal(
     as.character(create_formula("y", "x", time = "t")),
-    as.character(Surv(t, y) ~ x)
+    as.character(survival::Surv(t, y) ~ x)
   )
 
   # With group_var and interaction
@@ -24,7 +24,7 @@ test_that("create_formula generates correct formulas", {
   # With rcs knots
   expect_equal(
     as.character(create_formula("y", "x", rcs_knots = 3)),
-    as.character(y ~ rcs(x, 3))
+    as.character(y ~ rms::rcs(x, 3))
   )
 })
 

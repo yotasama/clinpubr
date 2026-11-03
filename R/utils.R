@@ -91,15 +91,15 @@ create_formula <- function(y, predictor, group_var = NULL, time = NULL, time2 = 
   }
   if (!is.null(time)) {
     if (!is.null(time2)) {
-      outcome <- paste0("Surv(", time, ",", time2, ",", y, ")")
+      outcome <- paste0("survival::Surv(", time, ",", time2, ",", y, ")")
     } else {
-      outcome <- paste0("Surv(", time, ",", y, ")")
+      outcome <- paste0("survival::Surv(", time, ",", y, ")")
     }
   } else {
     outcome <- y
   }
   if (!is.null(rcs_knots)) {
-    predictor <- paste0("rcs(", predictor, ",", rcs_knots, ")")
+    predictor <- paste0("rms::rcs(", predictor, ",", rcs_knots, ")")
   }
   if (!is.null(group_var)) {
     if (interaction) {
