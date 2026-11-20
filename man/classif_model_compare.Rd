@@ -13,7 +13,8 @@ classif_model_compare(
   figure_type = "png",
   output_prefix = "model_compare",
   as_probability = FALSE,
-  auto_order = TRUE
+  auto_order = TRUE,
+  positive_class = NULL
 )
 }
 \arguments{
@@ -40,6 +41,12 @@ The vector of variable names means to convert these variables to the range of 0 
 \item{auto_order}{A logical value indicating whether to automatically order the models by their AUCs.
 If \code{TRUE}, the models will be ordered by their AUCs in descending order. If \code{FALSE}, the order
 in \code{model_names} will be retained.}
+
+\item{positive_class}{The level of \code{target_var} that is treated as the positive class. Must be one
+of \code{levels(target_var)}. If \code{NULL} (default), \code{levels(target_var)[2]} is used, which follows the
+alphabetical factor level order and is therefore easy to get wrong (e.g. for \code{"case"}/\code{"control"});
+a warning is emitted. All AUC, sensitivity, specificity, Brier and Hosmer-Lemeshow values are
+derived from this class.}
 }
 \value{
 A list of various results. If the output files are not in desired format,
@@ -49,7 +56,8 @@ these results can be modified for further use.
 \item roc_plot: A \code{ggplot} object of Receiver Operating Characteristic curves.
 \item pr_plot: A \code{ggplot} object of Precision-Recall curves.
 \item dca_plot: A \code{ggplot} object of decision curve analysis plots.
-\item calibration_plot: A \code{ggplot} object of calibration plots.
+\item calibration_plot: A \code{ggplot} object of calibration plots, or \code{NULL} when
+\code{nrow(data) < 20} (a warning is emitted).
 }
 }
 \description{

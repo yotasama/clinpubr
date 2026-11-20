@@ -170,11 +170,43 @@ test_that("regression_scan returns expected structure", {
       "predictor", "nvalid", "original.HR", "original.pval", "original.padj",
       "logarithm.HR", "logarithm.pval", "logarithm.padj", "categorized.HR",
       "categorized.pval", "categorized.padj", "rcs.overall.pval",
-      "rcs.overall.padj", "rcs.nonlinear.p", "best.var.trans"
+      "rcs.overall.padj", "rcs.nonlinear.p", "best.var.trans", "diagnostics"
     ) %in% colnames(res)))
     expect_snapshot(res)
     check_file_exists("cox_regression_scan_status.csv")
   })
+})
+
+test_that("regression_scan keeps covariates that conflict with one predictor for the others", {
+  set.seed(1)
+  data(cancer, package = "survival")
+
+  res <- regression_scan(
+    cancer,
+    y = "status", time = "time",
+    predictors = c("sex", "age"), covars = "sex", save_table = FALSE
+  )
+  adjusted <- regression_fit(
+    cancer,
+    y = "status", predictor = "age", time = "time", covars = "sex", returned = "full"
+  )
+  unadjusted <- regression_fit(
+    cancer, y = "status", predictor = "age", time = "time", returned = "full"
+  )
+
+  age_hr <- res$original.HR[res$predictor == "age"]
+  expect_equal(age_hr, adjusted$estimate[1], tolerance = 1e-6)
+  expect_false(isTRUE(all.equal(age_hr, unadjusted$estimate[1])))
+})
+
+test_that("regression_basic_results reports P for trend for any multi-level factor", {
+  set.seed(1)
+  data(cancer, package = "survival")
+  d <- cancer
+  d$grp <- factor(sample(c("a", "b", "c"), nrow(d), replace = TRUE))
+
+  res_nominal <- regression_basic_results(d, x = "grp", y = "status", time = "time", save_output = FALSE)
+  expect_true(any(grepl("P for trend", res_nominal$table$Terms)))
 })
 
 # Test regression_fit
@@ -204,6 +236,20 @@ test_that("fit_model handles different analysis types", {
   fit_logistic <- fit_model(dead ~ age, data = cancer, analysis_type = "logistic")
   expect_s3_class(fit_logistic, "glm")
   expect_snapshot(summary(fit_logistic)$coefficients)
+})
+
+test_that("regression_fit takes RCS p-values from the anova rows by name", {
+  data(cancer, package = "survival")
+  fit <- regression_fit(cancer,
+    y = "status", predictor = "age", time = "time",
+    rcs_knots = 4, returned = "predictor_combined"
+  )
+  m <- rms::cph(create_formula("status", "age", time = "time", rcs_knots = 4),
+    data = cancer, x = TRUE, y = TRUE
+  )
+  a <- anova(m)
+  expect_equal(fit$p_overall, a[1, "P"], tolerance = 1e-8)
+  expect_equal(fit$p_nonlinear, a[grepl("Nonlinear", rownames(a)), "P"][[1]], tolerance = 1e-8)
 })
 
 test_that("regression_fit works with time2", {

@@ -8,7 +8,10 @@ test_that("merge_by_substring works with basic dataset", {
     category = c("cat1", "cat2", "cat3", "cat4", "cat1")
   )
 
-  result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "category")
+  expect_warning(
+    result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "category"),
+    "命中多个分组"
+  )
 
   expect_true(is.data.frame(result))
   expect_equal(nrow(result), 8)
@@ -16,6 +19,37 @@ test_that("merge_by_substring works with basic dataset", {
   expect_equal(names(result), c("name", "value", "category"))
   expect_true("category" %in% names(result))
   expect_equal(result$name, c("A..", "AB", "AB", "ACD", "ACD", "ACD", "B,C", "B,C"))
+})
+
+test_that("merge_by_substring rejects empty string keys", {
+  df <- data.frame(name = c("AB", "B,C"), value = c(1, 2))
+  key_df <- data.frame(key = c("A", ""), category = c("cat1", "cat5"))
+
+  expect_error(
+    merge_by_substring(df, key_df, search_col = "name", key_col = "key", value_cols = "category"),
+    "空字符串"
+  )
+})
+
+test_that("merge_by_substring rejects all-NA keys", {
+  df <- data.frame(name = c("AB", "B,C"), value = c(1, 2))
+  key_df <- data.frame(key = c(NA, NA), category = c("cat1", "cat2"))
+
+  expect_error(
+    merge_by_substring(df, key_df, search_col = "name", key_col = "key", value_cols = "category"),
+    "全部为 NA"
+  )
+})
+
+test_that("merge_by_substring does not warn when each value matches one group", {
+  df <- data.frame(name = c("alpha", "beta"), value = c(1, 2))
+  key_df <- data.frame(key = c("alp", "bet"), category = c("cat1", "cat2"))
+
+  expect_silent(
+    result <- merge_by_substring(df, key_df, search_col = "name", key_col = "key", value_cols = "category")
+  )
+  expect_equal(nrow(result), 2)
+  expect_equal(result$category, c("cat1", "cat2"))
 })
 
 test_that("merge_by_substring works with multiple new columns", {
@@ -29,7 +63,10 @@ test_that("merge_by_substring works with multiple new columns", {
     code = c("001", "002", "003", "004", "001")
   )
 
-  result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = c("category", "code"))
+  expect_warning(
+    result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = c("category", "code")),
+    "命中多个分组"
+  )
 
   expect_true(is.data.frame(result))
   expect_equal(nrow(result), 8)
@@ -49,7 +86,10 @@ test_that("merge_by_substring handles unmatched rows with NA", {
     category = c("cat1", "cat2")
   )
 
-  result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "category")
+  expect_warning(
+    result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "category"),
+    "命中多个分组"
+  )
 
   expect_true(is.data.frame(result))
   expect_equal(nrow(result), 4)
@@ -83,7 +123,10 @@ test_that("merge_by_substring handles duplicate patterns in same group", {
     category = c("cat1", "cat1", "cat1", "cat2")
   )
 
-  result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "category")
+  expect_warning(
+    result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "category"),
+    "命中多个分组"
+  )
 
   expect_true(is.data.frame(result))
   expect_equal(nrow(result), 4)
@@ -100,7 +143,10 @@ test_that("merge_by_substring works with default column names", {
     new = c("cat1", "cat2", "cat3")
   )
 
-  result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "new")
+  expect_warning(
+    result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "new"),
+    "命中多个分组"
+  )
 
   expect_true(is.data.frame(result))
   expect_equal(nrow(result), 5)
@@ -128,7 +174,10 @@ test_that("merge_by_substring handles NA patterns", {
     category = c("cat1", "cat2", "cat3")
   )
 
-  result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "category")
+  expect_warning(
+    result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "category"),
+    "命中多个分组"
+  )
 
   expect_true(is.data.frame(result))
   expect_equal(nrow(result), 4)

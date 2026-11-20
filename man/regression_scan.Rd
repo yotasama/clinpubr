@@ -41,8 +41,9 @@ correlated responses from cluster samples using \code{rms::robcov()}.}
 to this value would be considered a factor.}
 
 \item{p_adjust_method}{The method to use for p-value adjustment. Default is "BH".
-See \code{?p.adjust.methods}. Note that the p-value adjustment is only applied column wise, not applied among
-all available p-values in the table.}
+See \code{?p.adjust.methods}. Note that the p-value adjustment is applied \strong{within each transform
+family} (original / logarithm / categorized / rcs), not across the whole table, so adjusted
+p-values from different transform columns are not directly comparable.}
 
 \item{save_table}{A logical value indicating whether to save the results as a table.}
 
@@ -61,6 +62,14 @@ The function first determines the type of each predictor variable (\code{numeric
 \code{num_factor} (numerical but with less unique values than or equal to \code{num_to_factor}), or
 \code{other}). Then, it performs regression analysis for available transforms of each predictor variable
 and saves the results.
+
+The \code{best.var.trans} column is the transform with the smallest \strong{unadjusted} p-value. It is
+reported for exploration only and must not be used for inference: picking the transform by the
+smallest p-value is a data-dependent selection that inflates type I error. It is kept (rather
+than renamed) for backward compatibility.
+
+The \code{diagnostics} column records fitting errors (for example separation or convergence
+failures) for each predictor instead of failing the whole scan.
 }
 \section{The available transforms for each predictor type are}{
 

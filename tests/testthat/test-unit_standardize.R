@@ -65,6 +65,66 @@ test_that("Errors on target_unit not in units2change", {
   expect_equal(res$value, c(20, 2, 3, 4, 5, 6, 7))
 })
 
+test_that("on_unmapped = 'error' lists unmapped units", {
+  df <- data.frame(subject = c("b", "b", "b"), value = c(10, 20, 30), unit = c("mL", "dL", "dL"))
+  expect_error(
+    unit_standardize(df, "subject", "value", "unit",
+      change_rules = list(list(subject = "b")),
+      on_unmapped = "error"
+    ),
+    "mL"
+  )
+})
+
+test_that("on_unmapped = 'warn' keeps original unit and value", {
+  df <- data.frame(subject = c("b", "b", "b"), value = c(10, 20, 30), unit = c("mL", "dL", "dL"))
+  change_rules <- list(list(subject = "b", target_unit = "dL", units2change = "nL", coeffs = 0.1))
+  expect_warning(
+    res <- unit_standardize(df, "subject", "value", "unit", change_rules, on_unmapped = "warn"),
+    "mL"
+  )
+  # units without a rule keep both their unit and their value
+  expect_equal(res$unit, c("mL", "dL", "dL"))
+  expect_equal(res$value, c(10, 20, 30))
+})
+
+test_that("removed units get NA unit and NA value", {
+  df <- data.frame(subject = c("a", "a", "a"), value = c(1, 2, 3), unit = c("x", "y", "x"))
+  change_rules <- list(
+    list(subject = "a", target_unit = "x", units2remove = "y")
+  )
+  res <- unit_standardize(df, "subject", "value", "unit", change_rules)
+  expect_equal(res$unit, c("x", NA, "x"))
+  expect_equal(res$value, c(1, NA, 3))
+})
+
+test_that("unmapped units are relabelled silently by default", {
+  df <- data.frame(subject = c("b", "b", "b"), value = c(10, 20, 30), unit = c("mL", "dL", "dL"))
+  res <- unit_standardize(df, "subject", "value", "unit", list(list(subject = "b")))
+  expect_equal(res$unit, rep("dL", 3))
+  expect_equal(res$value, c(10, 20, 30))
+})
+
+test_that("units2change without coeffs defaults to 1", {
+  df <- data.frame(subject = c("a", "a"), value = c(1, 2), unit = c("x", "y"))
+  res <- unit_standardize(df, "subject", "value", "unit",
+    change_rules = list(list(subject = "a", target_unit = "x", units2change = "y"))
+  )
+  expect_equal(res$unit, c("x", "x"))
+  expect_equal(res$value, c(1, 2))
+})
+
+test_that("on_unmapped rejects unknown values", {
+  df <- data.frame(subject = c("a", "a"), value = c(1, 2), unit = c("x", "y"))
+  expect_error(
+    unit_standardize(df, "subject", "value", "unit",
+      change_rules = list(list(subject = "a", target_unit = "x")),
+      on_unmapped = "bogus"
+    ),
+    "arg"
+  )
+})
+
 # Test unit_standardize with data frame change_rules (Example 2)
 test_that("unit_standardize works with data frame change_rules from unit_view", {
   set.seed(1)

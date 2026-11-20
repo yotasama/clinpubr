@@ -582,14 +582,23 @@ regression_forest <- function(data, model_vars, y, time = NULL, time2 = NULL, cl
 #' @param num_to_factor An integer. Numerical variables with number of unique values below or equal
 #'   to this value would be considered a factor.
 #' @param p_adjust_method The method to use for p-value adjustment. Default is "BH".
-#'   See `?p.adjust.methods`. Note that the p-value adjustment is only applied column wise, not applied among
-#'   all available p-values in the table.
+#'   See `?p.adjust.methods`. Note that the p-value adjustment is applied **within each transform
+#'   family** (original / logarithm / categorized / rcs), not across the whole table, so adjusted
+#'   p-values from different transform columns are not directly comparable.
 #' @param save_table A logical value indicating whether to save the results as a table.
 #' @param filename The name of the file to save the results. File will be saved in `.csv` format.
 #' @details The function first determines the type of each predictor variable (`numerical`, `factor`,
 #'   `num_factor` (numerical but with less unique values than or equal to `num_to_factor`), or
 #'   `other`). Then, it performs regression analysis for available transforms of each predictor variable
 #'   and saves the results.
+#'
+#'   The `best.var.trans` column is the transform with the smallest **unadjusted** p-value. It is
+#'   reported for exploration only and must not be used for inference: picking the transform by the
+#'   smallest p-value is a data-dependent selection that inflates type I error. It is kept (rather
+#'   than renamed) for backward compatibility.
+#'
+#'   The `diagnostics` column records fitting errors (for example separation or convergence
+#'   failures) for each predictor instead of failing the whole scan.
 #' @section The available transforms for each predictor type are:
 #'   - `numerical`: `original`, `logarithm`, `categorized`, `rcs`
 #'   - `num_factor`: `original`, `categorized`
@@ -646,7 +655,8 @@ regression_scan <- function(data, y, time = NULL, time2 = NULL, predictors = NUL
       sep = "."
     ),
     paste("rcs", c("overall", "overall", "nonlinear"), c("pval", "padj", "p"), sep = "."),
-    "best.var.trans"
+    "best.var.trans",
+    "diagnostics"
   )
   res_df <- data.frame(matrix(NA, nrow = length(predictors), ncol = length(c_names)))
   colnames(res_df) <- c_names
@@ -654,8 +664,10 @@ regression_scan <- function(data, y, time = NULL, time2 = NULL, predictors = NUL
   res_df$predictor <- predictors
   for (i in seq_along(predictors)) {
     predictor <- predictors[i]
-    covars <- remove_conflict(covars, c(y, predictor, time, time2, cluster), silent = TRUE)
-    dat <- dplyr::select(data, all_of(c(y, predictor, time, time2, covars, cluster)))
+    # keep `covars` untouched across predictors: otherwise later predictors silently
+    # lose covariates that conflicted with an earlier predictor
+    covars_i <- remove_conflict(covars, c(y, predictor, time, time2, cluster), silent = TRUE)
+    dat <- dplyr::select(data, all_of(c(y, predictor, time, time2, covars_i, cluster)))
     dat <- na.omit(dat)
     nvalid <- nrow(dat)
     res_df$nvalid[i] <- nvalid
@@ -673,6 +685,7 @@ regression_scan <- function(data, y, time = NULL, time2 = NULL, predictors = NUL
     } else {
       "other"
     }
+    diagnostics_i <- character()
     for (var_trans in supported_var_trans[[predictor_type]]) {
       tmp_dat <- dat
       rcs_knots <- NULL
@@ -690,7 +703,7 @@ regression_scan <- function(data, y, time = NULL, time2 = NULL, predictors = NUL
         {
           res <- regression_fit(
             data = tmp_dat, y = y, predictor = predictor, time = time, time2 = time2,
-            covars = covars, cluster = cluster, rcs_knots = rcs_knots, returned = "predictor_combined"
+            covars = covars_i, cluster = cluster, rcs_knots = rcs_knots, returned = "predictor_combined"
           )
           if (var_trans == "rcs") {
             res_df[i, paste(var_trans, c("overall.pval", "nonlinear.p"), sep = ".")] <-
@@ -701,9 +714,14 @@ regression_scan <- function(data, y, time = NULL, time2 = NULL, predictors = NUL
           }
         },
         error = function(e) {
-          warning(paste0("Error in ", predictor, " with ", var_trans, " transform: ", e$message))
+          diagnostics_i <<- c(diagnostics_i, paste0(var_trans, ": ", conditionMessage(e)))
         }
       )
+      res_df$diagnostics[i] <- if (length(diagnostics_i) > 0) {
+        paste(unique(diagnostics_i), collapse = " | ")
+      } else {
+        NA_character_
+      }
     }
   }
   res_df <- res_df[order(res_df$original.pval, decreasing = FALSE), ]
@@ -716,7 +734,7 @@ regression_scan <- function(data, y, time = NULL, time2 = NULL, predictors = NUL
   }
   p_table <- res_df[, grepl("pval", colnames(res_df))]
   for (i in seq_along(predictors)) {
-    if (sum(!is.na(unlist(p_table[i, ])) > 0)) {
+    if (sum(!is.na(unlist(p_table[i, ]))) > 0) {
       res_df$best.var.trans[i] <- p_types[which.min(unlist(p_table[i, ]))]
     }
   }
@@ -795,7 +813,12 @@ regression_fit <- function(data, y, predictor, time = NULL, time2 = NULL, covars
 
   # need to check `rms` argument
   model <- fit_model(formula, data = data, analysis_type = analysis_type, cluster = cluster, rms = fit_rms)
-  full_res <- broom::tidy(model, conf.int = TRUE, exponentiate = analysis_type %in% c("logistic", "cox"))
+  full_res <- if (inherits(model, "rms")) {
+    # broom::tidy() would dispatch to summary.rms(), which needs a datadist
+    tidy.rms(model, conf.int = TRUE, exponentiate = analysis_type %in% c("logistic", "cox"))
+  } else {
+    broom::tidy(model, conf.int = TRUE, exponentiate = analysis_type %in% c("logistic", "cox"))
+  }
   if (analysis_type %in% c("linear", "logistic")) full_res <- full_res[-1, ]
 
   if (returned == "full") {
@@ -812,8 +835,14 @@ regression_fit <- function(data, y, predictor, time = NULL, time2 = NULL, covars
     return(res)
   } else {
     if (predictor_type == "num_or_binary" && !is.null(rcs_knots)) {
-      ps <- unname(anova(model)[, "P"])
-      return(list(estimate = NA, p_overall = ps[1], p_nonlinear = ps[2]))
+      anova_fit <- anova(model)
+      nonlin_rows <- grepl("Nonlinear", rownames(anova_fit), ignore.case = TRUE)
+      p_nonlinear <- if (any(nonlin_rows)) anova_fit[which(nonlin_rows)[1], "P"] else NA
+      return(list(
+        estimate = NA,
+        p_overall = anova_fit[1, "P"],
+        p_nonlinear = p_nonlinear
+      ))
     } else {
       return(list(
         estimate = NA,
@@ -826,15 +855,9 @@ regression_fit <- function(data, y, predictor, time = NULL, time2 = NULL, covars
 fit_model <- function(formula, data, analysis_type = c("linear", "logistic", "cox"),
                       rms = FALSE, cluster = NULL, ...) {
   analysis_type <- match.arg(analysis_type)
-  if (!is.null(cluster) && (analysis_type != "cox") && rms == FALSE) {
-    check_package("geepack", "GEE models are implemented in geepack package.")
-  }
 
-  if (!is.null(cluster)) {
-    if (any(is.na(data[[cluster]]))) {
-      # warning("There are missing values in the cluster variable. Corresponding rows will be removed.")
-      data <- data[!is.na(data[[cluster]]), ]
-    }
+  if (!is.null(cluster) && any(is.na(data[[cluster]]))) {
+    data <- data[!is.na(data[[cluster]]), ]
   }
 
   model <- suppressWarnings(
@@ -852,24 +875,15 @@ fit_model <- function(formula, data, analysis_type = c("linear", "logistic", "co
         tmp
       }
     } else {
-      if (!is.null(cluster)) {
-        if (analysis_type == "cox") {
-          survival::coxph(formula, data = data, cluster = data[[cluster]], ...)
-        } else if (analysis_type == "logistic") {
-          geepack::geeglm(formula, data = data, family = stats::binomial(), id = data[[cluster]], ...)
-        } else if (analysis_type == "linear") {
-          geepack::geeglm(formula, data = data, id = data[[cluster]], ...)
-        }
-      } else {
-        if (analysis_type == "cox") {
-          survival::coxph(formula, data = data, ...)
-        } else if (analysis_type == "logistic") {
-          stats::glm(formula, data = data, family = stats::binomial(), ...)
-        } else if (analysis_type == "linear") {
-          stats::lm(formula, data = data, ...)
-        }
+      if (analysis_type == "cox") {
+        survival::coxph(formula, data = data, ...)
+      } else if (analysis_type == "logistic") {
+        stats::glm(formula, data = data, family = stats::binomial(), ...)
+      } else if (analysis_type == "linear") {
+        stats::lm(formula, data = data, ...)
       }
     }
   )
+
   return(model)
 }

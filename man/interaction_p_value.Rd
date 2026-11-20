@@ -48,6 +48,11 @@ A numerical, the interaction p-value
 This function calculates the interaction p-value between a predictor and a group variable in a
 linear, logistic, or Cox proportional hazards model.
 }
+\details{
+For \code{lm} / \code{glm} fits the nested models are compared with a likelihood-ratio test
+(\code{anova(..., test = "LRT")}). For linear models this yields a Chi-square p-value, which is
+somewhat liberal in small samples; for Cox fits the \code{rms} likelihood-ratio test is used.
+}
 \examples{
 data(cancer, package = "survival")
 interaction_p_value(

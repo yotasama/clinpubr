@@ -4,7 +4,7 @@
 \alias{calc_cindex}
 \title{Calculate C-index for survival data}
 \usage{
-calc_cindex(data, time_var, event_var, marker_var)
+calc_cindex(data, time_var, event_var, marker_var, flip = TRUE)
 }
 \arguments{
 \item{data}{A data frame containing the survival time, event indicator, and marker variable.}
@@ -14,6 +14,10 @@ calc_cindex(data, time_var, event_var, marker_var)
 \item{event_var}{A string specifying the name of the event indicator variable in the data frame.}
 
 \item{marker_var}{A string specifying the name of the marker variable in the data frame.}
+
+\item{flip}{Logical. If \code{TRUE} (default), a C-index below 0.5 is returned as \code{1 - C-index}
+with a warning, assuming the marker direction is reversed. If \code{FALSE}, the raw value is
+returned unchanged.}
 }
 \value{
 The C-index value.

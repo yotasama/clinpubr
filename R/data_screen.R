@@ -1065,6 +1065,18 @@ screen_data_list <- function(data_list,
     }
 
     before <- nrow(joined)
+
+    # The uniqueness check above looks at each table's own key; the join only uses the
+    # intersection, so two tables can each be unique yet still blow up m x n rows.
+    dup_left <- anyDuplicated(joined[, by_used, drop = FALSE]) > 0
+    dup_right <- anyDuplicated(rhs[, by_used, drop = FALSE]) > 0
+    if (dup_left && dup_right) {
+      warning(sprintf(
+        "\u8868 `%s` \u4e0e\u5df2\u5408\u5e76\u7ed3\u679c\u5728 join key (%s) \u4e0a\u90fd\u5b58\u5728\u91cd\u590d\uff0c\u8fde\u63a5\u4f1a\u4ea7\u751f m\u00d7n \u884c\u81a8\u80c0\uff08\u5f53\u524d %d \u884c\uff09\u3002",
+        tbl, paste(by_used, collapse = ", "), before
+      ), call. = FALSE)
+    }
+
     joined <- dplyr::full_join(joined, rhs, by = by_used)
     after <- nrow(joined)
 

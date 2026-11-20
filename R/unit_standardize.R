@@ -7,6 +7,10 @@
 #' @param change_rules A data frame or a list of lists. See details
 #' @param extract_numbers A logical value indicating whether to apply `extract_num` to extract numeric values
 #'   from the value column.
+#' @param on_unmapped How to handle rows whose unit is neither the target unit nor listed in
+#'   `units2change`. `"assume_target"` (default) relabels these rows to the target unit without
+#'   converting their values; `"warn"` keeps these rows' original unit and value and emits a warning;
+#'   `"error"` fails after scanning all subjects and lists every offending `subject`/`unit`/row count.
 #' @param verbose A logical value indicating whether to print progress messages.
 #' @details `change_rules` can accept two formats:
 #'   If a data frame, it must contain the following columns:
@@ -28,16 +32,20 @@
 #'     \item `subject`: The subject to be standardized.
 #'     \item `target_unit`: The target unit to be standardized to. If not specified,
 #'       the function will use the most common unit in the data (retrieved by `first_mode()`).
-#'     \item `units2change`: The units to be changed. If not specified, the function will use
-#'       all units except the target unit. Must be specified to apply different `coeffs`.
-#'     \item `coeffs`: The coefficients to be used for the conversion. If not specified, the
-#'       function will use 1 for all units to be changed.
+#'     \item `units2change`: The units to be converted. If not specified, no conversion is
+#'       performed and every unit other than the target unit is treated as unmapped
+#'       (see `on_unmapped`). Must be specified to apply different `coeffs`.
+#'     \item `coeffs`: The coefficients to be used for the conversion. Default is `1` for every
+#'       unit in `units2change`. A coefficient of `NA` marks the unit as removed
+#'       (the corresponding value is set to `NA`).
 #'     \item `units2remove`: The units to be removed, and the corresponding values be set to `NA`.
 #'           Set this when data with this unit cannot be used.
 #'   }
 #'   It's recommended to use the labeled result from `unit_view()` as the input.
 #'
-#' @returns A data frame with subject units standardized.
+#' @returns A data frame with subject units standardized. Every row that is not marked as removed
+#'   is relabelled to the target unit; removed rows get `NA` value and unit. Rows whose unit is
+#'   neither the target unit nor listed in `units2change` follow `on_unmapped`.
 #' @export
 #' @examples
 #' # Example 1: Using the list as change_rules is more convenient for small datasets.
@@ -47,8 +55,8 @@
 #' )
 #' change_rules <- list(
 #'   list(subject = "a", target_unit = "x", units2change = c(NA), coeffs = c(20)),
-#'   list(subject = "b"),
-#'   list(subject = "c", target_unit = "b")
+#'   list(subject = "b", target_unit = "x", units2change = c("y"), coeffs = c(1)),
+#'   list(subject = "c", target_unit = "b", units2change = c("a"), coeffs = c(1))
 #' )
 #' unit_standardize(df,
 #'   subject_col = "subject", value_col = "value", unit_col = "unit",
@@ -77,7 +85,14 @@
 #'   df = df, subject_col = "subject",
 #'   value_col = "value", unit_col = "unit", save_table = FALSE
 #' )
-#' unit_table$label <- c("t", NA, 1e-3, NA, NA, "r") # labeling the units
+#' # labeling every unit: "t" = target, a number = multiplier, "r" = remove
+#' unit_table$label <- NA
+#' unit_table$label[unit_table$subject == "a" & unit_table$unit == "g/L"] <- "t"
+#' unit_table$label[unit_table$subject == "a" & unit_table$unit == "g/l"] <- 1
+#' unit_table$label[unit_table$subject == "a" & unit_table$unit == "mg/L"] <- 1e-3
+#' unit_table$label[unit_table$subject == "b" & unit_table$unit == "mg"] <- "t"
+#' unit_table$label[unit_table$subject == "b" & unit_table$unit == "m.g"] <- 1e-3
+#' unit_table$label[unit_table$subject == "b" & is.na(unit_table$unit)] <- "r"
 #'
 #' df_standardized <- unit_standardize(
 #'   df = df, subject_col = "subject", value_col = "value",
@@ -88,7 +103,10 @@
 #'   save_table = FALSE, conflicts_only = FALSE
 #' )
 unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules,
-                             extract_numbers = FALSE, verbose = FALSE) {
+                             extract_numbers = FALSE,
+                             on_unmapped = c("assume_target", "warn", "error"),
+                             verbose = FALSE) {
+  on_unmapped <- match.arg(on_unmapped)
   .validate_inputs(df, subject_col, value_col, unit_col)
 
   # exclude invalid subjects
@@ -103,11 +121,6 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules,
     df <- df %>% dplyr::filter(!is.na(!!sym(value_col)))
   }
 
-  # Convert value_col to numeric if needed
-  if (!is.numeric(df[[value_col]])) {
-    warning(sprintf("`%s` is not numeric. It will be converted to numeric.", value_col))
-  }
-
   change_rules <- .parse_change_rules(change_rules, df, subject_col, verbose)
 
   if (verbose) {
@@ -116,7 +129,7 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules,
 
   result <- .unit_standardize_optimized(
     df, subject_col, value_col, unit_col,
-    change_rules, extract_numbers, verbose
+    change_rules, extract_numbers, on_unmapped, verbose
   )
 
   return(result)
@@ -156,12 +169,23 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules,
 
   change_rules <- change_rules[!is.na(change_rules$label), ]
 
-  if (nrow(change_rules) == 0) {
-    warning("No valid rules found in change_rules (all labels are NA). Returning original data.")
-    return(list())
-  }
-
   subjects <- unique(df[[subject_col]])
+
+  if (nrow(change_rules) == 0) {
+    warning(
+      "No valid rules found in change_rules (all labels are NA). ",
+      "All units other than the inferred target unit are treated as unmapped; ",
+      "this is controlled by `on_unmapped`."
+    )
+    return(lapply(subjects, function(subject) {
+      list(
+        subject = subject,
+        target_unit = NULL,
+        units2change = character(0),
+        coeffs = numeric(0)
+      )
+    }))
+  }
 
   result <- lapply(seq_along(subjects), function(i) {
     subject <- subjects[i]
@@ -213,7 +237,11 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules,
 
     units_len <- length(l$units2change %||% character(0))
     coeffs_len <- length(l$coeffs %||% numeric(0))
-    if (units_len > 0 && coeffs_len > 0 && units_len != coeffs_len) {
+    if (units_len > 0 && coeffs_len == 0) {
+      l$coeffs <- rep(1, units_len)
+      coeffs_len <- units_len
+    }
+    if (units_len > 0 && units_len != coeffs_len) {
       stop("`coeffs` should have the same length as `units2change`!", call. = FALSE)
     }
 
@@ -234,8 +262,8 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules,
 }
 
 .unit_standardize_optimized <- function(df, subject_col, value_col, unit_col,
-                                        change_rules, extract_numbers, verbose) {
-  if (length(change_rules) == 0) {
+                                        change_rules, extract_numbers, on_unmapped, verbose) {
+  if (length(change_rules) == 0 || nrow(df) == 0) {
     return(df)
   }
 
@@ -244,18 +272,8 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules,
   units <- result[[unit_col]]
   subjects <- result[[subject_col]]
 
-  rule_lookup <- list()
-  target_units <- character(length(change_rules))
-
-  for (i in seq_along(change_rules)) {
-    rule <- change_rules[[i]]
-    rule_lookup[[rule$subject]] <- list(
-      units = rule$units2change,
-      coeffs = rule$coeffs,
-      target = rule$target_unit
-    )
-    target_units[i] <- rule$subject
-  }
+  # collected as data.frame(subject, unit, n) for a single aggregated report
+  unmapped <- list()
 
   for (i in seq_along(change_rules)) {
     rule <- change_rules[[i]]
@@ -265,11 +283,10 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules,
       message(sprintf("Processing subject %d/%d: %s", i, length(change_rules), subject))
     }
 
-    subject_idx <- subjects == subject
-    if (!any(subject_idx)) next
+    subject_idx <- which(subjects == subject)
+    if (length(subject_idx) == 0) next
 
     subject_units <- units[subject_idx]
-    subject_values <- values[subject_idx]
 
     target_unit <- rule$target_unit
     if (is.null(target_unit)) {
@@ -286,37 +303,103 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules,
       }
     }
 
+    # map each row to the index of its conversion rule (NA = no rule matched)
+    change_pos <- rep(NA_integer_, length(subject_units))
     for (j in seq_along(rule$units2change)) {
       unit_to_change <- rule$units2change[j]
-      coeff <- rule$coeffs[j]
-
-      if (is.na(unit_to_change)) {
-        unit_idx <- is.na(subject_units)
+      hit <- if (is.na(unit_to_change)) {
+        is.na(subject_units)
       } else {
-        unit_idx <- na2false(subject_units == unit_to_change)
+        !is.na(subject_units) & subject_units == unit_to_change
       }
+      change_pos[hit] <- j
+    }
 
-      if (length(unit_idx) == 0 || all(!unit_idx, na.rm = TRUE)) next
+    is_target <- !is.na(subject_units) & subject_units == target_unit
 
+    # convert only the rows that matched a rule, row by row
+    for (j in seq_along(rule$units2change)) {
+      rows <- which(change_pos == j)
+      if (length(rows) == 0) next
+
+      coeff <- rule$coeffs[j]
       if (is.na(coeff)) {
-        subject_values[unit_idx] <- NA_real_
+        values[subject_idx[rows]] <- NA_real_
+        units[subject_idx[rows]] <- NA_character_
       } else {
+        row_values <- values[subject_idx[rows]]
         if (extract_numbers) {
-          subject_values[unit_idx] <- extract_num(subject_values[unit_idx]) * coeff
-        } else {
-          subject_values[unit_idx] <- suppressWarnings(as.numeric(subject_values[unit_idx])) * coeff
+          row_values <- extract_num(row_values)
         }
+        values[subject_idx[rows]] <- suppressWarnings(as.numeric(row_values)) * coeff
+        units[subject_idx[rows]] <- target_unit
       }
     }
 
-    values[subject_idx] <- subject_values
-    units[subject_idx] <- target_unit
+    # rows already in the target unit stay as they are
+    units[subject_idx[is_target]] <- target_unit
+
+    unmapped_rows <- which(is.na(change_pos) & !is_target)
+    if (length(unmapped_rows) > 0) {
+      if (identical(on_unmapped, "assume_target")) {
+        units[subject_idx[unmapped_rows]] <- target_unit
+      }
+      unmapped[[length(unmapped) + 1]] <- list(
+        subject = rep(subject, length(unmapped_rows)),
+        unit = as.character(subject_units[unmapped_rows])
+      )
+    }
   }
 
   result[[value_col]] <- values
   result[[unit_col]] <- units
 
+  if (length(unmapped) > 0) {
+    .report_unmapped(unmapped, on_unmapped)
+  }
+
   return(result)
+}
+
+.report_unmapped <- function(unmapped, on_unmapped) {
+  records <- data.frame(
+    subject = unlist(lapply(unmapped, `[[`, "subject"), use.names = FALSE),
+    unit = unlist(lapply(unmapped, `[[`, "unit"), use.names = FALSE),
+    stringsAsFactors = FALSE
+  )
+  records$unit_label <- ifelse(is.na(records$unit), "<NA>", records$unit)
+  agg <- stats::aggregate(
+    list(n = rep(1L, nrow(records))),
+    by = list(subject = records$subject, unit = records$unit_label),
+    FUN = sum
+  )
+  lines <- sprintf(
+    '  subject "%s"  unit %s  %d \u884c',
+    agg$subject,
+    ifelse(agg$unit == "<NA>", "NA", paste0('"', agg$unit, '"')),
+    agg$n
+  )
+  total_rows <- nrow(records)
+
+  header <- sprintf("\u672a\u6620\u5c04\u7684\u5355\u4f4d\u65e0\u6cd5\u6807\u51c6\u5316\uff08\u5171 %d \u884c\uff09\uff1a", total_rows)
+  body <- paste(lines, collapse = "\n")
+
+  if (identical(on_unmapped, "error")) {
+    stop(
+      header, "\n", body, "\n",
+      "\u8bf7\u4e3a\u8fd9\u4e9b\u5355\u4f4d\u5728 change_rules \u4e2d\u63d0\u4f9b\u6362\u7b97\u7cfb\u6570\uff0c\u6216\u6807\u8bb0\u4e3a \"r\" \u5220\u9664\uff1b\n",
+      "\u82e5\u8fd9\u4e9b\u6570\u503c\u672c\u8eab\u5df2\u662f\u76ee\u6807\u5355\u4f4d\u3001\u53ea\u9700\u7edf\u4e00\u6807\u7b7e\uff0c\u8bf7\u8bbe\u7f6e on_unmapped = \"assume_target\"\u3002",
+      call. = FALSE
+    )
+  }
+
+  if (identical(on_unmapped, "warn")) {
+    warning(
+      header, "\n", body, "\n",
+      "\u8fd9\u4e9b\u884c\u4fdd\u6301\u539f\u503c\u4e0e\u539f\u5355\u4f4d\uff08\u672a\u505a\u4efb\u4f55\u91cd\u6807\uff09\u3002",
+      call. = FALSE
+    )
+  }
 }
 
 #' Generate a table of conflicting units.

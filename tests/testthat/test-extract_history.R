@@ -147,6 +147,29 @@ test_that("extract_history treats multiple keywords in one category as synonyms 
   expect_equal(res_df$duration, "5 years")
 })
 
+test_that("empty keywords are rejected instead of matching everything", {
+  expect_error(extract_history("任意文本", ""), "空字符串")
+  expect_error(extract_history("任意文本", c("高血压", "  ")), "空字符串")
+  expect_error(extract_history("任意文本", character(0)), "空向量")
+})
+
+test_that("keywords with regex special characters match themselves", {
+  kws <- c("a.b", "x(y)", "C++", "0.5-1", "A|B")
+  for (kw in kws) {
+    expect_true(extract_history(paste0("提示 ", kw), kw))
+  }
+  expect_equal(extract_history("abc 阳性", "a.b"), NA)
+})
+
+test_that("negation stops at clause boundaries in both directions", {
+  # "但" separates clauses: the negation before it must not affect the later clause
+  expect_true(extract_history("未使用降压药但高血压病史", "高血压"))
+  expect_false(extract_history("否认高血压", "高血压"))
+  # post-keyword negation stays inside its clause
+  expect_false(extract_history("高血压未控制", "高血压"))
+  expect_true(extract_history("高血压，未使用药物", "高血压"))
+})
+
 test_that("extract_history prefers real duration over year-like numbers", {
   text <- "心脏病“病史10年，2015年开始使用恩格列净"
   expect_equal(extract_history(text, "心脏病", return_format = "detailed"), "10 years")

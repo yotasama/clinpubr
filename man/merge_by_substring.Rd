@@ -34,6 +34,10 @@ Defaults to TRUE if not provided.}
 \value{
 A data frame with all columns from \code{data} plus matched columns from \code{key_df}.
 Unmatched rows will have NA values in the added columns.
+
+The output row count can be \strong{larger} than the input: when one search value matches keys
+from several groups, that row is repeated once per matched group (with a warning listing the
+affected values).
 }
 \description{
 This function merges two data frames based on string key matching.

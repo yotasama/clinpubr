@@ -119,16 +119,16 @@
       7      0.395755755      0.870713064       0.87071306      0.82272559
       8      0.145455742      0.112890717       0.16933608      0.05149364
       9               NA               NA               NA              NA
-        best.var.trans
-      4       original
-      6       original
-      3    categorized
-      5       original
-      2       original
-      1    categorized
-      7    categorized
-      8    categorized
-      9       original
+        best.var.trans diagnostics
+      4       original        <NA>
+      6       original        <NA>
+      3    categorized        <NA>
+      5       original        <NA>
+      2       original        <NA>
+      1    categorized        <NA>
+      7    categorized        <NA>
+      8    categorized        <NA>
+      9       original        <NA>
 
 # regression_fit returns model results
 

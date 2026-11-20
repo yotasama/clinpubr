@@ -17,6 +17,11 @@
 #' @param auto_order A logical value indicating whether to automatically order the models by their AUCs.
 #'   If `TRUE`, the models will be ordered by their AUCs in descending order. If `FALSE`, the order
 #'   in `model_names` will be retained.
+#' @param positive_class The level of `target_var` that is treated as the positive class. Must be one
+#'   of `levels(target_var)`. If `NULL` (default), `levels(target_var)[2]` is used, which follows the
+#'   alphabetical factor level order and is therefore easy to get wrong (e.g. for `"case"`/`"control"`);
+#'   a warning is emitted. All AUC, sensitivity, specificity, Brier and Hosmer-Lemeshow values are
+#'   derived from this class.
 #' @section Metrics:
 #'   - AUC: Area Under the Receiver Operating Characteristic Curve
 #'   - PRAUC: Area Under the Precision-Recall Curve
@@ -39,7 +44,8 @@
 #'   - roc_plot: A `ggplot` object of Receiver Operating Characteristic curves.
 #'   - pr_plot: A `ggplot` object of Precision-Recall curves.
 #'   - dca_plot: A `ggplot` object of decision curve analysis plots.
-#'   - calibration_plot: A `ggplot` object of calibration plots.
+#'   - calibration_plot: A `ggplot` object of calibration plots, or `NULL` when
+#'     `nrow(data) < 20` (a warning is emitted).
 #' @export
 #' @examples
 #' data(cancer, package = "survival")
@@ -55,7 +61,7 @@
 #' classif_model_compare(df, "dead", c("base_pred", "full_pred"), save_output = FALSE)
 classif_model_compare <- function(data, target_var, model_names, colors = NULL, save_output = FALSE,
                                   figure_type = "png", output_prefix = "model_compare", as_probability = FALSE,
-                                  auto_order = TRUE) {
+                                  auto_order = TRUE, positive_class = NULL) {
   # Check required packages
   check_package("pROC", "ROC analysis and AUC calculations")
   check_package("caret", "confusion matrix calculations")
@@ -94,6 +100,22 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
     stop("`target_var` must be binary: exactly 2 non-missing levels are required.")
   }
 
+  if (is.null(positive_class)) {
+    positive_class <- levels(target)[2]
+    warning(sprintf(
+      "\u672a\u6307\u5b9a `positive_class`\uff0c\u6309\u56e0\u5b50\u6c34\u5e73\u987a\u5e8f\u4f7f\u7528 \"%s\" \u4f5c\u4e3a\u6b63\u7c7b\uff1b\u5efa\u8bae\u663e\u5f0f\u6307\u5b9a `positive_class`\u3002",
+      positive_class
+    ), call. = FALSE)
+  } else if (!positive_class %in% levels(target)) {
+    stop(sprintf(
+      "`positive_class` \u5fc5\u987b\u662f `%s` \u7684\u6c34\u5e73\u4e4b\u4e00\uff08%s\uff09\u3002",
+      target_var, paste(levels(target), collapse = ", ")
+    ), call. = FALSE)
+  }
+  # pROC direction "<" means higher predictions are more likely to be the second level
+  direction <- if (identical(positive_class, levels(target)[1])) ">" else "<"
+  is_positive <- as.numeric(target == positive_class)
+
   if (isTRUE(as_probability)) {
     vars_to_prob <- model_names[apply(
       data[, model_names, drop = FALSE], 2,
@@ -110,6 +132,15 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
       stop("Cannot rescale '", var, "' to probabilities: all non-missing values are identical.")
     }
     data[[var]] <- (data[[var]] - pred_range[1]) / (pred_range[2] - pred_range[1])
+  }
+  for (model_name in model_names) {
+    na_rows <- which(is.na(data[[model_name]]))
+    if (length(na_rows) > 0) {
+      stop(sprintf(
+        "\u9884\u6d4b\u5217 `%s` \u542b %d \u4e2a\u7f3a\u5931\u503c\uff08\u524d 5 \u4e2a\u884c\u53f7\uff1a%s\uff09\u3002\u8bf7\u5148\u5904\u7406\u7f3a\u5931\u503c\u3002",
+        model_name, length(na_rows), paste(utils::head(na_rows, 5), collapse = ", ")
+      ), call. = FALSE)
+    }
   }
   pred_values <- unlist(data[, model_names, drop = FALSE], use.names = FALSE)
   if (any(pred_values < 0 | pred_values > 1, na.rm = TRUE)) {
@@ -134,23 +165,27 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   model_aucs <- c()
   for (i in seq_along(model_names)) {
     model_name <- model_names[i]
-    roc_res <- pROC::roc(target, data[[model_name]], direction = "<", quiet = TRUE)
+    roc_res <- pROC::roc(target, data[[model_name]], direction = direction, quiet = TRUE)
     tmp <- pROC::coords(roc_res, "best")
-    tmp2 <- pROC::coords(roc_res, "all", ret = c("precision", "recall"))
-    valid_points <- !is.na(tmp2$precision) & !is.na(tmp2$recall)
-    tmp2 <- data.frame(recall = tmp2$recall[valid_points], precision = tmp2$precision[valid_points])
+    tmp2 <- .pr_points(roc_res)
     tmp2 <- tmp2[order(tmp2$recall), ]
     pr_auc <- sum(diff(tmp2$recall) * (utils::head(tmp2$precision, -1) + utils::tail(tmp2$precision, -1)) / 2)
     metric_table$PRAUC[i] <- round(pr_auc, 3)
 
     metric_table$cutoff[i] <- get_valid(tmp$threshold, mode = "last", disjoint = FALSE)
-    model_predict <- cut(data[[model_name]], c(-Inf, metric_table$cutoff[i], Inf), right = FALSE)
+    cutoff_i <- metric_table$cutoff[i]
+    if (!is.finite(cutoff_i)) {
+      # pROC may return an infinite best threshold; cut() rejects duplicated breaks
+      cutoff_i <- if (isTRUE(cutoff_i > 0)) max(data[[model_name]]) + 1 else min(data[[model_name]]) - 1
+      metric_table$cutoff[i] <- cutoff_i
+    }
+    model_predict <- cut(data[[model_name]], c(-Inf, cutoff_i, Inf), right = FALSE)
     levels(model_predict) <- levels(target)
     cm <- caret::confusionMatrix(model_predict, target,
       mode = "everything",
-      positive = levels(target)[2]
+      positive = positive_class
     )
-    aucs <- pROC::ci.auc(target, data[[model_name]], direction = "<", quiet = TRUE)
+    aucs <- pROC::ci.auc(target, data[[model_name]], direction = direction, quiet = TRUE)
     model_aucs[i] <- aucs[2]
     metric_table$AUC[i] <- aucs[2]
     metric_table$AUC_lower[i] <- aucs[1]
@@ -161,9 +196,9 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
     for (j in seq_along(acc_metrics)) {
       metric_table[i, acc_metrics[j]] <- cm$overall[acc_metrics[j]]
     }
-    metric_table$Brier[i] <- DescTools::BrierScore(as.numeric(target) - 1, data[[model_name]])
+    metric_table$Brier[i] <- DescTools::BrierScore(is_positive, data[[model_name]])
     metric_table$Youden[i] <- metric_table$Sensitivity[i] + metric_table$Specificity[i] - 1
-    metric_table$HosLem[i] <- ResourceSelection::hoslem.test(as.numeric(target) - 1, data[[model_name]])$p.value
+    metric_table$HosLem[i] <- ResourceSelection::hoslem.test(is_positive, data[[model_name]])$p.value
   }
   for (i in 2:ncol(metric_table)) {
     metric_table[, i] <- round(metric_table[, i], digits = 3)
@@ -175,6 +210,14 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   if (save_output) {
     write.csv(metric_table, file = paste0(output_prefix, "_table.csv"), row.names = FALSE, na = "")
   }
+
+  # Downstream DCA / ROC / calibration plots follow the "second factor level = event"
+  # convention, so put `positive_class` last and use direction = "<" from here on.
+  data[[target_var]] <- factor(
+    data[[target_var]],
+    levels = c(setdiff(levels(target), positive_class), positive_class)
+  )
+  direction <- "<"
 
   plot_formula <- as.formula(paste0(target_var, " ~ ", paste(model_names, collapse = " + ")))
 
@@ -203,7 +246,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   }
 
   # plot ROC curves
-  roc_list <- pROC::roc(plot_formula, data = data, direction = "<", quiet = TRUE)
+  roc_list <- pROC::roc(plot_formula, data = data, direction = direction, quiet = TRUE)
   if (length(model_names) == 1) {
     roc_list <- list(roc_list)
     names(roc_list) <- model_names
@@ -220,14 +263,13 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
 
   # plot PRAUC curves
   for (i in seq_along(roc_list)) {
-    pr_data <- pROC::coords(roc_list[[i]], "all", ret = c("precision", "recall"))
+    pr_data <- .pr_points(roc_list[[i]])
     roc_list[[i]] <- data.frame(
       recall = pr_data$recall, precision = pr_data$precision,
       Model = paste0(metric_table$Model[i], " (", metric_table$PRAUC[i], ")")
     )
   }
   pr_data_all <- data.table::rbindlist(roc_list)
-  pr_data_all$precision[is.nan(pr_data_all$precision)] <- 1
   pr_data_all$Model <- factor(pr_data_all$Model, levels = paste0(metric_table$Model, " (", metric_table$PRAUC, ")"))
   pr_plot <- ggplot2::ggplot(pr_data_all, aes(x = recall, y = precision, color = Model)) +
     ggplot2::geom_line(linewidth = 1) +
@@ -240,29 +282,34 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   }
 
   # plot calibration curves
-  n_tiles <- min(round(nrow(data) / 10), 20)
-  data_calibration <- data %>%
-    pivot_longer(all_of(model_names)) %>%
-    group_by(name) %>%
-    mutate(decile = cut(value, break_at(c(0, 1), n_tiles), right = F, include.lowest = T)) %>%
-    group_by(decile, name) %>%
-    summarise(
-      obsRate = mean(as.numeric(!!sym(target_var)), na.rm = T) - 1,
-      predRate = mean(value, na.rm = T),
-      .groups = "drop"
-    ) %>%
-    as.data.frame()
-  data_calibration$name <- factor(data_calibration$name, levels = model_names)
-  calibration_plot <- ggplot(data = data_calibration, aes(
-    y = obsRate, x = predRate, group = name, color = name
-  )) +
-    geom_smooth(method = "loess", formula = y ~ x, se = FALSE, span = 1) +
-    lims(x = c(0, 1), y = c(0, 1)) +
-    geom_abline(intercept = 0, slope = 1, linetype = 2, alpha = 0.5) +
-    ggplot2::scale_color_manual(values = rep_len(colors, length(model_names))) +
-    ggplot2::labs(x = "Predicted probability", y = "Observed probability") +
-    theme_pub(legend_pos = c(0.7, 0.25))
-  if (save_output) {
+  n_tiles <- min(max(round(nrow(data) / 10), 1), 20)
+  calibration_plot <- NULL
+  if (nrow(data) < 20) {
+    warning("\u6837\u672c\u91cf\u4e0d\u8db3 20\uff0c\u5df2\u8df3\u8fc7\u6821\u51c6\u66f2\u7ebf\uff08calibration_plot \u4e3a NULL\uff09\u3002", call. = FALSE)
+  } else {
+    data_calibration <- data %>%
+      pivot_longer(all_of(model_names)) %>%
+      group_by(name) %>%
+      mutate(decile = cut(value, break_at(c(0, 1), n_tiles), right = F, include.lowest = T)) %>%
+      group_by(decile, name) %>%
+      summarise(
+        obsRate = mean(as.numeric(!!sym(target_var)), na.rm = T) - 1,
+        predRate = mean(value, na.rm = T),
+        .groups = "drop"
+      ) %>%
+      as.data.frame()
+    data_calibration$name <- factor(data_calibration$name, levels = model_names)
+    calibration_plot <- ggplot(data = data_calibration, aes(
+      y = obsRate, x = predRate, group = name, color = name
+    )) +
+      geom_smooth(method = "loess", formula = y ~ x, se = FALSE, span = 1) +
+      lims(x = c(0, 1), y = c(0, 1)) +
+      geom_abline(intercept = 0, slope = 1, linetype = 2, alpha = 0.5) +
+      ggplot2::scale_color_manual(values = rep_len(colors, length(model_names))) +
+      ggplot2::labs(x = "Predicted probability", y = "Observed probability") +
+      theme_pub(legend_pos = c(0.7, 0.25))
+  }
+  if (save_output && !is.null(calibration_plot)) {
     ggplot2::ggsave(calibration_plot, file = paste0(output_prefix, "_calibration.", figure_type), width = 4, height = 4)
   }
   return(list(
@@ -272,4 +319,10 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
     pr_plot = pr_plot,
     calibration_plot = calibration_plot
   ))
+}
+
+# One cleaned (recall, precision) table shared by the PRAUC metric and the PR plot.
+.pr_points <- function(roc_res) {
+  p <- as.data.frame(pROC::coords(roc_res, "all", ret = c("precision", "recall")))
+  p[is.finite(p$precision) & is.finite(p$recall), , drop = FALSE]
 }

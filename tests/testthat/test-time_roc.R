@@ -1,6 +1,7 @@
 # Unit tests for time_roc.R
 
 library(testthat)
+library(survival) # timeROC/pec resolve `Surv` from the attached survival package
 
 # Create synthetic survival data for testing
 set.seed(123)
@@ -15,23 +16,35 @@ maker <- ifelse(event == 1, maker + rnorm(n, mean = 10, sd = 5), maker)
 test_data <- data.frame(time = time, status = event, age = maker)
 
 # Test calc_cindex function
-test_that("calc_cindex returns a valid C-index", {
-  # Basic functionality
-  expect_warning(c_index <- calc_cindex(test_data, "time", "status", "age"))
-  expect_type(c_index, "double")
-  expect_length(c_index, 1)
-  expect_true(c_index >= 0.5 && c_index <= 1)
-  
-  # Test with reversed relationship
-  # Create marker with negative correlation to survival
-  neg_marker <- 100 - maker
-  neg_test_data <- test_data
-  neg_test_data$neg_age <- neg_marker
-  
-  neg_c_index <- calc_cindex(neg_test_data, "time", "status", "neg_age")
-  expect_type(neg_c_index, "double")
-  expect_length(neg_c_index, 1)
-  expect_true(neg_c_index >= 0.5 && neg_c_index <= 1)
+test_that("calc_cindex flips a C-index below 0.5 by default", {
+  raw <- Hmisc::rcorr.cens(maker, survival::Surv(time, event))["C Index"]
+  expect_lt(raw, 0.5)
+
+  # default: flipped to 1 - C-index with a warning
+  expect_warning(
+    rev_c_index <- calc_cindex(test_data, "time", "status", "age"),
+    "reversed"
+  )
+  expect_equal(rev_c_index, 1 - raw)
+
+  # flip = FALSE returns the raw value without warning
+  expect_silent(no_flip <- calc_cindex(test_data, "time", "status", "age", flip = FALSE))
+  expect_equal(no_flip, raw)
+})
+
+test_that("time_roc_plot skips time points without cases or controls", {
+  expect_warning(
+    result <- time_roc_plot(
+      data = test_data,
+      time_var = "time",
+      event_var = "status",
+      marker_var = "age",
+      times = c(100, 10000)
+    ),
+    "skipped"
+  )
+  expect_equal(nlevels(result$plot$data$time), 1)
+  expect_false(any(is.nan(result$plot$data$fpr) | is.nan(result$plot$data$tpr)))
 })
 
 # Test time_roc_plot function

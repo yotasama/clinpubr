@@ -192,7 +192,7 @@ test_that("scenario 3 joined output works", {
   )
 
   res <- screen_data_list(
-    data_list = list(patient=patient, admission = admission, diagnosis = diagnosis, lab = lab),
+    data_list = list(patient = patient, admission = admission, diagnosis = diagnosis, lab = lab),
     entry_expr = any(icd == "I10"),
     entry_level = "patient_id",
     anchor_expr = any(Hb > 10),
@@ -265,6 +265,26 @@ test_that("joined output does not use unmapped plain date column as join key", {
   expect_false(any(grepl("date", out$audit$join$by, fixed = TRUE)))
   expect_true("date.patient" %in% names(out$data))
   expect_true("date.diagnosis" %in% names(out$data))
+})
+
+test_that("many-to-many join on the shared key warns but still joins", {
+  # A is unique on (pid, vid); B is unique on (pid, date); the join only shares `pid`
+  a <- data.frame(pid = c(1, 1), vid = c(11, 12), value_a = c(1, 2))
+  b <- data.frame(pid = c(1, 1), date = c("d1", "d2"), value_b = c(3, 4))
+
+  expect_warning(
+    res <- screen_data_list(
+      data_list = list(a = a, b = b),
+      entry_expr = any(value_a > 0),
+      entry_level = "patient_id",
+      patient_id_map = "pid",
+      visit_id_map = c(a = "vid"),
+      date_map = c(b = "date"),
+      output = "joined"
+    ),
+    "行膨胀"
+  )
+  expect_equal(nrow(res), 4)
 })
 
 test_that("data_list tables must have unique and non-empty column names", {

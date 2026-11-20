@@ -14,10 +14,15 @@
 #'   extracted), \code{"years"} (convert all to years), or \code{"days"}
 #'   (convert all to days). Default is \code{"original"}.
 #' @param negation_window Integer. The maximum character distance to look for negation
-#'   words before the keyword. Default is 20.
+#'   words before or after the keyword. Default is 20. The search never crosses a clause
+#'   boundary (，, 。 ； or 但) in either direction.
 #' @param return_format Character. The format of return values. Can be \code{"simple"} (\code{TRUE}/\code{FALSE}/\code{NA}),
 #'   \code{"detailed"} (duration strings like "5 years" when available, "yes"/"no" otherwise),
 #'   or \code{"data.frame"} (separate columns for status and duration). Default is \code{"simple"}.
+#' @details
+#'   Known limitation: negation is detected by a word list (否认/没有/未见/否定/未/无) plus a
+#'   clause boundary. Phrase-level negations such as "无明显诱因" are therefore not recognised
+#'   and can produce false positives; a phrase-level lexicon is out of scope for this version.
 #'
 #' @return Depending on \code{return_format}:
 #' \itemize{
@@ -54,6 +59,9 @@ extract_history <- function(text,
   }
 
   keyword_list <- normalize_keywords(keywords)
+  if (length(keyword_list) == 0) {
+    stop("`keywords` \u4e0d\u80fd\u4e3a\u7a7a\u5411\u91cf\u3002", call. = FALSE)
+  }
   categories <- names(keyword_list)
 
   results <- lapply(keyword_list, function(kw) {
@@ -145,6 +153,13 @@ extract_history_single <- function(text,
 
 #' @keywords internal
 build_keyword_pattern <- function(keyword) {
+  keyword <- as.character(keyword)
+  if (length(keyword) == 0) {
+    stop("`keywords` \u4e0d\u80fd\u4e3a\u7a7a\u5411\u91cf\u3002", call. = FALSE)
+  }
+  if (any(!nzchar(trimws(keyword)))) {
+    stop("`keywords` \u542b\u7a7a\u5b57\u7b26\u4e32\uff0c\u4f1a\u5339\u914d\u6240\u6709\u6587\u672c\uff0c\u8bf7\u5220\u9664\u7a7a\u5173\u952e\u8bcd\u3002", call. = FALSE)
+  }
   paste0("(?:", paste(escape_keyword(keyword), collapse = "|"), ")")
 }
 
@@ -184,13 +199,15 @@ detect_negation <- function(text, keyword_pattern, window) {
   neg_idx <- which(has_any_neg)
   subset_text <- text[neg_idx]
 
+  # Same clause boundary in both directions: stop at Chinese punctuation and at "\u4f46"
+  boundary <- "\uff0c,\u3002\uff1b\u4f46\n\r"
+  neg_words <- "\u5426\u8ba4|\u6ca1\u6709|\u672a\u89c1|\u5426\u5b9a|\u672a|\u65e0"
+
   neg_pattern_pre <- sprintf(
-    "(?:\u5426\u8ba4|\u6ca1\u6709|\u672a\u89c1|\u5426\u5b9a|\u672a|\u65e0)(?:[^\uff0c,\u3002\uff1b\u4f46\n\r]{0,%d})%s",
-    window, keyword_pattern
+    "(?:%s)(?:[^%s]{0,%d})%s", neg_words, boundary, window, keyword_pattern
   )
   neg_pattern_post <- sprintf(
-    "%s(?:[^\uff0c,\u3002\uff1b\n\r]{0,%d})(?:\u5426\u8ba4|\u6ca1\u6709|\u672a\u89c1|\u5426\u5b9a|\u672a|\u65e0)",
-    keyword_pattern, window
+    "%s(?:[^%s]{0,%d})(?:%s)", keyword_pattern, boundary, window, neg_words
   )
   subset_has_neg <- stringi::stri_detect_regex(subset_text, neg_pattern_pre) |
     stringi::stri_detect_regex(subset_text, neg_pattern_post)
@@ -202,12 +219,8 @@ detect_negation <- function(text, keyword_pattern, window) {
 
 #' @keywords internal
 escape_keyword <- function(keyword) {
-  stringi::stri_replace_all_fixed(
-    keyword,
-    c(".", "\\", "+", "*", "?", "^", "$", "|", "(", ")", "[", "{"),
-    c("\\.", "\\\\", "\\+", "\\*", "\\?", "\\^", "\\$", "\\|", "\\(", "\\)", "\\[", "\\{"),
-    vectorize_all = FALSE
-  )
+  # Single pass: replacing sequentially would escape the backslashes it just inserted
+  stringi::stri_replace_all_regex(keyword, "([\\[\\]{}()\\-+*?.\\\\^$|])", "\\\\$1")
 }
 
 #' @keywords internal

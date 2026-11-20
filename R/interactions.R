@@ -57,41 +57,49 @@ interaction_scan <- function(data, y, time = NULL, time2 = NULL, predictors = NU
   irow <- 1
   for (predictor in predictors) {
     for (group_var in group_vars) {
-      if (group_var != predictor) {
-        nvalid <- sum(complete.cases(data[, c(time, time2, y, predictor, group_var, covars, cluster)]))
-        if (nvalid < 10) {
-          next
-        }
+      if (group_var == predictor) next
 
-        p1 <- tryCatch(
+      nvalid <- sum(complete.cases(data[, c(time, time2, y, predictor, group_var, covars, cluster)]))
+      if (nvalid < 10) {
+        next
+      }
+
+      p1 <- tryCatch(
+        interaction_p_value(data, y, predictor, group_var,
+          time = time, time2 = time2, covars = covars,
+          cluster = cluster
+        ),
+        error = function(e) {
+          warning(sprintf(
+            "Interaction test failed for predictor `%s` and group `%s`: %s",
+            predictor, group_var, conditionMessage(e)
+          ), call. = FALSE)
+          NA
+        }
+      )
+      if (try_rcs && length(unique(data[, predictor])) > 10) {
+        p2 <- tryCatch(
           interaction_p_value(data, y, predictor, group_var,
             time = time, time2 = time2, covars = covars,
-            cluster = cluster
+            rcs_knots = 4, cluster = cluster
           ),
           error = function(e) {
+            warning(sprintf(
+              "Interaction test (rcs) failed for predictor `%s` and group `%s`: %s",
+              predictor, group_var, conditionMessage(e)
+            ), call. = FALSE)
             NA
           }
         )
-        if (try_rcs && length(unique(data[, predictor])) > 10) {
-          p2 <- tryCatch(
-            interaction_p_value(data, y, predictor, group_var,
-              time = time, time2 = time2, covars = covars,
-              rcs_knots = 4, cluster = cluster
-            ),
-            error = function(e) {
-              NA
-            }
-          )
-        } else {
-          p2 <- NA
-        }
-        res_df$predictor[irow] <- predictor
-        res_df$group.by[irow] <- group_var
-        res_df$nvalid[irow] <- nvalid
-        res_df$linear.p.int[irow] <- p1
-        res_df$rcs.p.int[irow] <- p2
-        irow <- irow + 1
+      } else {
+        p2 <- NA
       }
+      res_df$predictor[irow] <- predictor
+      res_df$group.by[irow] <- group_var
+      res_df$nvalid[irow] <- nvalid
+      res_df$linear.p.int[irow] <- p1
+      res_df$rcs.p.int[irow] <- p2
+      irow <- irow + 1
     }
   }
   res_df <- res_df[order(res_df$linear.p.int, decreasing = FALSE), ]
@@ -390,6 +398,9 @@ interaction_plot <- function(data, y, predictor, group_var, time = NULL, time2 =
 #' @param cluster A character string of the cluster variable. If set, correct for heteroscedasticity and for
 #'   correlated responses from cluster samples using `rms::robcov()`.
 #' @param rcs_knots The number of rcs knots. If `NULL`, a linear model would be fitted instead.
+#' @details For `lm` / `glm` fits the nested models are compared with a likelihood-ratio test
+#'   (`anova(..., test = "LRT")`). For linear models this yields a Chi-square p-value, which is
+#'   somewhat liberal in small samples; for Cox fits the `rms` likelihood-ratio test is used.
 #' @returns A numerical, the interaction p-value
 #' @export
 #' @examples

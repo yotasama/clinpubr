@@ -595,6 +595,17 @@ qq_show <- function(x,
   p
 }
 
+#' Tidy method for `rms` model fits
+#' @description `broom::tidy()` support for `rms` fits (e.g. `rms::cph`, `rms::lrm`).
+#'   This is the only correct path for RCS terms: broom's `tidy.coxph` sends `rms`
+#'   objects to `summary.rms()`, which fails without a `datadist`.
+#' @param x An `rms` model fit.
+#' @param conf.int Logical, whether to include Wald confidence intervals.
+#' @param exponentiate Logical, whether to exponentiate estimates and intervals.
+#' @param ... Unused.
+#' @returns A data frame with `term`, `estimate`, `std.error`, `statistic`, `p.value`
+#'   and, when `conf.int = TRUE`, `conf.low` and `conf.high`.
+#' @exportS3Method broom::tidy
 tidy.rms <- function(x, conf.int = FALSE, exponentiate = FALSE, ...) {
   coef <- coef(x)
   se <- sqrt(diag(vcov(x)))

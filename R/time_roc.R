@@ -4,6 +4,9 @@
 #' @param time_var A string specifying the name of the survival time variable in the data frame.
 #' @param event_var A string specifying the name of the event indicator variable in the data frame.
 #' @param marker_var A string specifying the name of the marker variable in the data frame.
+#' @param flip Logical. If `TRUE` (default), a C-index below 0.5 is returned as `1 - C-index`
+#'   with a warning, assuming the marker direction is reversed. If `FALSE`, the raw value is
+#'   returned unchanged.
 #' @returns The C-index value.
 #' @export
 #' @examples
@@ -11,13 +14,13 @@
 #' data(cancer, package = "survival")
 #' # Use age as the marker variable
 #' calc_cindex(lung, "time", "status", "age")
-calc_cindex <- function(data, time_var, event_var, marker_var) {
+calc_cindex <- function(data, time_var, event_var, marker_var, flip = TRUE) {
   res <- Hmisc::rcorr.cens(
     data[[marker_var]],
     survival::Surv(data[[time_var]], data[[event_var]])
   )
   c_index <- res["C Index"]
-  if (c_index < 0.5) {
+  if (flip && c_index < 0.5) {
     c_index <- 1 - c_index
     warning("C-index is less than 0.5, possibly indicating a reversed relationship. Reversed to 1 - C-index.")
   }
@@ -92,8 +95,7 @@ time_roc_plot <- function(data, time_var, event_var, marker_var, times = c(12, 3
 
   # Extract ROC data for each valid time point
   roc_data_list <- list()
-  valid_time_roc_times <- time_roc$times[valid_indices]
-  valid_time_roc_auc <- time_roc$AUC[valid_indices]
+  used_indices <- integer()
 
   for (i in seq_along(valid_indices)) {
     # Get actual index in time_roc object
@@ -103,18 +105,33 @@ time_roc_plot <- function(data, time_var, event_var, marker_var, times = c(12, 3
     total_fp <- time_roc$FP[nrow(time_roc$FP), actual_index]
     total_tp <- time_roc$TP[nrow(time_roc$TP), actual_index]
 
+    if (!isTRUE(total_fp > 0) || !isTRUE(total_tp > 0)) {
+      warning(sprintf(
+        "Time point %s has no cases or no controls; it is skipped in the ROC curve.",
+        time_roc$times[actual_index]
+      ), call. = FALSE)
+      next
+    }
+
     # Calculate FPR and TPR
     fpr_values <- time_roc$FP[, actual_index] / total_fp
     tpr_values <- time_roc$TP[, actual_index] / total_tp
 
     # Create data frame for this time point
-    roc_data <- data.frame(
+    roc_data_list[[length(roc_data_list) + 1]] <- data.frame(
       fpr = fpr_values,
       tpr = tpr_values,
-      time = rep(paste0(valid_time_roc_times[i], " ", time_unit), length(fpr_values))
+      time = rep(paste0(time_roc$times[actual_index], " ", time_unit), length(fpr_values))
     )
-    roc_data_list[[i]] <- roc_data
+    used_indices <- c(used_indices, actual_index)
   }
+
+  if (length(roc_data_list) == 0) {
+    stop("No time point has both cases and controls; cannot draw the ROC curve.", call. = FALSE)
+  }
+
+  valid_time_roc_times <- time_roc$times[used_indices]
+  valid_time_roc_auc <- time_roc$AUC[used_indices]
 
   # Combine all ROC data
   roc_data_all <- data.table::rbindlist(roc_data_list)

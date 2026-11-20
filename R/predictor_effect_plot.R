@@ -61,6 +61,7 @@ predictor_effect_plot <- function(data, x, y, time = NULL, time2 = NULL, covars 
                                   create_dir = FALSE, filename = NULL, y_lim = NULL, hist_max = NULL, xlim = NULL, height = 6,
                                   width = 6, return_details = FALSE) {
   # --- Initial Checks & Setup ---
+  method <- match.arg(method, c("auto", "rcs", "linear", "categorical"))
   if (!is.null(xlim) && length(xlim) != 2) stop("`xlim` must be a vector of length 2")
   if (is.null(group_colors)) group_colors <- emp_colors
   if (add_hist && trans != "identity") stop("`trans` must be `identity` when `add_hist` is `TRUE`")
@@ -106,6 +107,12 @@ predictor_effect_plot <- function(data, x, y, time = NULL, time2 = NULL, covars 
     indf[[x]] <- as.factor(indf[[x]])
   }
 
+  if (method == "linear" && is.factor(indf[[x]])) {
+    stop(sprintf(
+      "`x = \"%s\"` \u662f\u56e0\u5b50\uff0c\u4e0d\u80fd\u4f7f\u7528 method = \"linear\"\uff1b\u8bf7\u6539\u7528 method = \"categorical\"\u3002", x
+    ), call. = FALSE)
+  }
+
   dd <- rms::datadist(indf, q.display = c(0.025, 0.975))
   old_datadist <- getOption("datadist")
   on.exit(
@@ -142,14 +149,14 @@ predictor_effect_plot <- function(data, x, y, time = NULL, time2 = NULL, covars 
         phassump <- survival::cox.zph(model)
         pvalue_ph <- phassump$table[1, 3]
       },
-      error = function(e) warning("Cox proportional hazards test failed with error: ", e)
+      error = function(e) warning("Cox proportional hazards test failed with error: ", conditionMessage(e))
     )
     tryCatch(
       {
         phresidual <- survminer::ggcoxzph(phassump)
       },
       error = function(e) {
-        warning("Graphical Test of Proportional Hazards failed with error: ", e)
+        warning("Graphical Test of Proportional Hazards failed with error: ", conditionMessage(e))
       }
     )
   }
@@ -249,6 +256,7 @@ predictor_effect_plot <- function(data, x, y, time = NULL, time2 = NULL, covars 
 
   # --- Add Distribution Plot (Histogram/Bar) ---
   df_hist_plot <- NULL
+  df_hist_data <- NULL
   if (add_hist) {
     if (method %in% c("rcs", "linear")) {
       df_hist_data <- indf[indf[[x]] >= xlim[1] & indf[[x]] <= xlim[2], ]

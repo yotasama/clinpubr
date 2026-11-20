@@ -34,6 +34,42 @@ test_that("predictor_effect_plot works with categorical predictors (cox)", {
 })
 
 
+test_that("return_details works without a histogram and for categorical predictors", {
+  data <- mtcars
+  data$am <- as.factor(data$am)
+  data$vs <- as.factor(data$vs)
+
+  # add_hist = FALSE used to fail on the undefined `df_hist_data`
+  d1 <- predictor_effect_plot(
+    data = data, x = "wt", y = "vs", method = "linear",
+    add_hist = FALSE, return_details = TRUE, save_plot = FALSE
+  )
+  expect_null(d1$n.plot)
+  expect_s3_class(d1$plot, "ggplot")
+
+  # categorical branch never defined `df_hist_data` either
+  d2 <- predictor_effect_plot(
+    data = data, x = "am", y = "vs", method = "categorical",
+    return_details = TRUE, save_plot = FALSE
+  )
+  expect_s3_class(d2$plot, "ggplot")
+})
+
+test_that("invalid method and factor with method = 'linear' are rejected", {
+  data <- mtcars
+  data$am <- as.factor(data$am)
+  data$vs <- as.factor(data$vs)
+
+  expect_error(
+    predictor_effect_plot(data, x = "wt", y = "vs", method = "bogus", save_plot = FALSE),
+    "arg"
+  )
+  expect_error(
+    predictor_effect_plot(data, x = "am", y = "vs", method = "linear", save_plot = FALSE),
+    "am"
+  )
+})
+
 test_that("predictor_effect_plot works with linear numeric predictors (logistic)", {
   p <- predictor_effect_plot(
     data = mtcars,

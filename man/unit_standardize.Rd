@@ -11,6 +11,7 @@ unit_standardize(
   unit_col,
   change_rules,
   extract_numbers = FALSE,
+  on_unmapped = c("assume_target", "warn", "error"),
   verbose = FALSE
 )
 }
@@ -28,10 +29,17 @@ unit_standardize(
 \item{extract_numbers}{A logical value indicating whether to apply \code{extract_num} to extract numeric values
 from the value column.}
 
+\item{on_unmapped}{How to handle rows whose unit is neither the target unit nor listed in
+\code{units2change}. \code{"assume_target"} (default) relabels these rows to the target unit without
+converting their values; \code{"warn"} keeps these rows' original unit and value and emits a warning;
+\code{"error"} fails after scanning all subjects and lists every offending \code{subject}/\code{unit}/row count.}
+
 \item{verbose}{A logical value indicating whether to print progress messages.}
 }
 \value{
-A data frame with subject units standardized.
+A data frame with subject units standardized. Every row that is not marked as removed
+is relabelled to the target unit; removed rows get \code{NA} value and unit. Rows whose unit is
+neither the target unit nor listed in \code{units2change} follow \code{on_unmapped}.
 }
 \description{
 Standardize units of numeric data, especially for data of medical records with different units.
@@ -57,10 +65,12 @@ If a list of lists, each list contains the following elements:
 \item \code{subject}: The subject to be standardized.
 \item \code{target_unit}: The target unit to be standardized to. If not specified,
 the function will use the most common unit in the data (retrieved by \code{first_mode()}).
-\item \code{units2change}: The units to be changed. If not specified, the function will use
-all units except the target unit. Must be specified to apply different \code{coeffs}.
-\item \code{coeffs}: The coefficients to be used for the conversion. If not specified, the
-function will use 1 for all units to be changed.
+\item \code{units2change}: The units to be converted. If not specified, no conversion is
+performed and every unit other than the target unit is treated as unmapped
+(see \code{on_unmapped}). Must be specified to apply different \code{coeffs}.
+\item \code{coeffs}: The coefficients to be used for the conversion. Default is \code{1} for every
+unit in \code{units2change}. A coefficient of \code{NA} marks the unit as removed
+(the corresponding value is set to \code{NA}).
 \item \code{units2remove}: The units to be removed, and the corresponding values be set to \code{NA}.
 Set this when data with this unit cannot be used.
 }
@@ -74,8 +84,8 @@ df <- data.frame(
 )
 change_rules <- list(
   list(subject = "a", target_unit = "x", units2change = c(NA), coeffs = c(20)),
-  list(subject = "b"),
-  list(subject = "c", target_unit = "b")
+  list(subject = "b", target_unit = "x", units2change = c("y"), coeffs = c(1)),
+  list(subject = "c", target_unit = "b", units2change = c("a"), coeffs = c(1))
 )
 unit_standardize(df,
   subject_col = "subject", value_col = "value", unit_col = "unit",
@@ -104,7 +114,14 @@ unit_table <- unit_view(
   df = df, subject_col = "subject",
   value_col = "value", unit_col = "unit", save_table = FALSE
 )
-unit_table$label <- c("t", NA, 1e-3, NA, NA, "r") # labeling the units
+# labeling every unit: "t" = target, a number = multiplier, "r" = remove
+unit_table$label <- NA
+unit_table$label[unit_table$subject == "a" & unit_table$unit == "g/L"] <- "t"
+unit_table$label[unit_table$subject == "a" & unit_table$unit == "g/l"] <- 1
+unit_table$label[unit_table$subject == "a" & unit_table$unit == "mg/L"] <- 1e-3
+unit_table$label[unit_table$subject == "b" & unit_table$unit == "mg"] <- "t"
+unit_table$label[unit_table$subject == "b" & unit_table$unit == "m.g"] <- 1e-3
+unit_table$label[unit_table$subject == "b" & is.na(unit_table$unit)] <- "r"
 
 df_standardized <- unit_standardize(
   df = df, subject_col = "subject", value_col = "value",

@@ -2,6 +2,7 @@ library(dplyr)
 library(survival)
 library(ggplot2)
 library(rms)
+library(withr)
 
 set.seed(1)
 
@@ -22,6 +23,18 @@ test_that("interaction_p_value returns valid p-values", {
 
   p_logistic_rob <- interaction_p_value(cancer, y = "dead", predictor = "age", group_var = "sex", cluster = "inst")
   expect_snapshot(p_logistic_rob)
+})
+
+test_that("interaction_scan keeps both predictor/group directions", {
+  data(cancer, package = "survival")
+  res <- interaction_scan(cancer,
+    y = "status", time = "time",
+    predictors = c("age", "sex"), group_vars = c("age", "sex"),
+    try_rcs = FALSE, save_table = FALSE
+  )
+
+  expect_equal(nrow(res), 2)
+  expect_setequal(paste(res$predictor, res$group.by), c("age sex", "sex age"))
 })
 
 # Test interaction_scan

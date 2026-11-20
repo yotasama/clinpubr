@@ -91,6 +91,12 @@ knitr::kable(cox_scan, caption = "Cox Regression Scan Results")
 
 The scan reports the effect size, p-value, adjusted p-value (BH correction by default), and the best transformation.
 
+Adjusted p-values are computed **within each transform family** (original / logarithm / categorized / rcs),
+not across the whole table, so adjusted values from different transform columns are not directly comparable.
+`best.var.trans` is the transform with the smallest *unadjusted* p-value; it is reported for exploration only
+and must not be used for inference. The `diagnostics` column records fitting errors (for example
+separation or convergence failures).
+
 ### Logistic Regression Scan
 
 ```{r logistic-scan}

@@ -47,7 +47,15 @@
 subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, time2 = NULL, standardize_x = FALSE, covars = NULL,
                             cluster = NULL, est_nsmall = 2, p_nsmall = 3, group_cut_quantiles = 0.5, save_plot = FALSE,
                             filename = NULL, ...) {
-  x_type <- ifelse(!is.factor(data[[x]]), "number", "factor")
+  x_type <- if (is.numeric(data[[x]])) {
+    "number"
+  } else {
+    if (!is.factor(data[[x]])) {
+      message(sprintf("`x = \"%s\"` is not numeric; it is converted to a factor.", x))
+      data[[x]] <- as.factor(data[[x]])
+    }
+    "factor"
+  }
   if (standardize_x) {
     if (x_type == "factor") {
       warning("`standardize_x` is set to `TRUE` for a factor variable. It will be ignored.")
@@ -80,11 +88,13 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, time2 = NULL
   indf <- dplyr::select(data, all_of(c(y, x, time, time2, covars, cluster)))
 
   if (!is.null(covars)) {
+    if (any(grepl("^tmp_cov", colnames(data)))) stop("Colnames start with 'tmp_cov' are reserved.")
+    idx <- match(ori_covs, names(indf))
+    if (anyNA(idx)) {
+      stop("Covariate column not found in the selected data.")
+    }
     covars <- paste0("tmp_cov", seq_along(covars))
-    if (any(covars %in% colnames(data))) stop("Colnames start with 'tmp_cov' are reserved.")
-    start_col <- ifelse(analysis_type == "cox", 4, 3)
-    if (analysis_type == "cox" && !is.null(time2)) start_col <- start_col + 1
-    colnames(indf)[start_col:(start_col + length(covars) - 1)] <- covars
+    names(indf)[idx] <- covars
   }
 
   indf <- cbind(indf, dplyr::select(data, all_of(subgroup_vars)))
@@ -184,24 +194,56 @@ subgroup_forest <- function(data, subgroup_vars, x, y, time = NULL, time2 = NULL
     tmp_res <- NULL
     for (lvl in lvls) {
       subset_data <- indf[which(indf[[var]] == lvl), ]
-      lvl_res <- regression_fit(subset_data, y, x,
-        time = time, time2 = time2, covars = tmp_covs, cluster = cluster,
-        returned = "predictor_split"
+      if (is.factor(subset_data[[x]])) {
+        # keep all original levels so the number of estimate rows stays constant
+        subset_data[[x]] <- factor(subset_data[[x]], levels = levels(indf[[x]]))
+      }
+
+      # one failing subgroup must not abort the whole forest plot
+      lvl_fit <- tryCatch(
+        {
+          r <- regression_fit(subset_data, y, x,
+            time = time, time2 = time2, covars = tmp_covs, cluster = cluster,
+            returned = "predictor_split"
+          )
+          if (x_type == "factor" && nrow(r) != n_plot_levels) {
+            stop(sprintf(
+              "expected %d estimate rows for `%s`, got %d",
+              n_plot_levels, x, nrow(r)
+            ))
+          }
+          r
+        },
+        error = function(e) {
+          warning(sprintf(
+            "Subgroup `%s = %s` failed: %s", var, lvl, conditionMessage(e)
+          ), call. = FALSE)
+          NULL
+        }
       )
+
+      if (is.null(lvl_fit)) {
+        lvl_fit <- data.frame(
+          estimate = rep(NA_real_, if (x_type == "factor") n_plot_levels else 1),
+          conf.low = NA_real_,
+          conf.high = NA_real_,
+          p.value = NA_real_
+        )
+      }
 
       if (x_type == "number") {
         lvl_res <- data.frame(
           Subgroup = paste("  ", lvl), Count = nrow(subset_data),
-          Percent = NA, Estimate = lvl_res$estimate,
-          Lower = lvl_res$conf.low, Upper = lvl_res$conf.high,
-          `P value` = lvl_res$p.value, `P int` = NA, check.names = FALSE
+          Percent = NA, Estimate = lvl_fit$estimate,
+          Lower = lvl_fit$conf.low, Upper = lvl_fit$conf.high,
+          `P value` = lvl_fit$p.value, `P int` = NA, check.names = FALSE
         )
       } else {
         lvl_res <- data.frame(
           Subgroup = paste("  ", lvl), Count = nrow(subset_data),
-          Percent = NA, Level = levels(indf[[x]])[-1], Estimate = lvl_res$estimate,
-          Lower = lvl_res$conf.low, Upper = lvl_res$conf.high,
-          `P value` = lvl_res$p.value, `P int` = NA, check.names = FALSE
+          Percent = NA, Level = levels(indf[[x]])[-1], Estimate = lvl_fit$estimate,
+          Lower = lvl_fit$conf.low, Upper = lvl_fit$conf.high,
+          `P value` = lvl_fit$p.value, `P int` = NA, check.names = FALSE
         )
         lvl_res$Subgroup[-1] <- NA
         lvl_res$Count[-1] <- NA

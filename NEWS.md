@@ -1,3 +1,29 @@
+# clinpubr 1.4.4
+
+* `unit_standardize()` gains `on_unmapped` for rows whose unit is neither the target unit nor
+  listed in `units2change`: `"assume_target"` (default) keeps the previous behaviour of relabelling
+  them to the target unit, `"warn"` leaves them unchanged and warns, and `"error"` lists the
+  offending subjects. Units marked for removal now get `NA` unit as well as `NA` value, and
+  `coeffs` defaults to `1` when omitted.
+
+* `calc_cindex()` gains `flip = TRUE`, which keeps the existing behaviour of returning a C-index
+  below 0.5 as `1 - C-index`; set `flip = FALSE` to return the raw value.
+
+* `classif_model_compare()` gains `positive_class`, which defaults to `levels(target)[2]` (the
+  previous behaviour) and warns when not specified. `NA` predictions are rejected with a clear
+  message, and the calibration curve is skipped when `n < 20`.
+
+* `screen_data_list()` warns instead of silently producing an m x n cartesian product when both
+  sides of a join have duplicated keys.
+
+* `merge_by_substring()` rejects empty-string and all-`NA` keys, and warns when a search value
+  matches several groups (each match adds rows to the output).
+
+* `time_roc_plot()` skips time points without cases or controls instead of drawing `Inf`/`NaN`
+  coordinates.
+
+* Minor bug fixes and improvements.
+
 # clinpubr 1.4.3
 
 * Fixed errors in vignettes.
