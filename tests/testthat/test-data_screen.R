@@ -282,9 +282,28 @@ test_that("many-to-many join on the shared key warns but still joins", {
       date_map = c(b = "date"),
       output = "joined"
     ),
-    "行膨胀"
+    "inflate rows"
   )
   expect_equal(nrow(res), 4)
+})
+
+test_that("many-to-many warning is not raised when the duplicated keys do not intersect", {
+  # a duplicates pid = 1, b duplicates pid = 2; the key sets are disjoint, so the
+  # join stays 1:1 on every matched key and does not inflate rows
+  a <- data.frame(pid = c(1, 1), vid = c(11, 12), value_a = c(1, 2))
+  b <- data.frame(pid = c(2, 2), date = c("d1", "d2"), value_b = c(3, 4))
+
+  expect_no_warning(
+    screen_data_list(
+      data_list = list(a = a, b = b),
+      entry_expr = any(value_a > 0),
+      entry_level = "patient_id",
+      patient_id_map = "pid",
+      visit_id_map = c(a = "vid"),
+      date_map = c(b = "date"),
+      output = "joined"
+    )
+  )
 })
 
 test_that("data_list tables must have unique and non-empty column names", {

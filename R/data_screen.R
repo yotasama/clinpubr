@@ -1066,13 +1066,18 @@ screen_data_list <- function(data_list,
 
     before <- nrow(joined)
 
-    # The uniqueness check above looks at each table's own key; the join only uses the
-    # intersection, so two tables can each be unique yet still blow up m x n rows.
-    dup_left <- anyDuplicated(joined[, by_used, drop = FALSE]) > 0
-    dup_right <- anyDuplicated(rhs[, by_used, drop = FALSE]) > 0
-    if (dup_left && dup_right) {
+    # Duplicates on each side only inflate rows when they share the same key value;
+    # two tables can each have duplicated keys that never intersect, in which case
+    # the join is still 1:1 on every key and the row count does not change.
+    dup_key_values <- function(df) {
+      k <- df[, by_used, drop = FALSE]
+      k <- k[duplicated(k) | duplicated(k, fromLast = TRUE), , drop = FALSE]
+      if (nrow(k) == 0) character() else unique(do.call(paste, c(k, sep = "\r")))
+    }
+    shared_dups <- intersect(dup_key_values(joined), dup_key_values(rhs))
+    if (length(shared_dups) > 0) {
       warning(sprintf(
-        "\u8868 `%s` \u4e0e\u5df2\u5408\u5e76\u7ed3\u679c\u5728 join key (%s) \u4e0a\u90fd\u5b58\u5728\u91cd\u590d\uff0c\u8fde\u63a5\u4f1a\u4ea7\u751f m\u00d7n \u884c\u81a8\u80c0\uff08\u5f53\u524d %d \u884c\uff09\u3002",
+        "Table `%s` and the merged result both contain duplicate join keys on the same value(s) (%s); this join will inflate rows (m x n) (%d rows before the join).",
         tbl, paste(by_used, collapse = ", "), before
       ), call. = FALSE)
     }

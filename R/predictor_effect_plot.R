@@ -109,7 +109,7 @@ predictor_effect_plot <- function(data, x, y, time = NULL, time2 = NULL, covars 
 
   if (method == "linear" && is.factor(indf[[x]])) {
     stop(sprintf(
-      "`x = \"%s\"` \u662f\u56e0\u5b50\uff0c\u4e0d\u80fd\u4f7f\u7528 method = \"linear\"\uff1b\u8bf7\u6539\u7528 method = \"categorical\"\u3002", x
+      "`x = \"%s\"` is a factor and cannot be used with method = \"linear\"; please use method = \"categorical\".", x
     ), call. = FALSE)
   }
 

@@ -256,3 +256,19 @@ test_that("to_wide validates input arguments", {
     fixed = TRUE
   )
 })
+
+test_that("tidy.rms returns a coefficient table for rms fits", {
+  skip_if_not_installed("rms")
+  set.seed(1)
+  d <- data.frame(y = rbinom(120, 1, 0.5), x = rnorm(120))
+  fit <- rms::lrm(y ~ x, data = d, x = TRUE, y = TRUE)
+
+  res <- broom::tidy(fit)
+  expect_s3_class(res, "data.frame")
+  expect_equal(res$term, names(stats::coef(fit)))
+  expect_equal(res$estimate, unname(stats::coef(fit)))
+  expect_true(all(c("std.error", "statistic", "p.value") %in% names(res)))
+
+  res_ci <- broom::tidy(fit, conf.int = TRUE)
+  expect_true(all(c("conf.low", "conf.high") %in% names(res_ci)))
+})

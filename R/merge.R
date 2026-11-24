@@ -71,13 +71,13 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols,
   if (length(keys_all) > 0) {
     if (all(is.na(keys_all))) {
       stop(sprintf(
-        "`key_df[[\"%s\"]]` \u5168\u90e8\u4e3a NA\uff0c\u65e0\u6cd5\u5339\u914d\u4efb\u4f55\u641c\u7d22\u503c\u3002", key_col
+        "`key_df[[\"%s\"]]` is all NA and cannot match any search value.", key_col
       ), call. = FALSE)
     }
     blank <- !is.na(keys_all) & !nzchar(trimws(keys_all))
     if (any(blank)) {
       stop(sprintf(
-        "`key_df` \u4e2d\u5b58\u5728 %d \u4e2a\u7a7a\u5b57\u7b26\u4e32 key\uff08%s\uff09\uff0c\u4f1a\u5339\u914d\u6240\u6709\u884c\uff1b\u8bf7\u5220\u9664\u6216\u4fee\u6b63\u8fd9\u4e9b key\u3002",
+        "`key_df` contains %d empty-string key(s) (%s) that would match every row; please remove or fix them.",
         sum(blank),
         paste(paste0("\"", utils::head(unique(keys_all[blank]), 5), "\""), collapse = ", ")
       ), call. = FALSE)
@@ -155,7 +155,7 @@ merge_by_substring <- function(data, key_df, search_col, key_col, value_cols,
   dup_vals <- names(dup_counts)[dup_counts > 1]
   if (length(dup_vals) > 0) {
     warning(sprintf(
-      "%d \u4e2a\u641c\u7d22\u503c\u547d\u4e2d\u591a\u4e2a\u5206\u7ec4\uff0c\u8f93\u51fa\u884c\u6570\u7531 %d \u884c\u53d8\u4e3a %d \u884c\uff08\u793a\u4f8b\uff1a%s\uff09\u3002",
+      "%d search value(s) matched multiple groups; the output row count changed from %d to %d (examples: %s).",
       length(dup_vals), nrow(data), nrow(result),
       paste(utils::head(dup_vals, 10), collapse = ", ")
     ), call. = FALSE)

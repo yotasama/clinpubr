@@ -29,7 +29,8 @@ extracted), \code{"years"} (convert all to years), or \code{"days"}
 
 \item{negation_window}{Integer. The maximum character distance to look for negation
 words before or after the keyword. Default is 20. The search never crosses a clause
-boundary (，, 。 ； or 但) in either direction.}
+boundary (Chinese comma, full stop, semicolon, or the adversative conjunction
+meaning "but") in either direction.}
 
 \item{return_format}{Character. The format of return values. Can be \code{"simple"} (\code{TRUE}/\code{FALSE}/\code{NA}),
 \code{"detailed"} (duration strings like "5 years" when available, "yes"/"no" otherwise),
@@ -53,9 +54,10 @@ from clinical text records, supports Chinese text. The function uses vectorized 
 for high performance on large datasets.
 }
 \details{
-Known limitation: negation is detected by a word list (否认/没有/未见/否定/未/无) plus a
-clause boundary. Phrase-level negations such as "无明显诱因" are therefore not recognised
-and can produce false positives; a phrase-level lexicon is out of scope for this version.
+Known limitation: negation is detected by a word list (deny / none / not seen /
+negative / not / no) plus a clause boundary. Phrase-level negations such as
+"no obvious trigger" are therefore not recognised and can produce false positives;
+a phrase-level lexicon is out of scope for this version.
 }
 \examples{
 \dontrun{

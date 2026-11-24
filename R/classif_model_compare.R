@@ -103,17 +103,24 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   if (is.null(positive_class)) {
     positive_class <- levels(target)[2]
     warning(sprintf(
-      "\u672a\u6307\u5b9a `positive_class`\uff0c\u6309\u56e0\u5b50\u6c34\u5e73\u987a\u5e8f\u4f7f\u7528 \"%s\" \u4f5c\u4e3a\u6b63\u7c7b\uff1b\u5efa\u8bae\u663e\u5f0f\u6307\u5b9a `positive_class`\u3002",
+      "`positive_class` was not specified; using \"%s\" (the second factor level) as the positive class. Please set `positive_class` explicitly.",
       positive_class
     ), call. = FALSE)
   } else if (!positive_class %in% levels(target)) {
     stop(sprintf(
-      "`positive_class` \u5fc5\u987b\u662f `%s` \u7684\u6c34\u5e73\u4e4b\u4e00\uff08%s\uff09\u3002",
+      "`positive_class` must be one of the levels of `%s` (%s).",
       target_var, paste(levels(target), collapse = ", ")
     ), call. = FALSE)
   }
-  # pROC direction "<" means higher predictions are more likely to be the second level
-  direction <- if (identical(positive_class, levels(target)[1])) ">" else "<"
+  # Put the positive class last so that pROC's default direction ("<", higher
+  # predictions are more likely to be the second level) and caret agree
+  # everywhere downstream, with no per-direction branching.
+  data[[target_var]] <- factor(
+    data[[target_var]],
+    levels = c(setdiff(levels(target), positive_class), positive_class)
+  )
+  target <- data[[target_var]]
+  direction <- "<"
   is_positive <- as.numeric(target == positive_class)
 
   if (isTRUE(as_probability)) {
@@ -137,7 +144,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
     na_rows <- which(is.na(data[[model_name]]))
     if (length(na_rows) > 0) {
       stop(sprintf(
-        "\u9884\u6d4b\u5217 `%s` \u542b %d \u4e2a\u7f3a\u5931\u503c\uff08\u524d 5 \u4e2a\u884c\u53f7\uff1a%s\uff09\u3002\u8bf7\u5148\u5904\u7406\u7f3a\u5931\u503c\u3002",
+        "Predictor column `%s` contains %d missing value(s) (first 5 row numbers: %s). Please handle missing values first.",
         model_name, length(na_rows), paste(utils::head(na_rows, 5), collapse = ", ")
       ), call. = FALSE)
     }
@@ -180,6 +187,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
       metric_table$cutoff[i] <- cutoff_i
     }
     model_predict <- cut(data[[model_name]], c(-Inf, cutoff_i, Inf), right = FALSE)
+    # cut() labels the lower interval first, which is the negative class
     levels(model_predict) <- levels(target)
     cm <- caret::confusionMatrix(model_predict, target,
       mode = "everything",
@@ -210,14 +218,6 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   if (save_output) {
     write.csv(metric_table, file = paste0(output_prefix, "_table.csv"), row.names = FALSE, na = "")
   }
-
-  # Downstream DCA / ROC / calibration plots follow the "second factor level = event"
-  # convention, so put `positive_class` last and use direction = "<" from here on.
-  data[[target_var]] <- factor(
-    data[[target_var]],
-    levels = c(setdiff(levels(target), positive_class), positive_class)
-  )
-  direction <- "<"
 
   plot_formula <- as.formula(paste0(target_var, " ~ ", paste(model_names, collapse = " + ")))
 
@@ -285,7 +285,7 @@ classif_model_compare <- function(data, target_var, model_names, colors = NULL, 
   n_tiles <- min(max(round(nrow(data) / 10), 1), 20)
   calibration_plot <- NULL
   if (nrow(data) < 20) {
-    warning("\u6837\u672c\u91cf\u4e0d\u8db3 20\uff0c\u5df2\u8df3\u8fc7\u6821\u51c6\u66f2\u7ebf\uff08calibration_plot \u4e3a NULL\uff09\u3002", call. = FALSE)
+    warning("Fewer than 20 samples; calibration curve skipped (`calibration_plot` is NULL).", call. = FALSE)
   } else {
     data_calibration <- data %>%
       pivot_longer(all_of(model_names)) %>%

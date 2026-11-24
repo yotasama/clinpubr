@@ -15,14 +15,16 @@
 #'   (convert all to days). Default is \code{"original"}.
 #' @param negation_window Integer. The maximum character distance to look for negation
 #'   words before or after the keyword. Default is 20. The search never crosses a clause
-#'   boundary (，, 。 ； or 但) in either direction.
+#'   boundary (Chinese comma, full stop, semicolon, or the adversative conjunction
+#'   meaning "but") in either direction.
 #' @param return_format Character. The format of return values. Can be \code{"simple"} (\code{TRUE}/\code{FALSE}/\code{NA}),
 #'   \code{"detailed"} (duration strings like "5 years" when available, "yes"/"no" otherwise),
 #'   or \code{"data.frame"} (separate columns for status and duration). Default is \code{"simple"}.
 #' @details
-#'   Known limitation: negation is detected by a word list (否认/没有/未见/否定/未/无) plus a
-#'   clause boundary. Phrase-level negations such as "无明显诱因" are therefore not recognised
-#'   and can produce false positives; a phrase-level lexicon is out of scope for this version.
+#'   Known limitation: negation is detected by a word list (deny / none / not seen /
+#'   negative / not / no) plus a clause boundary. Phrase-level negations such as
+#'   "no obvious trigger" are therefore not recognised and can produce false positives;
+#'   a phrase-level lexicon is out of scope for this version.
 #'
 #' @return Depending on \code{return_format}:
 #' \itemize{
@@ -60,7 +62,7 @@ extract_history <- function(text,
 
   keyword_list <- normalize_keywords(keywords)
   if (length(keyword_list) == 0) {
-    stop("`keywords` \u4e0d\u80fd\u4e3a\u7a7a\u5411\u91cf\u3002", call. = FALSE)
+    stop("`keywords` must not be an empty vector.", call. = FALSE)
   }
   categories <- names(keyword_list)
 
@@ -155,10 +157,10 @@ extract_history_single <- function(text,
 build_keyword_pattern <- function(keyword) {
   keyword <- as.character(keyword)
   if (length(keyword) == 0) {
-    stop("`keywords` \u4e0d\u80fd\u4e3a\u7a7a\u5411\u91cf\u3002", call. = FALSE)
+    stop("`keywords` must not be an empty vector.", call. = FALSE)
   }
   if (any(!nzchar(trimws(keyword)))) {
-    stop("`keywords` \u542b\u7a7a\u5b57\u7b26\u4e32\uff0c\u4f1a\u5339\u914d\u6240\u6709\u6587\u672c\uff0c\u8bf7\u5220\u9664\u7a7a\u5173\u952e\u8bcd\u3002", call. = FALSE)
+    stop("`keywords` contains an empty string, which would match all text; please remove empty keywords.", call. = FALSE)
   }
   paste0("(?:", paste(escape_keyword(keyword), collapse = "|"), ")")
 }

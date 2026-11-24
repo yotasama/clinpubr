@@ -92,6 +92,9 @@ test_that("positive_class controls the direction of every metric", {
 
   res_case <- classif_model_compare(d, "y", "m1", positive_class = "case", save_output = FALSE, as_probability = TRUE)
   expect_equal(res_case$metric_table$AUC, round(ref_case, 3))
+  # the first level must also get correct confusion-matrix metrics
+  expect_gt(res_case$metric_table$Sensitivity, 0.5)
+  expect_gt(res_case$metric_table$Specificity, 0.5)
 
   res_control <- classif_model_compare(d, "y", "m1", positive_class = "control", save_output = FALSE, as_probability = TRUE)
   expect_equal(res_control$metric_table$AUC, round(1 - ref_case, 3))
@@ -158,7 +161,7 @@ test_that("small samples skip the calibration curve instead of crashing", {
 
   expect_warning(
     res <- classif_model_compare(d, "y", "m1", positive_class = "1", save_output = FALSE),
-    "样本量不足"
+    "Fewer than 20 samples"
   )
   expect_null(res$calibration_plot)
   expect_equal(nrow(res$metric_table), 1)

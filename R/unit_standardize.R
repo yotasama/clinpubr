@@ -374,21 +374,21 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules,
     FUN = sum
   )
   lines <- sprintf(
-    '  subject "%s"  unit %s  %d \u884c',
+    '  subject "%s"  unit %s  %d rows',
     agg$subject,
     ifelse(agg$unit == "<NA>", "NA", paste0('"', agg$unit, '"')),
     agg$n
   )
   total_rows <- nrow(records)
 
-  header <- sprintf("\u672a\u6620\u5c04\u7684\u5355\u4f4d\u65e0\u6cd5\u6807\u51c6\u5316\uff08\u5171 %d \u884c\uff09\uff1a", total_rows)
+  header <- sprintf("Unmapped units cannot be standardized (%d rows in total):", total_rows)
   body <- paste(lines, collapse = "\n")
 
   if (identical(on_unmapped, "error")) {
     stop(
       header, "\n", body, "\n",
-      "\u8bf7\u4e3a\u8fd9\u4e9b\u5355\u4f4d\u5728 change_rules \u4e2d\u63d0\u4f9b\u6362\u7b97\u7cfb\u6570\uff0c\u6216\u6807\u8bb0\u4e3a \"r\" \u5220\u9664\uff1b\n",
-      "\u82e5\u8fd9\u4e9b\u6570\u503c\u672c\u8eab\u5df2\u662f\u76ee\u6807\u5355\u4f4d\u3001\u53ea\u9700\u7edf\u4e00\u6807\u7b7e\uff0c\u8bf7\u8bbe\u7f6e on_unmapped = \"assume_target\"\u3002",
+      "Provide conversion coefficients for these units in change_rules, or mark them as \"r\" to remove them;\n",
+      "if these values are already in the target unit and only the labels need to be unified, set on_unmapped = \"assume_target\".",
       call. = FALSE
     )
   }
@@ -396,7 +396,7 @@ unit_standardize <- function(df, subject_col, value_col, unit_col, change_rules,
   if (identical(on_unmapped, "warn")) {
     warning(
       header, "\n", body, "\n",
-      "\u8fd9\u4e9b\u884c\u4fdd\u6301\u539f\u503c\u4e0e\u539f\u5355\u4f4d\uff08\u672a\u505a\u4efb\u4f55\u91cd\u6807\uff09\u3002",
+      "These rows keep their original values and units (no relabeling applied).",
       call. = FALSE
     )
   }

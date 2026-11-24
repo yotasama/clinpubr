@@ -148,9 +148,9 @@ test_that("extract_history treats multiple keywords in one category as synonyms 
 })
 
 test_that("empty keywords are rejected instead of matching everything", {
-  expect_error(extract_history("任意文本", ""), "空字符串")
-  expect_error(extract_history("任意文本", c("高血压", "  ")), "空字符串")
-  expect_error(extract_history("任意文本", character(0)), "空向量")
+  expect_error(extract_history("任意文本", ""), "empty string")
+  expect_error(extract_history("任意文本", c("高血压", "  ")), "empty string")
+  expect_error(extract_history("任意文本", character(0)), "empty vector")
 })
 
 test_that("keywords with regex special characters match themselves", {

@@ -10,7 +10,7 @@ test_that("merge_by_substring works with basic dataset", {
 
   expect_warning(
     result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "category"),
-    "命中多个分组"
+    "matched multiple groups"
   )
 
   expect_true(is.data.frame(result))
@@ -27,7 +27,7 @@ test_that("merge_by_substring rejects empty string keys", {
 
   expect_error(
     merge_by_substring(df, key_df, search_col = "name", key_col = "key", value_cols = "category"),
-    "空字符串"
+    "empty-string key"
   )
 })
 
@@ -37,7 +37,7 @@ test_that("merge_by_substring rejects all-NA keys", {
 
   expect_error(
     merge_by_substring(df, key_df, search_col = "name", key_col = "key", value_cols = "category"),
-    "全部为 NA"
+    "all NA"
   )
 })
 
@@ -65,7 +65,7 @@ test_that("merge_by_substring works with multiple new columns", {
 
   expect_warning(
     result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = c("category", "code")),
-    "命中多个分组"
+    "matched multiple groups"
   )
 
   expect_true(is.data.frame(result))
@@ -88,7 +88,7 @@ test_that("merge_by_substring handles unmatched rows with NA", {
 
   expect_warning(
     result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "category"),
-    "命中多个分组"
+    "matched multiple groups"
   )
 
   expect_true(is.data.frame(result))
@@ -125,7 +125,7 @@ test_that("merge_by_substring handles duplicate patterns in same group", {
 
   expect_warning(
     result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "category"),
-    "命中多个分组"
+    "matched multiple groups"
   )
 
   expect_true(is.data.frame(result))
@@ -145,7 +145,7 @@ test_that("merge_by_substring works with default column names", {
 
   expect_warning(
     result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "new"),
-    "命中多个分组"
+    "matched multiple groups"
   )
 
   expect_true(is.data.frame(result))
@@ -176,7 +176,7 @@ test_that("merge_by_substring handles NA patterns", {
 
   expect_warning(
     result <- merge_by_substring(df, match_df, search_col = "name", key_col = "ori", value_cols = "category"),
-    "命中多个分组"
+    "matched multiple groups"
   )
 
   expect_true(is.data.frame(result))
